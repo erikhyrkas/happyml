@@ -410,6 +410,7 @@ void test_matrix_addition() {
     ASSERT_TRUE(0.0f == add_view->get_val(2, 1, 0));
     ASSERT_TRUE(-2.0f == add_view->get_val(2, 2, 0));
 }
+
 int main() {
     try {
         // TODO: a lot of these tests don't cover the situation where we have many channels

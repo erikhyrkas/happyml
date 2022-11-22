@@ -7,7 +7,7 @@ add_executable(microml src/main.cpp src/quarter_float.hpp src/activation.hpp src
 
 add_executable(microml_test_quarter_float src/test_quarter_float.cpp src/quarter_float.hpp src/unit_test.hpp)
 
-add_executable(microml_test_quarter_matrix src/test_tensor.cpp src/quarter_float.hpp src/unit_test.hpp src/tensor.hpp src/tensor_stats.hpp)
+add_executable(microml_test_tensor src/test_tensor.cpp src/quarter_float.hpp src/unit_test.hpp src/tensor.hpp src/tensor_stats.hpp)
 
 add_executable(microml_test_data_source src/test_data_source.cpp src/data_source.hpp src/dataset.hpp src/data.hpp src/quarter_float.hpp src/unit_test.hpp src/tensor.hpp src/tensor_stats.hpp)
 

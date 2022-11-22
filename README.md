@@ -16,6 +16,11 @@ Data science is 95% math and 5% pretty terrible code. Most of the software engin
 
 I don't think machine learning should only be for data scientists. It should be for everybody.
 
+# Compiling
+I use CLion with Visual Studio 2022 community for the c++ runtime libraries.
+* https://visualstudio.microsoft.com/downloads/
+
+
 # microml
 
 Why did you build this? You shouldn't have. Seriously. Why?
