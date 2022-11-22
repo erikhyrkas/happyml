@@ -63,14 +63,14 @@ public:
 
     }
 
-    void predict(BaseTensor input) {
+    void infer(BaseTensor input) {
 
     }
 
 private:
     std::string working_folder;
     std::shared_ptr<Optimizer> optimizer;
-    std::shared_ptr<Layer> head_layer;
+    std::shared_ptr<Neuron> head_layer;
 
 };
 #endif //MICROML_MODEL_HPP

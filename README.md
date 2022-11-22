@@ -1,25 +1,11 @@
-# Why this is important to you
-
-There is a lot of gate keeping in machine learning. 
-
-Data scientists study for years, working hard to obtain the knowledge necessary to create new algorithms -- machine learning models. It requires huge amounts of effort to gain that understanding, and even more effort to apply it in real life situations.
-
-A lot of corporate data science has a low tolerance for risk and is both hard and rather boring -- there's a couple of popular techniques around regression and classification that require a tremendous amount of knowledge to apply, and a lot of research into the data to even attempt, but the end results are something that follows a fairly predictable pattern. 
-
-Most of the fun machine learning models that do cool things that everybody would like to do are expensive to build and run and there's a risk they won't be useful, or are something you can pay to use from a big company like OpenAI as long as you are okay with the licensing agreement. 
-
-Machine learning frameworks are built by data scientists for data scientists and don't make any effort to be accessible to people without years of formal education. You could argue that there are people trying to make it more accessible, but not by making the frameworks easier to use for ordinary developers but by trying to teach people the core of data science. Not everybody wants to be a data scientist, they just want to have cool toys. 
-
-What's more, terminology in data science is highly technical and most people aren't familiar with it. This is intimidating and keeps people away.
-
-Data science is 95% math and 5% pretty terrible code. Most of the software engineers that I know barely know algebra, let alone how to do linear regression.
-
-I don't think machine learning should only be for data scientists. It should be for everybody.
-
 # Compiling
 I use CLion with Visual Studio 2022 community for the c++ runtime libraries.
 * https://visualstudio.microsoft.com/downloads/
 
+Look at the [clion_settings.png](clion_settings.png) for an example on configuring CLion. Pay special attention to the x64 setting. I had to type that value, since it was not in the dropdown options.
+
+I didn't include the idea project settings files, so you'll have to make a project from source, but everything should work
+based on the [CMakeLists.txt](CMakeLists.txt).
 
 # microml
 
@@ -78,6 +64,7 @@ I want to help the process of making machine learning accessible. Maybe this is 
 
 # High-level Design
 
+Here's a collection of random notes and thoughts... I'll come back and clean this up later... I hope. I wrote these down to focus my initial plan, but I'm not one to stick to a plan that isn't working, so there will be lots of changes as I realize where I was being dumb.
 
 Quarter:
 * 8-bit float with bias and offset
@@ -127,7 +114,7 @@ Optimizer:
 * Use a loss function to compute the accuracy of a prediction
 * Manage state tensors on layer used for optimizing
 
-Layer:
+Neuron:
 * Weights
 * Bias (optional)
 * Optimizer state tensors
@@ -136,11 +123,11 @@ Layer:
 * takes in Loss function
 * Specific input and output shape (shape = tensor dimensions)
 
-Layer Block:
+Neuron Block:
 * Specialized layer
 * Represent common blocks of layers used to build different popular models
 * While the size of these blocks may vary, the pattern is consistent
-* Layer definitions
+* Neuron definitions
 * Abstracts the intricacies of the layer details
 
 Model:
@@ -151,7 +138,37 @@ Model:
 * Trained using a Data Source, which configures the input shape
 * Produces one or more outputs
 
-Layer Architecture:
+Neuron Architecture:
 * Factory to add many layers/layer blocks to a model and configure it
 * Represents common combinations of layer blocks to solve common problems
 * Simple configuration to cover core decision points -- like input and output shape, number of neurons or layers, etc.
+
+# Why this project is important to me -- an opinion piece
+
+There's a difference between data science and machine learning. Data Science is a very technical discipline that requires a deep understanding of math. Machine learning is the fruits of their labor and a powerful tool that everybody can use. I want to make machine learning more accessible.
+
+There is a lot of gate keeping in machine learning.
+
+Data scientists study for years, working hard to obtain the knowledge necessary to create new algorithms -- machine learning models. It requires huge amounts of effort to gain that understanding, and even more effort to apply it in real life situations.
+
+The idea that the average developer could use a machine learning algorithm is laughable from the perspective of somebody who has a deep understanding of the math and how to build and configure models. It shouldn't be. The reason it is so hard is that the state of the technology is not accessible.
+
+In addition, a lot of corporate data science has a low tolerance for risk and is both hard and rather boring -- there's a couple of popular techniques around regression and classification that require a tremendous amount of knowledge to apply, and a lot of research into the data to even attempt, but the end results are something that follows a fairly predictable pattern.
+
+This is rather unfortunate, since there are many situations where machine learning could integrate into workflow tools and products.
+
+Data science and machine learning are expensive. The high barrier to entry means there are few qualified people that can use machine learning algorithms, let alone build new ones, and they are paid well. The hardware and software that are part of the ecosystem is specialized and comes with a hefty price tag. In my opinion, if more people and companies could use machine learning, the price of machine learning would go down. This wouldn't change that data scientists are still valuable, but they won't spend their time on trivial tasks.
+
+Most of the fun machine learning models that do cool things that everybody would like to do are expensive to build and run and there's a risk they won't be useful, or are something you can pay to use from a big company like OpenAI as long as you are okay with the licensing agreement.
+
+Machine learning frameworks are built by data scientists for data scientists and don't make any effort to be accessible to people without years of formal education. You could argue that there are people trying to make it more accessible, but not by making the frameworks easier to use for ordinary developers but by trying to teach people the core of data science. Not everybody wants to be a data scientist, they just want to have cool toys.
+
+What's more, terminology in data science is highly technical and most people aren't familiar with it. This is intimidating and keeps people away.
+
+Even worse, data science continues to advance at a dizzying speed, and the existing frameworks are littered with the dead and discarded parts that nobody should ever need again. Sifting through huge amounts of code for the bits that are actually still relevant is challenging, and once you do, those bits are probably no longer relevant because somebody came up with a new, better approach.
+
+Data science is 95% math and 5% mediocre code. Most of the software engineers that I've met barely know algebra, let alone how to do linear regression. Most of the data scientists I've met could only technicality be labeled as software engineers--and they'd probably prefer you not call them that.
+
+I don't think machine learning should only be for data scientists. It should be for everybody, and I think everybody wins. Data scientist continue to build new, cutting edge technologies and more people and more situations get to use it. This raises the visibility and value of these models and helps software developers succeed.
+
+What I'm building here is a first baby step and is a long way from accessibility. I do try to document what I know as I go, which addresses part of the issue, but as I said earlier, most people just want to use machine learning as a tool, they don't want to know the math. This is akin to driving a car rather than building one. I'd like to get to the point where this is usable for everybody without the data science background. This may be an unobtainable goal.

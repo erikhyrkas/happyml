@@ -1164,7 +1164,7 @@ private:
 // Converts a 3d tensor into a row vector
 class TensorFlattenToRowView : public BaseTensorUnaryOperatorView {
 public:
-    TensorFlattenToRowView(const std::shared_ptr<BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
+    explicit TensorFlattenToRowView(const std::shared_ptr<BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
         this->columns = tensor->size();
     }
 
@@ -1195,7 +1195,7 @@ private:
 // Converts a 3d tensor into a column vector
 class TensorFlattenToColumnView : public BaseTensorUnaryOperatorView {
 public:
-    TensorFlattenToColumnView(const std::shared_ptr<BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
+    explicit TensorFlattenToColumnView(const std::shared_ptr<BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
         this->rows = tensor->size();
     }
 
@@ -1222,6 +1222,32 @@ public:
 private:
     size_t rows;
 };
+
+class TensorTransposeView : public BaseTensorUnaryOperatorView {
+public:
+    explicit TensorTransposeView(const std::shared_ptr<BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
+    }
+
+    size_t row_count() override {
+        return child->column_count();
+    }
+
+    size_t column_count() override {
+        return child->row_count();
+    }
+
+    size_t channel_count() override {
+        return child->channel_count();
+    }
+
+    float get_val(size_t row, size_t column, size_t channel) override {
+        // making it obvious that we intend to swap column and row. Compiler will optimize this out.
+        const size_t swapped_row = column;
+        const size_t swapped_col = row;
+        return child->get_val(swapped_row, swapped_col, channel);
+    }
+};
+
 // In the current implementation, a tensor is a vector of matrices, and our math is frequently
 // interested in each matrix rather than treating the tensor as a whole, so this implementation
 // returns the diagonal of each matrix in the tensor.
