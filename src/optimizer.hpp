@@ -7,7 +7,7 @@
 
 #include "loss.hpp"
 #include "data.hpp"
-#include "neural_network.hpp"
+#include "neural_network_function.hpp"
 
 // Optimizers are the strategy applied to find the optimal results
 // The optimizer takes in:

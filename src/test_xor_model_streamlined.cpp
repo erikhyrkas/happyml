@@ -3,20 +3,24 @@
 //
 
 #include <memory>
-#include "data_source.hpp"
-#include "neural_network.hpp"
-#include "sgd.hpp"
+#include "model.hpp"
 
 using namespace std;
 using namespace microml;
+using namespace micromldsl;
 
 int main() {
     try {
         auto xorDataSource = make_shared<TestXorDataSource>();
-        auto loss = make_shared<MeanSquaredErrorLossFunction>();
-        auto neuralNetwork = make_shared<NeuralNetworkForTraining>(loss);
-        auto optimizer = make_shared<SGDOptimizer>(0.1);
+
+        auto builder = createSGDModel()
+                ->setLearningRate(0.1)
+                ->setLossFunction(micromldsl::mse);
+
+        auto neuralNetwork = builder->build();
+
         auto activation = make_shared<TanhActivationFunction>();
+        auto optimizer = make_shared<SGDOptimizer>(0.1);
 
         bool use_32_bit = false;
 
@@ -47,17 +51,17 @@ int main() {
 //        pairs.push_back(std::make_shared<TrainingPair>(std::vector<float>{1.f, 0.f}, std::vector<float>{1.f}));
 //        pairs.push_back(std::make_shared<TrainingPair>(std::vector<float>{1.f, 1.f}, std::vector<float>{0.f}));
 
-        auto result1 = neuralNetwork->predict(vector<shared_ptr<BaseTensor>>{ make_shared<FullTensor>(vector<float>{0.0f, 0.0f})});
-        cout << "predict: 0 xor 0 = " << fixed << setprecision(4) << result1[0]->get_val(0) << " correct value is "<< 0 << endl;
+        auto result1 = neuralNetwork->predict(vector<shared_ptr<BaseTensor>>{make_shared<FullTensor>(vector<float>{0.0f, 0.0f})});
+        cout << "predict: 0 xor 0 = " << fixed << setprecision(4) << result1[0]->get_val(0) << " correct value is " << 0 << endl;
 
-        auto result2 = neuralNetwork->predict(vector<shared_ptr<BaseTensor>>{ make_shared<FullTensor>(vector<float>{0.0f, 1.0f})});
-        cout << "predict: 0 xor 1 = " << result2[0]->get_val(0) << " correct value is "<< 1 << endl;
+        auto result2 = neuralNetwork->predict(vector<shared_ptr<BaseTensor>>{make_shared<FullTensor>(vector<float>{0.0f, 1.0f})});
+        cout << "predict: 0 xor 1 = " << result2[0]->get_val(0) << " correct value is " << 1 << endl;
 
-        auto result3 = neuralNetwork->predict(vector<shared_ptr<BaseTensor>>{ make_shared<FullTensor>(vector<float>{1.0f, 0.0f})});
-        cout << "predict: 1 xor 0 = " << result3[0]->get_val(0) << " correct value is "<< 1 << endl;
+        auto result3 = neuralNetwork->predict(vector<shared_ptr<BaseTensor>>{make_shared<FullTensor>(vector<float>{1.0f, 0.0f})});
+        cout << "predict: 1 xor 0 = " << result3[0]->get_val(0) << " correct value is " << 1 << endl;
 
-        auto result4 = neuralNetwork->predict(vector<shared_ptr<BaseTensor>>{ make_shared<FullTensor>(vector<float>{1.0f, 1.0f})});
-        cout << "predict: 1 xor 1 = " << result4[0]->get_val(0) << " correct value is "<< 0 << endl;
+        auto result4 = neuralNetwork->predict(vector<shared_ptr<BaseTensor>>{make_shared<FullTensor>(vector<float>{1.0f, 1.0f})});
+        cout << "predict: 1 xor 1 = " << result4[0]->get_val(0) << " correct value is " << 0 << endl;
 
     } catch (const std::exception &e) {
         std::cout << e.what() << std::endl;

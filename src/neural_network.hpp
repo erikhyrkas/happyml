@@ -12,6 +12,8 @@
 #include "loss.hpp"
 #include "unit_test.hpp"
 #include "activation.hpp"
+#include "neural_network_function.hpp"
+#include "optimizer.hpp"
 
 using namespace std;
 
@@ -48,37 +50,7 @@ namespace microml {
         std::chrono::time_point<std::chrono::high_resolution_clock> start_time;
     };
 
-    class NeuralNetworkFunction {
-    public:
-        virtual shared_ptr<BaseTensor> forward(const vector<shared_ptr<BaseTensor>> &input) = 0;
 
-        virtual shared_ptr<BaseTensor> backward(const shared_ptr<BaseTensor> &output_error) = 0;
-    };
-
-    class NeuralNetworkActivationFunction : public NeuralNetworkFunction {
-    public:
-        explicit NeuralNetworkActivationFunction(const shared_ptr<ActivationFunction> &activationFunction) {
-            this->activationFunction = activationFunction;
-        }
-        shared_ptr<BaseTensor> forward(const vector<shared_ptr<BaseTensor>> &input) override {
-            // todo: throw error on wrong size input?
-            last_input = input[0];
-            return activationFunction->activate(last_input);
-        }
-
-        shared_ptr<BaseTensor> backward(const shared_ptr<BaseTensor> &output_error) override {
-            auto activation_derivative = activationFunction->derivative(last_input);
-            // this really threw me for a loop. I thought that this was supposed to be dot product, rather than
-            // an element-wise-multiplication.
-            auto base_output_error = std::make_shared<TensorMultiplyTensorView>(activation_derivative, output_error);
-            last_input = nullptr;
-            return base_output_error;
-        }
-
-    private:
-        shared_ptr<ActivationFunction> activationFunction;
-        shared_ptr<BaseTensor> last_input;
-    };
 
     // A node is a vertex in a graph
     class NeuralNetworkNode : public std::enable_shared_from_this<NeuralNetworkNode> {
@@ -270,9 +242,29 @@ namespace microml {
 
             return results;
         }
+        void addHead(const shared_ptr<NeuralNetworkNode> &head) {
+            head_nodes.push_back(head);
+        }
+        void addOutput(const shared_ptr<NeuralNetworkOutputNode> &output) {
+            output_nodes.push_back(output);
+        }
+    protected:
+        vector<shared_ptr<NeuralNetworkNode>> head_nodes;
+        vector<shared_ptr<NeuralNetworkOutputNode>> output_nodes;
+    };
+
+    class NeuralNetworkForTraining : public NeuralNetwork {
+    public:
+        NeuralNetworkForTraining(const shared_ptr<LossFunction> &lossFunction) {
+            this->lossFunction = lossFunction;
+        }
+
+        void setLossFunction(const shared_ptr<LossFunction> &lossFunction) {
+            this->lossFunction = lossFunction;
+        }
 
         // train/fit
-        void train(const shared_ptr<BaseMicromlDataSource> &source, size_t epochs, const shared_ptr<LossFunction> &lossFunction) {
+        void train(const shared_ptr<BaseMicromlDataSource> &source, size_t epochs) {
             ElapsedTimer total_timer;
             cout << endl;
             for (size_t epoch = 0; epoch < epochs; epoch++) {
@@ -291,7 +283,7 @@ namespace microml {
                         auto next_result_tensor = next_result[i];
                         auto loss = lossFunction->computeTotalForDisplay(next_expected[i], next_result_tensor);
                         auto elapsed_time = timer.getMilliseconds();
-                        printf("%d ms Epoch: %d/%d Batch: %d/%d Loss: %f\r", elapsed_time, (epoch+1), epochs, current_record, total_records, loss);
+                        printf("%zd ms Epoch: %zd/%zd Batch: %zd/%zd Loss: %f\r", elapsed_time, (epoch+1), epochs, current_record, total_records, loss);
 //                        cout << '\r' << elapsed_time << " ms Epoch: " << (epoch+1) << "/" << epochs << " " << current_record << "/" << total_records << " Loss: "
 //                             << loss << '\r';
                         auto loss_derivative = lossFunction->partialDerivative(next_expected[i], next_result_tensor);
@@ -327,16 +319,9 @@ namespace microml {
 //            output_nodes.push_back(output);
 //            return previous->add(networkNode);
 //        }
-
-        void addHead(const shared_ptr<NeuralNetworkNode> &head) {
-            head_nodes.push_back(head);
-        }
-        void addOutput(const shared_ptr<NeuralNetworkOutputNode> &output) {
-            output_nodes.push_back(output);
-        }
     private:
-        vector<shared_ptr<NeuralNetworkNode>> head_nodes;
-        vector<shared_ptr<NeuralNetworkOutputNode>> output_nodes;
+        shared_ptr<Optimizer> optimizer;
+        shared_ptr<LossFunction> lossFunction;
     };
 
 }
