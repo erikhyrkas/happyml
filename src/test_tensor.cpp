@@ -12,6 +12,9 @@
 // Super slow on my machine, but needed to test everything. Probably not useful for day-to-day unit tests.
 //#define FULL_TENSOR_TESTS
 
+using namespace microml;
+using namespace std;
+
 void product_test() {
     auto matrix_func = [](size_t row, size_t col, size_t channel) { return (float) (row + 1); };
     auto matrix = std::make_shared<TensorFromFunction>(matrix_func, 3, 3, 1);

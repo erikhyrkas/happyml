@@ -7,6 +7,10 @@
 
 #include "tensor.hpp"
 
+using namespace std;
+
+namespace microml {
+
 // Training data has at least two parts:
 // 1. The input that you are giving the model
 // 2. The expected predictions you are expecting the model to make
@@ -15,24 +19,42 @@
 // of models that make multiple predictions.
 class TrainingPair {
 public:
-    TrainingPair(std::shared_ptr<BaseTensor> given, std::vector<std::shared_ptr<BaseTensor>> &expected) {
-        this->given = given;
-        for(std::shared_ptr<BaseTensor> tensor : expected) {
+    TrainingPair(vector<shared_ptr<BaseTensor>> &given, vector<shared_ptr<BaseTensor>> &expected) {
+        for(const shared_ptr<BaseTensor>& tensor : given) {
+            this->given.push_back(tensor);
+        }
+        for(const shared_ptr<BaseTensor>& tensor : expected) {
             this->expected.push_back(tensor);
         }
     }
-    std::shared_ptr<BaseTensor> getGiven() {
+    TrainingPair(const vector<shared_ptr<BaseTensor>>& given, const vector<shared_ptr<BaseTensor>>& expected) {
+        for(const shared_ptr<BaseTensor>& tensor : given) {
+            this->given.push_back(tensor);
+        }
+        for(const shared_ptr<BaseTensor>& tensor : expected) {
+            this->expected.push_back(tensor);
+        }
+    }
+    TrainingPair(const vector<float> &given, const vector<float> expected) {
+        this->given.push_back(make_shared<FullTensor>(given));
+        this->expected.push_back(make_shared<FullTensor>(expected));
+    }
+    
+    vector<shared_ptr<BaseTensor>> getGiven() {
         return given;
     }
-    std::shared_ptr<BaseTensor> getExpected(size_t offset) {
-        return expected.at(offset);
+    size_t getGivenSize() {
+        return given.size();
+    }
+    vector<shared_ptr<BaseTensor>> getExpected() {
+        return expected;
     }
     size_t getExpectedSize() {
         return expected.size();
     }
 private:
-    std::shared_ptr<BaseTensor> given;
-    std::vector<std::shared_ptr<BaseTensor>> expected;
+    vector<shared_ptr<BaseTensor>> given;
+    vector<shared_ptr<BaseTensor>> expected;
 };
-
+}
 #endif //MICROML_DATA_HPP

@@ -8,14 +8,17 @@
 #include <iostream>
 #include <utility>
 
+namespace microml {
 
-class MicromlDataset {
-public:
-    explicit MicromlDataset(std::string filename) {
-        this->filename = std::move(filename);
-    }
+    class MicromlDataset {
+    public:
+        explicit MicromlDataset(std::string filename) {
+            this->filename = std::move(filename);
+        }
 
-private:
-    std::string filename;
-};
+    private:
+        std::string filename;
+    };
+
+}
 #endif //MICROML_DATASET_HPP

@@ -5,6 +5,9 @@
 #include "unit_test.hpp"
 #include "data_source.hpp"
 
+using namespace microml;
+using namespace std;
+
 void test_addition_source() {
     TestAdditionGeneratedDataSource testAdditionGeneratedDataSource(10);
     std::shared_ptr<TrainingPair> next_record;
@@ -12,10 +15,14 @@ void test_addition_source() {
         next_record = testAdditionGeneratedDataSource.next_record();
         if(next_record) {
             std::cout << "GIVEN: " << std::endl;
-            next_record->getGiven()->print();
+            for( const auto& given : next_record->getGiven()) {
+                given->print();
+            }
             std::cout << "EXPECTED: " << std::endl;
             for(size_t i = 0; i < next_record->getExpectedSize(); i++) {
-                next_record->getExpected(i)->print();
+                for( const auto& expected : next_record->getExpected() ) {
+                    expected->print();
+                }
             }
 
         }

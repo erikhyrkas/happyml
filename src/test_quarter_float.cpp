@@ -3,6 +3,9 @@
 #include "quarter_float.hpp"
 #include "unit_test.hpp"
 
+using namespace microml;
+using namespace std;
+
 void print_conversion(int bias, float i, bool brief) {
     const quarter quarter_default = float_to_quarter(i, bias, 0);
     const float float_default = quarter_to_float(quarter_default, bias, 0);
