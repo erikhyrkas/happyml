@@ -17,35 +17,14 @@ int main() {
                 ->setLearningRate(0.1)
                 ->setLossFunction(micromldsl::mse);
 
+        builder->addInput(2, 3, NodeType::full, ActivationType::tanh)
+                ->addOutput(1, ActivationType::tanh);
+
         auto neuralNetwork = builder->build();
-
-        auto activation = make_shared<TanhActivationFunction>();
-        auto optimizer = make_shared<SGDOptimizer>(0.1);
-
-        bool use_32_bit = false;
-
-        // todo: this is super awkward. Need a better builder.
-        auto fc1 = make_shared<NeuralNetworkNode>(optimizer->createFullyConnectedNeurons(2, 3, use_32_bit));
-        neuralNetwork->addHead(fc1);
-
-        auto bias1 = make_shared<NeuralNetworkNode>(optimizer->createBias(3, 3, use_32_bit));
-        fc1->add(bias1);
-
-        auto act1 = make_shared<NeuralNetworkNode>(make_shared<NeuralNetworkActivationFunction>(activation));
-        bias1->add(act1);
-
-        auto fc2 = make_shared<NeuralNetworkNode>(optimizer->createFullyConnectedNeurons(3, 1, true));
-        act1->add(fc2);
-
-        auto bias2 = make_shared<NeuralNetworkNode>(optimizer->createBias(1, 1, true));
-        fc2->add(bias2);
-
-        auto act2 = make_shared<NeuralNetworkOutputNode>(make_shared<NeuralNetworkActivationFunction>(activation));
-        bias2->add(act2);
-        neuralNetwork->addOutput(act2);
 
         neuralNetwork->train(xorDataSource, 8000);
 
+        // Dataset:
 //        pairs.push_back(std::make_shared<TrainingPair>(std::vector<float>{0.f, 0.f}, std::vector<float>{0.f}));
 //        pairs.push_back(std::make_shared<TrainingPair>(std::vector<float>{0.f, 1.f}, std::vector<float>{1.f}));
 //        pairs.push_back(std::make_shared<TrainingPair>(std::vector<float>{1.f, 0.f}, std::vector<float>{1.f}));

@@ -255,14 +255,18 @@ namespace microml {
 
     class NeuralNetworkForTraining : public NeuralNetwork {
     public:
-        NeuralNetworkForTraining(const shared_ptr<LossFunction> &lossFunction) {
+        NeuralNetworkForTraining(const shared_ptr<LossFunction> &lossFunction, const shared_ptr<Optimizer> &optimizer) {
             this->lossFunction = lossFunction;
+            this->optimizer = optimizer;
         }
 
         void setLossFunction(const shared_ptr<LossFunction> &lossFunction) {
             this->lossFunction = lossFunction;
         }
 
+        shared_ptr<Optimizer> getOptimizer() {
+            return optimizer;
+        }
         // train/fit
         void train(const shared_ptr<BaseMicromlDataSource> &source, size_t epochs) {
             ElapsedTimer total_timer;
