@@ -3,7 +3,7 @@
 //
 #include <iostream>
 #include "unit_test.hpp"
-#include "data_source.hpp"
+#include "dataset.hpp"
 
 using namespace microml;
 using namespace std;

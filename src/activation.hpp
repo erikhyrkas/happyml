@@ -9,6 +9,21 @@
 #include "quarter_float.hpp"
 #include "tensor.hpp"
 
+// To me, it feels like activation functions are the heart and soul of modern ml.
+// Unfortunately, they can be a little hard to understand without some math background.
+// I'll do my best to give you the very, very basics:
+// * If you haven't had calculus, a derivative of an equation describes the rate the original equation changed its output.
+//   Here's a little tutorial that I hope is useful: https://www.mathsisfun.com/calculus/derivatives-introduction.html
+//   It might help you visualize to know that: The derivative of X squared is two times X.
+//   Also written as: d/dx X^2 = 2X
+// * We use the activation function on the way "forward" while we are predicting/inferring.
+// * We use the derivative of the activation function on the way "backward" when we are training to adjust our weights.
+// * Weights and bias are the numbers we are adjusting so the model learns. Activation functions are concerned with
+//   only the weights.
+// * I found this article very helpful when trying to remember the math of each:
+//   https://towardsdatascience.com/activation-functions-neural-networks-1cbd9f8d91d6
+// * You may also find this useful:
+//   https://en.wikipedia.org/wiki/Activation_function
 namespace microml {
 
     class ActivationFunction {
@@ -18,6 +33,8 @@ namespace microml {
         virtual std::shared_ptr<BaseTensor> derivative(const std::shared_ptr<BaseTensor> &input) = 0;
     };
 
+    // also known as the "identity" activation function.
+    // do nothing. useful for basic linear regression where we don't have an activation function.
     class LinearActivationFunction : public ActivationFunction {
         std::shared_ptr<BaseTensor> activate(const std::shared_ptr<BaseTensor> &input) override {
             // copy input to output without changing it
@@ -31,6 +48,7 @@ namespace microml {
 
     };
 
+    // small negative number to infinity
     class LeakyReLUActivationFunction : public ActivationFunction {
         std::shared_ptr<BaseTensor> activate(const std::shared_ptr<BaseTensor> &input) override {
             auto transformFunction = [](float original) {
@@ -49,6 +67,7 @@ namespace microml {
         }
     };
 
+    // 0 to infinity
     class ReLUActivationFunction : public ActivationFunction {
         std::shared_ptr<BaseTensor> activate(const std::shared_ptr<BaseTensor> &input) override {
             auto transformFunction = [](float original) {
@@ -65,6 +84,8 @@ namespace microml {
         }
     };
 
+    // result tensor elements sum to 1, representing the percentage of importance of each element in original tensor
+    // usually represents a probability between 0 and 1 of each element in a classifications of multiple possibilities
     class SoftmaxActivationFunction : public ActivationFunction {
         std::shared_ptr<BaseTensor> activate(const std::shared_ptr<BaseTensor> &input) override {
             float largest_value = input->max();
@@ -102,6 +123,7 @@ namespace microml {
 // There may be faster means of approximating this. See: https://stackoverflow.com/questions/10732027/fast-sigmoid-algorithm
 // If I go this route, I'd probably make a whole new class and let the caller decide on whether to approximate or not
 // maybe "class SigmoidApproximationActivationFunction"
+// 0 to 1
     class SigmoidActivationFunction : public ActivationFunction {
         std::shared_ptr<BaseTensor> activate(const std::shared_ptr<BaseTensor> &input) override {
             // Is this needed? I don't see why.
@@ -125,6 +147,7 @@ namespace microml {
         }
     };
 
+    // -1 to 1
     class TanhActivationFunction : public ActivationFunction {
         std::shared_ptr<BaseTensor> activate(const std::shared_ptr<BaseTensor> &input) override {
             // Is this needed? I don't see why.

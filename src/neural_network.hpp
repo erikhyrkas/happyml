@@ -8,7 +8,7 @@
 #include <vector>
 #include <set>
 #include "tensor.hpp"
-#include "data_source.hpp"
+#include "dataset.hpp"
 #include "loss.hpp"
 #include "unit_test.hpp"
 #include "activation.hpp"
@@ -225,15 +225,23 @@ namespace microml {
     // we wouldn't need to save if we are never going to use it.
     class NeuralNetwork {
     public:
+
+        float predict_scalar(const shared_ptr<BaseTensor> &given_inputs) {
+            return scalar(predict(given_inputs)[0]);
+        }
+
+        vector<shared_ptr<BaseTensor>> predict(const shared_ptr<BaseTensor> &given_inputs) {
+            return predict(vector<shared_ptr<BaseTensor>>{given_inputs});
+        }
         // predict/infer
         // I chose the word "predict" because it is more familiar than the word "infer"
         // and the meaning is more or less the same.
-        vector<shared_ptr<BaseTensor>> predict(vector<shared_ptr<BaseTensor>> given) {
-            if (given.size() != head_nodes.size()) {
+        vector<shared_ptr<BaseTensor>> predict(const vector<shared_ptr<BaseTensor>> &given_inputs) {
+            if (given_inputs.size() != head_nodes.size()) {
                 throw exception("infer requires as many input tensors as there are input nodes");
             }
             for (size_t i = 0; i < head_nodes.size(); i++) {
-                head_nodes[i]->forwardFromInput(given[i]);
+                head_nodes[i]->forwardFromInput(given_inputs[i]);
             }
             vector<shared_ptr<BaseTensor>> results;
             for (const auto& output: output_nodes) {
@@ -260,15 +268,15 @@ namespace microml {
             this->optimizer = optimizer;
         }
 
-        void setLossFunction(const shared_ptr<LossFunction> &lossFunction) {
-            this->lossFunction = lossFunction;
+        void setLossFunction(const shared_ptr<LossFunction> &loss_function) {
+            this->lossFunction = loss_function;
         }
 
         shared_ptr<Optimizer> getOptimizer() {
             return optimizer;
         }
         // train/fit
-        void train(const shared_ptr<BaseMicromlDataSource> &source, size_t epochs) {
+        void train(const shared_ptr<TrainingDataSet> &source, size_t epochs) {
             ElapsedTimer total_timer;
             cout << endl;
             for (size_t epoch = 0; epoch < epochs; epoch++) {
@@ -280,9 +288,18 @@ namespace microml {
                 auto next_record = source->next_record();
                 while (next_record != nullptr) {
                     current_record++;
-                    auto next_result = predict(next_record->getGiven());
+                    auto next_given = next_record->getGiven();
                     auto next_expected = next_record->getExpected();
 //                    cout << "current record: " << current_record << endl;
+//                    cout << "Given: " << endl;
+//                    for(auto ng :next_given) {
+//                        ng->print();
+//                    }
+//                    cout << "Expected: " << endl;
+//                    for(auto ne :next_expected) {
+//                        ne->print();
+//                    }
+                    auto next_result = predict(next_given);
                     for (size_t i = 0; i < output_nodes.size(); i++) {
                         auto next_result_tensor = next_result[i];
                         auto loss = lossFunction->computeTotalForDisplay(next_expected[i], next_result_tensor);

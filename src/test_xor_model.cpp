@@ -3,61 +3,60 @@
 //
 
 #include <memory>
-#include "data_source.hpp"
-#include "neural_network.hpp"
-#include "sgd.hpp"
+#include "model.hpp"
+#include "file_reader.hpp"
 
 using namespace std;
 using namespace microml;
+using namespace micromldsl;
 
 int main() {
     try {
-        auto xorDataSource = make_shared<TestXorDataSource>();
-        auto loss = make_shared<MeanSquaredErrorLossFunction>();
-        auto neuralNetwork = make_shared<NeuralNetworkForTraining>(loss);
-        auto optimizer = make_shared<SGDOptimizer>(0.1);
-        auto activation = make_shared<TanhActivationFunction>();
+        auto lineReader = make_shared<TextLineFileReader>("..\\data\\mnist_test.csv");
+        int i = 0;
+        while(lineReader->hasNext()) {
+            cout << "Record: " << i << endl;
+            string record = lineReader->nextLine();
+            cout << record << endl;
+            cout << "-----" << endl;
+            i++;
+            if( i > 2) {
+                break;
+            }
+        }
 
-        bool use_32_bit = false;
+        auto textFileReader = make_shared<DelimitedTextFileReader>("..\\data\\mnist_test.csv", ',');
+        i = 0;
+        while(textFileReader->hasNext()) {
+            cout << "Record: " << i << endl;
+            vector<string> record = textFileReader->nextRecord();
+            for(auto field : record) {
+                cout << field << '|';
+            }
+            cout << endl << "-----" << endl;
+            i++;
+            if( i > 2) {
+                break;
+            }
+        }
+        auto xorDataSource = make_shared<TestTrainingDataSet>();
+        // given input, expected result
+        xorDataSource->addTrainingData(column_vector({0.f, 0.f}), 0.f);
+        xorDataSource->addTrainingData(column_vector({0.f, 1.f}), 1.f);
+        xorDataSource->addTrainingData(column_vector({1.f, 0.f}), 1.f);
+        xorDataSource->addTrainingData(column_vector({1.f, 1.f}), 0.f);
 
-        // todo: this is super awkward. Need a better builder.
-        auto fc1 = make_shared<NeuralNetworkNode>(optimizer->createFullyConnectedNeurons(2, 3, use_32_bit));
-        neuralNetwork->addHead(fc1);
+        auto neuralNetwork = neuralNetworkBuilder()
+                ->addInput(xorDataSource->getGivenShape(), 3, NodeType::full, ActivationType::tanh)
+                ->addOutput(xorDataSource->getExpectedShape(), ActivationType::tanh)
+                ->build();
+        neuralNetwork->train(xorDataSource, 1);
 
-        auto bias1 = make_shared<NeuralNetworkNode>(optimizer->createBias(3, 3, use_32_bit));
-        fc1->add(bias1);
-
-        auto act1 = make_shared<NeuralNetworkNode>(make_shared<NeuralNetworkActivationFunction>(activation));
-        bias1->add(act1);
-
-        auto fc2 = make_shared<NeuralNetworkNode>(optimizer->createFullyConnectedNeurons(3, 1, true));
-        act1->add(fc2);
-
-        auto bias2 = make_shared<NeuralNetworkNode>(optimizer->createBias(1, 1, true));
-        fc2->add(bias2);
-
-        auto act2 = make_shared<NeuralNetworkOutputNode>(make_shared<NeuralNetworkActivationFunction>(activation));
-        bias2->add(act2);
-        neuralNetwork->addOutput(act2);
-
-        neuralNetwork->train(xorDataSource, 8000);
-
-//        pairs.push_back(std::make_shared<TrainingPair>(std::vector<float>{0.f, 0.f}, std::vector<float>{0.f}));
-//        pairs.push_back(std::make_shared<TrainingPair>(std::vector<float>{0.f, 1.f}, std::vector<float>{1.f}));
-//        pairs.push_back(std::make_shared<TrainingPair>(std::vector<float>{1.f, 0.f}, std::vector<float>{1.f}));
-//        pairs.push_back(std::make_shared<TrainingPair>(std::vector<float>{1.f, 1.f}, std::vector<float>{0.f}));
-
-        auto result1 = neuralNetwork->predict(vector<shared_ptr<BaseTensor>>{ make_shared<FullTensor>(vector<float>{0.0f, 0.0f})});
-        cout << "predict: 0 xor 0 = " << fixed << setprecision(4) << result1[0]->get_val(0) << " correct value is "<< 0 << endl;
-
-        auto result2 = neuralNetwork->predict(vector<shared_ptr<BaseTensor>>{ make_shared<FullTensor>(vector<float>{0.0f, 1.0f})});
-        cout << "predict: 0 xor 1 = " << result2[0]->get_val(0) << " correct value is "<< 1 << endl;
-
-        auto result3 = neuralNetwork->predict(vector<shared_ptr<BaseTensor>>{ make_shared<FullTensor>(vector<float>{1.0f, 0.0f})});
-        cout << "predict: 1 xor 0 = " << result3[0]->get_val(0) << " correct value is "<< 1 << endl;
-
-        auto result4 = neuralNetwork->predict(vector<shared_ptr<BaseTensor>>{ make_shared<FullTensor>(vector<float>{1.0f, 1.0f})});
-        cout << "predict: 1 xor 1 = " << result4[0]->get_val(0) << " correct value is "<< 0 << endl;
+        cout << fixed << setprecision(2);
+        cout << "0 xor 0 = 0 Prediction: " << neuralNetwork->predict_scalar(column_vector({0.f, 0.f})) << endl;
+        cout << "0 xor 1 = 1 Prediction: " << neuralNetwork->predict_scalar(column_vector({0.f, 1.f})) << endl;
+        cout << "1 xor 0 = 1 Prediction: " << neuralNetwork->predict_scalar(column_vector({1.f, 0.f})) << endl;
+        cout << "1 xor 1 = 1 Prediction: " << neuralNetwork->predict_scalar(column_vector({1.f, 1.f})) << endl;
 
     } catch (const std::exception &e) {
         std::cout << e.what() << std::endl;

@@ -17,44 +17,55 @@ namespace microml {
 //
 // Many models only make a single prediction, but there are plenty
 // of models that make multiple predictions.
-class TrainingPair {
-public:
-    TrainingPair(vector<shared_ptr<BaseTensor>> &given, vector<shared_ptr<BaseTensor>> &expected) {
-        for(const shared_ptr<BaseTensor>& tensor : given) {
-            this->given.push_back(tensor);
+    class TrainingPair {
+    public:
+        TrainingPair(vector<shared_ptr<BaseTensor>> &given, vector<shared_ptr<BaseTensor>> &expected) {
+            for (const shared_ptr<BaseTensor> &tensor: given) {
+                this->given.push_back(tensor);
+            }
+            for (const shared_ptr<BaseTensor> &tensor: expected) {
+                this->expected.push_back(tensor);
+            }
         }
-        for(const shared_ptr<BaseTensor>& tensor : expected) {
-            this->expected.push_back(tensor);
+
+        TrainingPair(const vector<shared_ptr<BaseTensor>> &given, const vector<shared_ptr<BaseTensor>> &expected) {
+            for (const shared_ptr<BaseTensor> &tensor: given) {
+                this->given.push_back(tensor);
+            }
+            for (const shared_ptr<BaseTensor> &tensor: expected) {
+                this->expected.push_back(tensor);
+            }
         }
-    }
-    TrainingPair(const vector<shared_ptr<BaseTensor>>& given, const vector<shared_ptr<BaseTensor>>& expected) {
-        for(const shared_ptr<BaseTensor>& tensor : given) {
-            this->given.push_back(tensor);
+
+        TrainingPair(const shared_ptr<BaseTensor> &given, const shared_ptr<BaseTensor> &expected) {
+            this->given.push_back(given);
+            this->expected.push_back(expected);
         }
-        for(const shared_ptr<BaseTensor>& tensor : expected) {
-            this->expected.push_back(tensor);
+
+        TrainingPair(const vector<float> &given, const vector<float> &expected) {
+            this->given.push_back(make_shared<FullTensor>(given));
+            this->expected.push_back(make_shared<FullTensor>(expected));
         }
-    }
-    TrainingPair(const vector<float> &given, const vector<float> expected) {
-        this->given.push_back(make_shared<FullTensor>(given));
-        this->expected.push_back(make_shared<FullTensor>(expected));
-    }
-    
-    vector<shared_ptr<BaseTensor>> getGiven() {
-        return given;
-    }
-    size_t getGivenSize() {
-        return given.size();
-    }
-    vector<shared_ptr<BaseTensor>> getExpected() {
-        return expected;
-    }
-    size_t getExpectedSize() {
-        return expected.size();
-    }
-private:
-    vector<shared_ptr<BaseTensor>> given;
-    vector<shared_ptr<BaseTensor>> expected;
-};
+
+        vector<shared_ptr<BaseTensor>> getGiven() {
+            return given;
+        }
+
+        size_t getGivenSize() {
+            return given.size();
+        }
+
+        vector<shared_ptr<BaseTensor>> getExpected() {
+            return expected;
+        }
+
+        size_t getExpectedSize() {
+            return expected.size();
+        }
+
+    private:
+        vector<shared_ptr<BaseTensor>> given;
+        vector<shared_ptr<BaseTensor>> expected;
+    };
 }
 #endif //MICROML_DATA_HPP

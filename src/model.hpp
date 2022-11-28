@@ -6,9 +6,9 @@
 #define MICROML_MODEL_HPP
 
 #include <iostream>
-#include "data_source.hpp"
+#include "dataset.hpp"
 #include "optimizer.hpp"
-#include "sgd.hpp"
+#include "sgd_optimizer.hpp"
 
 using namespace microml;
 
@@ -71,7 +71,7 @@ namespace micromldsl {
 
             auto neuralNetwork = make_shared<NeuralNetworkForTraining>(lossFunction, optimizer);
             for (const auto &head: heads) {
-                neuralNetwork->addHead(head->build(neuralNetwork));
+                neuralNetwork->addHead(head->build_node(neuralNetwork));
             }
 
             return neuralNetwork;
@@ -136,7 +136,11 @@ namespace micromldsl {
                 created = false;
             }
 
-            shared_ptr<NeuralNetworkNode> build(const shared_ptr<NeuralNetworkForTraining> &nn) {
+            shared_ptr<NeuralNetworkForTraining> build() {
+                return parent.lock()->build();
+            }
+
+            shared_ptr<NeuralNetworkNode> build_node(const shared_ptr<NeuralNetworkForTraining> &nn) {
                 if (created) {
                     return first_node;
                 }
@@ -174,7 +178,7 @@ namespace micromldsl {
                 }
                 created = true;
                 for (const auto &edge: edges) {
-                    auto child_first = edge->to->build(nn);
+                    auto child_first = edge->to->build_node(nn);
                     last_node->add(child_first);
                 }
                 return first_node;
@@ -204,6 +208,14 @@ namespace micromldsl {
             return nnv;
         }
 
+        shared_ptr<NNVertex> addInput(const size_t input_shape, const vector<size_t> &output_shape, NodeType nodeType, ActivationType activationType) {
+            return addInput({1, input_shape, 1}, output_shape, nodeType, activationType);
+        }
+
+        shared_ptr<NNVertex> addInput(const vector<size_t> &input_shape, const size_t output_shape, NodeType nodeType, ActivationType activationType) {
+            return addInput(input_shape, {1, output_shape, 1}, nodeType, activationType);
+        }
+
     private:
         ModelType modelType;
         LossType loss_type;
@@ -211,11 +223,14 @@ namespace micromldsl {
         vector<shared_ptr<NNVertex>> heads;
     };
 
-    shared_ptr<MicromlDSL> createSGDModel() {
-        auto result = make_shared<MicromlDSL>(sgd);
+    shared_ptr<MicromlDSL> neuralNetworkBuilder(ModelType modelType) {
+        auto result = make_shared<MicromlDSL>(modelType);
         return result;
     }
 
+    shared_ptr<MicromlDSL> neuralNetworkBuilder() {
+        return neuralNetworkBuilder(sgd);
+    }
 }
 
 #endif //MICROML_MODEL_HPP

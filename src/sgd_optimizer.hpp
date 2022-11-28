@@ -2,14 +2,13 @@
 // Created by ehyrk on 11/24/2022.
 //
 
-#ifndef MICROML_SGD_HPP
-#define MICROML_SGD_HPP
+#ifndef MICROML_SGD_OPTIMIZER_HPP
+#define MICROML_SGD_OPTIMIZER_HPP
 
 #include "neural_network.hpp"
 #include "optimizer.hpp"
 
 using namespace std;
-
 
 // stochastic gradient descent (SGD) is a trivial form of gradient decent that works well at finding generalized results.
 // It isn't as popular as Adam, when it comes to optimizers, since it is slow at finding an optimal answer, but
@@ -141,11 +140,11 @@ namespace microml {
             this->sgdLearningState->learning_rate = learning_rate;
         }
 
-        shared_ptr<NeuralNetworkFunction> createFullyConnectedNeurons(size_t input_size, size_t output_size, bool use_32_bit)  {
+        shared_ptr<NeuralNetworkFunction> createFullyConnectedNeurons(size_t input_size, size_t output_size, bool use_32_bit) override  {
             return make_shared<SGDFullyConnectedNeurons>(input_size, output_size, use_32_bit, sgdLearningState);
         }
 
-        shared_ptr<NeuralNetworkFunction> createBias(size_t input_size, size_t output_size, bool use_32_bit) {
+        shared_ptr<NeuralNetworkFunction> createBias(size_t input_size, size_t output_size, bool use_32_bit) override {
             return make_shared<SGDBias>(input_size, output_size, use_32_bit, sgdLearningState);
         }
 
@@ -153,4 +152,4 @@ namespace microml {
         shared_ptr<SGDLearningState> sgdLearningState;
     };
 }
-#endif //MICROML_SGD_HPP
+#endif //MICROML_SGD_OPTIMIZER_HPP
