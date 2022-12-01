@@ -5,9 +5,9 @@
 
 #include <iostream>
 #include <string>
-#include "tensor.hpp"
+#include "../tensor.hpp"
 #include "unit_test.hpp"
-#include "tensor_stats.hpp"
+#include "../tensor_stats.hpp"
 
 // Super slow on my machine, but needed to test everything. Probably not useful for day-to-day unit tests.
 //#define FULL_TENSOR_TESTS
@@ -71,7 +71,7 @@ void sum_test() {
 void assign_small_test() {
     auto matrix_random = std::make_shared<TensorFromRandom>(101, 103, 1, 4);
 //    matrix_random->print();
-    auto matrix = std::make_shared<QuarterTensor>(*matrix_random, 4, 0);
+    auto matrix = std::make_shared<QuarterTensor>(matrix_random, 4, 0);
 //    matrix->print();
 //    std::cout << "0, 0 original random: " << matrix_random->get_val(0, 0, 0) << " quantized: " << quarter_to_float(float_to_quarter(matrix_random->get_val(0, 0, 0), 4, 0), 4, 0) << std::endl;
 //    std::cout << "0, 0 new matrix: " << matrix->get_val(0, 0, 0) << std::endl;
@@ -105,7 +105,7 @@ void assign_small_test() {
 void assign_medium_test() {
     auto matrix_random = std::make_shared<TensorFromRandom>(1001, 10003, 1, 4);
 //    matrix_random->print();
-    auto matrix = std::make_shared<QuarterTensor>(*matrix_random, 4, 0);
+    auto matrix = std::make_shared<QuarterTensor>(matrix_random, 4, 0);
 //    matrix->print();
 //    std::cout << "0, 0 original random: " << matrix_random->get_val(0, 0, 0) << " quantized: " << quarter_to_float(float_to_quarter(matrix_random->get_val(0, 0, 0), 4, 0), 4, 0) << std::endl;
 //    std::cout << "0, 0 new matrix: " << matrix->get_val(0, 0, 0) << std::endl;
@@ -135,10 +135,12 @@ void assign_medium_test() {
 
 void assign_large_test() {
     auto matrix_random = std::make_shared<TensorFromRandom>(200000, 200001, 1, 4);
-    auto matrix = std::make_shared<QuarterTensor>(*matrix_random, 4, 0);
-    std::cout << "0, 0 original random: " << matrix_random->get_val(0, 0, 0) << " quantized: " << quarter_to_float(float_to_quarter(matrix_random->get_val(0, 0, 0), 4, 0), 4, 0) << std::endl;
+    auto matrix = std::make_shared<QuarterTensor>(matrix_random, 4, 0);
+    std::cout << "0, 0 original random: " << matrix_random->get_val(0, 0, 0) << " quantized: "
+              << quarter_to_float(float_to_quarter(matrix_random->get_val(0, 0, 0), 4, 0), 4, 0) << std::endl;
     std::cout << "0, 0 new matrix: " << matrix->get_val(0, 0, 0) << std::endl;
-    std::cout << "199999, 199999 original random: " << matrix_random->get_val(199999, 199999, 0) << " quantized: " << quarter_to_float(float_to_quarter(matrix_random->get_val(199999, 199999, 0), 4, 0), 4, 0) << std::endl;
+    std::cout << "199999, 199999 original random: " << matrix_random->get_val(199999, 199999, 0) << " quantized: "
+              << quarter_to_float(float_to_quarter(matrix_random->get_val(199999, 199999, 0), 4, 0), 4, 0) << std::endl;
     std::cout << "199999, 199999 new matrix: " << matrix->get_val(199999, 199999, 0) << std::endl;
     ASSERT_TRUE(matrix->get_val(0, 0, 0) ==
                 quarter_to_float(float_to_quarter(matrix_random->get_val(0, 0, 0), 4, 0), 4, 0));
@@ -161,10 +163,10 @@ void assign_large_test() {
 void reshape_test() {
     auto matrix_random = std::make_shared<TensorFromRandom>(1, 5, 1, 4);
 //    matrix_random->print();
-    auto matrix = std::make_shared<QuarterTensor>(*matrix_random, 4, 0);
+    auto matrix = std::make_shared<QuarterTensor>(matrix_random, 4, 0);
 //    matrix->print();
     auto reshape = std::make_shared<TensorReshapeView>(matrix_random, 5, 1);
-    auto other = std::make_unique<QuarterTensor>(*reshape, 4, 0);
+    auto other = std::make_unique<QuarterTensor>(reshape, 4, 0);
     ASSERT_TRUE(matrix->get_val(0, 0, 0) == other->get_val(0, 0, 0));
     ASSERT_TRUE(matrix->get_val(0, 1, 0) == other->get_val(1, 0, 0));
     ASSERT_TRUE(matrix->get_val(0, 2, 0) == other->get_val(2, 0, 0));
@@ -313,8 +315,8 @@ void test_even_distribution_quarter_huge_numbers() {
 
 void test_constant() {
     auto matrix = std::make_shared<UniformTensor>(10, 10, 1, 0.0f);
-    for(size_t i = 0; i < matrix->row_count(); i++) {
-        for(size_t j = 0; j < matrix->column_count(); j++) {
+    for (size_t i = 0; i < matrix->row_count(); i++) {
+        for (size_t j = 0; j < matrix->column_count(); j++) {
             ASSERT_TRUE(0.0f == matrix->get_val(i, j, 0));
         }
     }
@@ -324,9 +326,9 @@ void test_constant() {
 
 void test_identity() {
     auto matrix = std::make_shared<IdentityTensor>(10, 10, 1);
-    for(size_t i = 0; i < matrix->row_count(); i++) {
-        for(size_t j = 0; j < matrix->column_count(); j++) {
-            if( i == j) {
+    for (size_t i = 0; i < matrix->row_count(); i++) {
+        for (size_t j = 0; j < matrix->column_count(); j++) {
+            if (i == j) {
                 ASSERT_TRUE(1.0f == matrix->get_val(i, j, 0));
             } else {
                 ASSERT_TRUE(0.0f == matrix->get_val(i, j, 0));
@@ -337,7 +339,7 @@ void test_identity() {
 }
 
 void test_dot_product() {
-    auto matrix_func = [](size_t row, size_t col, size_t channel) { return ((float) (row+col)); };
+    auto matrix_func = [](size_t row, size_t col, size_t channel) { return ((float) (row + col)); };
     auto matrix_1 = std::make_shared<TensorFromFunction>(matrix_func, 2, 2, 1);
 //    matrix_1->print();
     auto matrix_2 = std::make_shared<TensorFromFunction>(matrix_func, 2, 2, 1);
@@ -350,10 +352,12 @@ void test_dot_product() {
 }
 
 void test_dot_product_2() {
-    std::vector<std::vector<float>> a = {{4, 2}, {0, 3}};
+    std::vector<std::vector<float>> a = {{4, 2},
+                                         {0, 3}};
     auto matrix_1 = std::make_shared<QuarterTensor>(a, 8, 0);
 //    matrix_1->print();
-    std::vector<std::vector<float>> b = {{4, 0}, {1, 4}};
+    std::vector<std::vector<float>> b = {{4, 0},
+                                         {1, 4}};
     auto matrix_2 = std::make_shared<QuarterTensor>(b, 8, 0);
     auto dot_product_view = std::make_shared<TensorDotTensorView>(matrix_1, matrix_2);
 //    dot_product_view->print();
@@ -364,10 +368,13 @@ void test_dot_product_2() {
 }
 
 void test_dot_product_3() {
-    std::vector<std::vector<float>> a = {{2, 2}, {0, 3}, {0, 4}};
+    std::vector<std::vector<float>> a = {{2, 2},
+                                         {0, 3},
+                                         {0, 4}};
     auto matrix_1 = std::make_shared<QuarterTensor>(a, 8, 0);
 //    matrix_1->print();
-    std::vector<std::vector<float>> b = {{2, 1, 2}, {3, 2, 4}};
+    std::vector<std::vector<float>> b = {{2, 1, 2},
+                                         {3, 2, 4}};
     auto matrix_2 = std::make_shared<QuarterTensor>(b, 8, 0);
     auto dot_product_view = std::make_shared<TensorDotTensorView>(matrix_1, matrix_2);
 //    dot_product_view->print();
@@ -383,10 +390,13 @@ void test_dot_product_3() {
 }
 
 void test_dot_product_4() {
-    std::vector<std::vector<float>> a = {{1, 2, 3}, {4, 5, 6}};
+    std::vector<std::vector<float>> a = {{1, 2, 3},
+                                         {4, 5, 6}};
     auto matrix_1 = std::make_shared<QuarterTensor>(a, 8, 0);
 //    matrix_1->print();
-    std::vector<std::vector<float>> b = {{7, 8}, {9, 10}, {11, 12}};
+    std::vector<std::vector<float>> b = {{7,  8},
+                                         {9,  10},
+                                         {11, 12}};
     auto matrix_2 = std::make_shared<QuarterTensor>(b, 8, 0);
     auto dot_product_view = std::make_shared<TensorDotTensorView>(matrix_1, matrix_2);
 //    dot_product_view->print();
@@ -397,10 +407,14 @@ void test_dot_product_4() {
 }
 
 void test_matrix_addition() {
-    std::vector<std::vector<float>> a = {{-1, 2, 3}, {2, -3, 1}, {3, 1, -2}};
+    std::vector<std::vector<float>> a = {{-1, 2,  3},
+                                         {2,  -3, 1},
+                                         {3,  1,  -2}};
     auto matrix_1 = std::make_shared<QuarterTensor>(a, 8, 0);
 //    matrix_1->print();
-    std::vector<std::vector<float>> b = {{3, -1, 2}, {1, 0, 3}, {2, -1, 0}};
+    std::vector<std::vector<float>> b = {{3, -1, 2},
+                                         {1, 0,  3},
+                                         {2, -1, 0}};
     auto matrix_2 = std::make_shared<QuarterTensor>(b, 8, 0);
     auto add_view = std::make_shared<TensorAddTensorView>(matrix_1, matrix_2);
     ASSERT_TRUE(2.0f == add_view->get_val(0, 0, 0));
@@ -412,6 +426,14 @@ void test_matrix_addition() {
     ASSERT_TRUE(5.0f == add_view->get_val(2, 0, 0));
     ASSERT_TRUE(0.0f == add_view->get_val(2, 1, 0));
     ASSERT_TRUE(-2.0f == add_view->get_val(2, 2, 0));
+}
+
+void test_pixel() {
+    auto matrix = std::make_shared<TensorFromRandom>(5, 5, 1, 0.f, 1.f, 42);
+    auto pixel_test = make_shared<PixelTensor>(matrix);
+    pixel_test->print();
+    matrix->print();
+    // todo: assert rather than print.
 }
 
 int main() {
@@ -459,6 +481,13 @@ int main() {
         timer.print_milliseconds();
         test_matrix_addition();
         timer.print_milliseconds();
+        //auto weights = make_shared<TensorFromRandom>(5, 5, 1, 14);
+        for(int bias = 10; bias < 20; bias++) {
+            cout << bias << " MAX: " << quarter_to_float(QUARTER_MAX, bias, 0) << " MIN: " << quarter_to_float(QUARTER_MAX, bias, 0) << endl;
+        }
+
+        //test_pixel()
+        //timer.print_milliseconds();
         // slow to test and not worth using day-to-day on my machine
 #ifdef FULL_TENSOR_TESTS
         test_even_distribution_quarter_medium(); // roughly 2.5 seconds

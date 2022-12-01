@@ -7,41 +7,131 @@
 
 #include <string>
 #include <charconv>
+#include <algorithm>
+#include <cctype>
+#include <locale>
+#include <map>
 #include "tensor.hpp"
 
 using namespace std;
 
 namespace microml {
 
+    string string_trim(string text) {
+        // we intentionally copy the string so we can trim it
+        text.erase(text.begin(), std::find_if(text.begin(), text.end(), [](unsigned char ch) {
+            return !std::isspace(ch);
+        }));
+        text.erase(std::find_if(text.rbegin(), text.rend(), [](unsigned char ch) {
+            return !std::isspace(ch);
+        }).base(), text.end());
+        return text;
+    }
+
+    float string_to_float(const string &text) {
+        float value = 0.0;
+        auto [ptr, error_check] = std::from_chars(text.data(), text.data() + text.size(), value);
+        if (error_check != std::errc()) {
+            throw exception("Couldn't convert text to float");
+        }
+        return value;
+    }
+
     class TrainingDataInputEncoder {
-        virtual shared_ptr<BaseTensor> encode(const vector<string> &line, size_t rows, size_t columns, size_t channels) = 0;
+    public:
+        virtual shared_ptr <BaseTensor>  encode(const vector<string> &words,
+                                                size_t rows, size_t columns, size_t channels, bool trim) = 0;
     };
 
 
     class TextToPixelEncoder : public TrainingDataInputEncoder {
-
-        shared_ptr<BaseTensor> encode(const vector<string> &line, size_t rows, size_t columns, size_t channels) override {
-//            float value = 0.0;
-//            auto [ptr, error_check] = std::from_chars(text.data(), text.data() + text.size(), value);
-//            if (error_check != std::errc()) {
-//                throw exception("Couldn't convert text to float");
-//            }
-            return nullptr;
+    public:
+        shared_ptr <BaseTensor> encode(const vector<string> &words,
+               size_t rows, size_t columns, size_t channels, bool trim) override {
+            // it is wasteful to allocate a huge vector only to copy it into a tensor
+            // however, I wanted tensors to be immutable.
+            // TODO: I think I could make a FullTensor constructor that steals the memory we are allocating here.
+            // TODO: I could also make a PixelTensor that steals the memory of a vector using a uint_8.
+            // Of course, then I'll need a string_to_uint_8() method.
+            vector<vector<vector<float>>> result;
+            result.resize(channels);
+            size_t offset = 0;
+            for (size_t channel = 0; channel < channels; channel++) {
+                result[channel].resize(rows);
+                for (size_t row = 0; row < rows; row++) {
+                    result[channel][row].resize(columns);
+                    for (size_t column = 0; column < columns; column++) {
+                        string word = trim ? string_trim(words[offset]) : words[offset];
+                        // we store the value as percentage of 255.
+                        result[channel][row][column] = string_to_float(word) / 255.f;
+                        offset++;
+                    }
+                }
+            }
+            return pixel_tensor(result);
         }
     };
 
     class TextToScalarEncoder : public TrainingDataInputEncoder {
-
-        shared_ptr<BaseTensor> encode(const vector<string> &line, size_t rows, size_t columns, size_t channels) override {
-//            float value = 0.0;
-//            auto [ptr, error_check] = std::from_chars(text.data(), text.data() + text.size(), value);
-//            if (error_check != std::errc()) {
-//                throw exception("Couldn't convert text to float");
-//            }
-//            return column_vector({value});
-            return nullptr;
+    public:
+        shared_ptr <BaseTensor> encode(const vector<string> &words,
+                                       size_t rows, size_t columns, size_t channels, bool trim) override {
+            vector<vector<vector<float>>> result;
+            result.resize(channels);
+            size_t offset = 0;
+            for (size_t channel = 0; channel < channels; channel++) {
+                result[channel].resize(rows);
+                for (size_t row = 0; row < rows; row++) {
+                    result[channel][row].resize(columns);
+                    for (size_t column = 0; column < columns; column++) {
+                        string word = trim ? string_trim(words[offset]) : words[offset];
+                        result[channel][row][column] = string_to_float(word);
+                        offset++;
+                    }
+                }
+            }
+            return tensor(result);
         }
     };
+
+    class TextToCategoryEncoder : public TrainingDataInputEncoder {
+    public:
+        TextToCategoryEncoder(const std::map<string,size_t> &categoryMapping) {
+            this->categoryMapping = categoryMapping;
+        }
+
+        shared_ptr <BaseTensor> encode(const vector<string> &words,
+                                       size_t rows, size_t columns, size_t channels, bool trim) override {
+            if( words.size() != channels) {
+                throw exception("The result tensor must have exactly the same number of channels as there are words to encode.");
+            }
+            vector<vector<vector<float>>> result;
+            result.resize(channels);
+            for (size_t channel = 0; channel < channels; channel++) {
+                result[channel].resize(rows);
+                for (size_t row = 0; row < rows; row++) {
+                    result[channel][row].resize(columns);
+                }
+            }
+
+            size_t channel_offset = 0;
+            for(const auto word : words) {
+                size_t column_offset;
+                if( trim ) {
+                    column_offset = categoryMapping.at(string_trim(word));
+                } else {
+                    column_offset = categoryMapping.at(word);
+                }
+                result[channel_offset][0][column_offset] = 1.f;
+                channel_offset++;
+            }
+
+            return tensor(result);
+        }
+    private:
+        std::map<string,size_t> categoryMapping;
+    };
+
 
 }
 #endif //MICROML_DATAENCODER_HPP

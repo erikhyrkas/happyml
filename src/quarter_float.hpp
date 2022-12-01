@@ -220,7 +220,8 @@ namespace microml {
         const uint32_t clamped_exponent = (exponent < 0xF) * exponent + (exponent == 0xF) * 0xE;
         const uint32_t clamped_mantissa = ((!clamped) * rounded_mantissa) + (clamp_top * 0x7);
         const uint32_t prepped_bits = (sign << 7) | (clamped_exponent << 3) | (clamped_mantissa & 0x7);
-        const uint32_t special_case_tiny = encoded_value && (!prepped_bits && adjusted_exponent >= (-12 + bias)); // -5 rounds nearest
+        const uint32_t special_case_tiny =
+                encoded_value && (!prepped_bits && adjusted_exponent >= (-12 + bias)); // -5 rounds nearest
         const uint32_t result_bits = (special_case_tiny) * 0b10000000 +
                                      (!special_case_tiny) * prepped_bits;
 
@@ -243,7 +244,7 @@ namespace microml {
         const uint32_t mantissa_shift = (!special_case_tiny * 20) + (special_case_tiny) * 1;
         const uint32_t float_bias_adjustment = FLOAT_BIAS - bias;
         const uint32_t exponent = (raw_exponent > 0 || mantissa > 0) * (raw_exponent + float_bias_adjustment);
-        const uint32_t result = ((sign << 31) | (exponent << 23) | (mantissa << mantissa_shift)); // (special_case_tiny) * 0b0011110000000000000000000000000 +
+        const uint32_t result = ((sign << 31) | (exponent << 23) | (mantissa << mantissa_shift));
         const uint32_t no_branch_result = (q == QUARTER_NAN) * FLOAT_NAN +
                                           (q == QUARTER_POS_INFINITY) * FLOAT_INF +
                                           (q == QUARTER_NEG_INFINITY) * FLOAT_NEG_INF +
@@ -254,16 +255,18 @@ namespace microml {
         return distance_from_offset + offset;
     }
 
-    quarter quarter_multiply(quarter a, int a_bias, float a_offset, quarter b, int b_bias, float b_offset, int result_bias,
-                             float result_offset) {
+    quarter
+    quarter_multiply(quarter a, int a_bias, float a_offset, quarter b, int b_bias, float b_offset, int result_bias,
+                     float result_offset) {
         const float af = quarter_to_float(a, a_bias, a_offset);
         const float bf = quarter_to_float(b, b_bias, b_offset);
         const float result_float = af * bf;
         return float_to_quarter(result_float, result_bias, result_offset);
     }
 
-    quarter quarter_divide(quarter a, int a_bias, float a_offset, quarter b, int b_bias, float b_offset, int result_bias,
-                           float result_offset) {
+    quarter
+    quarter_divide(quarter a, int a_bias, float a_offset, quarter b, int b_bias, float b_offset, int result_bias,
+                   float result_offset) {
         const float af = quarter_to_float(a, a_bias, a_offset);
         const float bf = quarter_to_float(b, b_bias, b_offset);
         const float result_float = af / bf;
@@ -278,8 +281,9 @@ namespace microml {
         return float_to_quarter(result_float, result_bias, result_offset);
     }
 
-    quarter quarter_subtract(quarter a, int a_bias, float a_offset, quarter b, int b_bias, float b_offset, int result_bias,
-                             float result_offset) {
+    quarter
+    quarter_subtract(quarter a, int a_bias, float a_offset, quarter b, int b_bias, float b_offset, int result_bias,
+                     float result_offset) {
         const float af = quarter_to_float(a, a_bias, a_offset);
         const float bf = quarter_to_float(b, b_bias, b_offset);
         const float result_float = af - bf;
@@ -297,123 +301,6 @@ namespace microml {
     static bool roughly_equal(T f1, T f2) {
         T abs_diff = std::fabs(f1 - f2);
         return (abs_diff <= std::numeric_limits<T>::epsilon() * 1000.0) || (abs_diff < std::numeric_limits<T>::min());
-    }
-
-//---------------------------------------------------------------------------------------
-//---------------------------------------------------------------------------------------
-// leaving older code here for reference:
-//---------------------------------------------------------------------------------------
-//---------------------------------------------------------------------------------------
-
-// NOTE ON ROUNDING:
-// this function will round down and since our granularity is much worse than a double or float, this rounding
-// will skew results visibly lower.
-    quarter float_to_quarter_v1(float original, int quarter_bias, float offset) {
-        // This code looks crazy because I avoid branching (if statements) so the general case (happy path) is faster.
-        // Convert the float to a datatype where we can easily do bit manipulation
-        const float offset_float = original - offset;
-        const uint32_t encoded_value = *(uint32_t *) &offset_float;
-        // grab the sign, we can use this as is
-        const uint32_t sign = encoded_value >> 31;
-        const uint32_t raw_mantissa = (encoded_value & 0x00700000) >> 20;
-        const uint32_t raw_exponent = (encoded_value & 0x7F800000) >> 23;
-        const uint32_t float_bias_adjustment = FLOAT_BIAS - quarter_bias;
-        const uint32_t quarter_max_exponent = float_bias_adjustment + QUARTER_MAX_EXPONENT_AMOUNT;
-        const uint32_t clamp_top = raw_exponent >= quarter_max_exponent;
-        const uint32_t clamp_bottom = raw_exponent < float_bias_adjustment;
-        const uint32_t clamped = clamp_top || clamp_bottom;
-        const uint32_t exponent = (!clamped) * (raw_exponent - float_bias_adjustment) + (clamp_top * 0xE);
-        const uint32_t clamped_exponent = (exponent < 0xF) * exponent + (exponent == 0xF) * 0xE;
-        const uint32_t clamped_mantissa = ((!clamped) * raw_mantissa) + (clamp_top * 0x7);
-        // special handling for one when bias 0. We have to shift encoded_value because the last bit can be set or not and still
-        // represent ~1 or ~-1. It's annoying.
-        const uint32_t prepped_bits = (sign << 7) | (clamped_exponent << 3) | (clamped_mantissa & 0x7);
-        const uint32_t special_case_0_1 = quarter_bias == 0 && 0b0011111110000000000000000000000 == (encoded_value >> 1);
-        const uint32_t special_case_0_neg = quarter_bias == 0 && prepped_bits == 0b11110110;
-        const uint32_t special_case_tiny = (quarter_bias != 0 && !prepped_bits && encoded_value);
-        const uint32_t special_case = (special_case_0_1 || special_case_0_neg || special_case_tiny);
-        const uint32_t result_bits = (special_case_0_1 * 0b11110110) +
-                                     (special_case_0_neg * 0b11110111) +
-                                     (special_case_tiny) * 0b10000000 +
-                                     (!special_case) * prepped_bits;
-        return (encoded_value == FLOAT_NAN) * QUARTER_NAN +
-               (encoded_value == FLOAT_INF) * QUARTER_POS_INFINITY +
-               (encoded_value == FLOAT_NEG_INF) * QUARTER_NEG_INFINITY +
-               (encoded_value != FLOAT_NAN && encoded_value != FLOAT_INF && encoded_value != FLOAT_NEG_INF) * result_bits;
-    }
-
-
-// round up or down to the nearest quarter. Note that 0 is significantly further away from the smallest non-zero
-// value than the smallest non-zero value is to the second smallest.  This means that small numbers will frequently
-// round to zero. By setting avoid_zero to true, it will round small numbers up rather than down to avoid zero.
-    quarter float_to_quarter_round_nearest_v2(float original, int quarter_bias, float offset, bool avoid_zero) {
-        // This code looks crazy because I avoid branching (if statements) so the general case (happy path) is faster.
-        // Convert the float to a datatype where we can easily do bit manipulation
-        const float offset_float = original - offset;
-        const uint32_t encoded_value = (*(uint32_t *) &offset_float);// round
-        // grab the sign, we can use this as is
-        const uint32_t sign = encoded_value >> 31;
-        const uint32_t raw_exponent = (encoded_value & 0x7F800000) >> 23;
-        const uint32_t raw_mantissa = (encoded_value & 0x00700000) >> 20;
-        const uint32_t extra_mantissa = (encoded_value & 0x000FFFFF) >> 19;
-        const uint32_t rounded_mantissa = raw_mantissa + (raw_mantissa < 0b111 && (extra_mantissa > 0)) * 0b001;
-        const uint32_t float_bias_adjustment = FLOAT_BIAS - quarter_bias;
-        const uint32_t quarter_max_exponent = float_bias_adjustment + QUARTER_MAX_EXPONENT_AMOUNT;
-        const uint32_t clamp_top = raw_exponent >= quarter_max_exponent;
-        const uint32_t clamp_bottom = raw_exponent < float_bias_adjustment;
-        const uint32_t clamped = clamp_top || clamp_bottom;
-        const uint32_t exponent = (!clamped) * (raw_exponent - float_bias_adjustment) + (clamp_top * 0xE);
-        const uint32_t clamped_exponent = (exponent < 0xF) * exponent + (exponent == 0xF) * 0xE;
-        const uint32_t clamped_mantissa = ((!clamped) * rounded_mantissa) + (clamp_top * 0x7);
-        // special handling for one when bias 0. We have to shift encoded_value because the last bit can be set or not and still
-        // represent ~1 or ~-1. It's annoying.
-        const uint32_t prepped_bits = (sign << 7) | (clamped_exponent << 3) | (clamped_mantissa & 0x7);
-        const uint32_t special_case_0_1 = quarter_bias == 0 && 0b0011111110000000000000000000000 == (encoded_value >> 1);
-        const uint32_t special_case_0_neg = quarter_bias == 0 && prepped_bits == 0b11110110;
-//    const uint32_t special_case_tiny = (quarter_bias != 0 && !prepped_bits && encoded_value);
-        const int32_t adjusted_exponent = (int32_t) raw_exponent - (int32_t) FLOAT_BIAS - (int32_t) quarter_bias;
-        const int32_t round_threshold = (avoid_zero * -12) + (!avoid_zero * -5);
-//    std::cout << " [" <<"ev: " << encoded_value << " rt: " << round_threshold << "=" << (!prepped_bits && adjusted_exponent >= (round_threshold + quarter_bias)) << " pb:" << !prepped_bits<< "] ";
-        const uint32_t special_case_tiny =
-                quarter_bias != 0 && encoded_value && (!prepped_bits && adjusted_exponent >= (round_threshold + quarter_bias)); // -5 works
-        const uint32_t special_case = special_case_0_1 || special_case_0_neg || special_case_tiny;
-//    std::cout << " [special_case_tiny: " << special_case_tiny << "] ";
-        const uint32_t result_bits = (special_case_0_1 * 0b11110110) +
-                                     (special_case_0_neg * 0b11110111) +
-                                     (special_case_tiny) * 0b10000000 +
-                                     (!special_case) * prepped_bits;
-
-        return (encoded_value == FLOAT_NAN) * QUARTER_NAN + (encoded_value == FLOAT_INF) * QUARTER_POS_INFINITY
-               + (encoded_value == FLOAT_NEG_INF) * QUARTER_NEG_INFINITY +
-               ((encoded_value != FLOAT_NAN) && (encoded_value != FLOAT_INF) && (encoded_value != FLOAT_NEG_INF)) *
-               result_bits;
-    }
-
-// I didn't keep the v1 (well... it's hard to know where v0 became v1 became v2
-    float quarter_to_float_v2(quarter q, int quarter_bias, float offset) {
-        // This code looks crazy because I avoid branching (if statements) so the general case (happy path) is faster.
-        const uint32_t special_case_tiny = quarter_bias != 0 && 0b10000000 == q;
-        const uint32_t sign = (!special_case_tiny) * (q >> 7);
-        const uint32_t raw_exponent = (!special_case_tiny) * ((q & 0x78) >> 3) + (special_case_tiny) * 0b111111111;
-        const uint32_t mantissa = (!special_case_tiny) * (q & 0x7) + (special_case_tiny) * 0b1;
-        const uint32_t mantissa_shift = (!special_case_tiny * 20) + (special_case_tiny) * 1;
-        const uint32_t float_bias_adjustment = FLOAT_BIAS - quarter_bias;
-        const uint32_t exponent = (raw_exponent > 0 || mantissa > 0) * (raw_exponent + float_bias_adjustment);
-        // special handling for one when bias 0.
-        const uint32_t special_case_0_neg1 = quarter_bias == 0 && 0b10000000 == q;
-        const uint32_t special_case_0_1 = quarter_bias == 0 && 0b11110110 == q;
-        const uint32_t special_case = (special_case_0_1 || special_case_0_neg1);
-        const uint32_t result = (special_case_0_neg1 * 0b10111111100000000000000000000000) +
-                                (special_case_0_1 * 0b00111111100000000000000000000000) +
-                                (!special_case) * ((sign << 31) | (exponent << 23) | (mantissa << mantissa_shift));
-        const uint32_t no_branch_result = (q == QUARTER_NAN) * FLOAT_NAN +
-                                          (q == QUARTER_POS_INFINITY) * FLOAT_INF +
-                                          (q == QUARTER_NEG_INFINITY) * FLOAT_NEG_INF +
-                                          (q != QUARTER_NAN && q != QUARTER_POS_INFINITY && q != QUARTER_NEG_INFINITY) *
-                                          result;
-
-        const float distance_from_offset = *(float *) &no_branch_result;
-        return distance_from_offset + offset;
     }
 }
 #endif //MICROML_QUARTER_FLOAT_HPP

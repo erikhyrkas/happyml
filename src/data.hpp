@@ -47,12 +47,20 @@ namespace microml {
             this->expected.push_back(make_shared<FullTensor>(expected));
         }
 
+        shared_ptr<BaseTensor> getFirstGiven() {
+            return given[0];
+        }
+
         vector<shared_ptr<BaseTensor>> getGiven() {
             return given;
         }
 
         size_t getGivenSize() {
             return given.size();
+        }
+
+        shared_ptr<BaseTensor> getFirstExpected() {
+            return expected[0];
         }
 
         vector<shared_ptr<BaseTensor>> getExpected() {

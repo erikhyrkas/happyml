@@ -8,14 +8,14 @@
 #include <iostream>
 #include "dataset.hpp"
 #include "optimizer.hpp"
-#include "sgd_optimizer.hpp"
+#include "mbgd_optimizer.hpp"
 
 using namespace microml;
 
 namespace micromldsl {
 
     enum ModelType {
-        sgd
+        microbatch
     };
     enum LossType {
         mse
@@ -24,7 +24,7 @@ namespace micromldsl {
         full, output
     };
     enum ActivationType {
-        relu, tanh
+        relu, tanh, sigmoid, leaky, softmax
     };
 
     class MicromlDSL : public enable_shared_from_this<MicromlDSL> {
@@ -32,7 +32,7 @@ namespace micromldsl {
         explicit MicromlDSL(ModelType modelType) {
             this->modelType = modelType;
             switch (modelType) {
-                case sgd:
+                case microbatch:
                     this->learning_rate = 0.1;
                     break;
                 default:
@@ -62,7 +62,7 @@ namespace micromldsl {
             }
             shared_ptr<Optimizer> optimizer;
             switch (modelType) {
-                case ModelType::sgd:
+                case ModelType::microbatch:
                     optimizer = make_shared<SGDOptimizer>(learning_rate);
                     break;
                 default:
@@ -80,7 +80,8 @@ namespace micromldsl {
         // vertex aka node
         class NNVertex : public enable_shared_from_this<NNVertex> {
         public:
-            NNVertex(const weak_ptr<MicromlDSL> &parent, NodeType nodeType, const vector<size_t> &input_shape, const vector<size_t> &output_shape,
+            NNVertex(const weak_ptr<MicromlDSL> &parent, NodeType nodeType, const vector<size_t> &input_shape,
+                     const vector<size_t> &output_shape,
                      ActivationType activation_type) {
                 this->parent = parent;
                 this->node_type = nodeType;
@@ -111,19 +112,23 @@ namespace micromldsl {
             shared_ptr<NNVertex> addOutput(const size_t outputShape, ActivationType activationType) {
                 return addNode(outputShape, NodeType::output, activationType);
             }
+
             shared_ptr<NNVertex> addOutput(const vector<size_t> &outputShape, ActivationType activationType) {
                 return addNode(outputShape, NodeType::output, activationType);
             }
+
             shared_ptr<NNVertex> addNode(const size_t outputShape, NodeType nodeType, ActivationType activationType) {
                 return addNode({1, outputShape, 1}, nodeType, activationType);
             }
 
-            shared_ptr<NNVertex> addNode(const vector<size_t> &outputShape, NodeType nodeType, ActivationType activationType) {
+            shared_ptr<NNVertex>
+            addNode(const vector<size_t> &outputShape, NodeType nodeType, ActivationType activationType) {
                 return addNode(this->output_shape, outputShape, nodeType, activationType);
             }
 
             shared_ptr<NNVertex>
-            addNode(const vector<size_t> &inputShape, const vector<size_t> &outputShape, NodeType nodeType, ActivationType activationType) {
+            addNode(const vector<size_t> &inputShape, const vector<size_t> &outputShape, NodeType nodeType,
+                    ActivationType activationType) {
                 auto nnv = make_shared<NNVertex>(parent.lock(), nodeType, inputShape, outputShape, activationType);
                 auto nne = make_shared<NNEdge>();
                 nne->from = shared_from_this();
@@ -147,11 +152,22 @@ namespace micromldsl {
                 shared_ptr<Optimizer> optimizer = nn->getOptimizer();
                 if (node_type == NodeType::full || node_type == NodeType::output) {
                     // todo: create flatten node if input shape isn't flat
-                    first_node = make_shared<NeuralNetworkNode>(optimizer->createFullyConnectedNeurons(input_shape[1], output_shape[1], use_32_bit));
-                    last_node = first_node;
+                    first_node = nullptr;
+                    if(input_shape[0] > 1) {
+                        first_node = make_shared<NeuralNetworkNode>(make_shared<NeuralNetworkFlattenFunction>());
+                    }
+                    auto next_node = make_shared<NeuralNetworkNode>(
+                            optimizer->createFullyConnectedNeurons(input_shape[0]*input_shape[1]*input_shape[2], output_shape[0]*output_shape[1]*output_shape[2], use_32_bit));
+                    if(first_node) {
+                       first_node->add(next_node);
+                    } else {
+                        first_node = next_node;
+                    }
+                    last_node = next_node;
                     if (use_bias) {
-                        auto bias_node = make_shared<NeuralNetworkNode>(optimizer->createBias(output_shape[1], output_shape[1], use_32_bit));
-                        first_node->add(bias_node);
+                        auto bias_node = make_shared<NeuralNetworkNode>(
+                                optimizer->createBias(output_shape[1], output_shape[1], use_32_bit));
+                        next_node->add(bias_node);
                         last_node = bias_node;
                     }
                 }
@@ -163,16 +179,27 @@ namespace micromldsl {
                     case ActivationType::relu:
                         activationFunction = make_shared<ReLUActivationFunction>();
                         break;
+                    case ActivationType::sigmoid:
+                        activationFunction = make_shared<SigmoidActivationFunction>();
+                        break;
+                    case ActivationType::softmax:
+                        activationFunction = make_shared<SoftmaxActivationFunction>();
+                        break;
+                    case ActivationType::leaky:
+                        activationFunction = make_shared<LeakyReLUActivationFunction>();
+                        break;
                     default:
                         activationFunction = make_shared<ReLUActivationFunction>();
                 }
                 if (node_type == NodeType::output) {
-                    auto activation_node = make_shared<NeuralNetworkOutputNode>(make_shared<NeuralNetworkActivationFunction>(activationFunction));
+                    auto activation_node = make_shared<NeuralNetworkOutputNode>(
+                            make_shared<NeuralNetworkActivationFunction>(activationFunction));
                     last_node->add(activation_node);
                     last_node = activation_node;
                     nn->addOutput(activation_node);
                 } else {
-                    auto activation_node = make_shared<NeuralNetworkNode>(make_shared<NeuralNetworkActivationFunction>(activationFunction));
+                    auto activation_node = make_shared<NeuralNetworkNode>(
+                            make_shared<NeuralNetworkActivationFunction>(activationFunction));
                     last_node->add(activation_node);
                     last_node = activation_node;
                 }
@@ -198,21 +225,26 @@ namespace micromldsl {
             shared_ptr<NeuralNetworkNode> last_node;
         };
 
-        shared_ptr<NNVertex> addInput(const size_t input_shape, const size_t output_shape, NodeType nodeType, ActivationType activationType) {
+        shared_ptr<NNVertex> addInput(const size_t input_shape, const size_t output_shape, NodeType nodeType,
+                                      ActivationType activationType) {
             return addInput({1, input_shape, 1}, {1, output_shape, 1}, nodeType, activationType);
         }
 
-        shared_ptr<NNVertex> addInput(const vector<size_t> &input_shape, const vector<size_t> &output_shape, NodeType nodeType, ActivationType activationType) {
+        shared_ptr<NNVertex>
+        addInput(const vector<size_t> &input_shape, const vector<size_t> &output_shape, NodeType nodeType,
+                 ActivationType activationType) {
             auto nnv = make_shared<NNVertex>(shared_from_this(), nodeType, input_shape, output_shape, activationType);
             heads.push_back(nnv);
             return nnv;
         }
 
-        shared_ptr<NNVertex> addInput(const size_t input_shape, const vector<size_t> &output_shape, NodeType nodeType, ActivationType activationType) {
+        shared_ptr<NNVertex> addInput(const size_t input_shape, const vector<size_t> &output_shape, NodeType nodeType,
+                                      ActivationType activationType) {
             return addInput({1, input_shape, 1}, output_shape, nodeType, activationType);
         }
 
-        shared_ptr<NNVertex> addInput(const vector<size_t> &input_shape, const size_t output_shape, NodeType nodeType, ActivationType activationType) {
+        shared_ptr<NNVertex> addInput(const vector<size_t> &input_shape, const size_t output_shape, NodeType nodeType,
+                                      ActivationType activationType) {
             return addInput(input_shape, {1, output_shape, 1}, nodeType, activationType);
         }
 
@@ -229,7 +261,7 @@ namespace micromldsl {
     }
 
     shared_ptr<MicromlDSL> neuralNetworkBuilder() {
-        return neuralNetworkBuilder(sgd);
+        return neuralNetworkBuilder(microbatch); // TODO: change to adam. just testing microbatch right now.
     }
 }
 

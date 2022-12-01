@@ -111,7 +111,7 @@ Data Source:
   and saves memory by not needing raw data beyond the initial moment to encode.
 
 Optimizer:
-* Use a loss function to computeTotalForDisplay the accuracy of a prediction
+* Use a loss function to compute the accuracy of a prediction
 * Manage state tensors on layer used for optimizing
 
 Neuron:

@@ -2,7 +2,7 @@
 // Created by Erik Hyrkas on 11/28/2022.
 //
 
-#include "file_reader.hpp"
+#include "../file_reader.hpp"
 #include "unit_test.hpp"
 #include <iostream>
 

@@ -43,7 +43,8 @@ namespace microml {
 
         std::shared_ptr<BaseTensor> derivative(const std::shared_ptr<BaseTensor> &input) override {
             // sent all 1s to output in the same shape as input
-            return std::make_shared<UniformTensor>(input->row_count(), input->column_count(), input->channel_count(), 1.0f);
+            return std::make_shared<UniformTensor>(input->row_count(), input->column_count(), input->channel_count(),
+                                                   1.0f);
         }
 
     };
@@ -67,6 +68,7 @@ namespace microml {
         }
     };
 
+    // Useful in the hidden layers of a neural network, especially deep neural networks and convolutional neural networks.
     // 0 to infinity
     class ReLUActivationFunction : public ActivationFunction {
         std::shared_ptr<BaseTensor> activate(const std::shared_ptr<BaseTensor> &input) override {
@@ -78,7 +80,11 @@ namespace microml {
 
         std::shared_ptr<BaseTensor> derivative(const std::shared_ptr<BaseTensor> &input) override {
             auto transformFunction = [](float original) {
-                return original > 0.0f; // the greater than operator returns 1 or 0
+                // derivative original == 0 is undefined.
+                if(original > 0.f) {
+                    return 1.0f;
+                }
+                return 0.f;
             };
             return std::make_shared<TensorValueTransformView>(input, transformFunction);
         }
@@ -109,51 +115,48 @@ namespace microml {
         }
 
         std::shared_ptr<BaseTensor> derivative(const std::shared_ptr<BaseTensor> &input) override {
+            // fixme: broken. producing the wrong shape output. (The output shape is too small.)
             std::shared_ptr<BaseTensor> softmax_out = activate(input);
             auto negative = std::make_shared<TensorMultiplyByScalarView>(softmax_out, -1.0f);
             auto reshape = std::make_shared<TensorReshapeView>(softmax_out, softmax_out->column_count(),
                                                                softmax_out->row_count());
             auto dot_product_view = std::make_shared<TensorDotTensorView>(negative, reshape);
             auto diag = std::make_shared<TensorDiagonalView>(softmax_out);
+            cout << "softmax: work in progress... fix me." <<endl;
+            softmax_out->print();
+            diag->print();
+            dot_product_view->print();
             return std::make_shared<TensorAddTensorView>(dot_product_view, diag);
         }
     };
 
-
+// I found this article useful in verifying the formula: https://towardsdatascience.com/derivative-of-the-sigmoid-function-536880cf918e
 // There may be faster means of approximating this. See: https://stackoverflow.com/questions/10732027/fast-sigmoid-algorithm
 // If I go this route, I'd probably make a whole new class and let the caller decide on whether to approximate or not
 // maybe "class SigmoidApproximationActivationFunction"
 // 0 to 1
     class SigmoidActivationFunction : public ActivationFunction {
         std::shared_ptr<BaseTensor> activate(const std::shared_ptr<BaseTensor> &input) override {
-            // Is this needed? I don't see why.
-//        if (input->row_count() + input->column_count() != 1) {
-//            throw std::exception("Sigmoid supports input with a single row or single column.");
-//        }
             auto transformFunction = [](float original) {
-                return 1.0f / (1.0f + std::expf(-1.0f * original));
+                return 1.0f / (1.0f + std::exp(-1.0f * original));
             };
             return std::make_shared<TensorValueTransformView>(input, transformFunction);
         }
 
         std::shared_ptr<BaseTensor> derivative(const std::shared_ptr<BaseTensor> &input) override {
             // result = sigmoid(x) * (1.0 - sigmoid(x))
-            // sigmoid(x) =
-            std::shared_ptr<BaseTensor> sigmoid = activate(input);
-            // 1.0 - sigmoid == -sigmoid + 1 =
-            auto negative_sigmoid = std::make_shared<TensorMultiplyByScalarView>(input, -1.0);
-            auto plus_one = std::make_shared<TensorAddScalarView>(negative_sigmoid, 1.0);
-            return std::make_shared<TensorDotTensorView>(sigmoid, plus_one);
+            auto transformFunction = [](float original) {
+                auto sig = 1.0f / (1.0f + std::exp(-1.0f * original));
+                return sig * (1.f - sig);
+            };
+            return std::make_shared<TensorValueTransformView>(input, transformFunction);
         }
     };
 
+    // Generally used for classification
     // -1 to 1
     class TanhActivationFunction : public ActivationFunction {
         std::shared_ptr<BaseTensor> activate(const std::shared_ptr<BaseTensor> &input) override {
-            // Is this needed? I don't see why.
-//        if (input->row_count() + input->column_count() != 1) {
-//            throw std::exception("Sigmoid supports input with a single row or single column.");
-//        }
             auto transformFunction = [](float original) {
                 // optimization or waste of energy?
                 // tanh(x) = 2 * sigmoid(2x) - 1

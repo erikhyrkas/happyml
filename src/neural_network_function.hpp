@@ -21,6 +21,7 @@ namespace microml {
         explicit NeuralNetworkActivationFunction(const shared_ptr<ActivationFunction> &activationFunction) {
             this->activationFunction = activationFunction;
         }
+
         shared_ptr<BaseTensor> forward(const vector<shared_ptr<BaseTensor>> &input) override {
             // todo: throw error on wrong size input?
             last_input = input[0];
@@ -39,6 +40,35 @@ namespace microml {
     private:
         shared_ptr<ActivationFunction> activationFunction;
         shared_ptr<BaseTensor> last_input;
+    };
+
+    class NeuralNetworkFlattenFunction : public NeuralNetworkFunction {
+    public:
+        shared_ptr<BaseTensor> forward(const vector<shared_ptr<BaseTensor>> &input) override {
+            if (input.size() != 1) {
+                throw exception("Cannot flatten multiple inputs at the same time. Please merge.");
+            }
+            const auto last_input = input[0];
+            original_cols = last_input->column_count();
+            original_rows = last_input->row_count();
+            if (original_rows == 1) {
+                // This flatten function was added unnecessarily. We could throw an exception.
+                return last_input;
+            }
+            return make_shared<TensorFlattenToRowView>(last_input);
+        }
+
+        shared_ptr<BaseTensor> backward(const shared_ptr<BaseTensor> &output_error) override {
+            if (original_rows == output_error->row_count() && original_cols == output_error->column_count()) {
+                // This flatten function was added unnecessarily. We could throw an exception.
+                return output_error;
+            }
+            return make_shared<TensorReshapeView>(output_error, original_rows, original_cols);
+        }
+
+    private:
+        size_t original_rows;
+        size_t original_cols;
     };
 }
 #endif //MICROML_NEURAL_NETWORK_FUNCTION_HPP

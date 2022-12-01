@@ -1,6 +1,6 @@
 #include <iostream>
 #include <iomanip>
-#include "quarter_float.hpp"
+#include "../quarter_float.hpp"
 #include "unit_test.hpp"
 
 using namespace microml;
@@ -15,7 +15,7 @@ void print_conversion(int bias, float i, bool brief) {
     const float float_round_avoid_zero = quarter_to_float_v2(quarter_round_avoid_zero, bias, 0);
     const quarter quarter_no_round = float_to_quarter_v1(i, bias, 0);
     const float float_no_round = quarter_to_float_v2(quarter_no_round, bias, 0);
-    if(brief) {
+    if (brief) {
         std::cout << "bias " << bias << " value: " << std::setprecision(3) << i << std::fixed << std::setprecision(20)
                   << " default: " << float_default
                   << " nearest: " << float_round
@@ -24,7 +24,7 @@ void print_conversion(int bias, float i, bool brief) {
                   << std::endl;
     } else {
         //<< std::fixed << std::setprecision(35)
-        std::cout << std::endl << "Bias: "<< bias << " Original value: " << std::setprecision(3) << i  << std::endl;
+        std::cout << std::endl << "Bias: " << bias << " Original value: " << std::setprecision(3) << i << std::endl;
         print_bits(i);
         std::cout << "quarter default: " << float_default << std::endl;
         print_bits(float_default);
@@ -45,15 +45,15 @@ void print_conversion(int bias, float i, bool brief) {
 void print_conversions_small_numbers(int bias, bool brief) {
     print_conversion(bias, 0, brief);
     for (int i = 1; i <= 10; i++) {
-        float f = ((float)i)/1000.0f;
+        float f = ((float) i) / 1000.0f;
         print_conversion(bias, f, brief);
     }
     for (int i = 1; i <= 10; i++) {
-        float f = ((float)i)/100.0f;
+        float f = ((float) i) / 100.0f;
         print_conversion(bias, f, brief);
     }
     for (int i = 1; i <= 30; i++) {
-        float f = 0.1f + (float)i/10.0f;
+        float f = 0.1f + (float) i / 10.0f;
         print_conversion(bias, f, brief);
     }
 }
@@ -62,10 +62,10 @@ void print_conversions_big_numbers(int bias, bool brief) {
     print_conversion(bias, 0, brief);
     print_conversion(bias, 1, brief);
     for (int i = 1; i <= 10; i++) {
-        print_conversion(bias, (float)i*10.0f, brief);
+        print_conversion(bias, (float) i * 10.0f, brief);
     }
     for (int i = 1; i <= 10; i++) {
-        print_conversion(bias, (float)i*100.0f, brief);
+        print_conversion(bias, (float) i * 100.0f, brief);
     }
 }
 

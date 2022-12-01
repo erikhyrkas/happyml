@@ -10,7 +10,6 @@
 #include <iterator>
 #include <array>
 #include <iostream>
-#include <format>
 #include <iomanip>
 #include "tensor.hpp"
 
@@ -110,7 +109,8 @@ namespace microml {
 
 
             // This could be more efficient. We calculate for bias 0, then discard after we find the target range
-            if (quarter_to_float(QUARTER_MIN, 14, 0) <= min_value && quarter_to_float(QUARTER_MAX, 14, 0) >= max_value) {
+            if (quarter_to_float(QUARTER_MIN, 14, 0) <= min_value &&
+                quarter_to_float(QUARTER_MAX, 14, 0) >= max_value) {
 //            std::cout << "min and max fit in quarter 14: " << min_value << " -> " << max_value << " must fit in "
 //                      << quarter_to_float(QUARTER_MIN, 14, 0) << " -> " << quarter_to_float(QUARTER_MAX, 14, 0)
 //                      << std::endl;
@@ -215,7 +215,8 @@ namespace microml {
                 delim = ", ";
             }
             std::cout << std::endl << "recommended bias: " << recommended_bias << std::endl;
-            std::cout << "recommended offset: " << std::fixed << std::setprecision(15) << recommended_offset << std::endl;
+            std::cout << "recommended offset: " << std::fixed << std::setprecision(15) << recommended_offset
+                      << std::endl;
             std::cout << "min: " << std::fixed << min_value << std::endl;
             std::cout << "max: " << std::fixed << max_value << std::endl;
             std::cout << "range: " << std::fixed << (max_value - min_value) << std::endl;

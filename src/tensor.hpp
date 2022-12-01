@@ -102,14 +102,14 @@ using namespace std;
 
 namespace microml {
 
-    void wait_for_futures(queue<future<void>> &futures) {
+    void wait_for_futures(queue <future<void>> &futures) {
         while (!futures.empty()) {
             futures.front().wait();
             futures.pop();
         }
     }
 
-    class BaseTensor {
+    class BaseTensor : public enable_shared_from_this<BaseTensor> {
     public:
         virtual size_t row_count() = 0;
 
@@ -117,8 +117,8 @@ namespace microml {
 
         virtual size_t channel_count() = 0;
 
-        virtual bool contains(BaseTensor *other) {
-            return other == this;
+        virtual bool contains(const shared_ptr<BaseTensor> &other) {
+            return other == shared_from_this();
         }
 
         unsigned long size() {
@@ -131,7 +131,7 @@ namespace microml {
 
         virtual float get_val(size_t row, size_t column, size_t channel) = 0;
 
-        virtual vector<size_t> getShape() {
+        virtual vector <size_t> getShape() {
             return {row_count(), column_count(), channel_count()};
         }
 
@@ -205,13 +205,31 @@ namespace microml {
             return result;
         }
 
+        pair<float, float> range() {
+            float min_result = INFINITY;
+            float max_result = -INFINITY;
+            const size_t max_rows = row_count();
+            const size_t max_cols = column_count();
+            const size_t max_channels = channel_count();
+            for (size_t channel = 0; channel < max_channels; channel++) {
+                for (size_t row = 0; row < max_rows; row++) {
+                    for (size_t col = 0; col < max_cols; col++) {
+                        const auto val = get_val(row, col, channel);
+                        min_result = std::min(min_result, val);
+                        max_result = std::max(max_result, val);
+                    }
+                }
+            }
+            return {min_result, max_result};
+        }
+
         size_t max_index(size_t channel, size_t row) {
             size_t result = 0;
             float current_max = -INFINITY;
             const size_t max_cols = column_count();
             for (size_t col = 0; col < max_cols; col++) {
-                float next_val =get_val(row, col, channel);
-                if( next_val > current_max) {
+                float next_val = get_val(row, col, channel);
+                if (next_val > current_max) {
                     current_max = next_val;
                     result = col;
                 }
@@ -224,8 +242,8 @@ namespace microml {
             float current_min = INFINITY;
             const size_t max_cols = column_count();
             for (size_t col = 0; col < max_cols; col++) {
-                float next_val =get_val(row, col, channel);
-                if( next_val < current_min) {
+                float next_val = get_val(row, col, channel);
+                if (next_val < current_min) {
                     current_min = next_val;
                     result = col;
                 }
@@ -233,34 +251,34 @@ namespace microml {
             return result;
         }
 
-        vector<size_t> max_indices(size_t channel, size_t row) {
+        vector <size_t> max_indices(size_t channel, size_t row) {
             vector<size_t> result;
             float current_max = -INFINITY;
             const size_t max_cols = column_count();
             for (size_t col = 0; col < max_cols; col++) {
-                float next_val =get_val(row, col, channel);
-                if( next_val > current_max) {
+                float next_val = get_val(row, col, channel);
+                if (next_val > current_max) {
                     current_max = next_val;
                     result.clear();
                     result.push_back(col);
-                } else if( next_val == current_max) {
+                } else if (next_val == current_max) {
                     result.push_back(col);
                 }
             }
             return result;
         }
 
-        vector<size_t> min_indices(size_t channel, size_t row) {
+        vector <size_t> min_indices(size_t channel, size_t row) {
             vector<size_t> result;
             float current_min = INFINITY;
             const size_t max_cols = column_count();
             for (size_t col = 0; col < max_cols; col++) {
-                float next_val =get_val(row, col, channel);
-                if( next_val < current_min) {
+                float next_val = get_val(row, col, channel);
+                if (next_val < current_min) {
                     current_min = next_val;
                     result.clear();
                     result.push_back(col);
-                } else if( next_val == current_min) {
+                } else if (next_val == current_min) {
                     result.push_back(col);
                 }
             }
@@ -378,32 +396,44 @@ namespace microml {
         }
 
         void print(ostream &out) {
-            out << "[" << setprecision(3) << fixed << endl;
+            if(channel_count() > 1) {
+                out << "[";
+            }
+            out << setprecision(3) << fixed << endl;
             const size_t rows = row_count();
             const size_t cols = column_count();
             const size_t max_channels = channel_count();
             for (size_t channel = 0; channel < max_channels; channel++) {
-                out << "[" << endl;
                 for (size_t row = 0; row < rows; row++) {
+                    if( rows > 1) {
+                        cout << "|";
+                    } else {
+                        cout << "[";
+                    }
                     string delim;
                     for (size_t col = 0; col < cols; col++) {
                         out << delim << get_val(row, col, channel);
                         delim = ", ";
                     }
-                    out << endl;
+                    if( rows > 1) {
+                        out << "|" << endl;
+                    } else {
+                        out << "]" << endl;
+                    }
                 }
-                out << "]" << endl;
             }
-            out << "]" << endl;
+            if(channel_count() > 1) {
+                out << "]";
+            }
         }
     };
 
 // This abstract class lets us build float tensors and bit tensors as well and use them interchangeably.
     class BaseAssignableTensor : public BaseTensor {
     public:
-        virtual void assign(BaseTensor &other) = 0;
+        virtual void assign(const shared_ptr<BaseTensor> &other) = 0;
 
-        virtual void assign(BaseTensor &other, BaseAssignableTensor &working_memory) = 0;
+        virtual void assign(const shared_ptr<BaseTensor> &other, const shared_ptr<BaseAssignableTensor> &working_memory) = 0;
     };
 
 // The full tensor is backed by a 32-bit float. This exists because our input into our models may
@@ -422,10 +452,10 @@ namespace microml {
             }
         }
 
-        explicit FullTensor(BaseTensor &original)
-                : FullTensor(original.row_count(),
-                             original.column_count(),
-                             original.channel_count()) {
+        explicit FullTensor(const shared_ptr<BaseTensor> &original)
+                : FullTensor(original->row_count(),
+                             original->column_count(),
+                             original->channel_count()) {
             do_assign(original);
         }
 
@@ -440,13 +470,14 @@ namespace microml {
 
         // get a weird warning here that CLion can't resolve constructor. I believe this is a bug with CLion itself:
         // https://youtrack.jetbrains.com/issue/CPP-24510/Bad-detection-of-Constructor-is-not-implemented
-        explicit FullTensor(const vector<vector<vector<float>>> &values) : FullTensor(values[0].size(), values[0][0].size(), values.size()) {
+        explicit FullTensor(const vector<vector<vector<float>>> &values) :
+                FullTensor(values[0].size(), values[0][0].size(), values.size()) {
             size_t channel_index = 0;
-            for (const vector<vector<float>> &next_channel: values) {
+            for (const vector <vector<float>> &next_channel: values) {
                 size_t row_index = 0;
-                for( const vector<float> &next_row : next_channel) {
+                for (const vector<float> &next_row: next_channel) {
                     size_t col_index = 0;
-                    for(float val: next_row) {
+                    for (float val: next_row) {
                         set_val(row_index, col_index, channel_index, val);
                         col_index++;
                     }
@@ -456,13 +487,13 @@ namespace microml {
             }
         }
 
-        void assign(BaseTensor &other, BaseAssignableTensor &working_memory) override {
-            if (&other == this) {
+        void assign(const shared_ptr<BaseTensor> &other, const shared_ptr<BaseAssignableTensor> &working_memory) override {
+            if (other == shared_from_this()) {
                 return; //assignment to self is pointless and expensive
             }
-            if (contains(&other)) {
+            if (contains(other)) {
 //                cout << "ASSIGN: making copy to working memory -- needs tests" << endl;
-                working_memory.assign(other);
+                working_memory->assign(other);
                 do_assign(working_memory);
             } else {
 //                cout << "ASSIGN: no copy to working memory -- needs tests" << endl;
@@ -476,11 +507,11 @@ namespace microml {
         // this could possibly be optimized by leveraging the newly allocated tensor's
         // internal values directly, but our current data elements are vectors, not a pointer
         // to vectors.
-        void assign(BaseTensor &other) override {
-            if (&other == this) {
+        void assign(const shared_ptr<BaseTensor> &other) override {
+            if (other == shared_from_this()) {
                 return; //assignment to self is pointless and expensive
             }
-            if (contains(&other)) {
+            if (contains(other)) {
 //                cout << "ASSIGN: making copy -- needs tests" << endl;
                 auto temp = make_shared<FullTensor>(other);
 //            do_assign(*temp); -- let's just steal the memory:
@@ -514,13 +545,12 @@ namespace microml {
         }
 
     private:
-        vector<vector<vector<float>>> data;
+        vector <vector<vector < float>>> data;
 
-        void do_assign(BaseTensor &other) {
-            if (other.row_count() != row_count() && other.channel_count() != channel_count() &&
-                other.column_count() != column_count()) {
-                throw exception(
-                        "A tensor cannot be assigned from another tensor with a different shape");
+        void do_assign(const shared_ptr<BaseTensor> &other) {
+            if (other->row_count() != row_count() && other->channel_count() != channel_count() &&
+                other->column_count() != column_count()) {
+                throw exception("A tensor cannot be assigned from another tensor with a different shape");
             }
 
             const size_t columns = column_count();
@@ -529,19 +559,38 @@ namespace microml {
             if (rows <= 1 && columns < 10000) {
                 for (size_t channel = 0; channel < channels; channel++) {
                     for (size_t row = 0; row < rows; row++) {
-                        populate_by_col(&other, this, row, columns, channel);
+                        populate_by_col(other, this, row, columns, channel);
+                    }
+                }
+            } else if(columns <= 1 && rows < 10000) {
+                for (size_t channel = 0; channel < channels; channel++) {
+                    for (size_t col = 0; col < columns; col++) {
+                        populate_by_row(other, this, rows, col, channel);
                     }
                 }
             } else {
                 queue<future<void>> futures;
                 const size_t wait_amount = 8096;
-                for (size_t channel = 0; channel < channels; channel++) {
-                    for (size_t row = 0; row < rows; row++) {
-                        auto next_async = async(launch::async, populate_by_col, &other, this, row, columns,
-                                                     channel);
-                        futures.push(std::move(next_async));
-                        if (futures.size() >= wait_amount) {
-                            wait_for_futures(futures);
+                if( rows >= columns) {
+                    for (size_t channel = 0; channel < channels; channel++) {
+                        for (size_t row = 0; row < rows; row++) {
+                            auto next_async = async(launch::async, populate_by_col, other, this, row, columns,
+                                                    channel);
+                            futures.push(std::move(next_async));
+                            if (futures.size() >= wait_amount) {
+                                wait_for_futures(futures);
+                            }
+                        }
+                    }
+                } else {
+                    for (size_t channel = 0; channel < channels; channel++) {
+                        for (size_t col = 0; col < columns; col++) {
+                            auto next_async = async(launch::async, populate_by_row, other, this, rows, col,
+                                                    channel);
+                            futures.push(std::move(next_async));
+                            if (futures.size() >= wait_amount) {
+                                wait_for_futures(futures);
+                            }
                         }
                     }
                 }
@@ -550,12 +599,22 @@ namespace microml {
         }
 
 
-        static void populate_by_col(BaseTensor *source,
+        static void populate_by_col(const shared_ptr<BaseTensor> &source,
                                     FullTensor *dest,
                                     size_t row,
                                     size_t max_cols,
                                     size_t channel) {
             for (size_t col = 0; col < max_cols; col++) {
+                dest->set_val(row, col, channel, source->get_val(row, col, channel));
+            }
+        }
+
+        static void populate_by_row(const shared_ptr<BaseTensor> &source,
+                                    FullTensor *dest,
+                                    size_t max_rows,
+                                    size_t col,
+                                    size_t channel) {
+            for (size_t row = 0; row < max_rows; row++) {
                 dest->set_val(row, col, channel, source->get_val(row, col, channel));
             }
         }
@@ -586,13 +645,15 @@ namespace microml {
             }
         }
 
-        explicit PixelTensor(BaseTensor &original)
-                : PixelTensor(original.row_count(),
-                              original.column_count(),
-                              original.channel_count()) {
+        explicit PixelTensor(const shared_ptr<BaseTensor> &original)
+                : PixelTensor(original->row_count(),
+                              original->column_count(),
+                              original->channel_count()) {
             do_assign(original);
         }
 
+        // If you use this constructor, you've already wasted a lot of memory.
+        // Maybe you can just use a full tensor?
         explicit PixelTensor(const vector<float> &values) : PixelTensor(1, values.size(), 1) {
             size_t col = 0;
             for (float const &val: values) {
@@ -601,13 +662,33 @@ namespace microml {
             }
         }
 
-        void assign(BaseTensor &other, BaseAssignableTensor &working_memory) override {
-            if (&other == this) {
+        // see the note by FullTensor about the CLion warning bug.
+        // If you use this constructor, you've already wasted a lot of memory.
+        // Maybe you can just use a full tensor?
+        explicit PixelTensor(const vector<vector<vector<float>>> &values) :
+                PixelTensor(values[0].size(), values[0][0].size(), values.size()) {
+            size_t channel_index = 0;
+            for (const auto &next_channel: values) {
+                size_t row_index = 0;
+                for (const auto &next_row: next_channel) {
+                    size_t col_index = 0;
+                    for (float val: next_row) {
+                        set_val(row_index, col_index, channel_index, val);
+                        col_index++;
+                    }
+                    row_index++;
+                }
+                channel_index++;
+            }
+        }
+
+        void assign(const shared_ptr<BaseTensor> &other, const shared_ptr<BaseAssignableTensor> &working_memory) override {
+            if (other == shared_from_this()) {
                 return; //assignment to self is pointless and expensive
             }
-            if (contains(&other)) {
+            if (contains(other)) {
                 cout << "ASSIGN: making copy to working memory -- needs tests" << endl;
-                working_memory.assign(other);
+                working_memory->assign(other);
                 do_assign(working_memory);
             } else {
                 cout << "ASSIGN: no copy to working memory -- needs tests" << endl;
@@ -621,11 +702,11 @@ namespace microml {
         // this could possibly be optimized by leveraging the newly allocated tensor's
         // internal values directly, but our current data elements are vectors, not a pointer
         // to vectors.
-        void assign(BaseTensor &other) override {
-            if (&other == this) {
+        void assign(const shared_ptr<BaseTensor> &other) override {
+            if (other == shared_from_this()) {
                 return; //assignment to self is pointless and expensive
             }
-            if (contains(&other)) {
+            if (contains(other)) {
                 cout << "ASSIGN: making copy -- needs tests" << endl;
                 auto temp = make_shared<PixelTensor>(other);
 //            do_assign(*temp); -- let's just steal the memory:
@@ -655,15 +736,16 @@ namespace microml {
         }
 
         float get_val(size_t row, size_t column, size_t channel) override {
-            return data.at(channel).at(row).at(column);
+            return ((float) data.at(channel).at(row).at(column)) / 255.f;
         }
 
     private:
-        vector<vector<vector<uint8_t>>> data;
+        vector <vector<vector < uint8_t>>>
+        data;
 
-        void do_assign(BaseTensor &other) {
-            if (other.row_count() != row_count() && other.channel_count() != channel_count() &&
-                other.column_count() != column_count()) {
+        void do_assign(const shared_ptr<BaseTensor> &other) {
+            if (other->row_count() != row_count() && other->channel_count() != channel_count() &&
+                other->column_count() != column_count()) {
                 throw exception(
                         "A tensor cannot be assigned from another tensor with a different shape");
             }
@@ -674,19 +756,38 @@ namespace microml {
             if (rows <= 1 && columns < 10000) {
                 for (size_t channel = 0; channel < channels; channel++) {
                     for (size_t row = 0; row < rows; row++) {
-                        populate_by_col(&other, this, row, columns, channel);
+                        populate_by_col(other, this, row, columns, channel);
+                    }
+                }
+            } else if(columns <= 1 && rows < 10000) {
+                for (size_t channel = 0; channel < channels; channel++) {
+                    for (size_t col = 0; col < columns; col++) {
+                        populate_by_row(other, this, rows, col, channel);
                     }
                 }
             } else {
                 queue<future<void>> futures;
                 const size_t wait_amount = 8096;
-                for (size_t channel = 0; channel < channels; channel++) {
-                    for (size_t row = 0; row < rows; row++) {
-                        auto next_async = async(launch::async, populate_by_col, &other, this, row, columns,
-                                                     channel);
-                        futures.push(std::move(next_async));
-                        if (futures.size() >= wait_amount) {
-                            wait_for_futures(futures);
+                if( rows >= columns) {
+                    for (size_t channel = 0; channel < channels; channel++) {
+                        for (size_t row = 0; row < rows; row++) {
+                            auto next_async = async(launch::async, populate_by_col, other, this, row, columns,
+                                                    channel);
+                            futures.push(std::move(next_async));
+                            if (futures.size() >= wait_amount) {
+                                wait_for_futures(futures);
+                            }
+                        }
+                    }
+                } else {
+                    for (size_t channel = 0; channel < channels; channel++) {
+                        for (size_t col = 0; col < columns; col++) {
+                            auto next_async = async(launch::async, populate_by_row, other, this, rows, col,
+                                                    channel);
+                            futures.push(std::move(next_async));
+                            if (futures.size() >= wait_amount) {
+                                wait_for_futures(futures);
+                            }
                         }
                     }
                 }
@@ -694,13 +795,22 @@ namespace microml {
             }
         }
 
-
-        static void populate_by_col(BaseTensor *source,
+        static void populate_by_col(const shared_ptr<BaseTensor> &source,
                                     PixelTensor *dest,
                                     size_t row,
                                     size_t max_cols,
                                     size_t channel) {
             for (size_t col = 0; col < max_cols; col++) {
+                dest->set_val(row, col, channel, source->get_val(row, col, channel));
+            }
+        }
+
+        static void populate_by_row(const shared_ptr<BaseTensor> &source,
+                                    PixelTensor *dest,
+                                    size_t max_rows,
+                                    size_t col,
+                                    size_t channel) {
+            for (size_t row = 0; row < max_rows; row++) {
                 dest->set_val(row, col, channel, source->get_val(row, col, channel));
             }
         }
@@ -712,7 +822,8 @@ namespace microml {
 
     class QuarterTensor : public BaseAssignableTensor {
     public:
-        QuarterTensor(const size_t rows, const size_t columns, const size_t channels, const int bias, const float offset) {
+        QuarterTensor(const size_t rows, const size_t columns, const size_t channels, const int bias,
+                      const float offset) {
             this->bias = bias;
             this->offset = offset;
             data.resize(channels);
@@ -724,20 +835,20 @@ namespace microml {
             }
         }
 
-        explicit QuarterTensor(BaseTensor &original, const int bias, const float offset)
-                : QuarterTensor(original.row_count(),
-                                original.column_count(),
-                                original.channel_count(),
+        explicit QuarterTensor(const shared_ptr<BaseTensor> &original, const int bias, const float offset)
+                : QuarterTensor(original->row_count(),
+                                original->column_count(),
+                                original->channel_count(),
                                 bias,
                                 offset) {
             do_assign(original);
         }
 
         QuarterTensor(const vector<float> &values, const int bias, const float offset) : QuarterTensor(1,
-                                                                                                            values.size(),
-                                                                                                            1,
-                                                                                                            bias,
-                                                                                                            offset) {
+                                                                                                       values.size(),
+                                                                                                       1,
+                                                                                                       bias,
+                                                                                                       offset) {
             size_t col = 0;
             for (float const &val: values) {
                 set_val(0, col, 0, val);
@@ -745,7 +856,7 @@ namespace microml {
             }
         }
 
-        QuarterTensor(const vector<vector<float>> &values, const int bias, const float offset) : QuarterTensor(
+        QuarterTensor(const vector <vector<float>> &values, const int bias, const float offset) : QuarterTensor(
                 values.size(),
                 values.at(0).size(),
                 1,
@@ -794,16 +905,14 @@ namespace microml {
         // allocate and reallocate. If the tensor we are assigning from contains ourselves
         // we'd corrupt the data if we wrote to the tensor while reading from it, so we
         // need working memory to hold the temporary results.
-        void assign(BaseTensor &other, BaseAssignableTensor &working_memory) override {
-            if (&other == this) {
+        void assign(const shared_ptr<BaseTensor> &other, const shared_ptr<BaseAssignableTensor> &working_memory) override {
+            if (other == shared_from_this()) {
                 return; //assignment to self is pointless and expensive
             }
-            if (contains(&other)) {
-                cout << "ASSIGN: making copy to working memory -- needs tests" << endl;
-                working_memory.assign(other);
+            if (contains(other)) {
+                working_memory->assign(other);
                 do_assign(working_memory);
             } else {
-                cout << "ASSIGN: no copy to working memory -- needs tests" << endl;
                 do_assign(other);
             }
         }
@@ -814,11 +923,11 @@ namespace microml {
         // this could possibly be optimized by leveraging the newly allocated tensor's
         // internal values directly, but our current data elements are vectors, not a pointer
         // to vectors.
-        void assign(BaseTensor &other) override {
-            if (&other == this) {
+        void assign(const shared_ptr<BaseTensor> &other) override {
+            if (other == shared_from_this()) {
                 return; //assignment to self is pointless and expensive
             }
-            if (contains(&other)) {
+            if (contains(other)) {
                 cout << "ASSIGN: making copy -- needs tests" << endl;
                 auto temp = make_shared<QuarterTensor>(other, bias, offset);
 //            do_assign(*temp); -- let's just steal the memory:
@@ -834,9 +943,9 @@ namespace microml {
         int bias;
         float offset;
 
-        void do_assign(BaseTensor &other) {
-            if (other.row_count() != row_count() && other.channel_count() != channel_count() &&
-                other.column_count() != column_count()) {
+        void do_assign(const shared_ptr<BaseTensor> &other) {
+            if (other->row_count() != row_count() && other->channel_count() != channel_count() &&
+                other->column_count() != column_count()) {
                 throw exception(
                         "A tensor cannot be assigned from another tensor with a different shape");
             }
@@ -847,19 +956,38 @@ namespace microml {
             if (rows <= 1 && columns < 10000) {
                 for (size_t channel = 0; channel < channels; channel++) {
                     for (size_t row = 0; row < rows; row++) {
-                        populate_by_col(&other, this, row, columns, channel);
+                        populate_by_col(other, this, row, columns, channel);
+                    }
+                }
+            } else if(columns <= 1 && rows < 10000) {
+                for (size_t channel = 0; channel < channels; channel++) {
+                    for (size_t col = 0; col < columns; col++) {
+                        populate_by_row(other, this, rows, col, channel);
                     }
                 }
             } else {
                 queue<future<void>> futures;
                 const size_t wait_amount = 8096;
-                for (size_t channel = 0; channel < channels; channel++) {
-                    for (size_t row = 0; row < rows; row++) {
-                        auto next_async = async(launch::async, populate_by_col, &other, this, row, columns,
-                                                     channel);
-                        futures.push(std::move(next_async));
-                        if (futures.size() >= wait_amount) {
-                            wait_for_futures(futures);
+                if( rows >= columns) {
+                    for (size_t channel = 0; channel < channels; channel++) {
+                        for (size_t row = 0; row < rows; row++) {
+                            auto next_async = async(launch::async, populate_by_col, other, this, row, columns,
+                                                    channel);
+                            futures.push(std::move(next_async));
+                            if (futures.size() >= wait_amount) {
+                                wait_for_futures(futures);
+                            }
+                        }
+                    }
+                } else {
+                    for (size_t channel = 0; channel < channels; channel++) {
+                        for (size_t col = 0; col < columns; col++) {
+                            auto next_async = async(launch::async, populate_by_row, other, this, rows, col,
+                                                    channel);
+                            futures.push(std::move(next_async));
+                            if (futures.size() >= wait_amount) {
+                                wait_for_futures(futures);
+                            }
                         }
                     }
                 }
@@ -868,13 +996,28 @@ namespace microml {
         }
 
 
-        static void populate_by_col(BaseTensor *source,
+        static void populate_by_col(const shared_ptr<BaseTensor> &source,
                                     QuarterTensor *dest,
                                     size_t row,
                                     size_t max_cols,
                                     size_t channel) {
+//            cout << "pop by col" <<endl;
             for (size_t col = 0; col < max_cols; col++) {
                 dest->set_val(row, col, channel, source->get_val(row, col, channel));
+            }
+        }
+
+        static void populate_by_row(const shared_ptr<BaseTensor> &source,
+                                    QuarterTensor *dest,
+                                    size_t max_rows,
+                                    size_t col,
+                                    size_t channel) {
+//            cout << "pop by row" <<endl;
+            for (size_t row = 0; row < max_rows; row++) {
+                const float source_val = source->get_val(row, col, channel);
+                dest->set_val(row, col, channel,source_val);
+//                const float dest_val = dest->get_val(row, col, channel);
+//                cout << "conversion: "<< source_val << " -> " << dest_val << endl;
             }
         }
 
@@ -883,6 +1026,15 @@ namespace microml {
         // a lot of memory for a full tensor that you will then do other math on. Wait to use memory
         // for the final result.
         inline void set_val(size_t row, size_t column, size_t channel, float val) {
+            // used only during a test for a breakpoint
+//            const float qv = quarter_to_float(float_to_quarter(val, bias, offset), bias, offset);
+//            if(std::abs(val-qv) > 0.014 ){
+//                cout  << endl << "major precision loss: " << val << " -> " << qv << endl;
+//                // in 8000 epochs for the xor test, this didn't happen. most error is below 0.01 with the
+//                // rare error between 0.01 and 0.014
+//                // where I think this is problematic is over 96000 individual numbers in that original
+//                // 8000 epochs each being 0.01 off adds up to significant error.
+//            }
             data.at(channel).at(row).at(column) = float_to_quarter(val, bias, offset);
         }
     };
@@ -920,8 +1072,8 @@ namespace microml {
             this->channels = channels;
         }
 
-        bool contains(BaseTensor *other) override {
-            return other == this;
+        bool contains(const shared_ptr<BaseTensor> &other) override {
+            return other == shared_from_this();
         }
 
         size_t row_count() override {
@@ -992,8 +1144,8 @@ namespace microml {
         }
 
 
-        bool contains(BaseTensor *other) override {
-            return other == this;
+        bool contains(const shared_ptr<BaseTensor> &other) override {
+            return other == shared_from_this();
         }
 
         size_t row_count() override {
@@ -1051,8 +1203,8 @@ namespace microml {
             this->value = value;
         }
 
-        bool contains(BaseTensor *other) override {
-            return other == this;
+        bool contains(const shared_ptr<BaseTensor> &other) override {
+            return other == shared_from_this();
         }
 
         size_t row_count() override {
@@ -1086,8 +1238,8 @@ namespace microml {
             this->channels = channels;
         }
 
-        bool contains(BaseTensor *other) override {
-            return other == this;
+        bool contains(const shared_ptr<BaseTensor> &other) override {
+            return other == shared_from_this();
         }
 
         size_t row_count() override {
@@ -1114,12 +1266,12 @@ namespace microml {
 
     class BaseTensorUnaryOperatorView : public BaseTensor {
     public:
-        explicit BaseTensorUnaryOperatorView(const shared_ptr<BaseTensor> &tensor) {
+        explicit BaseTensorUnaryOperatorView(const shared_ptr <BaseTensor> &tensor) {
             this->child = tensor;
         }
 
-        bool contains(BaseTensor *other) override {
-            return other == this || child->contains(other);
+        bool contains(const shared_ptr<BaseTensor> &other) override {
+            return other == shared_from_this() || child->contains(other);
         }
 
         size_t row_count() override {
@@ -1135,13 +1287,13 @@ namespace microml {
         }
 
     protected:
-        shared_ptr<BaseTensor> child;
+        shared_ptr <BaseTensor> child;
     };
 
 // Adds a constant to every value of a matrix through a view
     class TensorAddScalarView : public BaseTensorUnaryOperatorView {
     public:
-        TensorAddScalarView(const shared_ptr<BaseTensor> &tensor, float adjustment)
+        TensorAddScalarView(const shared_ptr <BaseTensor> &tensor, float adjustment)
                 : BaseTensorUnaryOperatorView(tensor) {
             this->adjustment = adjustment;
         }
@@ -1162,7 +1314,7 @@ namespace microml {
 // Multiply each element of the tensor by a constant.
     class TensorMultiplyByScalarView : public BaseTensorUnaryOperatorView {
     public:
-        TensorMultiplyByScalarView(const shared_ptr<BaseTensor> &tensor, float scale) : BaseTensorUnaryOperatorView(
+        TensorMultiplyByScalarView(const shared_ptr <BaseTensor> &tensor, float scale) : BaseTensorUnaryOperatorView(
                 tensor) {
             this->scale = scale;
         }
@@ -1181,7 +1333,7 @@ namespace microml {
 
     class TensorValueTransformView : public BaseTensorUnaryOperatorView {
     public:
-        TensorValueTransformView(const shared_ptr<BaseTensor> &tensor, function<float(float)> transformFunction)
+        TensorValueTransformView(const shared_ptr <BaseTensor> &tensor, function<float(float)> transformFunction)
                 : BaseTensorUnaryOperatorView(
                 tensor) {
             this->transformFunction = std::move(transformFunction);
@@ -1197,7 +1349,7 @@ namespace microml {
 
     class TensorValueTransform2View : public BaseTensorUnaryOperatorView {
     public:
-        TensorValueTransform2View(const shared_ptr<BaseTensor> &tensor,
+        TensorValueTransform2View(const shared_ptr <BaseTensor> &tensor,
                                   function<float(float, vector<double>)> transformFunction,
                                   vector<double> constants) : BaseTensorUnaryOperatorView(
                 tensor) {
@@ -1218,7 +1370,7 @@ namespace microml {
 // You cannot change the number of channels in the current implementation.
     class TensorReshapeView : public BaseTensorUnaryOperatorView {
     public:
-        TensorReshapeView(const shared_ptr<BaseTensor> &tensor, const size_t rows,
+        TensorReshapeView(const shared_ptr <BaseTensor> &tensor, const size_t rows,
                           const size_t columns) : BaseTensorUnaryOperatorView(tensor) {
             this->rows = rows;
             this->columns = columns;
@@ -1254,7 +1406,7 @@ namespace microml {
 // Converts a 3d tensor into a row vector
     class TensorFlattenToRowView : public BaseTensorUnaryOperatorView {
     public:
-        explicit TensorFlattenToRowView(const shared_ptr<BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
+        explicit TensorFlattenToRowView(const shared_ptr <BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
             this->columns = tensor->size();
         }
 
@@ -1285,7 +1437,8 @@ namespace microml {
 // Converts a 3d tensor into a column vector
     class TensorFlattenToColumnView : public BaseTensorUnaryOperatorView {
     public:
-        explicit TensorFlattenToColumnView(const shared_ptr<BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
+        explicit TensorFlattenToColumnView(const shared_ptr <BaseTensor> &tensor) : BaseTensorUnaryOperatorView(
+                tensor) {
             this->rows = tensor->size();
         }
 
@@ -1315,7 +1468,7 @@ namespace microml {
 
     class TensorTransposeView : public BaseTensorUnaryOperatorView {
     public:
-        explicit TensorTransposeView(const shared_ptr<BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
+        explicit TensorTransposeView(const shared_ptr <BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
         }
 
         size_t row_count() override {
@@ -1358,16 +1511,23 @@ namespace microml {
 // and specifically: https://www.youtube.com/watch?v=WTLl03D4TNA
     class TensorDiagonalView : public BaseTensorUnaryOperatorView {
     public:
-        TensorDiagonalView(const shared_ptr<BaseTensor> &tensor, size_t row_offset) : BaseTensorUnaryOperatorView(
+        TensorDiagonalView(const shared_ptr <BaseTensor> &tensor, size_t row_offset) : BaseTensorUnaryOperatorView(
                 tensor) {
             this->row_offset = row_offset;
-            // we only have as many columns as there were rows
-            this->columns = tensor->row_count() - row_offset;
-            // we either have 0 or 1 result row
-            this->rows = row_offset < tensor->row_count();
+            this->is_1d = tensor->row_count() == 1;
+            if(!is_1d) {
+                // we only have as many columns as there were rows
+                this->columns = tensor->row_count() - row_offset;
+                // we either have 0 or 1 result row
+                this->rows = row_offset < tensor->row_count();
+            } else {
+                this->columns = tensor->column_count() - row_offset;
+                this->rows = this->columns;
+            }
+
         }
 
-        explicit TensorDiagonalView(const shared_ptr<BaseTensor> &tensor)
+        explicit TensorDiagonalView(const shared_ptr <BaseTensor> &tensor)
                 : TensorDiagonalView(tensor, 0) {
         }
 
@@ -1380,6 +1540,12 @@ namespace microml {
         }
 
         float get_val(size_t row, size_t column, size_t channel) override {
+            if( is_1d) {
+                if( row + row_offset == column) {
+                    child->get_val(0, column, channel);
+                }
+                return 0.f;
+            }
             // we aren't bounds checking, so the caller better make sure that row_count > 0
             return child->get_val(column + row_offset, column, channel);
         }
@@ -1388,12 +1554,13 @@ namespace microml {
         size_t row_offset;
         size_t columns;
         size_t rows;
+        bool is_1d;
     };
 
 
     class TensorNoOpView : public BaseTensorUnaryOperatorView {
     public:
-        explicit TensorNoOpView(const shared_ptr<BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {}
+        explicit TensorNoOpView(const shared_ptr <BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {}
 
         float get_val(size_t row, size_t column, size_t channel) override {
             return child->get_val(row, column, channel);
@@ -1404,14 +1571,14 @@ namespace microml {
 
     class BaseTensorBinaryOperatorView : public BaseTensor {
     public:
-        explicit BaseTensorBinaryOperatorView(const shared_ptr<BaseTensor> &tensor1,
-                                              const shared_ptr<BaseTensor> &tensor2) {
+        explicit BaseTensorBinaryOperatorView(const shared_ptr <BaseTensor> &tensor1,
+                                              const shared_ptr <BaseTensor> &tensor2) {
             this->child1 = tensor1;
             this->child2 = tensor2;
         }
 
-        bool contains(BaseTensor *other) override {
-            return other == this || child1->contains(other) || child2->contains(other);
+        bool contains(const shared_ptr<BaseTensor> &other) override {
+            return other == shared_from_this() || child1->contains(other) || child2->contains(other);
         }
 
         size_t channel_count() override {
@@ -1419,17 +1586,17 @@ namespace microml {
         }
 
     protected:
-        shared_ptr<BaseTensor> child1;
-        shared_ptr<BaseTensor> child2;
+        shared_ptr <BaseTensor> child1;
+        shared_ptr <BaseTensor> child2;
     };
 
     class TensorDotTensorView : public BaseTensorBinaryOperatorView {
     public:
-        TensorDotTensorView(const shared_ptr<BaseTensor> &tensor1,
-                            const shared_ptr<BaseTensor> &tensor2) : BaseTensorBinaryOperatorView(tensor1, tensor2) {
+        TensorDotTensorView(const shared_ptr <BaseTensor> &tensor1,
+                            const shared_ptr <BaseTensor> &tensor2) : BaseTensorBinaryOperatorView(tensor1, tensor2) {
             if (tensor1->column_count() != tensor2->row_count()) {
-                cout << endl << tensor1->row_count() << ", " << tensor1->column_count() << ", " << tensor1->channel_count() << endl;
-                cout << tensor2->row_count() << ", " << tensor2->column_count() << ", " << tensor2->channel_count() << endl;
+                cout << "[" << tensor1->row_count() << ", " << tensor1->column_count() << ", " << tensor1->channel_count() << "] dot [";
+                cout << tensor2->row_count() << ", " << tensor2->column_count() << ", " << tensor2->channel_count() << "]" << endl;
                 throw exception("Dot product tensor1.cols must match tensor2.rows in length");
             }
             if (tensor1->channel_count() != tensor2->channel_count()) {
@@ -1458,14 +1625,17 @@ namespace microml {
 
     class TensorMultiplyTensorView : public BaseTensorBinaryOperatorView {
     public:
-        TensorMultiplyTensorView(const shared_ptr<BaseTensor> &tensor1,
-                            const shared_ptr<BaseTensor> &tensor2) : BaseTensorBinaryOperatorView(tensor1, tensor2) {
+        TensorMultiplyTensorView(const shared_ptr <BaseTensor> &tensor1,
+                                 const shared_ptr <BaseTensor> &tensor2) : BaseTensorBinaryOperatorView(tensor1,
+                                                                                                        tensor2) {
             if (tensor1->column_count() != tensor2->column_count() || tensor1->row_count() != tensor2->row_count()) {
-                cout << endl << tensor1->row_count() << ", " << tensor1->column_count() << ", " << tensor1->channel_count() << endl;
-                cout << tensor2->row_count() << ", " << tensor2->column_count() << ", " << tensor2->channel_count() << endl;
-                throw exception("Multiply tensor1.cols must match tensor2.cols in length");
+                cout << "[" << tensor1->row_count() << ", " << tensor1->column_count() << ", " << tensor1->channel_count() << "] * [";
+                cout << tensor2->row_count() << ", " << tensor2->column_count() << ", " << tensor2->channel_count() << "]" << endl;
+                throw exception("Multiply cols and rows much match in length");
             }
             if (tensor1->channel_count() != tensor2->channel_count()) {
+                cout << "[" << tensor1->row_count() << ", " << tensor1->column_count() << ", " << tensor1->channel_count() << "] * [";
+                cout << tensor2->row_count() << ", " << tensor2->column_count() << ", " << tensor2->channel_count() << "]" << endl;
                 throw exception("Multiply product tensor1.channels must match tensor2.channels in length");
             }
         }
@@ -1475,7 +1645,7 @@ namespace microml {
         }
 
         size_t column_count() override {
-            return child2->column_count();
+            return child1->column_count();
         }
 
         float get_val(size_t row, size_t column, size_t channel) override {
@@ -1486,12 +1656,12 @@ namespace microml {
 
     class TensorAddTensorView : public BaseTensorBinaryOperatorView {
     public:
-        TensorAddTensorView(const shared_ptr<BaseTensor> &tensor1,
-                            const shared_ptr<BaseTensor> &tensor2) : BaseTensorBinaryOperatorView(tensor1, tensor2) {
+        TensorAddTensorView(const shared_ptr <BaseTensor> &tensor1,
+                            const shared_ptr <BaseTensor> &tensor2) : BaseTensorBinaryOperatorView(tensor1, tensor2) {
             if (tensor1->channel_count() != tensor2->channel_count() || tensor1->row_count() != tensor2->row_count() ||
                 tensor1->column_count() != tensor2->column_count()) {
-//                cout << tensor1->row_count() << ", " << tensor1->column_count() << ", " << tensor1->channel_count() << endl;
-//                cout << tensor2->row_count() << ", " << tensor2->column_count() << ", " << tensor2->channel_count() << endl;
+                cout << "[" << tensor1->row_count() << ", " << tensor1->column_count() << ", " << tensor1->channel_count() << "] + [";
+                cout << tensor2->row_count() << ", " << tensor2->column_count() << ", " << tensor2->channel_count() << "]" << endl;
                 throw exception("You can only add two tensors of the same dimensions together.");
             }
         }
@@ -1511,10 +1681,12 @@ namespace microml {
 
     class TensorMinusTensorView : public BaseTensorBinaryOperatorView {
     public:
-        TensorMinusTensorView(const shared_ptr<BaseTensor> &tensor1,
-                              const shared_ptr<BaseTensor> &tensor2) : BaseTensorBinaryOperatorView(tensor1, tensor2) {
+        TensorMinusTensorView(const shared_ptr <BaseTensor> &tensor1,
+                              const shared_ptr <BaseTensor> &tensor2) : BaseTensorBinaryOperatorView(tensor1, tensor2) {
             if (tensor1->channel_count() != tensor2->channel_count() || tensor1->row_count() != tensor2->row_count() ||
                 tensor1->column_count() != tensor2->column_count()) {
+                cout << "[" << tensor1->row_count() << ", " << tensor1->column_count() << ", " << tensor1->channel_count() << "] - [";
+                cout << tensor2->row_count() << ", " << tensor2->column_count() << ", " << tensor2->channel_count() << "]" << endl;
                 throw exception("You can only add two tensors of the same dimensions together.");
             }
         }
@@ -1534,7 +1706,7 @@ namespace microml {
 
     class TensorPowerView : public BaseTensorUnaryOperatorView {
     public:
-        TensorPowerView(const shared_ptr<BaseTensor> &tensor, const float power) : BaseTensorUnaryOperatorView(
+        TensorPowerView(const shared_ptr <BaseTensor> &tensor, const float power) : BaseTensorUnaryOperatorView(
                 tensor) {
             this->power = power;
         }
@@ -1550,7 +1722,7 @@ namespace microml {
 
     class TensorLogView : public BaseTensorUnaryOperatorView {
     public:
-        explicit TensorLogView(const shared_ptr<BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
+        explicit TensorLogView(const shared_ptr <BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
         }
 
         float get_val(size_t row, size_t column, size_t channel) override {
@@ -1563,7 +1735,7 @@ namespace microml {
 
     class TensorLog2View : public BaseTensorUnaryOperatorView {
     public:
-        explicit TensorLog2View(const shared_ptr<BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
+        explicit TensorLog2View(const shared_ptr <BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
         }
 
         float get_val(size_t row, size_t column, size_t channel) override {
@@ -1576,7 +1748,7 @@ namespace microml {
 
     class TensorRoundedView : public BaseTensorUnaryOperatorView {
     public:
-        explicit TensorRoundedView(const shared_ptr<BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
+        explicit TensorRoundedView(const shared_ptr <BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
         }
 
         float get_val(size_t row, size_t column, size_t channel) override {
@@ -1586,9 +1758,14 @@ namespace microml {
 
     private:
     };
+
     // channels, rows, columns
-    shared_ptr<FullTensor> tensor(const vector<vector<vector<float>>> &t) {
+    shared_ptr <FullTensor> tensor(const vector <vector<vector<float>>> &t) {
         return make_shared<FullTensor>(t);
+    }
+
+    shared_ptr<PixelTensor> pixel_tensor(const vector<vector<vector<float>>> &t) {
+        return make_shared<PixelTensor>(t);
     }
 
     shared_ptr<FullTensor> column_vector(const vector<float> &t) {
@@ -1596,7 +1773,7 @@ namespace microml {
     }
 
     float scalar(const shared_ptr<BaseTensor> &tensor) {
-        if(tensor->size() < 1) {
+        if (tensor->size() < 1) {
             return 0.f;
         }
         return tensor->get_val(0);
@@ -1605,5 +1782,10 @@ namespace microml {
     shared_ptr<BaseTensor> round(const shared_ptr<BaseTensor> &tensor) {
         return make_shared<TensorRoundedView>(tensor);
     }
+
+    size_t max_index(const shared_ptr<BaseTensor> &tensor) {
+        return tensor->max_index(0, 0);
+    }
+
 }
 #endif //MICROML_TENSOR_HPP

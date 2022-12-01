@@ -7,7 +7,7 @@
 
 #include <chrono>
 #include <iostream>
-#include "dataset.hpp"
+#include "../dataset.hpp"
 
 using namespace std;
 
@@ -182,103 +182,6 @@ namespace microml {
 
     private:
         size_t dataset_size;
-        std::vector<std::shared_ptr<TrainingPair>> pairs;
-        size_t current_offset;
-    };
-
-    class TestTrainingDataSet : public TrainingDataSet {
-    public:
-        explicit TestTrainingDataSet() {
-            this->current_offset = 0;
-        }
-
-        void addTrainingData(const shared_ptr<FullTensor> &given, float expected) {
-            pairs.push_back(std::make_shared<TrainingPair>(given, column_vector({expected})));
-        }
-
-        void addTrainingData(const shared_ptr<FullTensor> &given, const shared_ptr<FullTensor> &expected) {
-            pairs.push_back(std::make_shared<TrainingPair>(given, expected));
-        }
-
-        size_t record_count() override {
-            return pairs.size();
-        }
-
-        void shuffle() override {
-            // todo: likely can be optimized
-            std::random_device rd;
-            std::mt19937 g(rd());
-            std::shuffle(pairs.begin(), pairs.end(), g);
-            restart();
-        }
-
-        void shuffle(size_t start_offset, size_t end_offset) override {
-            // todo: likely can be optimized
-            std::random_device rd;
-            std::mt19937 g(rd());
-            const size_t end = record_count() - end_offset;
-            // weird that I had to cast it down to an unsigned long
-            // feels like a bug waiting to happen with a large data set.
-            std::shuffle(pairs.begin() + (unsigned long) start_offset, pairs.end() - (unsigned long) end, g);
-            restart();
-        }
-
-        void restart() override {
-            current_offset = 0;
-        }
-
-        // populate a batch vector of vectors, reusing the structure. This is to save the time we'd otherwise use
-        // to allocate.
-        std::vector<std::shared_ptr<TrainingPair>> next_batch(size_t batch_size) override {
-            std::vector<std::shared_ptr<TrainingPair>> result;
-            for (size_t batch_offset = 0; batch_offset < batch_size; batch_offset++) {
-                if (current_offset >= record_count()) {
-                    break;
-                }
-                std::shared_ptr<TrainingPair> next = next_record();
-                if (next) {
-                    result.push_back(next);
-                }
-            }
-            return result;
-        }
-
-        std::shared_ptr<TrainingPair> next_record() override {
-            if (current_offset >= record_count()) {
-                return nullptr;
-            }
-            std::shared_ptr<TrainingPair> result = pairs.at(current_offset);
-            if (result) {
-                current_offset++;
-            }
-            return result;
-        }
-
-        std::vector<std::vector<size_t>> getGivenShapes() override {
-            if (pairs.empty()) {
-                return std::vector<std::vector<size_t>>{{0, 0, 0}};
-            }
-            auto given = pairs[0]->getGiven();
-            std::vector<std::vector<size_t>> result;
-            for (const auto& next: given) {
-                result.push_back(next->getShape());
-            }
-            return result;
-        }
-
-        std::vector<std::vector<size_t>> getExpectedShapes() override {
-            if (pairs.empty()) {
-                return std::vector<std::vector<size_t>>{{0, 0, 0}};
-            }
-            auto expected = pairs[0]->getExpected();
-            std::vector<std::vector<size_t>> result;
-            for (const auto& next: expected) {
-                result.push_back(next->getShape());
-            }
-            return result;
-        }
-
-    private:
         std::vector<std::shared_ptr<TrainingPair>> pairs;
         size_t current_offset;
     };
