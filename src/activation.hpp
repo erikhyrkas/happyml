@@ -130,10 +130,29 @@ namespace microml {
         }
     };
 
+    // There may be faster means of approximating sigmoid. See: https://stackoverflow.com/questions/10732027/fast-sigmoid-algorithm
+    // f(x) = 0.5 * (x / (1 + abs(x)) + 1)
+    // 0 to 1
+    class SigmoidApproximationActivationFunction : public ActivationFunction {
+        std::shared_ptr<BaseTensor> activate(const std::shared_ptr<BaseTensor> &input) override {
+            auto transformFunction = [](float original) {
+                return 0.5f * ((original / (1.0f + std::abs(original))) + 1);
+            };
+            return std::make_shared<TensorValueTransformView>(input, transformFunction);
+        }
+
+        std::shared_ptr<BaseTensor> derivative(const std::shared_ptr<BaseTensor> &input) override {
+            // result = sigmoid(x) * (1.0 - sigmoid(x))
+            auto transformFunction = [](float original) {
+                // todo: validate math.
+                auto sig = 0.5f * ((original / (1.0f + std::abs(original))) + 1);
+                return sig * (1.f - sig);
+            };
+            return std::make_shared<TensorValueTransformView>(input, transformFunction);
+        }
+    };
 // I found this article useful in verifying the formula: https://towardsdatascience.com/derivative-of-the-sigmoid-function-536880cf918e
-// There may be faster means of approximating this. See: https://stackoverflow.com/questions/10732027/fast-sigmoid-algorithm
-// If I go this route, I'd probably make a whole new class and let the caller decide on whether to approximate or not
-// maybe "class SigmoidApproximationActivationFunction"
+// I also checked this understanding here: https://medium.com/@DannyDenenberg/derivative-of-the-sigmoid-function-774446dfa462
 // 0 to 1
     class SigmoidActivationFunction : public ActivationFunction {
         std::shared_ptr<BaseTensor> activate(const std::shared_ptr<BaseTensor> &input) override {
@@ -153,6 +172,34 @@ namespace microml {
         }
     };
 
+    // approximate tanh
+    // I read about this here: https://www.ipol.im/pub/art/2015/137/article_lr.pdf
+    class TanhApproximationActivationFunction : public ActivationFunction {
+        std::shared_ptr<BaseTensor> activate(const std::shared_ptr<BaseTensor> &input) override {
+            auto transformFunction = [](float original) {
+                // tanh(x) = 2 * sigmoid(2x) - 1
+                const float two_x = (2 * original);
+                auto sigmoid = 1.0f / (1.0f + std::exp(-1.0f * two_x));
+//                auto sigmoid = 0.5f * ((original / (1.0f + std::abs(original))) + 1); //super approx
+                return (2 * sigmoid) - 1;
+            };
+            return std::make_shared<TensorValueTransformView>(input, transformFunction);
+        }
+
+        std::shared_ptr<BaseTensor> derivative(const std::shared_ptr<BaseTensor> &input) override {
+            // result = sigmoid(x) * (1.0 - sigmoid(x))
+            auto transformFunction = [](float original) {
+                // todo: validate math.
+                // 1 - tanh^2{x}
+                const float two_x = (2 * original);
+                auto sigmoid = 1.0f / (1.0f + std::exp(-1.0f * two_x));
+//                auto sigmoid = 0.5f * ((original / (1.0f + std::abs(original))) + 1); //super approx
+                const float th = (2 * sigmoid) - 1;
+                return 1 - (th * th);
+            };
+            return std::make_shared<TensorValueTransformView>(input, transformFunction);
+        }
+    };
     // Generally used for classification
     // -1 to 1
     class TanhActivationFunction : public ActivationFunction {

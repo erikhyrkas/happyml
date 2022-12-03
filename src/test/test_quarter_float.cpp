@@ -7,20 +7,20 @@ using namespace microml;
 using namespace std;
 
 void print_conversion(int bias, float i, bool brief) {
-    const quarter quarter_default = float_to_quarter(i, bias, 0);
-    const float float_default = quarter_to_float(quarter_default, bias, 0);
-    const quarter quarter_round = float_to_quarter_round_nearest_v2(i, bias, 0, false);
-    const float float_round = quarter_to_float_v2(quarter_round, bias, 0);
-    const quarter quarter_round_avoid_zero = float_to_quarter_round_nearest_v2(i, bias, 0, true);
-    const float float_round_avoid_zero = quarter_to_float_v2(quarter_round_avoid_zero, bias, 0);
-    const quarter quarter_no_round = float_to_quarter_v1(i, bias, 0);
-    const float float_no_round = quarter_to_float_v2(quarter_no_round, bias, 0);
+    const quarter quarter_default = float_to_quarter(i, bias);
+    const float float_default = quarter_to_float(quarter_default, bias);
+//    const quarter quarter_round = float_to_quarter_round_nearest_v2(i, bias, 0, false);
+//    const float float_round = quarter_to_float_v2(quarter_round, bias, 0);
+//    const quarter quarter_round_avoid_zero = float_to_quarter_round_nearest_v2(i, bias, 0, true);
+//    const float float_round_avoid_zero = quarter_to_float_v2(quarter_round_avoid_zero, bias, 0);
+//    const quarter quarter_no_round = float_to_quarter_v1(i, bias, 0);
+//    const float float_no_round = quarter_to_float_v2(quarter_no_round, bias, 0);
     if (brief) {
         std::cout << "bias " << bias << " value: " << std::setprecision(3) << i << std::fixed << std::setprecision(20)
                   << " default: " << float_default
-                  << " nearest: " << float_round
-                  << " nearest avoid zero: " << float_round_avoid_zero
-                  << " no round: " << float_no_round
+//                  << " nearest: " << float_round
+//                  << " nearest avoid zero: " << float_round_avoid_zero
+//                  << " no round: " << float_no_round
                   << std::endl;
     } else {
         //<< std::fixed << std::setprecision(35)
@@ -29,15 +29,15 @@ void print_conversion(int bias, float i, bool brief) {
         std::cout << "quarter default: " << float_default << std::endl;
         print_bits(float_default);
         print_bits(quarter_default);
-        std::cout << "quarter round: " << float_round << std::endl;
-        print_bits(float_round);
-        print_bits(quarter_round);
-        std::cout << "quarter round avoid zero: " << float_round_avoid_zero << std::endl;
-        print_bits(float_round_avoid_zero);
-        print_bits(quarter_round_avoid_zero);
-        std::cout << "quarter no round: " << float_no_round << std::endl;
-        print_bits(float_no_round);
-        print_bits(quarter_no_round);
+//        std::cout << "quarter round: " << float_round << std::endl;
+//        print_bits(float_round);
+//        print_bits(quarter_round);
+//        std::cout << "quarter round avoid zero: " << float_round_avoid_zero << std::endl;
+//        print_bits(float_round_avoid_zero);
+//        print_bits(quarter_round_avoid_zero);
+//        std::cout << "quarter no round: " << float_no_round << std::endl;
+//        print_bits(float_no_round);
+//        print_bits(quarter_no_round);
         std::cout << std::endl;
     }
 }
@@ -76,14 +76,14 @@ void test_add(float a, float b, float expected_result, int bias) {
 //              << quarter_to_float(float_to_quarter_round_nearest_not_zero(real_result, bias, 0), bias, 0) << " vs "
 //              << quarter_to_float(float_to_quarter_round_nearest_not_zero(expected_result, bias, 0), bias, 0) << std::endl;
 
-    quarter expected_result_quarter = float_to_quarter(expected_result, bias, 0);
-    quarter first = float_to_quarter(a, bias, 0);
-    quarter second = float_to_quarter(b, bias, 0);
-    quarter add_result = quarter_add(first, bias, 0, second, bias, 0, bias, 0);
-    float add_result_float = quarter_to_float(add_result, bias, 0);
-    std::cout << std::endl << "Testing: " << bias << ": " << a << "(" << quarter_to_float(first, bias, 0) << ")"
-              << " + " << b << "(" << quarter_to_float(second, bias, 0) << ")" << " = " << add_result_float << "("
-              << quarter_to_float(expected_result_quarter, bias, 0) << ")" << std::endl;
+    quarter expected_result_quarter = float_to_quarter(expected_result, bias);
+    quarter first = float_to_quarter(a, bias);
+    quarter second = float_to_quarter(b, bias);
+    quarter add_result = quarter_add(first, bias, second, bias, bias);
+    float add_result_float = quarter_to_float(add_result, bias);
+    std::cout << std::endl << "Testing: " << bias << ": " << a << "(" << quarter_to_float(first, bias) << ")"
+              << " + " << b << "(" << quarter_to_float(second, bias) << ")" << " = " << add_result_float << "("
+              << quarter_to_float(expected_result_quarter, bias) << ")" << std::endl;
     print_bits(add_result);
     print_bits(expected_result_quarter);
     ASSERT_TRUE(roughly_equal(add_result, expected_result_quarter));
@@ -91,41 +91,41 @@ void test_add(float a, float b, float expected_result, int bias) {
 
 void test_subtract(float a, float b, float expected_result, int bias) {
     // yes this bounces back and forth between float and quarter a lot, but it's good exercise.
-    quarter expected_result_quarter = float_to_quarter(expected_result, bias, 0);
-    quarter first = float_to_quarter(a, bias, 0);
-    quarter second = float_to_quarter(b, bias, 0);
-    quarter add_result = quarter_subtract(first, bias, 0, second, bias, 0, bias, 0);
-    float add_result_float = quarter_to_float(add_result, bias, 0);
+    quarter expected_result_quarter = float_to_quarter(expected_result, bias);
+    quarter first = float_to_quarter(a, bias);
+    quarter second = float_to_quarter(b, bias);
+    quarter add_result = quarter_subtract(first, bias, second, bias, bias);
+    float add_result_float = quarter_to_float(add_result, bias);
     std::cout << std::endl << "Testing: " << a << " - " << b << " = " << add_result_float << std::endl;
     ASSERT_TRUE(add_result == expected_result_quarter);
 }
 
 void test_multiply(float a, float b, float expected_result, int bias) {
     // yes this bounces back and forth between float and quarter a lot, but it's good exercise.
-    quarter expected_result_quarter = float_to_quarter(expected_result, bias, 0);
-    quarter first = float_to_quarter(a, bias, 0);
-    quarter second = float_to_quarter(b, bias, 0);
-    quarter add_result = quarter_multiply(first, bias, 0, second, bias, 0, bias, 0);
-    float add_result_float = quarter_to_float(add_result, bias, 0);
+    quarter expected_result_quarter = float_to_quarter(expected_result, bias);
+    quarter first = float_to_quarter(a, bias);
+    quarter second = float_to_quarter(b, bias);
+    quarter add_result = quarter_multiply(first, bias, second, bias, bias);
+    float add_result_float = quarter_to_float(add_result, bias);
     std::cout << std::endl << "Testing: " << a << " * " << b << " = " << add_result_float << std::endl;
     ASSERT_TRUE(add_result == expected_result_quarter);
 }
 
 void test_divide(float a, float b, float expected_result, int bias) {
     // yes this bounces back and forth between float and quarter a lot, but it's good exercise.
-    quarter expected_result_quarter = float_to_quarter(expected_result, bias, 0);
-    quarter first = float_to_quarter(a, bias, 0);
-    quarter second = float_to_quarter(b, bias, 0);
-    quarter add_result = quarter_divide(first, bias, 0, second, bias, 0, bias, 0);
-    float add_result_float = quarter_to_float(add_result, bias, 0);
+    quarter expected_result_quarter = float_to_quarter(expected_result, bias);
+    quarter first = float_to_quarter(a, bias);
+    quarter second = float_to_quarter(b, bias);
+    quarter add_result = quarter_divide(first, bias, second, bias, bias);
+    float add_result_float = quarter_to_float(add_result, bias);
     std::cout << std::endl << "Testing: " << a << " / " << b << " = " << add_result_float << std::endl;
     ASSERT_TRUE(add_result == expected_result_quarter);
 }
 
 int test_one_quarter(float f, int quarter_bias) {
     std::cout << std::endl << "Testing: " << f << std::endl;
-    quarter q = float_to_quarter(f, quarter_bias, 0);
-    float f2 = quarter_to_float(q, quarter_bias, 0);
+    quarter q = float_to_quarter(f, quarter_bias);
+    float f2 = quarter_to_float(q, quarter_bias);
     print_bits(f);
     print_bits(q);
     print_bits(f2);
@@ -138,9 +138,9 @@ int test_one_quarter(float f, int quarter_bias) {
 
 int min_max_smallest_test(int bias) {
     std::cout << std::endl << bias << " bias:" << std::endl;
-    int result = test_one_quarter(quarter_to_float(QUARTER_MAX, bias, 0), bias);
-    result &= test_one_quarter(quarter_to_float(QUARTER_MIN, bias, 0), bias);
-    result &= test_one_quarter(quarter_to_float(QUARTER_SMALLEST, bias, 0), bias);
+    int result = test_one_quarter(quarter_to_float(QUARTER_MAX, bias), bias);
+    result &= test_one_quarter(quarter_to_float(QUARTER_MIN, bias), bias);
+    result &= test_one_quarter(quarter_to_float(QUARTER_SMALLEST, bias), bias);
     return result;
 }
 
@@ -183,14 +183,14 @@ void test_quarter() {
     ASSERT_TRUE(test_one_quarter(1, 0));
     ASSERT_TRUE(test_one_quarter(-1, 0));
 
-    ASSERT_TRUE(test_one_quarter(quarter_to_float(QUARTER_MIN, 0, 0), 0));
-    ASSERT_TRUE(test_one_quarter(quarter_to_float(QUARTER_SECOND_MIN, 0, 0), 0));
+    ASSERT_TRUE(test_one_quarter(quarter_to_float(QUARTER_MIN, 0), 0));
+    ASSERT_TRUE(test_one_quarter(quarter_to_float(QUARTER_SECOND_MIN, 0), 0));
 
     // Test that the second minimum value for bias 0 rounds to minimum value,
     // since the second minimum is used to represent 1.
     const uint32_t second_min_bits = 0b11000110111000000000000000000000;
     const float second_min = *(float *) &second_min_bits; // -28672
-    ASSERT_TRUE(float_to_quarter(second_min, 0, 0) == float_to_quarter(quarter_to_float(QUARTER_MIN, 0, 0), 0, 0));
+    ASSERT_TRUE(float_to_quarter(second_min, 0) == float_to_quarter(quarter_to_float(QUARTER_MIN, 0), 0));
 
     // Lots of rounding errors, but it is to be expected.
     test_add(1, 2, 3, 4);

@@ -38,13 +38,20 @@ namespace microml {
 
     class MBGDFullyConnectedNeurons : public NeuralNetworkFunction {
     public:
-        MBGDFullyConnectedNeurons(size_t input_size, size_t output_size, bool use_32_bit,
+        MBGDFullyConnectedNeurons(size_t input_size, size_t output_size, uint8_t bits,
                                   const shared_ptr<MBGDLearningState> &learning_state) {
             this->input_shapes = vector<vector<size_t>>{{1, input_size, 1}};
             this->output_shapes = vector<vector<size_t>>{{1, output_size, 1}};
             this->weights = make_shared<TensorFromRandom>(input_size, output_size, 1, -0.5f, 0.5f, 42);
-            this->use_32_bit = use_32_bit;
+            this->bits = bits;
             this->learning_state = learning_state;
+            if(bits == 32) {
+                mixed_precision_scale = 0.5f;
+            } else if(bits == 16) {
+                mixed_precision_scale = 2.f;
+            } else {
+                mixed_precision_scale = 3.f;
+            }
         }
 
         vector<vector<size_t>> getInputShapes() {
@@ -71,7 +78,7 @@ namespace microml {
             auto input_transposed = make_shared<TensorTransposeView>(last_input);
             auto weights_error = make_shared<TensorDotTensorView>(input_transposed, output_error);
             auto weights_error_at_learning_rate = make_shared<TensorMultiplyByScalarView>(weights_error,
-                                                                                          learning_state->learning_rate);
+                                                                                          learning_state->learning_rate*mixed_precision_scale);
             auto adjusted_weights = make_shared<TensorMinusTensorView>(weights, weights_error_at_learning_rate);
 
 //            cout << endl << "Min: " << adjusted_weights->min() << " Max: " <<adjusted_weights->max() <<endl;
@@ -95,27 +102,29 @@ namespace microml {
 //            cout << "adjusted weights:" <<endl;
 //            adjusted_weights->print();
 
-            if (use_32_bit) {
-                float adj_min = adjusted_weights->min();
-                float adj_max = adjusted_weights->max();
+            if (bits == 32) {
+//                float adj_min = adjusted_weights->min();
+//                float adj_max = adjusted_weights->max();
 //                cout << endl << " adj_min: " << adj_min << " adj_max:" << adj_max << endl;
 
                 weights = make_shared<FullTensor>(adjusted_weights);
+            } else if (bits == 16) {
+                weights = make_shared<HalfTensor>(adjusted_weights);
             } else {
                 auto min_max = adjusted_weights->range();
                 const float adj_min = min_max.first; // adjusted_weights->min();
                 const float adj_max = min_max.second; //adjusted_weights->max();
-                int result_bias = 8;
-                for(int proposed_bias = 15; proposed_bias >= 8; proposed_bias--) {
-                    float bias_max = quarter_to_float(QUARTER_MAX, proposed_bias, 0)*0.8;
+                int quarter_bias = 8;
+                for(int proposed_quarter_bias = 15; proposed_quarter_bias >= 8; proposed_quarter_bias--) {
+                    float bias_max = quarter_to_float(QUARTER_MAX, proposed_quarter_bias);// * 0.8f;
                     float bias_min = -bias_max;
                     if(adj_min > bias_min && adj_max < bias_max) {
 //                        cout << endl << "proposed_bias: " << proposed_bias << " " << bias_min << " -> " << bias_max << " adj_min: " << adj_min << " adj_max:" << adj_max << endl;
-                        result_bias = proposed_bias;
+                        quarter_bias = proposed_quarter_bias;
                         break;
                     }
                 }
-                weights = make_shared<QuarterTensor>(adjusted_weights, result_bias, 0);
+                weights = make_shared<QuarterTensor>(adjusted_weights, quarter_bias);
 //                auto real_weights = make_shared<FullTensor>(adjusted_weights);
 //                cout << endl << "8-bit vs 32-bit weights:" << endl;
 //                real_weights->print();
@@ -141,7 +150,8 @@ namespace microml {
     private:
         shared_ptr<BaseTensor> weights;
         shared_ptr<BaseTensor> last_input;
-        bool use_32_bit;
+        uint8_t bits;
+        float mixed_precision_scale;
         vector<vector<size_t>> input_shapes;
         vector<vector<size_t>> output_shapes;
         shared_ptr<MBGDLearningState> learning_state;
@@ -149,13 +159,29 @@ namespace microml {
 
     class SGDBias : public NeuralNetworkFunction {
     public:
-        SGDBias(size_t input_size, size_t output_size, bool use_32_bit,
+        SGDBias(size_t input_size, size_t output_size, uint8_t bits,
                 const shared_ptr<MBGDLearningState> &learning_state) {
             this->input_shapes = vector<vector<size_t>>{{1, input_size, 1}};
             this->output_shapes = vector<vector<size_t>>{{1, output_size, 1}};
-            this->bias = make_shared<TensorFromRandom>(input_size, output_size, 1, -0.5f, 0.5f, 42);
-            this->use_32_bit = use_32_bit;
+//            this->bias = make_shared<UniformTensor>(1, output_size, 1, 0.f);
+            this->bias = make_shared<TensorFromRandom>(1, output_size, 1, -0.5f, 0.5f, 42);
+            this->bits = bits;
             this->learning_state = learning_state;
+            if(bits == 32) {
+                mixed_precision_scale = 0.1f; // I made this number up. it seemed to work well for mixed-precision models.
+            } else if(bits == 16) {
+                if( learning_state->learning_rate < 0.45) {
+                    mixed_precision_scale = 2.f; // I made this number up. it seemed to work well for mixed-precision models.
+                } else {
+                    mixed_precision_scale = 1.f;
+                }
+            } else {
+                if( learning_state->learning_rate < 0.3) {
+                    mixed_precision_scale = 3.f; // I made this number up. it seemed to work well for mixed-precision models.
+                } else {
+                    mixed_precision_scale = 1.f;
+                }
+            }
         }
 
         vector<vector<size_t>> getInputShapes() {
@@ -175,25 +201,27 @@ namespace microml {
         // learning
         shared_ptr<BaseTensor> backward(const shared_ptr<BaseTensor> &output_error) override {
             auto bias_error_at_learning_rate = std::make_shared<TensorMultiplyByScalarView>(output_error,
-                                                                                            learning_state->learning_rate);
+                                                                                            learning_state->learning_rate*mixed_precision_scale);
             auto adjusted_bias = std::make_shared<TensorMinusTensorView>(bias, bias_error_at_learning_rate);
-            if (use_32_bit) {
+            if (bits == 32) {
                 bias = std::make_shared<FullTensor>(adjusted_bias);
 //                cout << endl << "32 bias" << endl;
 //                bias->print();
+            } else if (bits == 16) {
+                bias = make_shared<HalfTensor>(adjusted_bias);
             } else {
                 float adj_min = adjusted_bias->min();
                 float adj_max = adjusted_bias->max();
                 int result_bias = 8;
                 for(int proposed_bias = 15; proposed_bias >= 9; proposed_bias--) {
-                    float bias_max = quarter_to_float(QUARTER_MAX, proposed_bias, 0);
+                    float bias_max = quarter_to_float(QUARTER_MAX, proposed_bias);
                     float bias_min = -bias_max;
                     if(adj_min > bias_min && adj_max < bias_max) {
                         result_bias = proposed_bias - 1;
                         break;
                     }
                 }
-                bias = std::make_shared<QuarterTensor>(adjusted_bias, result_bias, 0);
+                bias = make_shared<QuarterTensor>(adjusted_bias, result_bias);
 
 //                cout << endl << "adjusted bias:";
 //                adjusted_bias->print();
@@ -214,7 +242,8 @@ namespace microml {
     private:
         shared_ptr<BaseTensor> bias;
         shared_ptr<BaseTensor> last_input;
-        bool use_32_bit;
+        uint8_t bits;
+        float mixed_precision_scale;
         vector<vector<size_t>> input_shapes;
         vector<vector<size_t>> output_shapes;
         shared_ptr<MBGDLearningState> learning_state;
@@ -228,12 +257,12 @@ namespace microml {
         }
 
         shared_ptr<NeuralNetworkFunction>
-        createFullyConnectedNeurons(size_t input_size, size_t output_size, bool use_32_bit) override {
-            return make_shared<MBGDFullyConnectedNeurons>(input_size, output_size, use_32_bit, sgdLearningState);
+        createFullyConnectedNeurons(size_t input_size, size_t output_size, uint8_t bits) override {
+            return make_shared<MBGDFullyConnectedNeurons>(input_size, output_size, bits, sgdLearningState);
         }
 
-        shared_ptr<NeuralNetworkFunction> createBias(size_t input_size, size_t output_size, bool use_32_bit) override {
-            return make_shared<SGDBias>(input_size, output_size, use_32_bit, sgdLearningState);
+        shared_ptr<NeuralNetworkFunction> createBias(size_t input_size, size_t output_size, uint8_t bits) override {
+            return make_shared<SGDBias>(input_size, output_size, bits, sgdLearningState);
         }
 
     private:

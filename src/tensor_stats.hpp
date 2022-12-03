@@ -109,26 +109,26 @@ namespace microml {
 
 
             // This could be more efficient. We calculate for bias 0, then discard after we find the target range
-            if (quarter_to_float(QUARTER_MIN, 14, 0) <= min_value &&
-                quarter_to_float(QUARTER_MAX, 14, 0) >= max_value) {
+            if (quarter_to_float(QUARTER_MIN, 14) <= min_value &&
+                    quarter_to_float(QUARTER_MAX, 14) >= max_value) {
 //            std::cout << "min and max fit in quarter 14: " << min_value << " -> " << max_value << " must fit in "
 //                      << quarter_to_float(QUARTER_MIN, 14, 0) << " -> " << quarter_to_float(QUARTER_MAX, 14, 0)
 //                      << std::endl;
                 bag(bagCounts->bag_counts_14);
-            } else if (quarter_to_float(QUARTER_MIN, 8, 0) <= min_value &&
-                       quarter_to_float(QUARTER_MAX, 8, 0) >= max_value) {
+            } else if (quarter_to_float(QUARTER_MIN, 8) <= min_value &&
+                    quarter_to_float(QUARTER_MAX, 8) >= max_value) {
 //            std::cout << "min and max fit in quarter 8: " << min_value << " -> " << max_value << " must fit in "
 //                      << quarter_to_float(QUARTER_MIN, 8, 0) << " -> " << quarter_to_float(QUARTER_MAX, 8, 0)
 //                      << std::endl;
                 bag(bagCounts->bag_counts_8);
-            } else if (quarter_to_float(QUARTER_MIN, 4, 0) <= min_value &&
-                       quarter_to_float(QUARTER_MAX, 4, 0) >= max_value) {
+            } else if (quarter_to_float(QUARTER_MIN, 4) <= min_value &&
+                    quarter_to_float(QUARTER_MAX, 4) >= max_value) {
 //            std::cout << "min and max fit in quarter 4: " << min_value << " -> " << max_value << " must fit in "
 //                      << quarter_to_float(QUARTER_MIN, 4, 0) << " -> " << quarter_to_float(QUARTER_MAX, 4, 0)
 //                      << std::endl;
                 bag(bagCounts->bag_counts_4);
-            } else if (quarter_to_float(QUARTER_MIN, 1, 0) <= min_value &&
-                       quarter_to_float(QUARTER_MAX, 1, 0) >= max_value) {
+            } else if (quarter_to_float(QUARTER_MIN, 1) <= min_value &&
+                    quarter_to_float(QUARTER_MAX, 1) >= max_value) {
 //            std::cout << "min and max fit in quarter 1: " << min_value << " -> " << max_value << " must fit in "
 //                      << quarter_to_float(QUARTER_MIN, 1, 0) << " -> " << quarter_to_float(QUARTER_MAX, 1, 0)
 //                      << std::endl;
@@ -264,7 +264,7 @@ namespace microml {
         };
 
         static void add_to_bag(std::array<std::array<double, 2>, 256> &bag_counts, const float f, const int bias) {
-            quarter q = float_to_quarter(f, bias, 0);
+            quarter q = float_to_quarter(f, bias);
             // gravitate to numbers that are furthest from zero, unless zero (this may not be needed
             // since it should initialize to zero.)
             // is branching too expensive here? maybe we always assign, accepting slightly worse

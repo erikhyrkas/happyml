@@ -24,7 +24,7 @@ namespace micromldsl {
         full, output
     };
     enum ActivationType {
-        relu, tanh, sigmoid, leaky, softmax
+        relu, tanh, sigmoid, leaky, softmax, sigmoid_approx, tanh_approx
     };
 
     class MicromlDSL : public enable_shared_from_this<MicromlDSL> {
@@ -88,8 +88,8 @@ namespace micromldsl {
                 this->activation_type = activation_type;
                 this->input_shape = input_shape;
                 this->output_shape = output_shape;
-                this->use_32_bit = nodeType == NodeType::output;
-                this->use_bias = nodeType == NodeType::output;
+                this->bits = 32;
+                this->use_bias = true;
                 this->created = false;
             }
 
@@ -98,8 +98,8 @@ namespace micromldsl {
                 return shared_from_this();
             }
 
-            shared_ptr<NNVertex> set32Bit(bool b) {
-                use_32_bit = b;
+            shared_ptr<NNVertex> setBits(uint8_t bits_val) {
+                this->bits = bits_val;
                 return shared_from_this();
             }
 
@@ -157,7 +157,7 @@ namespace micromldsl {
                         first_node = make_shared<NeuralNetworkNode>(make_shared<NeuralNetworkFlattenFunction>());
                     }
                     auto next_node = make_shared<NeuralNetworkNode>(
-                            optimizer->createFullyConnectedNeurons(input_shape[0]*input_shape[1]*input_shape[2], output_shape[0]*output_shape[1]*output_shape[2], use_32_bit));
+                            optimizer->createFullyConnectedNeurons(input_shape[0]*input_shape[1]*input_shape[2], output_shape[0]*output_shape[1]*output_shape[2], bits));
                     if(first_node) {
                        first_node->add(next_node);
                     } else {
@@ -166,7 +166,7 @@ namespace micromldsl {
                     last_node = next_node;
                     if (use_bias) {
                         auto bias_node = make_shared<NeuralNetworkNode>(
-                                optimizer->createBias(output_shape[1], output_shape[1], use_32_bit));
+                                optimizer->createBias(output_shape[1], output_shape[1], bits));
                         next_node->add(bias_node);
                         last_node = bias_node;
                     }
@@ -181,6 +181,12 @@ namespace micromldsl {
                         break;
                     case ActivationType::sigmoid:
                         activationFunction = make_shared<SigmoidActivationFunction>();
+                        break;
+                    case ActivationType::sigmoid_approx:
+                        activationFunction = make_shared<SigmoidApproximationActivationFunction>();
+                        break;
+                    case ActivationType::tanh_approx:
+                        activationFunction = make_shared<TanhApproximationActivationFunction>();
                         break;
                     case ActivationType::softmax:
                         activationFunction = make_shared<SoftmaxActivationFunction>();
@@ -219,7 +225,7 @@ namespace micromldsl {
             vector<size_t> output_shape;
             ActivationType activation_type;
             bool use_bias;
-            bool use_32_bit;
+            uint8_t bits;
             bool created;
             shared_ptr<NeuralNetworkNode> first_node;
             shared_ptr<NeuralNetworkNode> last_node;

@@ -71,7 +71,7 @@ void sum_test() {
 void assign_small_test() {
     auto matrix_random = std::make_shared<TensorFromRandom>(101, 103, 1, 4);
 //    matrix_random->print();
-    auto matrix = std::make_shared<QuarterTensor>(matrix_random, 4, 0);
+    auto matrix = std::make_shared<QuarterTensor>(matrix_random, 4);
 //    matrix->print();
 //    std::cout << "0, 0 original random: " << matrix_random->get_val(0, 0, 0) << " quantized: " << quarter_to_float(float_to_quarter(matrix_random->get_val(0, 0, 0), 4, 0), 4, 0) << std::endl;
 //    std::cout << "0, 0 new matrix: " << matrix->get_val(0, 0, 0) << std::endl;
@@ -88,24 +88,24 @@ void assign_small_test() {
 //    std::cout << "99, 99 new matrix: " << matrix->get_val(100, 102, 0) << std::endl;
 
     ASSERT_TRUE(matrix->get_val(0, 0, 0) ==
-                quarter_to_float(float_to_quarter(matrix_random->get_val(0, 0, 0), 4, 0), 4, 0));
+                        quarter_to_float(float_to_quarter(matrix_random->get_val(0, 0, 0), 4), 4));
     ASSERT_TRUE(matrix->get_val(5, 4, 0) ==
-                quarter_to_float(float_to_quarter(matrix_random->get_val(5, 4, 0), 4, 0), 4, 0));
+                        quarter_to_float(float_to_quarter(matrix_random->get_val(5, 4, 0), 4), 4));
     ASSERT_TRUE(matrix->get_val(12, 10, 0) ==
-                quarter_to_float(float_to_quarter(matrix_random->get_val(12, 10, 0), 4, 0), 4, 0));
+                        quarter_to_float(float_to_quarter(matrix_random->get_val(12, 10, 0), 4), 4));
     ASSERT_TRUE(matrix->get_val(50, 10, 0) ==
-                quarter_to_float(float_to_quarter(matrix_random->get_val(50, 10, 0), 4, 0), 4, 0));
+                        quarter_to_float(float_to_quarter(matrix_random->get_val(50, 10, 0), 4), 4));
     ASSERT_TRUE(matrix->get_val(99, 99, 0) ==
-                quarter_to_float(float_to_quarter(matrix_random->get_val(99, 99, 0), 4, 0), 4, 0));
+                        quarter_to_float(float_to_quarter(matrix_random->get_val(99, 99, 0), 4), 4));
     ASSERT_TRUE(matrix->get_val(100, 102, 0) ==
-                quarter_to_float(float_to_quarter(matrix_random->get_val(100, 102, 0), 4, 0), 4, 0));
+                        quarter_to_float(float_to_quarter(matrix_random->get_val(100, 102, 0), 4), 4));
 }
 
 
 void assign_medium_test() {
     auto matrix_random = std::make_shared<TensorFromRandom>(1001, 10003, 1, 4);
 //    matrix_random->print();
-    auto matrix = std::make_shared<QuarterTensor>(matrix_random, 4, 0);
+    auto matrix = std::make_shared<QuarterTensor>(matrix_random, 4);
 //    matrix->print();
 //    std::cout << "0, 0 original random: " << matrix_random->get_val(0, 0, 0) << " quantized: " << quarter_to_float(float_to_quarter(matrix_random->get_val(0, 0, 0), 4, 0), 4, 0) << std::endl;
 //    std::cout << "0, 0 new matrix: " << matrix->get_val(0, 0, 0) << std::endl;
@@ -120,53 +120,53 @@ void assign_medium_test() {
 //    std::cout << "1000, 10002 original random: " << matrix_random->get_val(1000, 10002, 0) << " quantized: " << quarter_to_float(float_to_quarter(matrix_random->get_val(1000, 10002, 0), 4, 0), 4, 0) << std::endl;
 //    std::cout << "1000, 10002 new matrix: " << matrix->get_val(1000, 10002, 0) << std::endl;
     ASSERT_TRUE(matrix->get_val(0, 0, 0) ==
-                quarter_to_float(float_to_quarter(matrix_random->get_val(0, 0, 0), 4, 0), 4, 0));
+                        quarter_to_float(float_to_quarter(matrix_random->get_val(0, 0, 0), 4), 4));
     ASSERT_TRUE(matrix->get_val(5, 4, 0) ==
-                quarter_to_float(float_to_quarter(matrix_random->get_val(5, 4, 0), 4, 0), 4, 0));
+                        quarter_to_float(float_to_quarter(matrix_random->get_val(5, 4, 0), 4), 4));
     ASSERT_TRUE(matrix->get_val(12, 10, 0) ==
-                quarter_to_float(float_to_quarter(matrix_random->get_val(12, 10, 0), 4, 0), 4, 0));
+                        quarter_to_float(float_to_quarter(matrix_random->get_val(12, 10, 0), 4), 4));
     ASSERT_TRUE(matrix->get_val(50, 10, 0) ==
-                quarter_to_float(float_to_quarter(matrix_random->get_val(50, 10, 0), 4, 0), 4, 0));
+                        quarter_to_float(float_to_quarter(matrix_random->get_val(50, 10, 0), 4), 4));
     ASSERT_TRUE(matrix->get_val(99, 99, 0) ==
-                quarter_to_float(float_to_quarter(matrix_random->get_val(99, 99, 0), 4, 0), 4, 0));
+                        quarter_to_float(float_to_quarter(matrix_random->get_val(99, 99, 0), 4), 4));
     ASSERT_TRUE(matrix->get_val(1000, 10002, 0) ==
-                quarter_to_float(float_to_quarter(matrix_random->get_val(1000, 10002, 0), 4, 0), 4, 0));
+                        quarter_to_float(float_to_quarter(matrix_random->get_val(1000, 10002, 0), 4), 4));
 }
 
 void assign_large_test() {
     auto matrix_random = std::make_shared<TensorFromRandom>(200000, 200001, 1, 4);
-    auto matrix = std::make_shared<QuarterTensor>(matrix_random, 4, 0);
+    auto matrix = std::make_shared<QuarterTensor>(matrix_random, 4);
     std::cout << "0, 0 original random: " << matrix_random->get_val(0, 0, 0) << " quantized: "
-              << quarter_to_float(float_to_quarter(matrix_random->get_val(0, 0, 0), 4, 0), 4, 0) << std::endl;
+              << quarter_to_float(float_to_quarter(matrix_random->get_val(0, 0, 0), 4), 4) << std::endl;
     std::cout << "0, 0 new matrix: " << matrix->get_val(0, 0, 0) << std::endl;
     std::cout << "199999, 199999 original random: " << matrix_random->get_val(199999, 199999, 0) << " quantized: "
-              << quarter_to_float(float_to_quarter(matrix_random->get_val(199999, 199999, 0), 4, 0), 4, 0) << std::endl;
+              << quarter_to_float(float_to_quarter(matrix_random->get_val(199999, 199999, 0), 4), 4) << std::endl;
     std::cout << "199999, 199999 new matrix: " << matrix->get_val(199999, 199999, 0) << std::endl;
     ASSERT_TRUE(matrix->get_val(0, 0, 0) ==
-                quarter_to_float(float_to_quarter(matrix_random->get_val(0, 0, 0), 4, 0), 4, 0));
+                        quarter_to_float(float_to_quarter(matrix_random->get_val(0, 0, 0), 4), 4));
     ASSERT_TRUE(matrix->get_val(100, 50, 0) ==
-                quarter_to_float(float_to_quarter(matrix_random->get_val(100, 50, 0), 4, 0), 4, 0));
+                        quarter_to_float(float_to_quarter(matrix_random->get_val(100, 50, 0), 4), 4));
     ASSERT_TRUE(matrix->get_val(50, 10, 0) ==
-                quarter_to_float(float_to_quarter(matrix_random->get_val(50, 10, 0), 4, 0), 4, 0));
+                        quarter_to_float(float_to_quarter(matrix_random->get_val(50, 10, 0), 4), 4));
     ASSERT_TRUE(matrix->get_val(9000, 10000, 0) ==
-                quarter_to_float(float_to_quarter(matrix_random->get_val(9000, 10000, 0), 4, 0), 4, 0));
+                        quarter_to_float(float_to_quarter(matrix_random->get_val(9000, 10000, 0), 4), 4));
     ASSERT_TRUE(matrix->get_val(1, 183784, 0) ==
-                quarter_to_float(float_to_quarter(matrix_random->get_val(1, 183784, 0), 4, 0), 4, 0));
+                        quarter_to_float(float_to_quarter(matrix_random->get_val(1, 183784, 0), 4), 4));
     ASSERT_TRUE(matrix->get_val(180034, 1, 0) ==
-                quarter_to_float(float_to_quarter(matrix_random->get_val(180034, 1, 0), 4, 0), 4, 0));
+                        quarter_to_float(float_to_quarter(matrix_random->get_val(180034, 1, 0), 4), 4));
     ASSERT_TRUE(matrix->get_val(162341, 44228, 0) ==
-                quarter_to_float(float_to_quarter(matrix_random->get_val(162341, 44228, 0), 4, 0), 4, 0));
+                        quarter_to_float(float_to_quarter(matrix_random->get_val(162341, 44228, 0), 4), 4));
     ASSERT_TRUE(matrix->get_val(199999, 199999, 0) ==
-                quarter_to_float(float_to_quarter(matrix_random->get_val(199999, 199999, 0), 4, 0), 4, 0));
+                        quarter_to_float(float_to_quarter(matrix_random->get_val(199999, 199999, 0), 4), 4));
 }
 
 void reshape_test() {
     auto matrix_random = std::make_shared<TensorFromRandom>(1, 5, 1, 4);
 //    matrix_random->print();
-    auto matrix = std::make_shared<QuarterTensor>(matrix_random, 4, 0);
+    auto matrix = std::make_shared<QuarterTensor>(matrix_random, 4);
 //    matrix->print();
     auto reshape = std::make_shared<TensorReshapeView>(matrix_random, 5, 1);
-    auto other = std::make_unique<QuarterTensor>(reshape, 4, 0);
+    auto other = std::make_unique<QuarterTensor>(reshape, 4);
     ASSERT_TRUE(matrix->get_val(0, 0, 0) == other->get_val(0, 0, 0));
     ASSERT_TRUE(matrix->get_val(0, 1, 0) == other->get_val(1, 0, 0));
     ASSERT_TRUE(matrix->get_val(0, 2, 0) == other->get_val(2, 0, 0));
@@ -181,7 +181,7 @@ void reshape_test() {
 }
 
 void test_create() {
-    auto matrix = std::make_unique<QuarterTensor>(2, 2, 1, 4, 0);
+    auto matrix = std::make_unique<QuarterTensor>(2, 2, 1, 4);
     ASSERT_TRUE(2 == matrix->row_count());
     ASSERT_TRUE(2 == matrix->column_count());
 }
@@ -201,6 +201,19 @@ void test_scalar_multiplication() {
     ASSERT_TRUE(24 == scaled_matrix->get_val(4, 0, 0));
     ASSERT_TRUE(24 == scaled_matrix->get_val(4, 2, 0));
     ASSERT_TRUE(24 == scaled_matrix->get_val(4, 4, 0));
+}
+
+void test_stacking_multiply_views() {
+    auto matrix_func = [](size_t row, size_t col, size_t channel) { return (float) ((row*10.f) + col); };
+    auto matrix = std::make_shared<TensorFromFunction>(matrix_func, 5, 5, 1);
+    auto times2 = make_shared<TensorMultiplyByScalarView>(matrix, 2.f);
+    auto timesHalf = make_shared<TensorMultiplyByScalarView>(times2, 0.5f);
+    for(size_t r = 0; r < 5; r++) {
+        for(size_t c = 0; c < 5; c++) {
+//            cout << matrix->get_val(r, c, 0) << " == " << timesHalf->get_val(r, c, 0) << endl;
+            ASSERT_TRUE(roughly_equal(matrix->get_val(r, c, 0), timesHalf->get_val(r, c, 0)));
+        }
+    }
 }
 
 //void test_matrix_multiplication() {
@@ -481,10 +494,15 @@ int main() {
         timer.print_milliseconds();
         test_matrix_addition();
         timer.print_milliseconds();
+        test_stacking_multiply_views();
+        timer.print_milliseconds();
+
+
         //auto weights = make_shared<TensorFromRandom>(5, 5, 1, 14);
-        for(int bias = 10; bias < 20; bias++) {
-            cout << bias << " MAX: " << quarter_to_float(QUARTER_MAX, bias, 0) << " MIN: " << quarter_to_float(QUARTER_MAX, bias, 0) << endl;
-        }
+//        for(int bias = 10; bias < 20; bias++) {
+//            cout << bias << " MAX: " << quarter_to_float(QUARTER_MAX, bias) << " MIN: " << quarter_to_float(
+//                    QUARTER_MAX, bias) << endl;
+//        }
 
         //test_pixel()
         //timer.print_milliseconds();

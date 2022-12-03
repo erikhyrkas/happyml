@@ -294,12 +294,14 @@ namespace microml {
         // a batch is the number of samples (records) to look at before updating weights
         // train/fit
         void train(const shared_ptr<TrainingDataSet> &source, size_t epochs, int batch_size=1) {
-            if(batch_size > source->record_count()) {
+            auto total_records = source->record_count();
+            if(batch_size > total_records) {
                 throw exception("Batch Size cannot be larger than source data set.");
             }
             ElapsedTimer total_timer;
             const size_t output_size = output_nodes.size();
             cout << endl;
+            log_training(0, -1, epochs, 0, total_records/batch_size, batch_size, 0, true);
             for (size_t epoch = 0; epoch < epochs; epoch++) {
                 ElapsedTimer timer;
                 source->shuffle();
@@ -310,7 +312,6 @@ namespace microml {
                 batch_predictions.resize(output_size);
                 batch_truths.resize(output_size);
 
-                auto total_records = source->record_count();
                 size_t current_record = 0;
                 auto next_record = source->next_record();
                 while (next_record != nullptr) {

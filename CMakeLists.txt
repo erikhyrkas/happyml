@@ -3,7 +3,7 @@ project(microml)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(microml src/main.cpp src/quarter_float.hpp src/activation.hpp src/tensor.hpp src/tensor_stats.hpp src/model.hpp src/dataset.hpp src/optimizer.hpp src/loss.hpp src/data.hpp src/neural_network.hpp src/mbgd_optimizer.hpp src/neural_network_function.hpp src/dataencoder.hpp src/file_reader.hpp)
+add_executable(microml src/quarter_float.hpp src/main.cpp src/half_float.hpp src/activation.hpp src/tensor.hpp src/tensor_stats.hpp src/model.hpp src/dataset.hpp src/optimizer.hpp src/loss.hpp src/data.hpp src/neural_network.hpp src/mbgd_optimizer.hpp src/neural_network_function.hpp src/dataencoder.hpp src/file_reader.hpp)
 
 add_executable(microml_example_xor_model src/example/example_xor_model.cpp)
 

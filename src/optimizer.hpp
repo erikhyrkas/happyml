@@ -31,10 +31,10 @@ namespace microml {
     class Optimizer {
     public:
         virtual shared_ptr<NeuralNetworkFunction>
-        createFullyConnectedNeurons(size_t input_size, size_t output_size, bool use_32_bit) = 0;
+        createFullyConnectedNeurons(size_t input_size, size_t output_size, uint8_t bits) = 0;
 
         virtual shared_ptr<NeuralNetworkFunction>
-        createBias(size_t input_size, size_t output_size, bool use_32_bit) = 0;
+        createBias(size_t input_size, size_t output_size, uint8_t bits) = 0;
     };
 }
 #endif //MICROML_OPTIMIZER_HPP

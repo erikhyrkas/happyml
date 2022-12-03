@@ -125,16 +125,17 @@
 // Clearly, this solution doesn't let us have our cake and eat it too. A high bias means a small range. We can
 // never have a large range and great granularity with this solution. My hope instinct is that this should be
 // fine for ML even if it isn't great for general computing.
-
+//
+//
+// UPDATE: I've decided to remove offset. For ML, the bias within the last layer already deals with offset
+// at a model level, and we don't need to account for it everywhere. It just makes things more complicated
+// without making them truly better.
 
 #ifndef MICROML_QUARTER_FLOAT_HPP
 #define MICROML_QUARTER_FLOAT_HPP
 
-#include <array>
-
-namespace microml {
-
-    typedef unsigned char quarter;
+//#include <array>
+#include <cstdint>
 
 #define FLOAT_BIAS 127
 #define FLOAT_NAN 0b11111111110000000000000000000000
@@ -149,6 +150,10 @@ namespace microml {
 #define QUARTER_SMALLEST 0b00000001
 #define QUARTER_SECOND_SMALLEST 0b00000010
 #define QUARTER_SECOND_MIN 0b11110110
+
+namespace microml {
+
+    typedef unsigned char quarter;
 
     void print_bits(const quarter x) {
         for (int i = 7; i >= 0; i--) {
@@ -196,13 +201,12 @@ namespace microml {
 // This version avoids rounding to 0 and will change bias 0 to bias 1, because bias 0 would need
 // special handling to represent 1 and -1, which are important values in machine learning. You can look at the
 // other versions of this function at the bottom of this file.
-    quarter float_to_quarter(float original, int quarter_bias, float offset) {
+    quarter float_to_quarter(float original, int quarter_bias) {
         // This code looks crazy because I avoid branching (if statements) so the general case (happy path) is faster.
         // Convert the float to a datatype where we can easily do bit manipulation
         // avoid bias 0 because it would require special handling to represent 1 and -1
         const int bias = (quarter_bias == 0) + (quarter_bias != 0) * quarter_bias;
-        const float offset_float = original - offset;
-        const uint32_t encoded_value = (*(uint32_t *) &offset_float);
+        const uint32_t encoded_value = (*(uint32_t *) &original);
         // grab the sign, we can use this as is
         const uint32_t sign = encoded_value >> 31;
         const uint32_t raw_exponent = (encoded_value & 0x7F800000) >> 23;
@@ -232,7 +236,7 @@ namespace microml {
     }
 
 
-    float quarter_to_float(quarter q, int quarter_bias, float offset) {
+    float quarter_to_float(quarter q, int quarter_bias) {
         // This code looks crazy because I avoid branching (if statements) so the general case (happy path) is faster.
         // avoid bias 0 because it would require special handling to represent 1 and -1
         const int bias = (quarter_bias == 0) + (quarter_bias != 0) * quarter_bias;
@@ -252,47 +256,43 @@ namespace microml {
                                           result;
 
         const float distance_from_offset = *(float *) &no_branch_result;
-        return distance_from_offset + offset;
+        return distance_from_offset;
     }
 
     quarter
-    quarter_multiply(quarter a, int a_bias, float a_offset, quarter b, int b_bias, float b_offset, int result_bias,
-                     float result_offset) {
-        const float af = quarter_to_float(a, a_bias, a_offset);
-        const float bf = quarter_to_float(b, b_bias, b_offset);
+    quarter_multiply(quarter a, int a_bias, quarter b, int b_bias, int result_bias) {
+        const float af = quarter_to_float(a, a_bias);
+        const float bf = quarter_to_float(b, b_bias);
         const float result_float = af * bf;
-        return float_to_quarter(result_float, result_bias, result_offset);
+        return float_to_quarter(result_float, result_bias);
     }
 
     quarter
-    quarter_divide(quarter a, int a_bias, float a_offset, quarter b, int b_bias, float b_offset, int result_bias,
-                   float result_offset) {
-        const float af = quarter_to_float(a, a_bias, a_offset);
-        const float bf = quarter_to_float(b, b_bias, b_offset);
+    quarter_divide(quarter a, int a_bias, quarter b, int b_bias, int result_bias) {
+        const float af = quarter_to_float(a, a_bias);
+        const float bf = quarter_to_float(b, b_bias);
         const float result_float = af / bf;
-        return float_to_quarter(result_float, result_bias, result_offset);
+        return float_to_quarter(result_float, result_bias);
     }
 
-    quarter quarter_add(quarter a, int a_bias, float a_offset, quarter b, int b_bias, float b_offset, int result_bias,
-                        float result_offset) {
-        const float af = quarter_to_float(a, a_bias, a_offset);
-        const float bf = quarter_to_float(b, b_bias, b_offset);
+    quarter quarter_add(quarter a, int a_bias, quarter b, int b_bias, int result_bias) {
+        const float af = quarter_to_float(a, a_bias);
+        const float bf = quarter_to_float(b, b_bias);
         const float result_float = af + bf;
-        return float_to_quarter(result_float, result_bias, result_offset);
+        return float_to_quarter(result_float, result_bias);
     }
 
     quarter
-    quarter_subtract(quarter a, int a_bias, float a_offset, quarter b, int b_bias, float b_offset, int result_bias,
-                     float result_offset) {
-        const float af = quarter_to_float(a, a_bias, a_offset);
-        const float bf = quarter_to_float(b, b_bias, b_offset);
+    quarter_subtract(quarter a, int a_bias, quarter b, int b_bias, int result_bias) {
+        const float af = quarter_to_float(a, a_bias);
+        const float bf = quarter_to_float(b, b_bias);
         const float result_float = af - bf;
-        return float_to_quarter(result_float, result_bias, result_offset);
+        return float_to_quarter(result_float, result_bias);
     }
 
     float calculate_bias_range(int bias) {
-        const float min_for_bias = quarter_to_float(QUARTER_MIN, bias, 0);
-        const float max_for_bias = quarter_to_float(QUARTER_MAX, bias, 0);
+        const float min_for_bias = quarter_to_float(QUARTER_MIN, bias);
+        const float max_for_bias = quarter_to_float(QUARTER_MAX, bias);
         return std::abs(max_for_bias - min_for_bias);
     }
 
