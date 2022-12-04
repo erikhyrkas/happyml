@@ -204,7 +204,7 @@ void test_scalar_multiplication() {
 }
 
 void test_stacking_multiply_views() {
-    auto matrix_func = [](size_t row, size_t col, size_t channel) { return (float) ((row*10.f) + col); };
+    auto matrix_func = [](size_t row, size_t col, size_t channel) { return (float) (((float)row*10.f) + (float)col); };
     auto matrix = std::make_shared<TensorFromFunction>(matrix_func, 5, 5, 1);
     auto times2 = make_shared<TensorMultiplyByScalarView>(matrix, 2.f);
     auto timesHalf = make_shared<TensorMultiplyByScalarView>(times2, 0.5f);
@@ -367,11 +367,11 @@ void test_dot_product() {
 void test_dot_product_2() {
     std::vector<std::vector<float>> a = {{4, 2},
                                          {0, 3}};
-    auto matrix_1 = std::make_shared<QuarterTensor>(a, 8, 0);
+    auto matrix_1 = std::make_shared<QuarterTensor>(a, 8);
 //    matrix_1->print();
     std::vector<std::vector<float>> b = {{4, 0},
                                          {1, 4}};
-    auto matrix_2 = std::make_shared<QuarterTensor>(b, 8, 0);
+    auto matrix_2 = std::make_shared<QuarterTensor>(b, 8);
     auto dot_product_view = std::make_shared<TensorDotTensorView>(matrix_1, matrix_2);
 //    dot_product_view->print();
     ASSERT_TRUE(18.0f == dot_product_view->get_val(0, 0, 0));
@@ -384,11 +384,11 @@ void test_dot_product_3() {
     std::vector<std::vector<float>> a = {{2, 2},
                                          {0, 3},
                                          {0, 4}};
-    auto matrix_1 = std::make_shared<QuarterTensor>(a, 8, 0);
+    auto matrix_1 = std::make_shared<QuarterTensor>(a, 8);
 //    matrix_1->print();
     std::vector<std::vector<float>> b = {{2, 1, 2},
                                          {3, 2, 4}};
-    auto matrix_2 = std::make_shared<QuarterTensor>(b, 8, 0);
+    auto matrix_2 = std::make_shared<QuarterTensor>(b, 8);
     auto dot_product_view = std::make_shared<TensorDotTensorView>(matrix_1, matrix_2);
 //    dot_product_view->print();
     ASSERT_TRUE(10.0f == dot_product_view->get_val(0, 0, 0));
@@ -405,12 +405,12 @@ void test_dot_product_3() {
 void test_dot_product_4() {
     std::vector<std::vector<float>> a = {{1, 2, 3},
                                          {4, 5, 6}};
-    auto matrix_1 = std::make_shared<QuarterTensor>(a, 8, 0);
+    auto matrix_1 = std::make_shared<QuarterTensor>(a, 8);
 //    matrix_1->print();
     std::vector<std::vector<float>> b = {{7,  8},
                                          {9,  10},
                                          {11, 12}};
-    auto matrix_2 = std::make_shared<QuarterTensor>(b, 8, 0);
+    auto matrix_2 = std::make_shared<QuarterTensor>(b, 8);
     auto dot_product_view = std::make_shared<TensorDotTensorView>(matrix_1, matrix_2);
 //    dot_product_view->print();
     ASSERT_TRUE(58.0f == dot_product_view->get_val(0, 0, 0));
@@ -423,12 +423,12 @@ void test_matrix_addition() {
     std::vector<std::vector<float>> a = {{-1, 2,  3},
                                          {2,  -3, 1},
                                          {3,  1,  -2}};
-    auto matrix_1 = std::make_shared<QuarterTensor>(a, 8, 0);
+    auto matrix_1 = std::make_shared<QuarterTensor>(a, 8);
 //    matrix_1->print();
     std::vector<std::vector<float>> b = {{3, -1, 2},
                                          {1, 0,  3},
                                          {2, -1, 0}};
-    auto matrix_2 = std::make_shared<QuarterTensor>(b, 8, 0);
+    auto matrix_2 = std::make_shared<QuarterTensor>(b, 8);
     auto add_view = std::make_shared<TensorAddTensorView>(matrix_1, matrix_2);
     ASSERT_TRUE(2.0f == add_view->get_val(0, 0, 0));
     ASSERT_TRUE(1.0f == add_view->get_val(0, 1, 0));

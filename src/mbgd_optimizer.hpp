@@ -36,12 +36,80 @@ namespace microml {
         float learning_rate;
     };
 
+    // Here's an interesting, related read:
+    // https://towardsdatascience.com/convolution-vs-correlation-af868b6b4fb5
+    // also:
+    // https://medium.com/@2017csm1006/forward-and-backpropagation-in-convolutional-neural-network-4dfa96d7b37e
+    class MBGDConvolution2dFunction : public NeuralNetworkFunction {
+    public:
+        MBGDConvolution2dFunction(vector<size_t> input_shape, size_t output_depth, size_t kernel_size, uint8_t bits,
+                                  const shared_ptr<MBGDLearningState> &learning_state) {
+            this->input_shapes = vector<vector<size_t>>{input_shape};
+            this->kernel_size = kernel_size;
+// for full conv2d:
+//            // this will look crazy, but it's dealing with even kernel sizes, which
+//            // are not really a great idea as far as I can tell, but I don't want the
+//            // code to break.
+//            size_t rows = 2*((size_t)std::round(((double)kernel_size - 1)/2.0)); // 1 = 0, 2 = 2, 3 = 2, 4 = 4, 5 = 4
+//            size_t cols = rows; // I could eventually support other shapes, but it's not critical right now.
+//            this->output_shape = {input_shape[0]+rows, input_shape[1]+cols, output_depth};
+            this->output_shape = {input_shape[0]-kernel_size+1, input_shape[1]-kernel_size+1, output_depth};
+            this->bits = bits;
+            this->weights = {};
+            for(size_t next_weight_layer = 0; next_weight_layer < output_depth; next_weight_layer++) {
+                this->weights.push_back(make_shared<TensorFromRandom>(kernel_size, kernel_size, input_shape[2], -0.5f, 0.5f, 42));
+            }
+            this->learning_state = learning_state;
+            if(bits == 32) {
+                mixed_precision_scale = 0.5f;
+            } else if(bits == 16) {
+                mixed_precision_scale = 2.f;
+            } else {
+                mixed_precision_scale = 3.f;
+            }
+
+        }
+        shared_ptr<BaseTensor> forward(const vector<shared_ptr<BaseTensor>> &input) override {
+            PROFILE_BLOCK(profileBlock);
+            last_input = input[0]; // ignore other inputs, as they aren't valid. TODO: throw exception
+            const size_t output_depth = output_shape[2];
+            shared_ptr<BaseTensor> result = nullptr;
+            for(size_t output_layer = 0; output_layer < output_depth; output_layer++) {
+                const auto current_weights = weights[output_layer];
+                const auto correlation2d = make_shared<TensorValidCrossCorrelation2dView>(last_input, current_weights);
+                const shared_ptr<BaseTensor> summedCorrelation2d = make_shared<TensorToChannelView>(correlation2d, output_layer, output_depth);
+                if(!result) {
+                    result = summedCorrelation2d;
+                } else {
+                    // each summed correlation 2d tensor is in its own output channel
+                    result = make_shared<TensorAddTensorView>(result, summedCorrelation2d);
+                }
+            }
+            // todo: it would be faster to have some sort of CombinedTensor
+
+            return result;
+        }
+
+        shared_ptr<BaseTensor> backward(const shared_ptr<BaseTensor> &output_error) override {
+
+        }
+    private:
+        shared_ptr<BaseTensor> last_input;
+        vector<shared_ptr<BaseTensor>> weights;
+        uint8_t bits;
+        float mixed_precision_scale;
+        vector<vector<size_t>> input_shapes;
+        vector<size_t> output_shape;
+        size_t kernel_size;
+        shared_ptr<MBGDLearningState> learning_state;
+    };
+
     class MBGDFullyConnectedNeurons : public NeuralNetworkFunction {
     public:
         MBGDFullyConnectedNeurons(size_t input_size, size_t output_size, uint8_t bits,
                                   const shared_ptr<MBGDLearningState> &learning_state) {
             this->input_shapes = vector<vector<size_t>>{{1, input_size, 1}};
-            this->output_shapes = vector<vector<size_t>>{{1, output_size, 1}};
+            this->output_shape = vector<size_t>{1, output_size, 1};
             this->weights = make_shared<TensorFromRandom>(input_size, output_size, 1, -0.5f, 0.5f, 42);
             this->bits = bits;
             this->learning_state = learning_state;
@@ -58,21 +126,31 @@ namespace microml {
             return input_shapes;
         }
 
-        vector<vector<size_t>> getOutputShapes() {
-            return output_shapes;
+        vector<size_t> getOutputShape() {
+            return output_shape;
         }
 
         // predicting
         shared_ptr<BaseTensor> forward(const vector<shared_ptr<BaseTensor>> &input) override {
+            PROFILE_BLOCK(profileBlock);
             last_input = input[0];
             return make_shared<TensorDotTensorView>(last_input, weights);
         }
 
         // learning
+        // TODO: I think this can return a unique pointer.
         shared_ptr<BaseTensor> backward(const shared_ptr<BaseTensor> &output_error) override {
+            PROFILE_BLOCK(profileBlock);
+
+//            output_error->printMaterializationPlanLine();
+
             // find the error
             auto weights_transposed = make_shared<TensorTransposeView>(weights);
-            shared_ptr<BaseTensor> input_error = make_shared<TensorDotTensorView>(output_error, weights_transposed);
+            // TODO: we greatly improve performance by materializing the tensor into a FullTensor here, but sometimes this will use
+            //  considerably more memory than we need. Part of me thinks that all dot product tensors should be materialized,
+            //  and part of me thinks that there are situations of simple dot products don't need to be.
+            shared_ptr<BaseTensor> input_error = make_shared<FullTensor>(make_shared<TensorDotTensorView>(output_error, weights_transposed));
+//            shared_ptr<BaseTensor> input_error = make_shared<TensorDotTensorView>(output_error, weights_transposed);
 
             // update weights
             auto input_transposed = make_shared<TensorTransposeView>(last_input);
@@ -153,20 +231,36 @@ namespace microml {
         uint8_t bits;
         float mixed_precision_scale;
         vector<vector<size_t>> input_shapes;
-        vector<vector<size_t>> output_shapes;
+        vector<size_t> output_shape;
         shared_ptr<MBGDLearningState> learning_state;
     };
 
-    class SGDBias : public NeuralNetworkFunction {
+    class MBGDBias : public NeuralNetworkFunction {
     public:
-        SGDBias(size_t input_size, size_t output_size, uint8_t bits,
-                const shared_ptr<MBGDLearningState> &learning_state) {
-            this->input_shapes = vector<vector<size_t>>{{1, input_size, 1}};
-            this->output_shapes = vector<vector<size_t>>{{1, output_size, 1}};
-//            this->bias = make_shared<UniformTensor>(1, output_size, 1, 0.f);
-            this->bias = make_shared<TensorFromRandom>(1, output_size, 1, -0.5f, 0.5f, 42);
+        MBGDBias(vector<size_t> input_shape, vector<size_t> output_shape, uint8_t bits,
+                 const shared_ptr<MBGDLearningState> &learning_state) {
+            this->input_shapes = vector<vector<size_t>>{input_shape};
+            this->output_shape = output_shape;
+            this->bias = make_shared<TensorFromRandom>(output_shape[0], output_shape[1],output_shape[2], -0.5f, 0.5f, 42);
             this->bits = bits;
             this->learning_state = learning_state;
+            // With models that are not fully 32-bit, if you don't scale the loss
+            // you'll have precision errors that are difficult to deal with.
+            // I chose to scale the learning rate, which brings a lot of potential issues
+            // but is relatively straight forward to do and fast.
+            // The biggest issue is that the caller might try to use a learning rate that is too big,
+            // and it will not be possible to find good results.
+            // There is an nvidia paper on the topic, and they scale the values before they store the weights
+            // and then scale those weights back down when they use them. The advantage of this is that
+            // a learning rate of X on a 32-bit model, it will work the same if you change some portions
+            // to 16-bit. With my approach, if you change any of the portions of the model's precision, you may
+            // have to pick new a new learning rate to get good results.
+            // I went this route because it is expensive to scale up and down tensors using a view with
+            // this framework when you end up with a huge stack of views, since that scaling will constantly
+            // get re-applied with every future view that sits over weights.
+            // There are situations where I have hundreds of views over a tensor, and adding a single view to
+            // the weights will change that to thousands because many of the views sit over multiple weight
+            // tensors.
             if(bits == 32) {
                 mixed_precision_scale = 0.1f; // I made this number up. it seemed to work well for mixed-precision models.
             } else if(bits == 16) {
@@ -188,28 +282,35 @@ namespace microml {
             return input_shapes;
         }
 
-        vector<vector<size_t>> getOutputShapes() {
-            return output_shapes;
+        vector<size_t> getOutputShape() {
+            return output_shape;
         }
 
         // predicting
         shared_ptr<BaseTensor> forward(const vector<shared_ptr<BaseTensor>> &input) override {
+            PROFILE_BLOCK(profileBlock);
             last_input = input[0];
             return make_shared<TensorAddTensorView>(last_input, bias);
         }
 
         // learning
         shared_ptr<BaseTensor> backward(const shared_ptr<BaseTensor> &output_error) override {
+            PROFILE_BLOCK(profileBlock);
+
             auto bias_error_at_learning_rate = std::make_shared<TensorMultiplyByScalarView>(output_error,
                                                                                             learning_state->learning_rate*mixed_precision_scale);
             auto adjusted_bias = std::make_shared<TensorMinusTensorView>(bias, bias_error_at_learning_rate);
             if (bits == 32) {
+                PROFILE_BLOCK(bits_32_profile_block);
+//                adjusted_bias->printMaterializationPlanLine();
                 bias = std::make_shared<FullTensor>(adjusted_bias);
 //                cout << endl << "32 bias" << endl;
 //                bias->print();
             } else if (bits == 16) {
+                PROFILE_BLOCK(bits_16_profile_block);
                 bias = make_shared<HalfTensor>(adjusted_bias);
             } else {
+                PROFILE_BLOCK(bits_8_profile_block);
                 float adj_min = adjusted_bias->min();
                 float adj_max = adjusted_bias->max();
                 int result_bias = 8;
@@ -245,7 +346,7 @@ namespace microml {
         uint8_t bits;
         float mixed_precision_scale;
         vector<vector<size_t>> input_shapes;
-        vector<vector<size_t>> output_shapes;
+        vector<size_t> output_shape;
         shared_ptr<MBGDLearningState> learning_state;
     };
 
@@ -261,8 +362,8 @@ namespace microml {
             return make_shared<MBGDFullyConnectedNeurons>(input_size, output_size, bits, sgdLearningState);
         }
 
-        shared_ptr<NeuralNetworkFunction> createBias(size_t input_size, size_t output_size, uint8_t bits) override {
-            return make_shared<SGDBias>(input_size, output_size, bits, sgdLearningState);
+        shared_ptr<NeuralNetworkFunction> createBias(vector<size_t> input_shape, vector<size_t> output_shape, uint8_t bits) override {
+            return make_shared<MBGDBias>(input_shape, output_shape, bits, sgdLearningState);
         }
 
     private:

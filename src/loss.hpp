@@ -6,6 +6,7 @@
 #define MICROML_LOSS_HPP
 
 #include "tensor.hpp"
+#include "test/basic_profiler.hpp"
 
 using namespace std;
 
@@ -23,7 +24,7 @@ namespace microml {
                return calculateError(truths[0], predictions[0]);
             }
             shared_ptr<BaseTensor> total_error = calculateError(truths[0], predictions[0]);
-            cout << endl;
+//            cout << endl;
             for(size_t i = 1; i < count; i++) {
 //                total_error->print();
                 auto next_error = calculateError(truths[i], predictions[i]);
@@ -39,12 +40,13 @@ namespace microml {
         }
 
         shared_ptr<BaseTensor> calculateTotalError(vector<shared_ptr<BaseTensor>> &truths, vector<shared_ptr<BaseTensor>> &predictions) {
+            PROFILE_BLOCK(profileBlock);
             size_t count = truths.size();
             if( count == 1) {
                 return calculateError(truths[0], predictions[0]);
             }
             shared_ptr<BaseTensor> total_error = calculateError(truths[0], predictions[0]);
-            cout << endl;
+//            cout << endl;
             for(size_t i = 1; i < count; i++) {
 //                total_error->print();
                 auto next_error = calculateError(truths[i], predictions[i]);
@@ -54,7 +56,7 @@ namespace microml {
 
 //            total_error->print();
 //            cout << endl;
-            return total_error;
+            return total_error; //make_shared<FullTensor>(total_error);
         }
         // mostly for display, but can be used for early stopping.
         virtual float compute(shared_ptr<BaseTensor> total_error) = 0;

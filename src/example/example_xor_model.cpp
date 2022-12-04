@@ -26,7 +26,7 @@ void using_tanh() {
     // For 32-bit: Results are good enough at 500 epochs, gets better with more epochs.
     // For 16-bit: 500 epochs seems good enough
     // For 8-bit: 2000 epochs seems good enough
-    neuralNetwork->train(xorDataSource, 500, 1);
+    neuralNetwork->train(xorDataSource, 500, 1, true);
 
 
     cout << fixed << setprecision(2);
@@ -55,7 +55,7 @@ void using_sigmoid() {
     // 16-bit input node: input size 4,    1000 epochs (8 + 2x4x2  + 8 = 32 bytes)
     //  8-bit input node: input size 32!!, 1500 epochs (8 + 1x32x2 + 8 = 80 bytes)
     // Clearly, 8-bit doesn't work well for memory savings or quality results in this case.
-    neuralNetwork->train(xorDataSource, 1000);
+    neuralNetwork->train(xorDataSource, 1000, 1, true);
 
     cout << fixed << setprecision(2);
     cout << "0 xor 0 = 0 Prediction: " << neuralNetwork->predict_scalar(column_vector({0.f, 0.f})) << endl;
@@ -79,7 +79,7 @@ void using_relu() {
             ->addOutput(xorDataSource->getExpectedShape(), ActivationType::tanh)
             ->build();
 
-    neuralNetwork->train(xorDataSource, 1000);
+    neuralNetwork->train(xorDataSource, 1000, 1, true);
 
 
     cout << fixed << setprecision(2);
@@ -92,8 +92,8 @@ void using_relu() {
 int main() {
     try {
         using_tanh();
-//        using_sigmoid();
-//        using_relu();
+        using_sigmoid();
+        using_relu();
 
     } catch (const std::exception &e) {
         std::cout << e.what() << std::endl;

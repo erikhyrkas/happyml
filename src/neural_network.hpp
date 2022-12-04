@@ -14,6 +14,7 @@
 #include "activation.hpp"
 #include "neural_network_function.hpp"
 #include "optimizer.hpp"
+#include "test/basic_profiler.hpp"
 
 using namespace std;
 
@@ -58,16 +59,27 @@ namespace microml {
                 const shared_ptr<NeuralNetworkFunction> &neuralNetworkFunction) { //}, const shared_ptr<Optimizer> &optimizer) {
             this->neuralNetworkFunction = neuralNetworkFunction;
             //this->optimizer = optimizer;
+            this->materialized = true;
         }
 
         virtual void sendOutput(shared_ptr<BaseTensor> &output) {
+        }
 
+        void setMaterialized(bool m) {
+            materialized = m;
         }
 
         // todo: right now, i'm assuming this is a directed acyclic graph, this may not work for everything.
         //  It is possible, I'll have to track visited nodes to avoid infinite cycles.
         void doForward(const vector<shared_ptr<BaseTensor>> &inputs) {
             auto input_to_next = neuralNetworkFunction->forward(inputs);
+            if(materialized) {
+                // TODO: materializing the output into a full tensor helps performance at the cost of memory.
+                //  we should be able to determine the best strategy at runtime. Sometimes, memory is too valuable
+                //  to use for performance.
+                // TODO: It could already be materialized. We should have the ability to check if this is unneccessary.
+                input_to_next = make_shared<FullTensor>(input_to_next);
+            }
             if (connection_outputs.empty()) {
                 // there are no nodes after this one, so we return our result.
                 sendOutput(input_to_next);
@@ -104,15 +116,20 @@ namespace microml {
 //            cout <<endl << "Backward output error: " <<endl;
 //            output_error->print();
 //            cout <<endl;
+            PROFILE_BLOCK(profileBlock);
+
             auto prior_error = neuralNetworkFunction->backward(output_error);
             for (const auto &input_connection: connection_inputs) {
+                PROFILE_BLOCK(backwardBlockLoop);
                 const auto conn = input_connection.lock();
                 const auto from = conn->from.lock();
                 const auto from_connection_output_size = from->connection_outputs.size();
                 if (from_connection_output_size == 1) {
+                    PROFILE_BLOCK(backwardBlock);
                     // most of the time there is only one from, so, ship it instead of doing extra wasted calculations
                     from->backward(prior_error);
                 } else {
+                    PROFILE_BLOCK(backwardBlock);
                     // We'll save the error we calculated, because we need to sum the errors from all outputs
                     // and not all outputs may be ready yet.
                     conn->prior_error = prior_error;
@@ -199,6 +216,7 @@ namespace microml {
         vector<weak_ptr<NeuralNetworkConnection>> connection_inputs;
         vector<shared_ptr<NeuralNetworkConnection>> connection_outputs;
         shared_ptr<NeuralNetworkFunction> neuralNetworkFunction;
+        bool materialized;
 //        shared_ptr<Optimizer> optimizer;
     };
 
@@ -215,7 +233,7 @@ namespace microml {
         shared_ptr<BaseTensor> consumeLastOutput() {
             auto temp = lastOutput;
             lastOutput = nullptr;
-            return temp;
+            return temp; //make_shared<FullTensor>(temp);
         }
 
     private:
@@ -293,7 +311,7 @@ namespace microml {
         // a sample is a single record
         // a batch is the number of samples (records) to look at before updating weights
         // train/fit
-        void train(const shared_ptr<TrainingDataSet> &source, size_t epochs, int batch_size=1) {
+        void train(const shared_ptr<TrainingDataSet> &source, size_t epochs, int batch_size=1, bool overwrite_output_lines = false) {
             auto total_records = source->record_count();
             if(batch_size > total_records) {
                 throw exception("Batch Size cannot be larger than source data set.");
@@ -301,7 +319,7 @@ namespace microml {
             ElapsedTimer total_timer;
             const size_t output_size = output_nodes.size();
             cout << endl;
-            log_training(0, -1, epochs, 0, total_records/batch_size, batch_size, 0, true);
+            log_training(0, -1, epochs, 0, ceil(total_records/batch_size), batch_size, 0, 0, overwrite_output_lines);
             for (size_t epoch = 0; epoch < epochs; epoch++) {
                 ElapsedTimer timer;
                 source->shuffle();
@@ -330,18 +348,22 @@ namespace microml {
                     next_record = source->next_record();
                     if(batch_offset >= batch_size || next_record == nullptr) {
                         for (size_t output_index = 0; output_index < output_size; output_index++) {
-                            auto total_error = lossFunction->calculateTotalError(batch_truths[output_index], batch_predictions[output_index]);
+                            // TODO: materializing the error into a full tensor helps performance at the cost of memory.
+                            //  we should be able to determine the best strategy at runtime. Sometimes, memory is too valuable
+                            //  to use for performance.
+                            auto total_error = make_shared<FullTensor>(lossFunction->calculateTotalError(batch_truths[output_index], batch_predictions[output_index]));
+//                            auto total_error = lossFunction->calculateTotalError(batch_truths[output_index], batch_predictions[output_index]);
                             auto loss = lossFunction->compute(total_error);
                             // batch_offset should be equal to batch_size, unless we are out of records.
                             auto loss_derivative = lossFunction->partialDerivative(total_error, (float)batch_offset);
 
                             auto elapsed_time = timer.getMilliseconds();
-                            log_training(elapsed_time, epoch, epochs, current_record, total_records, batch_offset, loss, false);
-                            // todo: we don't weight loss when there are multiple outputs back propagating. we should.
+                            log_training(elapsed_time, epoch, epochs, ceil(current_record/batch_size), ceil(total_records/batch_size), batch_offset, loss, 1, overwrite_output_lines);
+                            // todo: we don't weight loss when there are multiple outputs back propagating. we should, instead of treating them as equals.
                             output_nodes[output_index]->backward(loss_derivative);
 
                             elapsed_time = timer.getMilliseconds();
-                            log_training(elapsed_time, epoch, epochs, current_record/batch_size, total_records/batch_size, batch_offset, loss, true);
+                            log_training(elapsed_time, epoch, epochs, ceil(current_record/batch_size), ceil(total_records/batch_size), batch_offset, loss, 2, overwrite_output_lines);
                             batch_truths[output_index].clear();
                             batch_predictions[output_index].clear();
                         }
@@ -355,24 +377,42 @@ namespace microml {
 
         static void log_training(long long int elapsed_time, size_t epoch, size_t epochs,
                      size_t current_record, size_t total_records, int batch_size,
-                     float loss, bool learning) {
+                     float loss, int stage, bool overwrite) {
             // printf is about 6x faster than cout. I'm not sure why, since neither should flush without an end line.
             // I can only assume it relates to how cout processes numbers to strings.
-            string status_message = learning ? "learning" : "predicting";
+            string status_message;
+            switch(stage) {
+                case 0:
+                    status_message = "to initialize";
+                    break;
+                case 1:
+                    status_message = "to predict";
+                    break;
+                case 2:
+                    status_message = "to learn";
+                    break;
+                default:
+                    status_message = "unknown";
+            }
             if( elapsed_time > 120000 ) {
                 auto min = elapsed_time / 60000;
                 auto sec = (elapsed_time % 60000) / 1000;
-                printf("%zd m %zd s %s Epoch: %zd/%zd Batch: %zd/%zd Batch Size: %d Loss: %f      \r",
+                printf("%5zd m %zd s %-13s \tEpoch: %6zd/%zd \tBatch: %4zd/%zd Batch Size: %3d \tLoss: %11f      ",
                        min, sec, status_message.c_str(), (epoch + 1), epochs,
                        current_record, total_records, batch_size, loss);
             } else if(elapsed_time > 2000) {
-                printf("%zd s %s Epoch: %zd/%zd Batch: %zd/%zd Batch Size: %d Loss: %f            \r",
+                printf("%5zd s %-13s \tEpoch: %6zd/%zd \tBatch: %4zd/%zd Batch Size: %3d \tLoss: %11f            ",
                        (elapsed_time/1000), status_message.c_str(), (epoch + 1), epochs,
                        current_record, total_records, batch_size, loss);
             } else {
-                printf("%zd ms %s Epoch: %zd/%zd Batch: %zd/%zd Batch Size: %d Loss: %f           \r",
+                printf("%5zd ms %-13s \tEpoch: %6zd/%zd \tBatch: %4zd/%zd Batch Size: %3d \tLoss: %11f           ",
                        elapsed_time, status_message.c_str(), (epoch + 1), epochs,
                        current_record, total_records, batch_size, loss);
+            }
+            if(overwrite) {
+                printf("\r");
+            } else {
+                printf("\n");
             }
         }
 

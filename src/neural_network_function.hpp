@@ -7,12 +7,16 @@
 
 #include "tensor.hpp"
 #include "activation.hpp"
+#include "test/basic_profiler.hpp"
 
 namespace microml {
     class NeuralNetworkFunction {
     public:
+        // TODO: Can we switch the return types to unique pointers? would it matter?
         virtual shared_ptr<BaseTensor> forward(const vector<shared_ptr<BaseTensor>> &input) = 0;
 
+        // I read an article here that I thought was interesting:
+        // https://medium.com/@erikhallstrm/backpropagation-from-the-beginning-77356edf427d
         virtual shared_ptr<BaseTensor> backward(const shared_ptr<BaseTensor> &output_error) = 0;
     };
 
@@ -24,11 +28,13 @@ namespace microml {
 
         shared_ptr<BaseTensor> forward(const vector<shared_ptr<BaseTensor>> &input) override {
             // todo: throw error on wrong size input?
+            PROFILE_BLOCK(profileBlock);
             last_input = input[0];
             return activationFunction->activate(last_input);
         }
 
         shared_ptr<BaseTensor> backward(const shared_ptr<BaseTensor> &output_error) override {
+            PROFILE_BLOCK(profileBlock);
             auto activation_derivative = activationFunction->derivative(last_input);
             // this really threw me for a loop. I thought that this was supposed to be dot product, rather than
             // an element-wise-multiplication.
@@ -45,6 +51,7 @@ namespace microml {
     class NeuralNetworkFlattenFunction : public NeuralNetworkFunction {
     public:
         shared_ptr<BaseTensor> forward(const vector<shared_ptr<BaseTensor>> &input) override {
+            PROFILE_BLOCK(profileBlock);
             if (input.size() != 1) {
                 throw exception("Cannot flatten multiple inputs at the same time. Please merge.");
             }
@@ -59,6 +66,7 @@ namespace microml {
         }
 
         shared_ptr<BaseTensor> backward(const shared_ptr<BaseTensor> &output_error) override {
+            PROFILE_BLOCK(profileBlock);
             if (original_rows == output_error->row_count() && original_cols == output_error->column_count()) {
                 // This flatten function was added unnecessarily. We could throw an exception.
                 return output_error;

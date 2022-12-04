@@ -28,7 +28,7 @@ int main() {
         // making the shape square (28x28) just to test the auto-flattening capabilities of the network.
         //"..\\test_data\\small_mnist_format.csv"
         //"..\\data\\mnist_test.csv"
-        auto mnistDataSource = make_shared<InMemoryDelimitedValuesTrainingDataSet>("..\\test_data\\small_mnist_format.csv", ',',
+        auto mnistDataSource = make_shared<InMemoryDelimitedValuesTrainingDataSet>("..\\data\\mnist_test.csv", ',',
                                                                                  true, false, true,
                                                                                  1, 28*28,
                                                                                  vector<size_t>{1,10,1},vector<size_t>{28, 28,1},//vector<size_t>{28,28,1},
@@ -36,11 +36,11 @@ int main() {
         cout << "Loaded training data." << endl;
 
         auto neuralNetwork = neuralNetworkBuilder()
-                ->addInput(mnistDataSource->getGivenShape(), 100, NodeType::full, ActivationType::tanh_approx)
+                ->addInput(mnistDataSource->getGivenShape(), 5, NodeType::full, ActivationType::tanh_approx)
                 ->addNode(50, NodeType::full, ActivationType::tanh_approx)
                 ->addOutput(mnistDataSource->getExpectedShape(), ActivationType::tanh_approx)
                 ->build();
-        neuralNetwork->train(mnistDataSource, 100, 24);
+        neuralNetwork->train(mnistDataSource, 100, 128);
 
 
         auto testMnistDataSource = make_shared<InMemoryDelimitedValuesTrainingDataSet>("..\\test_data\\small_mnist_format.csv", ',',

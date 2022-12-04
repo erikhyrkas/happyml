@@ -118,6 +118,12 @@ namespace microml {
 
         virtual size_t channel_count() = 0;
 
+        void printMaterializationPlanLine() {
+            printMaterializationPlan();
+            cout << endl;
+        }
+
+        virtual void printMaterializationPlan() = 0;
         // fastest read is generally along columns because of how memory is organized,
         // but we can't do a parallel read if there's only one row.
         virtual bool readRowsInParallel() {
@@ -551,6 +557,9 @@ namespace microml {
             return data.at(channel).at(row).at(column);
         }
 
+        void printMaterializationPlan() override {
+            cout << "FullTensor{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}";
+        }
     private:
         vector <vector<vector < float>>> data;
 
@@ -745,7 +754,9 @@ namespace microml {
         float get_val(size_t row, size_t column, size_t channel) override {
             return ((float) data.at(channel).at(row).at(column)) / 255.f;
         }
-
+        void printMaterializationPlan() override {
+            cout << "PixelTensor{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}";
+        }
     private:
         vector <vector<vector < uint8_t>>>
         data;
@@ -931,6 +942,9 @@ namespace microml {
             }
         }
 
+        void printMaterializationPlan() override {
+            cout << "QuarterTensor{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}";
+        }
     private:
         vector<vector<vector<quarter>>> data;
         int bias;
@@ -1127,6 +1141,10 @@ namespace microml {
             }
         }
 
+        void printMaterializationPlan() override {
+            cout << "HalfTensor{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}";
+        }
+
     private:
         vector<vector<vector<half>>> data;
 
@@ -1239,6 +1257,10 @@ namespace microml {
             this->channels = channels;
         }
 
+        void printMaterializationPlan() override {
+            cout << "TensorFromFunction{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}";
+        }
+
         bool contains(const shared_ptr<BaseTensor> &other) override {
             return other == shared_from_this();
         }
@@ -1310,6 +1332,9 @@ namespace microml {
                                  quarter_to_float(QUARTER_MAX, bias), seed) {
         }
 
+        void printMaterializationPlan() override {
+            cout << "TensorFromRandom{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}";
+        }
 
         bool contains(const shared_ptr<BaseTensor> &other) override {
             return other == shared_from_this();
@@ -1370,6 +1395,10 @@ namespace microml {
             this->value = value;
         }
 
+        void printMaterializationPlan() override {
+            cout << "UniformTensor{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}";
+        }
+
         bool contains(const shared_ptr<BaseTensor> &other) override {
             return other == shared_from_this();
         }
@@ -1403,6 +1432,10 @@ namespace microml {
             this->rows = rows;
             this->cols = cols;
             this->channels = channels;
+        }
+
+        void printMaterializationPlan() override {
+            cout << "IdentityTensor{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}";
         }
 
         bool contains(const shared_ptr<BaseTensor> &other) override {
@@ -1469,6 +1502,11 @@ namespace microml {
             this->adjustment = adjustment;
         }
 
+        void printMaterializationPlan() override {
+            cout << "TensorAddScalarView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            child->printMaterializationPlan();
+        }
+
         float get_val(size_t row, size_t column, size_t channel) override {
             return child->get_val(row, column, channel) + adjustment;
         }
@@ -1487,6 +1525,11 @@ namespace microml {
         TensorMultiplyByScalarView(const shared_ptr <BaseTensor> &tensor, float scale) : BaseTensorUnaryOperatorView(
                 tensor) {
             this->scale = scale;
+        }
+
+        void printMaterializationPlan() override {
+            cout << "TensorMultiplyByScalarView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            child->printMaterializationPlan();
         }
 
         float get_val(size_t row, size_t column, size_t channel) override {
@@ -1509,6 +1552,11 @@ namespace microml {
             this->transformFunction = std::move(transformFunction);
         }
 
+        void printMaterializationPlan() override {
+            cout << "TensorValueTransformView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            child->printMaterializationPlan();
+        }
+
         float get_val(size_t row, size_t column, size_t channel) override {
             return transformFunction(child->get_val(row, column, channel));
         }
@@ -1525,6 +1573,11 @@ namespace microml {
                 tensor) {
             this->transformFunction = std::move(transformFunction);
             this->constants = std::move(constants);
+        }
+
+        void printMaterializationPlan() override {
+            cout << "TensorValueTransform2View{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            child->printMaterializationPlan();
         }
 
         float get_val(size_t row, size_t column, size_t channel) override {
@@ -1548,6 +1601,11 @@ namespace microml {
             if (tensor->elements_per_channel() != elements_per_channel) {
                 throw exception("A matrix view must be put over a matrix with the same number of elements.");
             }
+        }
+
+        void printMaterializationPlan() override {
+            cout << "TensorReshapeView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            child->printMaterializationPlan();
         }
 
         size_t row_count() override {
@@ -1578,6 +1636,11 @@ namespace microml {
     public:
         explicit TensorFlattenToRowView(const shared_ptr <BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
             this->columns = tensor->size();
+        }
+
+        void printMaterializationPlan() override {
+            cout << "TensorFlattenToRowView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            child->printMaterializationPlan();
         }
 
         size_t row_count() override {
@@ -1616,6 +1679,11 @@ namespace microml {
             this->rows = tensor->size();
         }
 
+        void printMaterializationPlan() override {
+            cout << "TensorFlattenToColumnView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            child->printMaterializationPlan();
+        }
+
         size_t row_count() override {
             return rows;
         }
@@ -1647,6 +1715,11 @@ namespace microml {
     class TensorTransposeView : public BaseTensorUnaryOperatorView {
     public:
         explicit TensorTransposeView(const shared_ptr <BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
+        }
+
+        void printMaterializationPlan() override {
+            cout << "TensorTransposeView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            child->printMaterializationPlan();
         }
 
         size_t row_count() override {
@@ -1709,6 +1782,11 @@ namespace microml {
 
         }
 
+        void printMaterializationPlan() override {
+            cout << "TensorDiagonalView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            child->printMaterializationPlan();
+        }
+
         explicit TensorDiagonalView(const shared_ptr <BaseTensor> &tensor)
                 : TensorDiagonalView(tensor, 0) {
         }
@@ -1752,6 +1830,11 @@ namespace microml {
             return child->get_val(row, column, channel);
         }
 
+        void printMaterializationPlan() override {
+            cout << "TensorNoOpView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            child->printMaterializationPlan();
+        }
+
     private:
     };
 
@@ -1790,6 +1873,14 @@ namespace microml {
             }
         }
 
+        void printMaterializationPlan() override {
+            cout << "TensorDotTensorView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->(";
+            child1->printMaterializationPlan();
+            cout << ") + (";
+            child2->printMaterializationPlan();
+            cout << ")";
+        }
+
         size_t row_count() override {
             return child1->row_count();
         }
@@ -1826,6 +1917,14 @@ namespace microml {
             }
         }
 
+        void printMaterializationPlan() override {
+            cout << "TensorMultiplyTensorView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->(";
+            child1->printMaterializationPlan();
+            cout << ") + (";
+            child2->printMaterializationPlan();
+            cout << ")";
+        }
+
         size_t row_count() override {
             return child1->row_count();
         }
@@ -1850,6 +1949,14 @@ namespace microml {
                 cout << tensor2->row_count() << ", " << tensor2->column_count() << ", " << tensor2->channel_count() << "]" << endl;
                 throw exception("You can only add two tensors of the same dimensions together.");
             }
+        }
+
+        void printMaterializationPlan() override {
+            cout << "TensorAddTensorView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->(";
+            child1->printMaterializationPlan();
+            cout << ") + (";
+            child2->printMaterializationPlan();
+            cout << ")";
         }
 
         size_t row_count() override {
@@ -1877,6 +1984,14 @@ namespace microml {
             }
         }
 
+        void printMaterializationPlan() override {
+            cout << "TensorMinusTensorView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->(";
+            child1->printMaterializationPlan();
+            cout << ") + (";
+            child2->printMaterializationPlan();
+            cout << ")";
+        }
+
         size_t row_count() override {
             return child1->row_count();
         }
@@ -1902,6 +2017,10 @@ namespace microml {
             return powf(val, power);
         }
 
+        void printMaterializationPlan() override {
+            cout << "TensorMinusTensorView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            child->printMaterializationPlan();
+        }
     private:
         float power;
     };
@@ -1910,7 +2029,10 @@ namespace microml {
     public:
         explicit TensorLogView(const shared_ptr <BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
         }
-
+        void printMaterializationPlan() override {
+            cout << "TensorLogView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            child->printMaterializationPlan();
+        }
         float get_val(size_t row, size_t column, size_t channel) override {
             const float val = child->get_val(row, column, channel);
             return log(val);
@@ -1923,7 +2045,10 @@ namespace microml {
     public:
         explicit TensorLog2View(const shared_ptr <BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
         }
-
+        void printMaterializationPlan() override {
+            cout << "TensorLog2View{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            child->printMaterializationPlan();
+        }
         float get_val(size_t row, size_t column, size_t channel) override {
             const float val = child->get_val(row, column, channel);
             return log2(val);
@@ -1934,9 +2059,12 @@ namespace microml {
 
     class TensorRoundedView : public BaseTensorUnaryOperatorView {
     public:
-        explicit TensorRoundedView(const shared_ptr <BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
+        explicit TensorRoundedView(const shared_ptr<BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
         }
-
+        void printMaterializationPlan() override {
+            cout << "TensorRoundedView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            child->printMaterializationPlan();
+        }
         float get_val(size_t row, size_t column, size_t channel) override {
             const float val = child->get_val(row, column, channel);
             return round(val);
@@ -1945,6 +2073,171 @@ namespace microml {
     private:
     };
 
+    // For a given tensor, sum the all values and place at a specific channel index, while other channels
+    // are all zero. This allows us to not only sum the tensors channels into a single channel,
+    // but combine the resulting tensor with other tensors.
+    class TensorToChannelView : public BaseTensorUnaryOperatorView {
+    public:
+        TensorToChannelView(const shared_ptr<BaseTensor> &tensor, size_t data_channel_index, size_t number_of_channels) : BaseTensorUnaryOperatorView(tensor) {
+            this->data_channel_index = data_channel_index;
+            this->number_of_channels = number_of_channels;
+        }
+        void printMaterializationPlan() override {
+            cout << "TensorToChannelView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            child->printMaterializationPlan();
+        }
+
+        size_t channel_count() override {
+            return number_of_channels;
+        }
+
+        float get_val(size_t row, size_t column, size_t channel) override {
+            if(channel != data_channel_index) {
+                return 0.f;
+            }
+            float result = 0.f;
+            const size_t channels = child->channel_count();
+            for( size_t next_channel = 0; next_channel < channels; next_channel++) {
+                result += child->get_val(row, column, next_channel);
+            }
+            return result;
+        }
+    private:
+        size_t data_channel_index;
+        size_t number_of_channels;
+    };
+
+    class TensorSumChannelsView : public TensorToChannelView {
+    public:
+        TensorSumChannelsView(const shared_ptr<BaseTensor> &tensor) : TensorToChannelView(tensor, 0, 1) {
+        }
+        void printMaterializationPlan() override {
+            cout << "TensorSumChannelsView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            child->printMaterializationPlan();
+        }
+    };
+
+
+
+    // padding is the amount of extra cells on a given "side" of the matrix
+    // so a col_padding of 2 would mean 2 cells to the left that are 0 and 2 cells to the right that are zero.
+    // for a total of 4 extra cells in the row.
+    class TensorZeroPaddedView : public BaseTensorUnaryOperatorView {
+    public:
+        TensorZeroPaddedView(const shared_ptr<BaseTensor> &tensor, size_t top_padding, size_t bottom_padding,
+                             size_t left_padding, size_t right_padding) : BaseTensorUnaryOperatorView(tensor) {
+            this->top_padding = top_padding;
+            this->bottom_padding = bottom_padding;
+            this->left_padding = left_padding;
+            this->right_padding = right_padding;
+        }
+
+        void printMaterializationPlan() override {
+            cout << "TensorZeroPaddedView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            child->printMaterializationPlan();
+        }
+
+        float get_val(size_t row, size_t column, size_t channel) override {
+            if(row < top_padding || row > (child->row_count() + top_padding) ||
+               column < left_padding || column > (child->column_count() + left_padding)) {
+                return 0.f;
+            }
+
+            const float val = child->get_val(row - top_padding, column - left_padding, channel);
+            return val;
+        }
+
+        size_t row_count() override {
+            const size_t padding = right_padding + left_padding;
+            return child->row_count()+padding;
+        }
+
+        size_t column_count() override {
+            const size_t padding = bottom_padding + top_padding;
+            return child->column_count()+padding;
+        }
+    private:
+        size_t top_padding;
+        size_t bottom_padding;
+        size_t left_padding;
+        size_t right_padding;
+    };
+
+    class TensorValidCrossCorrelation2dView : public BaseTensorBinaryOperatorView {
+    public:
+        TensorValidCrossCorrelation2dView(const shared_ptr<BaseTensor> &tensor, const shared_ptr<BaseTensor> &filter)
+                : BaseTensorBinaryOperatorView(tensor, filter) {
+            rows = child1->row_count() - child2->row_count() + 1;
+            cols = child1->column_count() - child2->column_count() + 1;
+        }
+
+        void printMaterializationPlan() override {
+            cout << "TensorValidCrossCorrelation2dView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->(";
+            child1->printMaterializationPlan();
+            cout << ") + (";
+            child2->printMaterializationPlan();
+            cout << ")";
+        }
+
+        float get_val(size_t row, size_t column, size_t channel) override {
+            // iterate over filter
+            const auto filter_rows = child2->row_count();
+            const auto filter_cols = child2->column_count();
+            float result = 0.f;
+            for(size_t current_row = 0; current_row < filter_rows; current_row++) {
+                for(size_t current_col = 0; current_col < filter_cols; current_col++) {
+                    const auto filter_val = child2->get_val(current_row, current_col, channel);
+                    const auto tensor_val = child1->get_val(row+current_row, column+current_col, channel);
+                    result += filter_val + tensor_val;
+                }
+            }
+            return result;
+        }
+
+        size_t row_count() override {
+            return rows;
+        }
+
+        size_t column_count() override {
+            return cols;
+        }
+
+        size_t channel_count() override {
+            return child1->channel_count();
+        }
+    private:
+        size_t rows;
+        size_t cols;
+    };
+
+    // https://en.wikipedia.org/wiki/Cross-correlation
+    // https://en.wikipedia.org/wiki/Two-dimensional_correlation_analysis
+    // Having an even number of values in your filter is a little wierd, but I handle it
+    // you'll see where I do the rounding, it's so that a 2x2 filter or a 4x4 filter would work.
+    // I think most filters are odd numbers because even filters don't make much sense,
+    // but I wanted the code to work. The center of your filter is at a halfway point,
+    // which is why it's weird.
+    class TensorFullCrossCorrelation2dView : public TensorValidCrossCorrelation2dView {
+    public:
+        TensorFullCrossCorrelation2dView(const shared_ptr<BaseTensor> &tensor, const shared_ptr<BaseTensor> &filter)
+                : TensorValidCrossCorrelation2dView(
+                make_shared<TensorZeroPaddedView>(tensor,
+                                                  (size_t)round(((double)filter->row_count() - 1)/2.0),
+                                                  (size_t)round(((double)filter->row_count() - 1)/2.0),
+                                                  (size_t)round(((double)filter->column_count() - 1)/2.0),
+                                                  (size_t)round(((double)filter->column_count() - 1)/2.0)),
+                filter) {
+        }
+
+        void printMaterializationPlan() override {
+            cout << "TensorFullCrossCorrelation2dView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->(";
+            child1->printMaterializationPlan();
+            cout << ") + (";
+            child2->printMaterializationPlan();
+            cout << ")";
+        }
+    private:
+    };
 
     // channels, rows, columns
     shared_ptr<BaseTensor> materialize_tensor(const shared_ptr<BaseTensor> &other) {

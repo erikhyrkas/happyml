@@ -21,7 +21,7 @@ namespace micromldsl {
         mse
     };
     enum NodeType {
-        full, output
+        full, output, convolution2d
     };
     enum ActivationType {
         relu, tanh, sigmoid, leaky, softmax, sigmoid_approx, tanh_approx
@@ -91,6 +91,7 @@ namespace micromldsl {
                 this->bits = 32;
                 this->use_bias = true;
                 this->created = false;
+                this->materialized = nodeType == NodeType::output || nodeType == NodeType::convolution2d;
             }
 
             shared_ptr<NNVertex> setUseBias(bool b) {
@@ -100,6 +101,11 @@ namespace micromldsl {
 
             shared_ptr<NNVertex> setBits(uint8_t bits_val) {
                 this->bits = bits_val;
+                return shared_from_this();
+            }
+
+            shared_ptr<NNVertex> setMaterialized(bool m) {
+                this->materialized = m;
                 return shared_from_this();
             }
 
@@ -166,7 +172,7 @@ namespace micromldsl {
                     last_node = next_node;
                     if (use_bias) {
                         auto bias_node = make_shared<NeuralNetworkNode>(
-                                optimizer->createBias(output_shape[1], output_shape[1], bits));
+                                optimizer->createBias(output_shape, output_shape, bits));
                         next_node->add(bias_node);
                         last_node = bias_node;
                     }
@@ -209,6 +215,7 @@ namespace micromldsl {
                     last_node->add(activation_node);
                     last_node = activation_node;
                 }
+                last_node->setMaterialized(materialized);
                 created = true;
                 for (const auto &edge: edges) {
                     auto child_first = edge->to->build_node(nn);
@@ -224,6 +231,7 @@ namespace micromldsl {
             vector<size_t> input_shape;
             vector<size_t> output_shape;
             ActivationType activation_type;
+            bool materialized;
             bool use_bias;
             uint8_t bits;
             bool created;
