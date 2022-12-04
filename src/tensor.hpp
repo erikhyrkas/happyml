@@ -118,7 +118,11 @@ namespace microml {
 
         virtual size_t channel_count() = 0;
 
-        void printMaterializationPlanLine() {
+        virtual bool isMaterialized() {
+            return false;
+        }
+
+        virtual void printMaterializationPlanLine() {
             printMaterializationPlan();
             cout << endl;
         }
@@ -447,6 +451,10 @@ namespace microml {
         virtual void assign(const shared_ptr<BaseTensor> &other) = 0;
 
         virtual void assign(const shared_ptr<BaseTensor> &other, const shared_ptr<BaseAssignableTensor> &working_memory) = 0;
+
+        virtual bool isMaterialized() {
+            return true;
+        }
     };
 
 // The full tensor is backed by a 32-bit float. This exists because our input into our models may
@@ -2057,6 +2065,25 @@ namespace microml {
     private:
     };
 
+    class TensorRotate180View : public BaseTensorUnaryOperatorView {
+    public:
+        explicit TensorRotate180View(const shared_ptr<BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
+            row_base_value = child->row_count() - 1;
+            column_base_value = child->column_count() - 1;
+        }
+        void printMaterializationPlan() override {
+            cout << "TensorRotate180View{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            child->printMaterializationPlan();
+        }
+        float get_val(size_t row, size_t column, size_t channel) override {
+            const float val = child->get_val(row_base_value - row, column_base_value - column, channel);
+            return val;
+        }
+    private:
+        size_t row_base_value;
+        size_t column_base_value;
+    };
+
     class TensorRoundedView : public BaseTensorUnaryOperatorView {
     public:
         explicit TensorRoundedView(const shared_ptr<BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
@@ -2109,7 +2136,7 @@ namespace microml {
 
     class TensorSumChannelsView : public TensorToChannelView {
     public:
-        TensorSumChannelsView(const shared_ptr<BaseTensor> &tensor) : TensorToChannelView(tensor, 0, 1) {
+        explicit TensorSumChannelsView(const shared_ptr<BaseTensor> &tensor) : TensorToChannelView(tensor, 0, 1) {
         }
         void printMaterializationPlan() override {
             cout << "TensorSumChannelsView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
@@ -2239,10 +2266,31 @@ namespace microml {
     private:
     };
 
+    // A convolved tensor appears to be equivalent to cross correlation with the filter rotated 180 degrees:
+    // https://medium.com/@2017csm1006/forward-and-backpropagation-in-convolutional-neural-network-4dfa96d7b37e
+    class TensorFullConvolve2dView : public TensorFullCrossCorrelation2dView {
+    public:
+        TensorFullConvolve2dView(const shared_ptr<BaseTensor> &tensor, const shared_ptr<BaseTensor> &filter)
+            : TensorFullCrossCorrelation2dView(tensor, make_shared<TensorRotate180View>(filter)) {
+
+        }
+
+        void printMaterializationPlan() override {
+            cout << "TensorFullConvolve2dView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->(";
+            child1->printMaterializationPlan();
+            cout << ") + (";
+            child2->printMaterializationPlan();
+            cout << ")";
+        }
+    };
+
     // channels, rows, columns
     shared_ptr<BaseTensor> materialize_tensor(const shared_ptr<BaseTensor> &other) {
-    return make_shared<FullTensor>(other);
-}
+        if(other->isMaterialized()) {
+            return other;
+        }
+        return make_shared<FullTensor>(other);
+    }
 
     shared_ptr<FullTensor> tensor(const vector <vector<vector<float>>> &t) {
         return make_shared<FullTensor>(t);

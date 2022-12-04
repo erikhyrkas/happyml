@@ -91,7 +91,7 @@ namespace micromldsl {
                 this->bits = 32;
                 this->use_bias = true;
                 this->created = false;
-                this->materialized = nodeType == NodeType::output || nodeType == NodeType::convolution2d;
+                this->materialized = nodeType == NodeType::convolution2d;
             }
 
             shared_ptr<NNVertex> setUseBias(bool b) {

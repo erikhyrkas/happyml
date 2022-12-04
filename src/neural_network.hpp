@@ -77,8 +77,7 @@ namespace microml {
                 // TODO: materializing the output into a full tensor helps performance at the cost of memory.
                 //  we should be able to determine the best strategy at runtime. Sometimes, memory is too valuable
                 //  to use for performance.
-                // TODO: It could already be materialized. We should have the ability to check if this is unneccessary.
-                input_to_next = make_shared<FullTensor>(input_to_next);
+                input_to_next = materialize_tensor(input_to_next);
             }
             if (connection_outputs.empty()) {
                 // there are no nodes after this one, so we return our result.
@@ -119,6 +118,9 @@ namespace microml {
             PROFILE_BLOCK(profileBlock);
 
             auto prior_error = neuralNetworkFunction->backward(output_error);
+            if(materialized) {
+                prior_error = materialize_tensor(prior_error);
+            }
             for (const auto &input_connection: connection_inputs) {
                 PROFILE_BLOCK(backwardBlockLoop);
                 const auto conn = input_connection.lock();
@@ -233,7 +235,10 @@ namespace microml {
         shared_ptr<BaseTensor> consumeLastOutput() {
             auto temp = lastOutput;
             lastOutput = nullptr;
-            return temp; //make_shared<FullTensor>(temp);
+            // Always materialize output for performance of consumption or back propagation.
+            // TODO: should we pick the precision of the materialization? right now, it is always 32-bit
+            //  which might be excessive in some cases.
+            return materialize_tensor(temp);
         }
 
     private:

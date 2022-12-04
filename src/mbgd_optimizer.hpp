@@ -36,6 +36,13 @@ namespace microml {
         float learning_rate;
     };
 
+// full conv2d will be similar to valid, but needs some changes.
+//            // this will look crazy, but it's dealing with even kernel sizes, which
+//            // are not really a great idea as far as I can tell, but I don't want the
+//            // code to break.
+//            size_t rows = 2*((size_t)std::round(((double)kernel_size - 1)/2.0)); // 1 = 0, 2 = 2, 3 = 2, 4 = 4, 5 = 4
+//            size_t cols = rows; // I could eventually support other shapes, but it's not critical right now.
+//            this->output_shape = {input_shape[0]+rows, input_shape[1]+cols, output_depth};
     // Here's an interesting, related read:
     // https://towardsdatascience.com/convolution-vs-correlation-af868b6b4fb5
     // also:
@@ -46,13 +53,6 @@ namespace microml {
                                   const shared_ptr<MBGDLearningState> &learning_state) {
             this->input_shapes = vector<vector<size_t>>{input_shape};
             this->kernel_size = kernel_size;
-// for full conv2d:
-//            // this will look crazy, but it's dealing with even kernel sizes, which
-//            // are not really a great idea as far as I can tell, but I don't want the
-//            // code to break.
-//            size_t rows = 2*((size_t)std::round(((double)kernel_size - 1)/2.0)); // 1 = 0, 2 = 2, 3 = 2, 4 = 4, 5 = 4
-//            size_t cols = rows; // I could eventually support other shapes, but it's not critical right now.
-//            this->output_shape = {input_shape[0]+rows, input_shape[1]+cols, output_depth};
             this->output_shape = {input_shape[0]-kernel_size+1, input_shape[1]-kernel_size+1, output_depth};
             this->bits = bits;
             this->weights = {};
@@ -85,13 +85,24 @@ namespace microml {
                     result = make_shared<TensorAddTensorView>(result, summedCorrelation2d);
                 }
             }
-            // todo: it would be faster to have some sort of CombinedTensor
+            // todo: it would be faster to have some sort of CombinedTensor where rather than adding the tensors,
+            //  passed a vector of tensors and we only use 1 layer from each. The tensor add object will
+            //  cause us to add a 0 to each value for each layer. If you have tensors added together, you'll
+            //  have an 256 additional + operations for every value you fetch -- and those operations aren't
+            //  changing the outcome.
 
             return result;
         }
 
         shared_ptr<BaseTensor> backward(const shared_ptr<BaseTensor> &output_error) override {
+            shared_ptr<BaseTensor> input_error = nullptr;
 
+            const size_t output_depth = output_shape[2];
+            for(size_t output_layer = 0; output_layer < output_depth; output_layer++) {
+
+            }
+
+            return input_error;
         }
     private:
         shared_ptr<BaseTensor> last_input;
