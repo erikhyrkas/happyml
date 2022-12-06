@@ -55,7 +55,7 @@ void using_sigmoid() {
     // 16-bit input node: input size 4,    1000 epochs (8 + 2x4x2  + 8 = 32 bytes)
     //  8-bit input node: input size 32!!, 1500 epochs (8 + 1x32x2 + 8 = 80 bytes)
     // Clearly, 8-bit doesn't work well for memory savings or quality results in this case.
-    neuralNetwork->train(xorDataSource, 1000, 1, true);
+    neuralNetwork->train(xorDataSource, 2000, 1, true);
 
     cout << fixed << setprecision(2);
     cout << "0 xor 0 = 0 Prediction: " << neuralNetwork->predict_scalar(column_vector({0.f, 0.f})) << endl;
@@ -81,7 +81,6 @@ void using_relu() {
 
     neuralNetwork->train(xorDataSource, 1000, 1, true);
 
-
     cout << fixed << setprecision(2);
     cout << "0 xor 0 = 0 Prediction: " << neuralNetwork->predict_scalar(column_vector({0.f, 0.f})) << endl;
     cout << "0 xor 1 = 1 Prediction: " << neuralNetwork->predict_scalar(column_vector({0.f, 1.f})) << endl;
@@ -91,6 +90,11 @@ void using_relu() {
 
 int main() {
     try {
+        // For this problem, tanh works far-and-away the best.
+        // We can use other activation functions for the same problem, but they'll be less efficient at finding a result.
+        // We don't particularly care about efficiency for this exact problem, only that activation functions work.
+        // It is a good reminder, though, that picking the correct activation functions can dramatically improve
+        // results and the time to train.
         using_tanh();
         using_sigmoid();
         using_relu();

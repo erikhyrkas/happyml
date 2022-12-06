@@ -97,11 +97,27 @@ namespace microml {
         shared_ptr<BaseTensor> backward(const shared_ptr<BaseTensor> &output_error) override {
             shared_ptr<BaseTensor> input_error = nullptr;
 
+            // input error for each input channel is
+            // the sum of the fullConvolve2d of the output errors and the weights
             const size_t output_depth = output_shape[2];
             for(size_t output_layer = 0; output_layer < output_depth; output_layer++) {
+                const auto output_error_channel = make_shared<TensorChannelToTensorView>(output_error, output_layer);
 
+                const auto next_input_error = make_shared<TensorFullConvolve2dView>(output_error_channel,  weights[output_layer]);
+                if(input_error) {
+                    input_error = make_shared<TensorAddTensorView>(input_error, next_input_error);
+                } else {
+                    input_error = next_input_error;
+                }
+
+                const auto next_weight_error = make_shared<TensorValidCrossCorrelation2dView>(last_input, output_error_channel);
+                const auto next_weight_error_at_learning_rate = make_shared<TensorMultiplyByScalarView>(next_weight_error,
+                                                                                                        learning_state->learning_rate * mixed_precision_scale);
+                const auto adjusted_weights = make_shared<TensorMinusTensorView>(weights[output_layer], next_weight_error_at_learning_rate);
+                weights[output_layer] = materialize_tensor(adjusted_weights, bits);
             }
 
+            last_input.reset();
             return input_error;
         }
     private:
@@ -169,72 +185,13 @@ namespace microml {
             auto weights_error_at_learning_rate = make_shared<TensorMultiplyByScalarView>(weights_error,
                                                                                           learning_state->learning_rate*mixed_precision_scale);
             auto adjusted_weights = make_shared<TensorMinusTensorView>(weights, weights_error_at_learning_rate);
-
-//            cout << endl << "Min: " << adjusted_weights->min() << " Max: " <<adjusted_weights->max() <<endl;
-//            cout << "output error: " << endl;
-//            output_error->print();
-//            cout << "weights transposed: " << endl;
-//            weights_transposed->print();
-//            cout << "input error: " << endl;
-//            input_error->print();
-//            cout << "last input: " <<endl;
-//            last_input->print();
-//            cout << "inputs transposed:" << endl;
-//            input_transposed->print();
-//            cout << "weights: "<<endl;
-//            weights->print();
-//            cout << "weights error:" <<endl;
-//            weights_error->print();
-//            cout << "Lr: " << learning_state->learning_rate << endl;
-//            cout << "weights error at learning rate:" <<endl;
-//            weights_error_at_learning_rate->print();
-//            cout << "adjusted weights:" <<endl;
-//            adjusted_weights->print();
-
-            if (bits == 32) {
-//                float adj_min = adjusted_weights->min();
-//                float adj_max = adjusted_weights->max();
-//                cout << endl << " adj_min: " << adj_min << " adj_max:" << adj_max << endl;
-
-                weights = make_shared<FullTensor>(adjusted_weights);
-            } else if (bits == 16) {
-                weights = make_shared<HalfTensor>(adjusted_weights);
-            } else {
-                auto min_max = adjusted_weights->range();
-                const float adj_min = min_max.first; // adjusted_weights->min();
-                const float adj_max = min_max.second; //adjusted_weights->max();
-                int quarter_bias = 8;
-                for(int proposed_quarter_bias = 15; proposed_quarter_bias >= 8; proposed_quarter_bias--) {
-                    float bias_max = quarter_to_float(QUARTER_MAX, proposed_quarter_bias);// * 0.8f;
-                    float bias_min = -bias_max;
-                    if(adj_min > bias_min && adj_max < bias_max) {
-//                        cout << endl << "proposed_bias: " << proposed_bias << " " << bias_min << " -> " << bias_max << " adj_min: " << adj_min << " adj_max:" << adj_max << endl;
-                        quarter_bias = proposed_quarter_bias;
-                        break;
-                    }
-                }
-                weights = make_shared<QuarterTensor>(adjusted_weights, quarter_bias);
-//                auto real_weights = make_shared<FullTensor>(adjusted_weights);
-//                cout << endl << "8-bit vs 32-bit weights:" << endl;
-//                real_weights->print();
-//                weights->print();
-//                cout << endl;
-
-//                cout << endl << "adjusted:";
-//                adjusted_weights->print();
-//                cout << endl << "alternate:";
-//                auto alternate_weights = make_shared<FullTensor>(*adjusted_weights);
-//                alternate_weights->print();
-//                cout << endl << "actual:";
-//                weights->print();
-//                cout << endl << "bias " << result_bias << endl;
-//                cout << "assigned weights:" <<endl;
-//                weights->print();
-            }
+            weights = materialize_tensor(adjusted_weights, bits);
 
             last_input.reset();
             return input_error;
         }
+
+
 
     private:
         shared_ptr<BaseTensor> weights;
@@ -311,38 +268,7 @@ namespace microml {
             auto bias_error_at_learning_rate = std::make_shared<TensorMultiplyByScalarView>(output_error,
                                                                                             learning_state->learning_rate*mixed_precision_scale);
             auto adjusted_bias = std::make_shared<TensorMinusTensorView>(bias, bias_error_at_learning_rate);
-            if (bits == 32) {
-                PROFILE_BLOCK(bits_32_profile_block);
-//                adjusted_bias->printMaterializationPlanLine();
-                bias = std::make_shared<FullTensor>(adjusted_bias);
-//                cout << endl << "32 bias" << endl;
-//                bias->print();
-            } else if (bits == 16) {
-                PROFILE_BLOCK(bits_16_profile_block);
-                bias = make_shared<HalfTensor>(adjusted_bias);
-            } else {
-                PROFILE_BLOCK(bits_8_profile_block);
-                float adj_min = adjusted_bias->min();
-                float adj_max = adjusted_bias->max();
-                int result_bias = 8;
-                for(int proposed_bias = 15; proposed_bias >= 9; proposed_bias--) {
-                    float bias_max = quarter_to_float(QUARTER_MAX, proposed_bias);
-                    float bias_min = -bias_max;
-                    if(adj_min > bias_min && adj_max < bias_max) {
-                        result_bias = proposed_bias - 1;
-                        break;
-                    }
-                }
-                bias = make_shared<QuarterTensor>(adjusted_bias, result_bias);
-
-//                cout << endl << "adjusted bias:";
-//                adjusted_bias->print();
-//                cout << endl << "alternate bias:";
-//                auto alternate_bias = make_shared<FullTensor>(*adjusted_bias);
-//                alternate_bias->print();
-//                cout << endl << "actual bias:";
-//                bias->print();
-            }
+            bias = materialize_tensor(bias, bits);
 
             last_input.reset();
 //            auto adjusted_output = std::make_shared<TensorMinusTensorView>(output_error, adjusted_bias);

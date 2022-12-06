@@ -2144,7 +2144,31 @@ namespace microml {
         }
     };
 
+    class TensorChannelToTensorView : public BaseTensorUnaryOperatorView {
+    public:
+        explicit TensorChannelToTensorView(const shared_ptr<BaseTensor> &tensor, size_t channel_offset) : BaseTensorUnaryOperatorView(tensor) {
+            this->channel_offset = channel_offset;
+        }
+        void printMaterializationPlan() override {
+            cout << "TensorChannelToChannel{" << row_count() << "," <<column_count()<<",1}->";
+            child->printMaterializationPlan();
+        }
 
+        size_t channel_count() override {
+            return 1;
+        }
+
+        float get_val(size_t row, size_t column, size_t channel) override {
+            if(channel != 0) {
+                return 0.f;
+            }
+
+            const float val = child->get_val(row, column, channel+channel_offset);
+            return val;
+        }
+    private:
+        size_t channel_offset;
+    };
 
     // padding is the amount of extra cells on a given "side" of the matrix
     // so a col_padding of 2 would mean 2 cells to the left that are 0 and 2 cells to the right that are zero.
@@ -2319,5 +2343,34 @@ namespace microml {
         return tensor->max_index(0, 0);
     }
 
+
+    int estimateBias(int estimate_min, int estimate_max, const float adj_min, const float adj_max) {
+        int quarter_bias = estimate_min;
+        for(int proposed_quarter_bias = estimate_max; proposed_quarter_bias >= estimate_min; proposed_quarter_bias--) {
+            const float bias_max = quarter_to_float(QUARTER_MAX, proposed_quarter_bias);
+            const float bias_min = -bias_max;
+            if(adj_min > bias_min && adj_max < bias_max) {
+                quarter_bias = proposed_quarter_bias;
+                break;
+            }
+        }
+        return quarter_bias;
+    }
+
+    shared_ptr<BaseTensor> materialize_tensor(const shared_ptr<BaseTensor> &tensor, uint8_t bits) {
+        if (bits == 32) {
+            if(tensor->isMaterialized()) {
+                // there is no advantage to materializing an already materialized tensor to 32 bits.
+                // whether other bit options may reduce memory footprint.
+                return tensor;
+            }
+            return make_shared<FullTensor>(tensor);
+        } else if (bits == 16) {
+            return make_shared<HalfTensor>(tensor);
+        }
+        auto min_max = tensor->range();
+        int quarter_bias = estimateBias(4, 15,  min_max.first, min_max.second);
+        return  make_shared<QuarterTensor>(tensor, quarter_bias);
+    }
 }
 #endif //MICROML_TENSOR_HPP
