@@ -5,53 +5,22 @@
 #ifndef MICROML_NEURAL_NETWORK_HPP
 #define MICROML_NEURAL_NETWORK_HPP
 
-#include <vector>
 #include <set>
-#include "../types/tensor.hpp"
-#include "../training_data/training_dataset.hpp"
+#include <vector>
 #include "loss.hpp"
-#include "../util/unit_test.hpp"
 #include "activation.hpp"
 #include "neural_network_function.hpp"
 #include "optimizer.hpp"
+#include "../util/timers.hpp"
 #include "../util/basic_profiler.hpp"
 #include "../util/tensor_utils.hpp"
+#include "../util/unit_test.hpp"
+#include "../types/tensor.hpp"
+#include "../training_data/training_dataset.hpp"
 
 using namespace std;
 
 namespace microml {
-
-    class ElapsedTimer {
-    public:
-        ElapsedTimer() {
-            start_time = std::chrono::high_resolution_clock::now();
-        }
-
-        long long int getMicroseconds() {
-            auto stop_time = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop_time - start_time);
-            start_time = std::chrono::high_resolution_clock::now();
-            return duration.count();
-        }
-
-        long long int getMilliseconds() {
-            auto stop_time = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop_time - start_time);
-            start_time = std::chrono::high_resolution_clock::now();
-            return duration.count();
-        }
-
-        long long int getSeconds() {
-            auto stop_time = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::seconds>(stop_time - start_time);
-            start_time = std::chrono::high_resolution_clock::now();
-            return duration.count();
-        }
-
-    private:
-        std::chrono::time_point<std::chrono::high_resolution_clock> start_time;
-    };
-
 
     // A node is a vertex in a graph
     class NeuralNetworkNode : public std::enable_shared_from_this<NeuralNetworkNode> {
@@ -74,7 +43,7 @@ namespace microml {
         //  It is possible, I'll have to track visited nodes to avoid infinite cycles.
         void doForward(const vector<shared_ptr<BaseTensor>> &inputs) {
             auto input_to_next = neuralNetworkFunction->forward(inputs);
-            if(materialized) {
+            if (materialized) {
                 // TODO: materializing the output into a full tensor helps performance at the cost of memory.
                 //  we should be able to determine the best strategy at runtime. Sometimes, memory is too valuable
                 //  to use for performance.
@@ -119,7 +88,7 @@ namespace microml {
             PROFILE_BLOCK(profileBlock);
 
             auto prior_error = neuralNetworkFunction->backward(output_error);
-            if(materialized) {
+            if (materialized) {
                 prior_error = materialize_tensor(prior_error);
             }
             for (const auto &input_connection: connection_inputs) {
@@ -317,15 +286,16 @@ namespace microml {
         // a sample is a single record
         // a batch is the number of samples (records) to look at before updating weights
         // train/fit
-        void train(const shared_ptr<TrainingDataSet> &source, size_t epochs, int batch_size=1, bool overwrite_output_lines = false) {
+        void train(const shared_ptr<TrainingDataSet> &source, size_t epochs, int batch_size = 1,
+                   bool overwrite_output_lines = false) {
             auto total_records = source->record_count();
-            if(batch_size > total_records) {
+            if (batch_size > total_records) {
                 throw exception("Batch Size cannot be larger than source data set.");
             }
             ElapsedTimer total_timer;
             const size_t output_size = output_nodes.size();
             cout << endl;
-            log_training(0, -1, epochs, 0, ceil(total_records/batch_size), batch_size, 0, 0, overwrite_output_lines);
+            log_training(0, -1, epochs, 0, ceil(total_records / batch_size), batch_size, 0, 0, overwrite_output_lines);
             for (size_t epoch = 0; epoch < epochs; epoch++) {
                 ElapsedTimer timer;
                 source->shuffle();
@@ -352,24 +322,30 @@ namespace microml {
                     }
                     batch_offset++;
                     next_record = source->next_record();
-                    if(batch_offset >= batch_size || next_record == nullptr) {
+                    if (batch_offset >= batch_size || next_record == nullptr) {
                         for (size_t output_index = 0; output_index < output_size; output_index++) {
                             // TODO: materializing the error into a full tensor helps performance at the cost of memory.
                             //  we should be able to determine the best strategy at runtime. Sometimes, memory is too valuable
                             //  to use for performance.
-                            auto total_error = make_shared<FullTensor>(lossFunction->calculateTotalError(batch_truths[output_index], batch_predictions[output_index]));
+                            auto total_error = make_shared<FullTensor>(
+                                    lossFunction->calculateTotalError(batch_truths[output_index],
+                                                                      batch_predictions[output_index]));
 //                            auto total_error = lossFunction->calculateTotalError(batch_truths[output_index], batch_predictions[output_index]);
                             auto loss = lossFunction->compute(total_error);
                             // batch_offset should be equal to batch_size, unless we are out of records.
-                            auto loss_derivative = lossFunction->partialDerivative(total_error, (float)batch_offset);
+                            auto loss_derivative = lossFunction->partialDerivative(total_error, (float) batch_offset);
 
                             auto elapsed_time = timer.getMilliseconds();
-                            log_training(elapsed_time, epoch, epochs, ceil(current_record/batch_size), ceil(total_records/batch_size), batch_offset, loss, 1, overwrite_output_lines);
+                            log_training(elapsed_time, epoch, epochs, ceil(current_record / batch_size),
+                                         ceil(total_records / batch_size), batch_offset, loss, 1,
+                                         overwrite_output_lines);
                             // todo: we don't weight loss when there are multiple outputs back propagating. we should, instead of treating them as equals.
                             output_nodes[output_index]->backward(loss_derivative);
 
                             elapsed_time = timer.getMilliseconds();
-                            log_training(elapsed_time, epoch, epochs, ceil(current_record/batch_size), ceil(total_records/batch_size), batch_offset, loss, 2, overwrite_output_lines);
+                            log_training(elapsed_time, epoch, epochs, ceil(current_record / batch_size),
+                                         ceil(total_records / batch_size), batch_offset, loss, 2,
+                                         overwrite_output_lines);
                             batch_truths[output_index].clear();
                             batch_predictions[output_index].clear();
                         }
@@ -379,22 +355,22 @@ namespace microml {
                 source->restart();
             }
             long long int elapsed = total_timer.getMilliseconds();
-            if(elapsed < 2000) {
+            if (elapsed < 2000) {
                 cout << endl << "Finished training in " << elapsed << " milliseconds." << endl;
-            } else if(elapsed < 120000) {
-                cout << endl << "Finished training in " << (elapsed/1000) << " seconds." << endl;
+            } else if (elapsed < 120000) {
+                cout << endl << "Finished training in " << (elapsed / 1000) << " seconds." << endl;
             } else {
-                cout << endl << "Finished training in " << (elapsed/60000) << " minutes." << endl;
+                cout << endl << "Finished training in " << (elapsed / 60000) << " minutes." << endl;
             }
         }
 
         static void log_training(long long int elapsed_time, size_t epoch, size_t epochs,
-                     size_t current_record, size_t total_records, int batch_size,
-                     float loss, int stage, bool overwrite) {
+                                 size_t current_record, size_t total_records, int batch_size,
+                                 float loss, int stage, bool overwrite) {
             // printf is about 6x faster than cout. I'm not sure why, since neither should flush without an end line.
             // I can only assume it relates to how cout processes numbers to strings.
             string status_message;
-            switch(stage) {
+            switch (stage) {
                 case 0:
                     status_message = "to initialize";
                     break;
@@ -407,22 +383,22 @@ namespace microml {
                 default:
                     status_message = "unknown";
             }
-            if( elapsed_time > 120000 ) {
+            if (elapsed_time > 120000) {
                 auto min = elapsed_time / 60000;
                 auto sec = (elapsed_time % 60000) / 1000;
                 printf("%5zd m %zd s %-13s \tEpoch: %6zd/%zd \tBatch: %4zd/%zd Batch Size: %3d \tLoss: %11f      ",
                        min, sec, status_message.c_str(), (epoch + 1), epochs,
                        current_record, total_records, batch_size, loss);
-            } else if(elapsed_time > 2000) {
+            } else if (elapsed_time > 2000) {
                 printf("%5zd s %-13s \tEpoch: %6zd/%zd \tBatch: %4zd/%zd Batch Size: %3d \tLoss: %11f            ",
-                       (elapsed_time/1000), status_message.c_str(), (epoch + 1), epochs,
+                       (elapsed_time / 1000), status_message.c_str(), (epoch + 1), epochs,
                        current_record, total_records, batch_size, loss);
             } else {
                 printf("%5zd ms %-13s \tEpoch: %6zd/%zd \tBatch: %4zd/%zd Batch Size: %3d \tLoss: %11f           ",
                        elapsed_time, status_message.c_str(), (epoch + 1), epochs,
                        current_record, total_records, batch_size, loss);
             }
-            if(overwrite) {
+            if (overwrite) {
                 printf("\r");
             } else {
                 printf("\n");

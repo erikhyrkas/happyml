@@ -8,6 +8,9 @@
 #include "../types/tensor.hpp"
 #include "../util/unit_test.hpp"
 #include "../util/tensor_stats.hpp"
+#include "../types/materialized_tensors.hpp"
+#include "../types/tensor_views.hpp"
+#include "../util/timers.hpp"
 
 // Super slow on my machine, but needed to test everything. Probably not useful for day-to-day unit tests.
 //#define FULL_TENSOR_TESTS

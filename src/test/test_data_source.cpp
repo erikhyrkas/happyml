@@ -2,8 +2,8 @@
 // Created by Erik Hyrkas on 11/6/2022.
 //
 #include <iostream>
-#include "../util/unit_test.hpp"
 #include "../training_data/training_dataset.hpp"
+#include "../training_data/generated_datasets.hpp"
 
 using namespace microml;
 using namespace std;
