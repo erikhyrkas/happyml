@@ -8,6 +8,8 @@
 #include "../types/half_float.hpp"
 #include "../types/quarter_float.hpp"
 #include "../types/tensor.hpp"
+#include "../types/tensor_views.hpp"
+#include "../types/materialized_tensors.hpp"
 #include <iomanip>
 #include <vector>
 #include <utility>

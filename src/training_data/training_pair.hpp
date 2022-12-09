@@ -6,6 +6,7 @@
 #define MICROML_TRAINING_PAIR_HPP
 
 #include "../types/tensor.hpp"
+#include "../util/tensor_utils.hpp"
 
 using namespace std;
 
@@ -43,8 +44,8 @@ namespace microml {
         }
 
         TrainingPair(const vector<float> &given, const vector<float> &expected) {
-            this->given.push_back(make_shared<FullTensor>(given));
-            this->expected.push_back(make_shared<FullTensor>(expected));
+            this->given.push_back(column_vector(given));
+            this->expected.push_back(column_vector(expected));
         }
 
         shared_ptr<BaseTensor> getFirstGiven() {

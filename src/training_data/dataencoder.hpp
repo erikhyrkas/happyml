@@ -97,7 +97,7 @@ namespace microml {
 
     class TextToCategoryEncoder : public TrainingDataInputEncoder {
     public:
-        TextToCategoryEncoder(const std::map<string,size_t> &categoryMapping) {
+        explicit TextToCategoryEncoder(const std::map<string,size_t> &categoryMapping) {
             this->categoryMapping = categoryMapping;
         }
 
@@ -116,7 +116,7 @@ namespace microml {
             }
 
             size_t channel_offset = 0;
-            for(const auto word : words) {
+            for(const auto& word : words) {
                 size_t column_offset;
                 if( trim ) {
                     column_offset = categoryMapping.at(string_trim(word));

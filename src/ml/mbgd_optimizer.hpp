@@ -322,7 +322,7 @@ namespace microml {
         explicit SGDOptimizer(float learning_rate) {
             this->sgdLearningState = make_shared<MBGDLearningState>();
             this->sgdLearningState->learning_rate = learning_rate;
-            this->sgdLearningState->bias_learning_rate = learning_rate * 0.1;
+            this->sgdLearningState->bias_learning_rate = learning_rate * 0.1f;
         }
         explicit SGDOptimizer(float learning_rate, float bias_learning_rate) {
             this->sgdLearningState = make_shared<MBGDLearningState>();

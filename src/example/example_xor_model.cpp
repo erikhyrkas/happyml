@@ -4,7 +4,6 @@
 
 #include <memory>
 #include "../ml/model.hpp"
-#include "../util/tensor_utils.hpp"
 
 using namespace std;
 using namespace microml;
@@ -46,7 +45,7 @@ void using_sigmoid() {
 
     cout << "Test with sigmoid" << endl;
     auto neuralNetwork = neuralNetworkBuilder()
-            ->addInput(xorDataSource->getGivenShape(), 6, NodeType::full, ActivationType::tanh)
+            ->addInput(xorDataSource->getGivenShape(), 5, NodeType::full, ActivationType::tanh)
             ->addOutput(xorDataSource->getExpectedShape(), ActivationType::sigmoid)
             ->build();
 

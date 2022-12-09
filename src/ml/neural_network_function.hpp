@@ -55,7 +55,7 @@ namespace microml {
             if (input.size() != 1) {
                 throw exception("Cannot flatten multiple inputs at the same time. Please merge.");
             }
-            const auto last_input = input[0];
+            const auto& last_input = input[0];
             original_cols = last_input->column_count();
             original_rows = last_input->row_count();
             if (original_rows == 1) {
@@ -75,8 +75,8 @@ namespace microml {
         }
 
     private:
-        size_t original_rows;
-        size_t original_cols;
+        size_t original_rows{};
+        size_t original_cols{};
     };
 }
 #endif //MICROML_NEURAL_NETWORK_FUNCTION_HPP
