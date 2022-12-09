@@ -102,10 +102,10 @@ Data Set:
 Data Encoder:
 * Converts raw data into a Tensor
 
-Data Decoder:
+Data Decoder (doesn't exist yet):
 * Converts a tensor into usable data (similar to original raw data)
 
-Data Source:
+Data Source (doesn't exist yet):
 * Zero or more Data Sets (could generate data)
 * Data Encoder -- used at this point so that we don't have to constantly re-encode input each epoch
   and saves memory by not needing raw data beyond the initial moment to encode.
@@ -114,7 +114,7 @@ Optimizer:
 * Use a loss function to compute the accuracy of a prediction
 * Manage state tensors on layer used for optimizing
 
-Neuron:
+Neural Network Node:
 * Weights
 * Bias (optional)
 * Optimizer state tensors
@@ -123,14 +123,7 @@ Neuron:
 * takes in Loss function
 * Specific input and output shape (shape = tensor dimensions)
 
-Neuron Block:
-* Specialized layer
-* Represent common blocks of layers used to build different popular models
-* While the size of these blocks may vary, the pattern is consistent
-* Neuron definitions
-* Abstracts the intricacies of the layer details
-
-Model:
+* Model:
 * represents a DAG (directed acyclic graph) of layer/layer blocks and checks for cycles when adding new layers
 * Layers
 * Optimizer
@@ -138,9 +131,8 @@ Model:
 * Trained using a Data Source, which configures the input shape
 * Produces one or more outputs
 
-Neuron Architecture:
-* Factory to add many layers/layer blocks to a model and configure it
-* Represents common combinations of layer blocks to solve common problems
+MicromlDSL:
+* factory that builds a model with easy-ish to understand syntax.
 * Simple configuration to cover core decision points -- like input and output shape, number of neurons or layers, etc.
 
 # Why this project is important to me -- an opinion piece

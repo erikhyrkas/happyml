@@ -13,7 +13,7 @@
 #include <string>
 #include "../types/tensor.hpp"
 #include "training_pair.hpp"
-#include "dataencoder.hpp"
+#include "data_encoder.hpp"
 #include "../util/file_reader.hpp"
 
 namespace microml {

@@ -2,8 +2,8 @@
 // Created by Erik Hyrkas on 11/27/2022.
 //
 
-#ifndef MICROML_DATAENCODER_HPP
-#define MICROML_DATAENCODER_HPP
+#ifndef MICROML_DATA_ENCODER_HPP
+#define MICROML_DATA_ENCODER_HPP
 
 #include <string>
 #include <charconv>
@@ -135,4 +135,4 @@ namespace microml {
 
 
 }
-#endif //MICROML_DATAENCODER_HPP
+#endif //MICROML_DATA_ENCODER_HPP
