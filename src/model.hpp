@@ -21,7 +21,7 @@ namespace micromldsl {
         mse
     };
     enum NodeType {
-        full, output, convolution2d
+        full, convolution2d
     };
     enum ActivationType {
         relu, tanh, sigmoid, leaky, softmax, sigmoid_approx, tanh_approx
@@ -78,10 +78,14 @@ namespace micromldsl {
         }
 
         // vertex aka node
+        // todo: in a perfect world, instead of having multiple constructors
+        //  where one is for full layers and one is for convolution layers
+        //  maybe I should use inheritance to have more than one type of NNVertex.
         class NNVertex : public enable_shared_from_this<NNVertex> {
         public:
+            // used for non-convolutional layers
             NNVertex(const weak_ptr<MicromlDSL> &parent, NodeType nodeType, const vector<size_t> &input_shape,
-                     const vector<size_t> &output_shape,
+                     const vector<size_t> &output_shape, bool for_output,
                      ActivationType activation_type) {
                 this->parent = parent;
                 this->node_type = nodeType;
@@ -90,8 +94,28 @@ namespace micromldsl {
                 this->output_shape = output_shape;
                 this->bits = 32;
                 this->use_bias = true;
-                this->created = false;
-                this->materialized = nodeType == NodeType::convolution2d;
+                this->materialized = false;
+                this->first_node = nullptr;
+                this->for_output = for_output;
+                this->kernel_size = 0;
+                this->filters = 0;
+            }
+
+            // used for convolutional layers
+            NNVertex(const weak_ptr<MicromlDSL> &parent, NodeType nodeType, const vector<size_t> &input_shape,
+                     const size_t filters, const size_t kernel_size, bool for_output, ActivationType activation_type) {
+                this->parent = parent;
+                this->node_type = nodeType;
+                this->activation_type = activation_type;
+                this->input_shape = input_shape;
+                this->output_shape = {input_shape[0]-kernel_size+1, input_shape[1]-kernel_size+1, filters};
+                this->bits = 32;
+                this->use_bias = true;
+                this->materialized = true;
+                this->first_node = nullptr;
+                this->kernel_size = kernel_size;
+                this->filters = filters;
+                this->for_output = for_output;
             }
 
             shared_ptr<NNVertex> setUseBias(bool b) {
@@ -116,26 +140,56 @@ namespace micromldsl {
             };
 
             shared_ptr<NNVertex> addOutput(const size_t outputShape, ActivationType activationType) {
-                return addNode(outputShape, NodeType::output, activationType);
+                return addNode(this->output_shape, {1, outputShape, 1}, NodeType::full, true, activationType);
             }
 
             shared_ptr<NNVertex> addOutput(const vector<size_t> &outputShape, ActivationType activationType) {
-                return addNode(outputShape, NodeType::output, activationType);
+                return addNode(this->output_shape,outputShape, NodeType::full, true, activationType);
+            }
+
+            shared_ptr<NNVertex> addOutput(const vector<size_t> &outputShape, const size_t output_kernel_size,
+                                           NodeType nodeType, ActivationType activationType) {
+
+                auto result = addNode(outputShape[2], output_kernel_size, NodeType::convolution2d, true,
+                                      activationType);
+                if(result->output_shape[0] != outputShape[0] ||
+                   result->output_shape[1] != outputShape[1] ||
+                   result->output_shape[2] != outputShape[2]) {
+                    // todo: could we have taken other action here to avoid an error and reshape the output?
+                    throw exception("The calculated output shape of the convolution2d node didn't match the desired output shape.");
+                }
+                return result;
             }
 
             shared_ptr<NNVertex> addNode(const size_t outputShape, NodeType nodeType, ActivationType activationType) {
                 return addNode({1, outputShape, 1}, nodeType, activationType);
             }
 
-            shared_ptr<NNVertex>
-            addNode(const vector<size_t> &outputShape, NodeType nodeType, ActivationType activationType) {
-                return addNode(this->output_shape, outputShape, nodeType, activationType);
+            shared_ptr<NNVertex> addNode(const vector<size_t> &outputShape, NodeType nodeType,
+                                         ActivationType activationType) {
+                return addNode(this->output_shape, outputShape, nodeType, false, activationType);
             }
 
-            shared_ptr<NNVertex>
-            addNode(const vector<size_t> &inputShape, const vector<size_t> &outputShape, NodeType nodeType,
-                    ActivationType activationType) {
-                auto nnv = make_shared<NNVertex>(parent.lock(), nodeType, inputShape, outputShape, activationType);
+            shared_ptr<NNVertex> addNode(const size_t next_filters, const size_t next_kernel_size, NodeType nodeType,
+                                         ActivationType activationType) {
+                return addNode(next_filters, next_kernel_size, nodeType, false, activationType);
+            }
+
+            shared_ptr<NNVertex> addNode(const size_t next_filters, const size_t next_kernel_size,
+                                         NodeType nodeType, bool next_for_output, ActivationType activationType) {
+                auto nnv = make_shared<NNVertex>(parent.lock(), nodeType, this->output_shape,
+                                                 next_filters, next_kernel_size, next_for_output, activationType);
+                auto nne = make_shared<NNEdge>();
+                nne->from = shared_from_this();
+                nne->to = nnv;
+                edges.push_back(nne);
+                return nnv;
+            }
+
+            shared_ptr<NNVertex> addNode(const vector<size_t> &inputShape,
+                                         const vector<size_t> &outputShape, NodeType nodeType,
+                                         bool next_for_output, ActivationType activationType) {
+                auto nnv = make_shared<NNVertex>(parent.lock(), nodeType, inputShape, outputShape, next_for_output, activationType);
                 auto nne = make_shared<NNEdge>();
                 nne->from = shared_from_this();
                 nne->to = nnv;
@@ -144,7 +198,7 @@ namespace micromldsl {
             }
 
             void reset() {
-                created = false;
+                this->first_node = nullptr;
             }
 
             shared_ptr<NeuralNetworkForTraining> build() {
@@ -152,76 +206,86 @@ namespace micromldsl {
             }
 
             shared_ptr<NeuralNetworkNode> build_node(const shared_ptr<NeuralNetworkForTraining> &nn) {
-                if (created) {
+                if (first_node) {
                     return first_node;
                 }
                 shared_ptr<Optimizer> optimizer = nn->getOptimizer();
-                if (node_type == NodeType::full || node_type == NodeType::output) {
-                    // todo: create flatten node if input shape isn't flat
-                    first_node = nullptr;
+                shared_ptr<NeuralNetworkNode> next_node;
+                shared_ptr<NeuralNetworkNode> last_node = nullptr;
+                if (node_type == NodeType::full) {
                     if(input_shape[0] > 1) {
-                        first_node = make_shared<NeuralNetworkNode>(make_shared<NeuralNetworkFlattenFunction>());
+                        auto flatten_node = make_shared<NeuralNetworkNode>(make_shared<NeuralNetworkFlattenFunction>());
+                        last_node = appendNode(last_node, flatten_node);
                     }
-                    auto next_node = make_shared<NeuralNetworkNode>(
+                    next_node = make_shared<NeuralNetworkNode>(
                             optimizer->createFullyConnectedNeurons(input_shape[0]*input_shape[1]*input_shape[2], output_shape[0]*output_shape[1]*output_shape[2], bits));
-                    if(first_node) {
-                       first_node->add(next_node);
-                    } else {
-                        first_node = next_node;
-                    }
-                    last_node = next_node;
-                    if (use_bias) {
-                        auto bias_node = make_shared<NeuralNetworkNode>(
-                                optimizer->createBias(output_shape, output_shape, bits));
-                        next_node->add(bias_node);
-                        last_node = bias_node;
-                    }
+                } else if(node_type == NodeType::convolution2d) {
+                    next_node = make_shared<NeuralNetworkNode>(optimizer->createConvolutional2d(input_shape, filters,
+                                                                                                kernel_size, bits));
+                } else {
+                    throw exception("Unimplemented NodeType");
                 }
+
+                last_node = appendNode(last_node, next_node);
+
+                if (use_bias) {
+                    auto bias_node = make_shared<NeuralNetworkNode>(optimizer->createBias(output_shape, output_shape, bits));
+                    last_node = appendNode(last_node, bias_node);
+                }
+
+                shared_ptr<ActivationFunction> activationFunction = createActivationFunction();
+                auto activation_node = make_shared<NeuralNetworkOutputNode>(
+                        make_shared<NeuralNetworkActivationFunction>(activationFunction));
+                last_node = appendNode(last_node, activation_node);
+
+                if (for_output) {
+                    nn->addOutput(activation_node);
+                }
+
+                last_node->setMaterialized(materialized);
+                for (const auto &edge: edges) {
+                    auto childNode = edge->to->build_node(nn);
+                    last_node->add(childNode);
+                }
+                return first_node;
+            }
+
+            shared_ptr<ActivationFunction> createActivationFunction() const {
                 shared_ptr<ActivationFunction> activationFunction;
                 switch (activation_type) {
-                    case ActivationType::tanh:
+                    case tanh:
                         activationFunction = make_shared<TanhActivationFunction>();
                         break;
-                    case ActivationType::relu:
+                    case relu:
                         activationFunction = make_shared<ReLUActivationFunction>();
                         break;
-                    case ActivationType::sigmoid:
+                    case sigmoid:
                         activationFunction = make_shared<SigmoidActivationFunction>();
                         break;
-                    case ActivationType::sigmoid_approx:
+                    case sigmoid_approx:
                         activationFunction = make_shared<SigmoidApproximationActivationFunction>();
                         break;
-                    case ActivationType::tanh_approx:
+                    case tanh_approx:
                         activationFunction = make_shared<TanhApproximationActivationFunction>();
                         break;
-                    case ActivationType::softmax:
+                    case softmax:
                         activationFunction = make_shared<SoftmaxActivationFunction>();
                         break;
-                    case ActivationType::leaky:
+                    case leaky:
                         activationFunction = make_shared<LeakyReLUActivationFunction>();
                         break;
                     default:
                         activationFunction = make_shared<ReLUActivationFunction>();
                 }
-                if (node_type == NodeType::output) {
-                    auto activation_node = make_shared<NeuralNetworkOutputNode>(
-                            make_shared<NeuralNetworkActivationFunction>(activationFunction));
-                    last_node->add(activation_node);
-                    last_node = activation_node;
-                    nn->addOutput(activation_node);
-                } else {
-                    auto activation_node = make_shared<NeuralNetworkNode>(
-                            make_shared<NeuralNetworkActivationFunction>(activationFunction));
-                    last_node->add(activation_node);
-                    last_node = activation_node;
+                return activationFunction;
+            }
+
+            shared_ptr<NeuralNetworkNode> appendNode(const shared_ptr<NeuralNetworkNode> &last_node, const shared_ptr<NeuralNetworkNode> &node) {
+                if(!first_node) {
+                    first_node = node;
+                    return node;
                 }
-                last_node->setMaterialized(materialized);
-                created = true;
-                for (const auto &edge: edges) {
-                    auto child_first = edge->to->build_node(nn);
-                    last_node->add(child_first);
-                }
-                return first_node;
+                return last_node->add(node);
             }
 
         private:
@@ -234,9 +298,10 @@ namespace micromldsl {
             bool materialized;
             bool use_bias;
             uint8_t bits;
-            bool created;
             shared_ptr<NeuralNetworkNode> first_node;
-            shared_ptr<NeuralNetworkNode> last_node;
+            size_t kernel_size{};
+            size_t filters{};
+            bool for_output;
         };
 
         shared_ptr<NNVertex> addInput(const size_t input_shape, const size_t output_shape, NodeType nodeType,
@@ -244,10 +309,37 @@ namespace micromldsl {
             return addInput({1, input_shape, 1}, {1, output_shape, 1}, nodeType, activationType);
         }
 
-        shared_ptr<NNVertex>
-        addInput(const vector<size_t> &input_shape, const vector<size_t> &output_shape, NodeType nodeType,
+        shared_ptr<NNVertex> addInput(const vector<size_t> &input_shape,
+                                      const vector<size_t> &output_shape, NodeType nodeType,
+                                      ActivationType activationType) {
+            auto nnv = make_shared<NNVertex>(shared_from_this(), nodeType, input_shape, output_shape, false, activationType);
+            heads.push_back(nnv);
+            return nnv;
+        }
+
+        shared_ptr<NNVertex> addInputOutput(const vector<size_t> &input_shape,
+                                      const vector<size_t> &output_shape, NodeType nodeType,
+                                      ActivationType activationType) {
+            auto nnv = make_shared<NNVertex>(shared_from_this(), nodeType, input_shape, output_shape, true, activationType);
+            heads.push_back(nnv);
+            return nnv;
+        }
+
+        // where kernel_size is the width and height of the convolution window being applied to the input
+        // filters is the same as the depth of the output
+        shared_ptr<NNVertex> addInput(const vector<size_t> &input_shape,
+                                      const size_t filters, const size_t kernel_size,
+                                      NodeType nodeType,
                  ActivationType activationType) {
-            auto nnv = make_shared<NNVertex>(shared_from_this(), nodeType, input_shape, output_shape, activationType);
+            auto nnv = make_shared<NNVertex>(shared_from_this(), nodeType, input_shape, filters, kernel_size, false, activationType);
+            heads.push_back(nnv);
+            return nnv;
+        }
+
+        shared_ptr<NNVertex> addInputOutput(const vector<size_t> &input_shape,
+                                            const size_t filters, const size_t kernel_size,
+                                            NodeType nodeType, ActivationType activationType) {
+            auto nnv = make_shared<NNVertex>(shared_from_this(), nodeType, input_shape, filters, kernel_size, true, activationType);
             heads.push_back(nnv);
             return nnv;
         }

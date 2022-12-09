@@ -48,7 +48,7 @@ namespace microml {
 #ifdef MICRO_ML_PROFILE
 #define PROFILE_BLOCK(x) ProfileBlock x(__FILE__, __func__, __LINE__)
 #else
-#define PROFILE_BLOCK(x)
+#define PROFILE_BLOCK(x) ((void)0)
 #endif
 }
 #endif //MICROML_BASIC_PROFILER_HPP

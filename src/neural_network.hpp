@@ -377,7 +377,14 @@ namespace microml {
                 }
                 source->restart();
             }
-            cout << endl << "Finished training in " << total_timer.getSeconds() << " seconds." << endl;
+            long long int elapsed = total_timer.getMilliseconds();
+            if(elapsed < 2000) {
+                cout << endl << "Finished training in " << elapsed << " milliseconds." << endl;
+            } else if(elapsed < 120000) {
+                cout << endl << "Finished training in " << (elapsed/1000) << " seconds." << endl;
+            } else {
+                cout << endl << "Finished training in " << (elapsed/60000) << " minutes." << endl;
+            }
         }
 
         static void log_training(long long int elapsed_time, size_t epoch, size_t epochs,

@@ -593,6 +593,7 @@ namespace microml {
                     }
                 }
             } else {
+                // TODO: I think I should switch to #pragma omp for collapse(3)
                 queue<future<void>> futures;
                 const size_t wait_amount = 8096;
                 if( readRowsInParallel() ) {
@@ -792,6 +793,7 @@ namespace microml {
                     }
                 }
             } else {
+                // TODO: I think I should switch to #pragma omp for collapse(3)
                 queue<future<void>> futures;
                 const size_t wait_amount = 8096;
                 if( readRowsInParallel()) {
@@ -980,6 +982,7 @@ namespace microml {
                     }
                 }
             } else {
+                // TODO: I think I should switch to #pragma omp for collapse(3)
                 queue<future<void>> futures;
                 const size_t wait_amount = 8096;
                 if( readRowsInParallel()) {
@@ -1179,6 +1182,8 @@ namespace microml {
                     }
                 }
             } else {
+                // TODO: I think I should switch to #pragma omp for collapse(3)
+
                 queue<future<void>> futures;
                 const size_t wait_amount = 8096;
                 if( readRowsInParallel()) {
@@ -1899,6 +1904,7 @@ namespace microml {
 
         float get_val(size_t row, size_t column, size_t channel) override {
 //        cout << "getting val: " << row << ", " << column << endl;
+            // TODO: I think I should switch to #pragma omp for
             float val = 0;
             for (size_t t1_col = 0; t1_col < child1->column_count(); t1_col++) {
 //            cout << "... + "<< child1->get_val(row, t1_col, channel) <<" (" << row << ", " << t1_col << ") * " << child2->get_val(t1_col, column, channel) << "( " << t1_col << ", " << column << ")" << endl;
@@ -2124,6 +2130,7 @@ namespace microml {
             }
             float result = 0.f;
             const size_t channels = child->channel_count();
+            // TODO: I think I should switch to #pragma omp for
             for( size_t next_channel = 0; next_channel < channels; next_channel++) {
                 result += child->get_val(row, column, next_channel);
             }
@@ -2189,12 +2196,14 @@ namespace microml {
         }
 
         float get_val(size_t row, size_t column, size_t channel) override {
-            if(row < top_padding || row > (child->row_count() + top_padding) ||
-               column < left_padding || column > (child->column_count() + left_padding)) {
+            const auto adjusted_row = row - top_padding;
+            const auto adjusted_col = column - left_padding;
+            // todo: for performance, we can potentially store rowcount as a constant when we make this object.
+            if(row < top_padding || adjusted_row >= child->row_count() ||
+               column < left_padding || adjusted_col >= child->column_count()) {
                 return 0.f;
             }
-
-            const float val = child->get_val(row - top_padding, column - left_padding, channel);
+            const float val = child->get_val(adjusted_row, adjusted_col, channel);
             return val;
         }
 
@@ -2216,8 +2225,8 @@ namespace microml {
 
     class TensorValidCrossCorrelation2dView : public BaseTensorBinaryOperatorView {
     public:
-        TensorValidCrossCorrelation2dView(const shared_ptr<BaseTensor> &tensor, const shared_ptr<BaseTensor> &filter)
-                : BaseTensorBinaryOperatorView(tensor, filter) {
+        TensorValidCrossCorrelation2dView(const shared_ptr<BaseTensor> &tensor, const shared_ptr<BaseTensor> &kernel)
+                : BaseTensorBinaryOperatorView(tensor, kernel) {
             rows = child1->row_count() - child2->row_count() + 1;
             cols = child1->column_count() - child2->column_count() + 1;
         }
@@ -2232,13 +2241,14 @@ namespace microml {
 
         float get_val(size_t row, size_t column, size_t channel) override {
             // iterate over filter
-            const auto filter_rows = child2->row_count();
-            const auto filter_cols = child2->column_count();
+            const auto kernel_rows = child2->row_count();
+            const auto kernel_cols = child2->column_count();
             float result = 0.f;
-            for(size_t current_row = 0; current_row < filter_rows; current_row++) {
-                for(size_t current_col = 0; current_col < filter_cols; current_col++) {
-                    const auto filter_val = child2->get_val(current_row, current_col, channel);
-                    const auto tensor_val = child1->get_val(row+current_row, column+current_col, channel);
+            // TODO: I think I should switch to #pragma omp for collapse(2)
+            for(size_t kernel_row = 0; kernel_row < kernel_rows; kernel_row++) {
+                for(size_t kernel_col = 0; kernel_col < kernel_cols; kernel_col++) {
+                    const auto filter_val = child2->get_val(kernel_row, kernel_col, channel);
+                    const auto tensor_val = child1->get_val(row + kernel_row, column + kernel_col, channel);
                     result += filter_val + tensor_val;
                 }
             }
@@ -2270,14 +2280,14 @@ namespace microml {
     // which is why it's weird.
     class TensorFullCrossCorrelation2dView : public TensorValidCrossCorrelation2dView {
     public:
-        TensorFullCrossCorrelation2dView(const shared_ptr<BaseTensor> &tensor, const shared_ptr<BaseTensor> &filter)
+        TensorFullCrossCorrelation2dView(const shared_ptr<BaseTensor> &tensor, const shared_ptr<BaseTensor> &kernel)
                 : TensorValidCrossCorrelation2dView(
-                make_shared<TensorZeroPaddedView>(tensor,
-                                                  (size_t)round(((double)filter->row_count() - 1)/2.0),
-                                                  (size_t)round(((double)filter->row_count() - 1)/2.0),
-                                                  (size_t)round(((double)filter->column_count() - 1)/2.0),
-                                                  (size_t)round(((double)filter->column_count() - 1)/2.0)),
-                filter) {
+                    make_shared<TensorZeroPaddedView>(tensor,
+                                                      (size_t)round(((double)kernel->row_count() - 1) / 2.0),
+                                                      (size_t)round(((double)kernel->row_count() - 1) / 2.0),
+                                                      (size_t)round(((double)kernel->column_count() - 1) / 2.0),
+                                                      (size_t)round(((double)kernel->column_count() - 1) / 2.0)),
+                    kernel) {
         }
 
         void printMaterializationPlan() override {
@@ -2294,8 +2304,8 @@ namespace microml {
     // https://medium.com/@2017csm1006/forward-and-backpropagation-in-convolutional-neural-network-4dfa96d7b37e
     class TensorFullConvolve2dView : public TensorFullCrossCorrelation2dView {
     public:
-        TensorFullConvolve2dView(const shared_ptr<BaseTensor> &tensor, const shared_ptr<BaseTensor> &filter)
-            : TensorFullCrossCorrelation2dView(tensor, make_shared<TensorRotate180View>(filter)) {
+        TensorFullConvolve2dView(const shared_ptr<BaseTensor> &tensor, const shared_ptr<BaseTensor> &kernel)
+            : TensorFullCrossCorrelation2dView(tensor, make_shared<TensorRotate180View>(kernel)) {
 
         }
 
@@ -2326,6 +2336,10 @@ namespace microml {
 
     shared_ptr<FullTensor> column_vector(const vector<float> &t) {
         return make_shared<FullTensor>(t);
+    }
+
+    shared_ptr<BaseTensor> random_tensor(size_t rows, size_t cols, size_t channels) {
+        return make_shared<TensorFromRandom>(rows, cols, channels, 0.f, 1.f);
     }
 
     float scalar(const shared_ptr<BaseTensor> &tensor) {

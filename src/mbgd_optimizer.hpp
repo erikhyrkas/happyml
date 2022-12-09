@@ -49,14 +49,14 @@ namespace microml {
     // https://medium.com/@2017csm1006/forward-and-backpropagation-in-convolutional-neural-network-4dfa96d7b37e
     class MBGDConvolution2dFunction : public NeuralNetworkFunction {
     public:
-        MBGDConvolution2dFunction(vector<size_t> input_shape, size_t output_depth, size_t kernel_size, uint8_t bits,
+        MBGDConvolution2dFunction(vector<size_t> input_shape, size_t filters, size_t kernel_size, uint8_t bits,
                                   const shared_ptr<MBGDLearningState> &learning_state) {
             this->input_shapes = vector<vector<size_t>>{input_shape};
             this->kernel_size = kernel_size;
-            this->output_shape = {input_shape[0]-kernel_size+1, input_shape[1]-kernel_size+1, output_depth};
+            this->output_shape = {input_shape[0]-kernel_size+1, input_shape[1]-kernel_size+1, filters};
             this->bits = bits;
             this->weights = {};
-            for(size_t next_weight_layer = 0; next_weight_layer < output_depth; next_weight_layer++) {
+            for(size_t next_weight_layer = 0; next_weight_layer<filters; next_weight_layer++) {
                 this->weights.push_back(make_shared<TensorFromRandom>(kernel_size, kernel_size, input_shape[2], -0.5f, 0.5f, 42));
             }
             this->learning_state = learning_state;
@@ -72,12 +72,13 @@ namespace microml {
         shared_ptr<BaseTensor> forward(const vector<shared_ptr<BaseTensor>> &input) override {
             PROFILE_BLOCK(profileBlock);
             last_input = input[0]; // ignore other inputs, as they aren't valid. TODO: throw exception
-            const size_t output_depth = output_shape[2];
+            // filters are the number of output channels we have
+            const size_t filters = output_shape[2];
             shared_ptr<BaseTensor> result = nullptr;
-            for(size_t output_layer = 0; output_layer < output_depth; output_layer++) {
+            for(size_t output_layer = 0; output_layer < filters; output_layer++) {
                 const auto current_weights = weights[output_layer];
                 const auto correlation2d = make_shared<TensorValidCrossCorrelation2dView>(last_input, current_weights);
-                const shared_ptr<BaseTensor> summedCorrelation2d = make_shared<TensorToChannelView>(correlation2d, output_layer, output_depth);
+                const shared_ptr<BaseTensor> summedCorrelation2d = make_shared<TensorToChannelView>(correlation2d, output_layer, filters);
                 if(!result) {
                     result = summedCorrelation2d;
                 } else {
@@ -99,11 +100,23 @@ namespace microml {
 
             // input error for each input channel is
             // the sum of the fullConvolve2d of the output errors and the weights
-            const size_t output_depth = output_shape[2];
-            for(size_t output_layer = 0; output_layer < output_depth; output_layer++) {
+            // filters are the number of output channels we have
+            const size_t filters = output_shape[2];
+
+            // todo: delete temp
+            auto temp_li_shape = last_input->getShape();
+
+            for(size_t output_layer = 0; output_layer < filters; output_layer++) {
                 const auto output_error_channel = make_shared<TensorChannelToTensorView>(output_error, output_layer);
 
                 const auto next_input_error = make_shared<TensorFullConvolve2dView>(output_error_channel,  weights[output_layer]);
+
+                // todo: delete temp
+                const auto temp_nie_shape = next_input_error->getShape();
+                if( temp_li_shape[0] != temp_nie_shape[0] || temp_li_shape[1] != temp_nie_shape[1] || temp_li_shape[2] != temp_nie_shape[2]) {
+                    throw exception("last input shape doesn't match the shape of the error we are back propagating");
+                }
+
                 if(input_error) {
                     input_error = make_shared<TensorAddTensorView>(input_error, next_input_error);
                 } else {
@@ -116,7 +129,10 @@ namespace microml {
                 const auto adjusted_weights = make_shared<TensorMinusTensorView>(weights[output_layer], next_weight_error_at_learning_rate);
                 weights[output_layer] = materialize_tensor(adjusted_weights, bits);
             }
-
+            auto temp_ie_shape = input_error->getShape();
+            if( temp_li_shape[0] != temp_ie_shape[0] || temp_li_shape[1] != temp_ie_shape[1] || temp_li_shape[2] != temp_ie_shape[2]) {
+                throw exception("last input shape doesn't match the shape of the error we are back propagating");
+            }
             last_input.reset();
             return input_error;
         }
@@ -205,11 +221,15 @@ namespace microml {
 
     class MBGDBias : public NeuralNetworkFunction {
     public:
-        MBGDBias(vector<size_t> input_shape, vector<size_t> output_shape, uint8_t bits,
+        MBGDBias(const vector<size_t> &input_shape, const vector<size_t> &output_shape, uint8_t bits,
                  const shared_ptr<MBGDLearningState> &learning_state) {
             this->input_shapes = vector<vector<size_t>>{input_shape};
             this->output_shape = output_shape;
-            this->bias = make_shared<TensorFromRandom>(output_shape[0], output_shape[1],output_shape[2], -0.5f, 0.5f, 42);
+            // In my experiments, at least for the model I was testing, we found the correct results faster by starting at 0 bias.
+            // This may be a mistake.
+            this->bias = make_shared<UniformTensor>(output_shape[0], output_shape[1],output_shape[2], 0.f);
+            // Original code started with a random value between -0.5 and 0.5:
+            //this->bias = make_shared<TensorFromRandom>(output_shape[0], output_shape[1],output_shape[2], -0.5f, 0.5f, 42);
             this->bits = bits;
             this->learning_state = learning_state;
             // With models that are not fully 32-bit, if you don't scale the loss
@@ -230,18 +250,26 @@ namespace microml {
             // the weights will change that to thousands because many of the views sit over multiple weight
             // tensors.
             if(bits == 32) {
-                mixed_precision_scale = 0.1f; // I made this number up. it seemed to work well for mixed-precision models.
+                // NOTE: I am taking a small shortcut here. Even without mixed precision, it's important to
+                //  reduce the rate we train bias. If bias is trained at the same rate as weights, my observation
+                //  is that it can "overpower" the weights, where it causes us to wildly oscillate above and below
+                //  our target without ever reaching it.
+                // I made this number up. it seemed to work well for both mixed-precision models and for models
+                // that are entirely 32-bit.
+                mixed_precision_scale = 0.01f;
             } else if(bits == 16) {
                 if( learning_state->learning_rate < 0.45) {
-                    mixed_precision_scale = 2.f; // I made this number up. it seemed to work well for mixed-precision models.
+                    // I made this number up. it seemed to work well for mixed-precision models.
+                    mixed_precision_scale = 2.f;
                 } else {
                     mixed_precision_scale = 1.f;
                 }
             } else {
                 if( learning_state->learning_rate < 0.3) {
-                    mixed_precision_scale = 3.f; // I made this number up. it seemed to work well for mixed-precision models.
+                    // I made this number up. it seemed to work well for mixed-precision models.
+                    mixed_precision_scale = 3.0f;
                 } else {
-                    mixed_precision_scale = 1.f;
+                    mixed_precision_scale = 1.0f;
                 }
             }
         }
@@ -301,6 +329,10 @@ namespace microml {
 
         shared_ptr<NeuralNetworkFunction> createBias(vector<size_t> input_shape, vector<size_t> output_shape, uint8_t bits) override {
             return make_shared<MBGDBias>(input_shape, output_shape, bits, sgdLearningState);
+        }
+        shared_ptr<NeuralNetworkFunction>
+        createConvolutional2d(vector<size_t> input_shape, size_t filters, size_t kernel_size, uint8_t bits) override {
+            return make_shared<MBGDConvolution2dFunction>(input_shape, filters, kernel_size, bits, sgdLearningState);
         }
 
     private:

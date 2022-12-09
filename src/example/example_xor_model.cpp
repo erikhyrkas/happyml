@@ -20,14 +20,13 @@ void using_tanh() {
 
     cout << "Test with tanh" << endl;
     auto neuralNetwork = neuralNetworkBuilder()
-            ->addInput(xorDataSource->getGivenShape(), 3, NodeType::full, ActivationType::tanh_approx)->setBits(8)
+            ->addInput(xorDataSource->getGivenShape(), 3, NodeType::full, ActivationType::tanh_approx)
             ->addOutput(xorDataSource->getExpectedShape(), ActivationType::tanh_approx)
             ->build();
     // For 32-bit: Results are good enough at 500 epochs, gets better with more epochs.
     // For 16-bit: 500 epochs seems good enough
     // For 8-bit: 2000 epochs seems good enough
     neuralNetwork->train(xorDataSource, 500, 1, true);
-
 
     cout << fixed << setprecision(2);
     cout << "0 xor 0 = 0 Prediction: " << neuralNetwork->predict_scalar(column_vector({0.f, 0.f})) << endl;
@@ -96,8 +95,8 @@ int main() {
         // It is a good reminder, though, that picking the correct activation functions can dramatically improve
         // results and the time to train.
         using_tanh();
-        using_sigmoid();
-        using_relu();
+//        using_sigmoid();
+//        using_relu();
 
     } catch (const std::exception &e) {
         std::cout << e.what() << std::endl;
