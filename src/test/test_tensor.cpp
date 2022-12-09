@@ -5,9 +5,9 @@
 
 #include <iostream>
 #include <string>
-#include "../tensor.hpp"
-#include "unit_test.hpp"
-#include "../tensor_stats.hpp"
+#include "../types/tensor.hpp"
+#include "../util/unit_test.hpp"
+#include "../util/tensor_stats.hpp"
 
 // Super slow on my machine, but needed to test everything. Probably not useful for day-to-day unit tests.
 //#define FULL_TENSOR_TESTS

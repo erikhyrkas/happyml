@@ -11,7 +11,7 @@
 #include <array>
 #include <iostream>
 #include <iomanip>
-#include "tensor.hpp"
+#include "../types/tensor.hpp"
 
 namespace microml {
 

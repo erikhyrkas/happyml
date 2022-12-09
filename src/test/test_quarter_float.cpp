@@ -1,7 +1,7 @@
 #include <iostream>
 #include <iomanip>
-#include "../quarter_float.hpp"
-#include "unit_test.hpp"
+#include "../types/quarter_float.hpp"
+#include "../util/unit_test.hpp"
 
 using namespace microml;
 using namespace std;

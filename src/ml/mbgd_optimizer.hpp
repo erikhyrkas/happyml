@@ -7,6 +7,7 @@
 
 #include "neural_network.hpp"
 #include "optimizer.hpp"
+#include "../util/tensor_utils.hpp"
 
 using namespace std;
 
@@ -34,6 +35,7 @@ using namespace std;
 namespace microml {
     struct MBGDLearningState {
         float learning_rate;
+        float bias_learning_rate;
     };
 
 // full conv2d will be similar to valid, but needs some changes.
@@ -256,7 +258,7 @@ namespace microml {
                 //  our target without ever reaching it.
                 // I made this number up. it seemed to work well for both mixed-precision models and for models
                 // that are entirely 32-bit.
-                mixed_precision_scale = 0.01f;
+                mixed_precision_scale = 0.1f;
             } else if(bits == 16) {
                 if( learning_state->learning_rate < 0.45) {
                     // I made this number up. it seemed to work well for mixed-precision models.
@@ -294,9 +296,9 @@ namespace microml {
             PROFILE_BLOCK(profileBlock);
 
             auto bias_error_at_learning_rate = std::make_shared<TensorMultiplyByScalarView>(output_error,
-                                                                                            learning_state->learning_rate*mixed_precision_scale);
+                                                                                            learning_state->bias_learning_rate*mixed_precision_scale);
             auto adjusted_bias = std::make_shared<TensorMinusTensorView>(bias, bias_error_at_learning_rate);
-            bias = materialize_tensor(bias, bits);
+            bias = materialize_tensor(adjusted_bias, bits);
 
             last_input.reset();
 //            auto adjusted_output = std::make_shared<TensorMinusTensorView>(output_error, adjusted_bias);
@@ -320,18 +322,27 @@ namespace microml {
         explicit SGDOptimizer(float learning_rate) {
             this->sgdLearningState = make_shared<MBGDLearningState>();
             this->sgdLearningState->learning_rate = learning_rate;
+            this->sgdLearningState->bias_learning_rate = learning_rate * 0.1;
+        }
+        explicit SGDOptimizer(float learning_rate, float bias_learning_rate) {
+            this->sgdLearningState = make_shared<MBGDLearningState>();
+            this->sgdLearningState->learning_rate = learning_rate;
+            this->sgdLearningState->bias_learning_rate = bias_learning_rate;
         }
 
-        shared_ptr<NeuralNetworkFunction>
-        createFullyConnectedNeurons(size_t input_size, size_t output_size, uint8_t bits) override {
+        shared_ptr<NeuralNetworkFunction> createFullyConnectedNeurons(size_t input_size,
+                                                                      size_t output_size,
+                                                                      uint8_t bits) override {
             return make_shared<MBGDFullyConnectedNeurons>(input_size, output_size, bits, sgdLearningState);
         }
 
-        shared_ptr<NeuralNetworkFunction> createBias(vector<size_t> input_shape, vector<size_t> output_shape, uint8_t bits) override {
+        shared_ptr<NeuralNetworkFunction> createBias(vector<size_t> input_shape,
+                                                     vector<size_t> output_shape, uint8_t bits) override {
             return make_shared<MBGDBias>(input_shape, output_shape, bits, sgdLearningState);
         }
-        shared_ptr<NeuralNetworkFunction>
-        createConvolutional2d(vector<size_t> input_shape, size_t filters, size_t kernel_size, uint8_t bits) override {
+        shared_ptr<NeuralNetworkFunction> createConvolutional2d(vector<size_t> input_shape,
+                                                                size_t filters, size_t kernel_size,
+                                                                uint8_t bits) override {
             return make_shared<MBGDConvolution2dFunction>(input_shape, filters, kernel_size, bits, sgdLearningState);
         }
 

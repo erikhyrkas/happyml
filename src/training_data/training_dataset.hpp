@@ -2,8 +2,8 @@
 // Created by Erik Hyrkas on 11/2/2022.
 //
 
-#ifndef MICROML_DATASET_HPP
-#define MICROML_DATASET_HPP
+#ifndef MICROML_TRAINING_DATASET_HPP
+#define MICROML_TRAINING_DATASET_HPP
 
 #include <cstdint>
 #include <iostream>
@@ -11,10 +11,10 @@
 #include <random>
 #include <iterator>
 #include <string>
-#include "tensor.hpp"
-#include "data.hpp"
+#include "../types/tensor.hpp"
+#include "training_pair.hpp"
 #include "dataencoder.hpp"
-#include "file_reader.hpp"
+#include "../util/file_reader.hpp"
 
 namespace microml {
 
@@ -331,4 +331,4 @@ namespace microml {
     };
 }
 
-#endif //MICROML_DATASET_HPP
+#endif //MICROML_TRAINING_DATASET_HPP

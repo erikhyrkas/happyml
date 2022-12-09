@@ -11,7 +11,8 @@
 #include <cctype>
 #include <locale>
 #include <map>
-#include "tensor.hpp"
+#include "../types/tensor.hpp"
+#include "../util/tensor_utils.hpp"
 
 using namespace std;
 

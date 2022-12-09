@@ -6,7 +6,7 @@
 #define MICROML_MODEL_HPP
 
 #include <iostream>
-#include "dataset.hpp"
+#include "../training_data/training_dataset.hpp"
 #include "optimizer.hpp"
 #include "mbgd_optimizer.hpp"
 
@@ -34,13 +34,19 @@ namespace micromldsl {
             switch (modelType) {
                 case microbatch:
                     this->learning_rate = 0.1;
+                    this->bias_learning_rate = 0.01;
                     break;
                 default:
                     this->learning_rate = 0.1;
+                    this->bias_learning_rate = 0.01;
             }
             this->loss_type = LossType::mse;
         }
 
+        shared_ptr<MicromlDSL> setBiasLearningRate(float biasLearningRate) {
+            this->bias_learning_rate = biasLearningRate;
+            return shared_from_this();
+        }
         shared_ptr<MicromlDSL> setLearningRate(float learningRate) {
             this->learning_rate = learningRate;
             return shared_from_this();
@@ -63,10 +69,10 @@ namespace micromldsl {
             shared_ptr<Optimizer> optimizer;
             switch (modelType) {
                 case ModelType::microbatch:
-                    optimizer = make_shared<SGDOptimizer>(learning_rate);
+                    optimizer = make_shared<SGDOptimizer>(learning_rate, bias_learning_rate);
                     break;
                 default:
-                    optimizer = make_shared<SGDOptimizer>(learning_rate);
+                    optimizer = make_shared<SGDOptimizer>(learning_rate, bias_learning_rate);
             }
 
             auto neuralNetwork = make_shared<NeuralNetworkForTraining>(lossFunction, optimizer);
@@ -358,6 +364,7 @@ namespace micromldsl {
         ModelType modelType;
         LossType loss_type;
         float learning_rate;
+        float bias_learning_rate;
         vector<shared_ptr<NNVertex>> heads;
     };
 

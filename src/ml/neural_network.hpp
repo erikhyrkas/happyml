@@ -7,14 +7,15 @@
 
 #include <vector>
 #include <set>
-#include "tensor.hpp"
-#include "dataset.hpp"
+#include "../types/tensor.hpp"
+#include "../training_data/training_dataset.hpp"
 #include "loss.hpp"
-#include "test/unit_test.hpp"
+#include "../util/unit_test.hpp"
 #include "activation.hpp"
 #include "neural_network_function.hpp"
 #include "optimizer.hpp"
-#include "test/basic_profiler.hpp"
+#include "../util/basic_profiler.hpp"
+#include "../util/tensor_utils.hpp"
 
 using namespace std;
 

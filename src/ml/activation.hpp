@@ -6,8 +6,8 @@
 #define MICROML_ACTIVATION_HPP
 
 #include <iostream>
-#include "quarter_float.hpp"
-#include "tensor.hpp"
+#include "../types/quarter_float.hpp"
+#include "../types/tensor.hpp"
 
 // To me, it feels like activation functions are the heart and soul of modern ml.
 // Unfortunately, they can be a little hard to understand without some math background.

@@ -5,9 +5,9 @@
 #ifndef MICROML_NEURAL_NETWORK_FUNCTION_HPP
 #define MICROML_NEURAL_NETWORK_FUNCTION_HPP
 
-#include "tensor.hpp"
+#include "../types/tensor.hpp"
 #include "activation.hpp"
-#include "test/basic_profiler.hpp"
+#include "../util/basic_profiler.hpp"
 
 namespace microml {
     class NeuralNetworkFunction {

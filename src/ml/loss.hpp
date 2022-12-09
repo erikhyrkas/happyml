@@ -5,8 +5,8 @@
 #ifndef MICROML_LOSS_HPP
 #define MICROML_LOSS_HPP
 
-#include "tensor.hpp"
-#include "test/basic_profiler.hpp"
+#include "../types/tensor.hpp"
+#include "../util/basic_profiler.hpp"
 
 using namespace std;
 

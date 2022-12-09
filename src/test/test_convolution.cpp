@@ -2,8 +2,9 @@
 // Created by Erik Hyrkas on 12/7/2022.
 //
 #include <iostream>
-#include "unit_test.hpp"
-#include "../model.hpp"
+#include "../util/unit_test.hpp"
+#include "../ml/model.hpp"
+#include "../util/tensor_utils.hpp"
 
 using namespace micromldsl;
 using namespace microml;

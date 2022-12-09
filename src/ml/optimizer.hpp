@@ -6,7 +6,7 @@
 #define MICROML_OPTIMIZER_HPP
 
 #include "loss.hpp"
-#include "data.hpp"
+#include "../training_data/training_pair.hpp"
 #include "neural_network_function.hpp"
 
 // Optimizers are the strategy applied to find the optimal results

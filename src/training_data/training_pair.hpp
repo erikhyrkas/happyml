@@ -2,10 +2,10 @@
 // Created by Erik Hyrkas on 11/5/2022.
 //
 
-#ifndef MICROML_DATA_HPP
-#define MICROML_DATA_HPP
+#ifndef MICROML_TRAINING_PAIR_HPP
+#define MICROML_TRAINING_PAIR_HPP
 
-#include "tensor.hpp"
+#include "../types/tensor.hpp"
 
 using namespace std;
 
@@ -76,4 +76,4 @@ namespace microml {
         vector<shared_ptr<BaseTensor>> expected;
     };
 }
-#endif //MICROML_DATA_HPP
+#endif //MICROML_TRAINING_PAIR_HPP

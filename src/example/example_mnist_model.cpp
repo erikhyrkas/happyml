@@ -2,9 +2,7 @@
 // Created by Erik Hyrkas on 11/28/2022.
 //
 #include <memory>
-#include "../model.hpp"
-#include "../file_reader.hpp"
-#include "../dataset.hpp"
+#include "../ml/model.hpp"
 
 using namespace std;
 using namespace microml;
@@ -41,7 +39,7 @@ void test_mnist_full() {
             ->addNode(50, NodeType::full, ActivationType::tanh_approx)
             ->addOutput(mnistDataSource->getExpectedShape(), ActivationType::tanh_approx)
             ->build();
-    neuralNetwork->train(mnistDataSource, 100, 128);
+    neuralNetwork->train(mnistDataSource, 3, 128); // todo: find correct number of epochs after optimizing
 
 
     auto testMnistDataSource = make_shared<InMemoryDelimitedValuesTrainingDataSet>("..\\test_data\\small_mnist_format.csv", ',',
