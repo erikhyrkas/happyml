@@ -97,7 +97,7 @@ int main() {
         // results and the time to train.
         using_tanh();
         using_sigmoid();
-//        using_relu();
+        using_relu();
 
     } catch (const std::exception &e) {
         std::cout << e.what() << std::endl;
