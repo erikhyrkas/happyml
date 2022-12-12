@@ -13,7 +13,7 @@ This isn't even in a complete alpha stage, yet.
 * Need to fix convolutional layers. I'm not far away from it, but it's not done.
 * Need to fix and check-in Adam optimizer. I'm not even going to check it in until it seems plausibly right and I need to refactor the model object's training to support it correctly.
 * Need to finish the half float and test.
-At that point, the code will be in an alpha state, but I still won't have even tackled encoder-decoder and decoder-only requirements. That journey will continue.
+At that point, the code will be in an alpha state, but I still won't have even tackled encoder-decoder and decoder-only requirements. For beta, I'd like to see at least decoder-only support. There's also Reinforcement Learning from Human Feedback (RLHF) that I'll ponder, but I doubt I can work that into the beta let along the alpha. That journey will continue.
 # microml
 
 Why did you build this? You shouldn't have. Seriously. Why?
