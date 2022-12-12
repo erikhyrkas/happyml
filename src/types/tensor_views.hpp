@@ -671,12 +671,12 @@ namespace microml {
     // for a total of 4 extra cells in the row.
     class TensorZeroPaddedView : public BaseTensorUnaryOperatorView {
     public:
-        TensorZeroPaddedView(const shared_ptr<BaseTensor> &tensor, size_t top_padding, size_t bottom_padding,
-                             size_t left_padding, size_t right_padding) : BaseTensorUnaryOperatorView(tensor) {
-            this->top_padding = top_padding;
-            this->bottom_padding = bottom_padding;
-            this->left_padding = left_padding;
-            this->right_padding = right_padding;
+        TensorZeroPaddedView(const shared_ptr<BaseTensor> &tensor, size_t topPadding, size_t bottomPadding,
+                             size_t leftPadding, size_t rightPadding) : BaseTensorUnaryOperatorView(tensor) {
+            this->topPadding = topPadding;
+            this->bottomPadding = bottomPadding;
+            this->leftPadding = leftPadding;
+            this->rightPadding = rightPadding;
         }
 
         void printMaterializationPlan() override {
@@ -685,11 +685,11 @@ namespace microml {
         }
 
         float getValue(size_t row, size_t column, size_t channel) override {
-            const auto adjusted_row = row - top_padding;
-            const auto adjusted_col = column - left_padding;
+            const auto adjusted_row = row - topPadding;
+            const auto adjusted_col = column - leftPadding;
             // todo: for performance, we can potentially store rowcount as a constant when we make this object.
-            if(row < top_padding || adjusted_row >= child->rowCount() ||
-               column < left_padding || adjusted_col >= child->columnCount()) {
+            if(row < topPadding || adjusted_row >= child->rowCount() ||
+               column < leftPadding || adjusted_col >= child->columnCount()) {
                 return 0.f;
             }
             const float val = child->getValue(adjusted_row, adjusted_col, channel);
@@ -697,19 +697,19 @@ namespace microml {
         }
 
         size_t rowCount() override {
-            const size_t padding = right_padding + left_padding;
+            const size_t padding = bottomPadding + topPadding;
             return child->rowCount() + padding;
         }
 
         size_t columnCount() override {
-            const size_t padding = bottom_padding + top_padding;
+            const size_t padding = rightPadding + leftPadding;
             return child->columnCount() + padding;
         }
     private:
-        size_t top_padding;
-        size_t bottom_padding;
-        size_t left_padding;
-        size_t right_padding;
+        size_t topPadding;
+        size_t bottomPadding;
+        size_t leftPadding;
+        size_t rightPadding;
     };
 
     class TensorValidCrossCorrelation2dView : public BaseTensorBinaryOperatorView {

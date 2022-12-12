@@ -452,6 +452,30 @@ void testPixel() {
     // todo: assert rather than print.
 }
 
+void testZeroPaddedView() {
+    auto matrix = make_shared<UniformTensor>(1, 1, 1, 5.f); //TensorZeroPaddedView
+    auto padded = make_shared<TensorZeroPaddedView>(matrix, 2, 2, 2, 2);
+//    padded->print();
+    ASSERT_TRUE(5 == padded->rowCount());
+    ASSERT_TRUE(5 == padded->columnCount());
+    ASSERT_TRUE(1 == padded->channelCount());
+    ASSERT_TRUE(5 == padded->getValue(2, 2, 0));
+    ASSERT_TRUE(0 == padded->getValue(0, 0, 0));
+    ASSERT_TRUE(0 == padded->getValue(4, 4, 0));
+}
+
+void testZeroPaddedView2() {
+    auto matrix = make_shared<UniformTensor>(2, 3, 1, 5.f); //TensorZeroPaddedView
+    auto padded = make_shared<TensorZeroPaddedView>(matrix, 1, 1, 2, 2);
+//    padded->print();
+    ASSERT_TRUE(4 == padded->rowCount());
+    ASSERT_TRUE(7 == padded->columnCount());
+    ASSERT_TRUE(1 == padded->channelCount());
+    ASSERT_TRUE(5 == padded->getValue(2, 2, 0));
+    ASSERT_TRUE(0 == padded->getValue(0, 0, 0));
+    ASSERT_TRUE(0 == padded->getValue(6, 6, 0));
+}
+
 int main() {
     try {
         // TODO: a lot of these tests don't cover the situation where we have many channels
@@ -499,13 +523,10 @@ int main() {
         timer.printMilliseconds();
         testStackingMultiplyViews();
         timer.printMilliseconds();
-
-
-        //auto weights = make_shared<TensorFromRandom>(5, 5, 1, 14);
-//        for(int bias = 10; bias < 20; bias++) {
-//            cout << bias << " MAX: " << quarter_to_float(QUARTER_MAX, bias) << " MIN: " << quarter_to_float(
-//                    QUARTER_MAX, bias) << endl;
-//        }
+        testZeroPaddedView();
+        timer.printMilliseconds();
+        testZeroPaddedView2();
+        timer.printMilliseconds();
 
         //test_pixel()
         //timer.print_milliseconds();
