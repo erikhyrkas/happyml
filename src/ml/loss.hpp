@@ -71,7 +71,7 @@ namespace microml {
             // auto error = make_shared<TensorMinusTensorView>(prediction, truth);
             // for batch, we take the average error: avg( avg(prediction - truth)^2 )
             auto squared_error = make_shared<TensorPowerView>(total_error, 2.0f);
-            return squared_error->arithmetic_mean(); // mean of squared error
+            return squared_error->arithmeticMean(); // mean of squared error
         }
 
         shared_ptr<BaseTensor> partialDerivative(shared_ptr<BaseTensor> total_error, float batch_size) override {

@@ -10,10 +10,10 @@ using namespace micromldsl;
 using namespace microml;
 using namespace std;
 
-void test_conv2d() {
+void testConv2D() {
     auto conv2dDataSource = make_shared<InMemoryTrainingDataSet>();
     // given input, expected result
-    conv2dDataSource->addTrainingData(random_tensor(10, 10, 1), random_tensor(4, 4, 2));
+    conv2dDataSource->addTrainingData(randomTensor(10, 10, 1), randomTensor(4, 4, 2));
 
     auto neuralNetwork = neuralNetworkBuilder()
             ->addInput(conv2dDataSource->getGivenShape(), 1, 3, micromldsl::convolution2d, tanh_approx)
@@ -25,7 +25,7 @@ void test_conv2d() {
 
 int main() {
     try {
-        test_conv2d();
+        testConv2D();
     } catch (const std::exception &e) {
         std::cout << e.what() << std::endl;
     }

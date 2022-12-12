@@ -10,7 +10,7 @@ using namespace micromldsl;
 
 
 
-void test_mnist_full() {
+void testMnistFull() {
     map<string, size_t> categories;
     categories["0"] = 0;
     categories["1"] = 1;
@@ -49,15 +49,15 @@ void test_mnist_full() {
                                                                                expectedEncoder, givenEncoder);
     cout << "Loaded test data." << endl;
     cout << fixed << setprecision(2);
-    auto nextRecord = testMnistDataSource->next_record();
+    auto nextRecord = testMnistDataSource->nextRecord();
     while(nextRecord) {
-        auto prediction = max_index(neuralNetwork->predictOne(nextRecord->getFirstGiven()));
-        cout << "mnist truth: " << max_index(nextRecord->getFirstExpected()) << " microml prediction: " << prediction << endl;
-        nextRecord = testMnistDataSource->next_record();
+        auto prediction = maxIndex(neuralNetwork->predictOne(nextRecord->getFirstGiven()));
+        cout << "mnist truth: " << maxIndex(nextRecord->getFirstExpected()) << " microml prediction: " << prediction << endl;
+        nextRecord = testMnistDataSource->nextRecord();
     }
 }
 
-void test_mnist_convolution() {
+void testMnistConvolution() {
     map<string, size_t> categories;
     categories["0"] = 0;
     categories["1"] = 1;
@@ -96,17 +96,17 @@ void test_mnist_convolution() {
                                                                                    expectedEncoder, givenEncoder);
     cout << "Loaded test data." << endl;
     cout << fixed << setprecision(2);
-    auto nextRecord = testMnistDataSource->next_record();
+    auto nextRecord = testMnistDataSource->nextRecord();
     while(nextRecord) {
-        auto prediction = max_index(neuralNetwork->predictOne(nextRecord->getFirstGiven()));
-        cout << "mnist truth: " << max_index(nextRecord->getFirstExpected()) << " microml prediction: " << prediction << endl;
-        nextRecord = testMnistDataSource->next_record();
+        auto prediction = maxIndex(neuralNetwork->predictOne(nextRecord->getFirstGiven()));
+        cout << "mnist truth: " << maxIndex(nextRecord->getFirstExpected()) << " microml prediction: " << prediction << endl;
+        nextRecord = testMnistDataSource->nextRecord();
     }
 }
 
 int main() {
     try {
-        test_mnist_full();
+        testMnistFull();
     } catch (const std::exception &e) {
         std::cout << e.what() << std::endl;
     }

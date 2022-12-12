@@ -15,32 +15,32 @@ namespace microml {
     class ElapsedTimer {
     public:
         ElapsedTimer() {
-            start_time = std::chrono::high_resolution_clock::now();
+            startTime = std::chrono::high_resolution_clock::now();
         }
 
         long long int getMicroseconds() {
-            auto stop_time = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop_time - start_time);
-            start_time = std::chrono::high_resolution_clock::now();
+            auto stopTime = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stopTime - startTime);
+            startTime = std::chrono::high_resolution_clock::now();
             return duration.count();
         }
 
         long long int getMilliseconds() {
-            auto stop_time = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop_time - start_time);
-            start_time = std::chrono::high_resolution_clock::now();
+            auto stopTime = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stopTime - startTime);
+            startTime = std::chrono::high_resolution_clock::now();
             return duration.count();
         }
 
         long long int getSeconds() {
-            auto stop_time = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::seconds>(stop_time - start_time);
-            start_time = std::chrono::high_resolution_clock::now();
+            auto stopTime = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::seconds>(stopTime - startTime);
+            startTime = std::chrono::high_resolution_clock::now();
             return duration.count();
         }
 
     private:
-        std::chrono::time_point<std::chrono::high_resolution_clock> start_time;
+        std::chrono::time_point<std::chrono::high_resolution_clock> startTime;
     };
 
     class SimpleTimer {
@@ -48,62 +48,62 @@ namespace microml {
         SimpleTimer() = default;
 
         void start() {
-            start_time = chrono::high_resolution_clock::now();
+            startTime = chrono::high_resolution_clock::now();
         }
 
         void stop() {
-            stop_time = chrono::high_resolution_clock::now();
+            stopTime = chrono::high_resolution_clock::now();
         }
 
-        void print_microseconds() {
-            auto duration = chrono::duration_cast<chrono::microseconds>(stop_time - start_time);
+        void printMicroseconds() {
+            auto duration = chrono::duration_cast<chrono::microseconds>(stopTime - startTime);
             cout << "Elapsed Time: " << duration.count() << " microseconds" << endl;
         }
 
-        void print_milliseconds() {
-            auto duration = chrono::duration_cast<chrono::milliseconds>(stop_time - start_time);
+        void printMilliseconds() {
+            auto duration = chrono::duration_cast<chrono::milliseconds>(stopTime - startTime);
             cout << "Elapsed Time: " << duration.count() << " milliseconds" << endl;
         }
 
-        void print_seconds() {
-            auto duration = chrono::duration_cast<chrono::seconds>(stop_time - start_time);
+        void printSeconds() {
+            auto duration = chrono::duration_cast<chrono::seconds>(stopTime - startTime);
             cout << "Elapsed Time: " << duration.count() << " seconds" << endl;
         }
 
     private:
-        chrono::time_point<chrono::high_resolution_clock> start_time;
-        chrono::time_point<chrono::high_resolution_clock> stop_time;
+        chrono::time_point<chrono::high_resolution_clock> startTime;
+        chrono::time_point<chrono::high_resolution_clock> stopTime;
     };
 
     class EvenMoreSimpleTimer {
     public:
         EvenMoreSimpleTimer() {
-            start_time = chrono::high_resolution_clock::now();
+            startTime = chrono::high_resolution_clock::now();
         }
 
-        void print_microseconds() {
-            auto stop_time = chrono::high_resolution_clock::now();
-            auto duration = chrono::duration_cast<chrono::microseconds>(stop_time - start_time);
+        void printMicroseconds() {
+            auto stopTime = chrono::high_resolution_clock::now();
+            auto duration = chrono::duration_cast<chrono::microseconds>(stopTime - startTime);
             cout << "Elapsed Time: " << duration.count() << " microseconds" << endl;
-            start_time = chrono::high_resolution_clock::now();
+            startTime = chrono::high_resolution_clock::now();
         }
 
-        void print_milliseconds() {
-            auto stop_time = chrono::high_resolution_clock::now();
-            auto duration = chrono::duration_cast<chrono::milliseconds>(stop_time - start_time);
+        void printMilliseconds() {
+            auto stopTime = chrono::high_resolution_clock::now();
+            auto duration = chrono::duration_cast<chrono::milliseconds>(stopTime - startTime);
             cout << "Elapsed Time: " << duration.count() << " milliseconds" << endl;
-            start_time = chrono::high_resolution_clock::now();
+            startTime = chrono::high_resolution_clock::now();
         }
 
-        void print_seconds() {
-            auto stop_time = chrono::high_resolution_clock::now();
-            auto duration = chrono::duration_cast<chrono::seconds>(stop_time - start_time);
+        void printSeconds() {
+            auto stopTime = chrono::high_resolution_clock::now();
+            auto duration = chrono::duration_cast<chrono::seconds>(stopTime - startTime);
             cout << "Elapsed Time: " << duration.count() << " seconds" << endl;
-            start_time = chrono::high_resolution_clock::now();
+            startTime = chrono::high_resolution_clock::now();
         }
 
     private:
-        chrono::time_point<chrono::high_resolution_clock> start_time;
+        chrono::time_point<chrono::high_resolution_clock> startTime;
     };
 
 }

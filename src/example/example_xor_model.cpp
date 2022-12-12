@@ -10,13 +10,13 @@ using namespace microml;
 using namespace micromldsl;
 
 
-void using_tanh() {
+void usingTanh() {
     auto xorDataSource = make_shared<InMemoryTrainingDataSet>();
     // given input, expected result
-    xorDataSource->addTrainingData(column_vector({0.f, 0.f}), 0.f);
-    xorDataSource->addTrainingData(column_vector({0.f, 1.f}), 1.f);
-    xorDataSource->addTrainingData(column_vector({1.f, 0.f}), 1.f);
-    xorDataSource->addTrainingData(column_vector({1.f, 1.f}), 0.f);
+    xorDataSource->addTrainingData(columnVector({0.f, 0.f}), 0.f);
+    xorDataSource->addTrainingData(columnVector({0.f, 1.f}), 1.f);
+    xorDataSource->addTrainingData(columnVector({1.f, 0.f}), 1.f);
+    xorDataSource->addTrainingData(columnVector({1.f, 1.f}), 0.f);
 
     cout << "Test with tanh" << endl;
     auto neuralNetwork = neuralNetworkBuilder()
@@ -29,19 +29,19 @@ void using_tanh() {
     neuralNetwork->train(xorDataSource, 500, 1, true);
 
     cout << fixed << setprecision(2);
-    cout << "0 xor 0 = 0 Prediction: " << neuralNetwork->predict_scalar(column_vector({0.f, 0.f})) << endl;
-    cout << "0 xor 1 = 1 Prediction: " << neuralNetwork->predict_scalar(column_vector({0.f, 1.f})) << endl;
-    cout << "1 xor 0 = 1 Prediction: " << neuralNetwork->predict_scalar(column_vector({1.f, 0.f})) << endl;
-    cout << "1 xor 1 = 0 Prediction: " << neuralNetwork->predict_scalar(column_vector({1.f, 1.f})) << endl;
+    cout << "0 xor 0 = 0 Prediction: " << neuralNetwork->predict_scalar(columnVector({0.f, 0.f})) << endl;
+    cout << "0 xor 1 = 1 Prediction: " << neuralNetwork->predict_scalar(columnVector({0.f, 1.f})) << endl;
+    cout << "1 xor 0 = 1 Prediction: " << neuralNetwork->predict_scalar(columnVector({1.f, 0.f})) << endl;
+    cout << "1 xor 1 = 0 Prediction: " << neuralNetwork->predict_scalar(columnVector({1.f, 1.f})) << endl;
 }
 
-void using_sigmoid() {
+void usingSigmoid() {
     auto xorDataSource = make_shared<InMemoryTrainingDataSet>();
     // given input, expected result
-    xorDataSource->addTrainingData(column_vector({0.f, 0.f}), 0.f);
-    xorDataSource->addTrainingData(column_vector({0.f, 1.f}), 1.f);
-    xorDataSource->addTrainingData(column_vector({1.f, 0.f}), 1.f);
-    xorDataSource->addTrainingData(column_vector({1.f, 1.f}), 0.f);
+    xorDataSource->addTrainingData(columnVector({0.f, 0.f}), 0.f);
+    xorDataSource->addTrainingData(columnVector({0.f, 1.f}), 1.f);
+    xorDataSource->addTrainingData(columnVector({1.f, 0.f}), 1.f);
+    xorDataSource->addTrainingData(columnVector({1.f, 1.f}), 0.f);
 
     cout << "Test with sigmoid" << endl;
     auto neuralNetwork = neuralNetworkBuilder()
@@ -57,20 +57,20 @@ void using_sigmoid() {
     neuralNetwork->train(xorDataSource, 1000, 1, true);
 
     cout << fixed << setprecision(2);
-    cout << "0 xor 0 = 0 Prediction: " << neuralNetwork->predict_scalar(column_vector({0.f, 0.f})) << endl;
-    cout << "0 xor 1 = 1 Prediction: " << neuralNetwork->predict_scalar(column_vector({0.f, 1.f})) << endl;
-    cout << "1 xor 0 = 1 Prediction: " << neuralNetwork->predict_scalar(column_vector({1.f, 0.f})) << endl;
-    cout << "1 xor 1 = 0 Prediction: " << neuralNetwork->predict_scalar(column_vector({1.f, 1.f})) << endl;
+    cout << "0 xor 0 = 0 Prediction: " << neuralNetwork->predict_scalar(columnVector({0.f, 0.f})) << endl;
+    cout << "0 xor 1 = 1 Prediction: " << neuralNetwork->predict_scalar(columnVector({0.f, 1.f})) << endl;
+    cout << "1 xor 0 = 1 Prediction: " << neuralNetwork->predict_scalar(columnVector({1.f, 0.f})) << endl;
+    cout << "1 xor 1 = 0 Prediction: " << neuralNetwork->predict_scalar(columnVector({1.f, 1.f})) << endl;
 }
 
 
-void using_relu() {
+void usingRelu() {
     auto xorDataSource = make_shared<InMemoryTrainingDataSet>();
     // given input, expected result
-    xorDataSource->addTrainingData(column_vector({0.f, 0.f}), 0.f);
-    xorDataSource->addTrainingData(column_vector({0.f, 1.f}), 1.f);
-    xorDataSource->addTrainingData(column_vector({1.f, 0.f}), 1.f);
-    xorDataSource->addTrainingData(column_vector({1.f, 1.f}), 0.f);
+    xorDataSource->addTrainingData(columnVector({0.f, 0.f}), 0.f);
+    xorDataSource->addTrainingData(columnVector({0.f, 1.f}), 1.f);
+    xorDataSource->addTrainingData(columnVector({1.f, 0.f}), 1.f);
+    xorDataSource->addTrainingData(columnVector({1.f, 1.f}), 0.f);
 
     cout << "Test with relu" << endl;
     auto neuralNetwork = neuralNetworkBuilder()
@@ -81,10 +81,10 @@ void using_relu() {
     neuralNetwork->train(xorDataSource, 1000, 1, true);
 
     cout << fixed << setprecision(2);
-    cout << "0 xor 0 = 0 Prediction: " << neuralNetwork->predict_scalar(column_vector({0.f, 0.f})) << endl;
-    cout << "0 xor 1 = 1 Prediction: " << neuralNetwork->predict_scalar(column_vector({0.f, 1.f})) << endl;
-    cout << "1 xor 0 = 1 Prediction: " << neuralNetwork->predict_scalar(column_vector({1.f, 0.f})) << endl;
-    cout << "1 xor 1 = 0 Prediction: " << neuralNetwork->predict_scalar(column_vector({1.f, 1.f})) << endl;
+    cout << "0 xor 0 = 0 Prediction: " << neuralNetwork->predict_scalar(columnVector({0.f, 0.f})) << endl;
+    cout << "0 xor 1 = 1 Prediction: " << neuralNetwork->predict_scalar(columnVector({0.f, 1.f})) << endl;
+    cout << "1 xor 0 = 1 Prediction: " << neuralNetwork->predict_scalar(columnVector({1.f, 0.f})) << endl;
+    cout << "1 xor 1 = 0 Prediction: " << neuralNetwork->predict_scalar(columnVector({1.f, 1.f})) << endl;
 }
 
 int main() {
@@ -94,9 +94,9 @@ int main() {
         // We don't particularly care about efficiency for this exact problem, only that activation functions work.
         // It is a good reminder, though, that picking the correct activation functions can dramatically improve
         // results and the time to train.
-        using_tanh();
-        using_sigmoid();
-        using_relu();
+        usingTanh();
+        usingSigmoid();
+        usingRelu();
 
     } catch (const std::exception &e) {
         std::cout << e.what() << std::endl;

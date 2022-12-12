@@ -23,7 +23,7 @@ using namespace std;
 namespace microml {
 
     // A node is a vertex in a graph
-    class NeuralNetworkNode : public std::enable_shared_from_this<NeuralNetworkNode> {
+    class NeuralNetworkNode : public enable_shared_from_this<NeuralNetworkNode> {
     public:
         explicit NeuralNetworkNode(
                 const shared_ptr<NeuralNetworkFunction> &neuralNetworkFunction) { //}, const shared_ptr<Optimizer> &optimizer) {
@@ -47,7 +47,7 @@ namespace microml {
                 // TODO: materializing the output into a full tensor helps performance at the cost of memory.
                 //  we should be able to determine the best strategy at runtime. Sometimes, memory is too valuable
                 //  to use for performance.
-                input_to_next = materialize_tensor(input_to_next);
+                input_to_next = materializeTensor(input_to_next);
             }
             if (connection_outputs.empty()) {
                 // there are no nodes after this one, so we return our result.
@@ -89,7 +89,7 @@ namespace microml {
 
             auto prior_error = neuralNetworkFunction->backward(output_error);
             if (materialized) {
-                prior_error = materialize_tensor(prior_error);
+                prior_error = materializeTensor(prior_error);
             }
             for (const auto &input_connection: connection_inputs) {
                 PROFILE_BLOCK(backwardBlockLoop);
@@ -208,7 +208,7 @@ namespace microml {
             // Always materialize output for performance of consumption or back propagation.
             // TODO: should we pick the precision of the materialization? right now, it is always 32-bit
             //  which might be excessive in some cases.
-            return materialize_tensor(temp);
+            return materializeTensor(temp);
         }
 
     private:
@@ -288,7 +288,7 @@ namespace microml {
         // train/fit
         void train(const shared_ptr<TrainingDataSet> &source, size_t epochs, int batch_size = 1,
                    bool overwrite_output_lines = false) {
-            auto total_records = source->record_count();
+            auto total_records = source->recordCount();
             if (batch_size > total_records) {
                 throw exception("Batch Size cannot be larger than source data set.");
             }
@@ -307,7 +307,7 @@ namespace microml {
                 batch_truths.resize(output_size);
 
                 size_t current_record = 0;
-                auto next_record = source->next_record();
+                auto next_record = source->nextRecord();
                 while (next_record != nullptr) {
                     current_record++;
                     auto next_given = next_record->getGiven();
@@ -321,7 +321,7 @@ namespace microml {
 //                        }
                     }
                     batch_offset++;
-                    next_record = source->next_record();
+                    next_record = source->nextRecord();
                     if (batch_offset >= batch_size || next_record == nullptr) {
                         for (size_t output_index = 0; output_index < output_size; output_index++) {
                             // TODO: materializing the error into a full tensor helps performance at the cost of memory.

@@ -45,14 +45,14 @@ namespace microml {
             // While I'm spending kilobytes of memory on this compared to only doing this once with a low bias,
             // creating a more accurate representation for a matrix is our overall goal. Spend a little compute
             // and track groups of quarters to make them the best representations we can manage.
-            this->element_count = 0;
-            this->bias_fit = bias_fit;
-            this->min_value = 0;
-            this->max_value = 0;
-            this->require_0_for_fit = require_0_for_fit;
-            const size_t rows = source.row_count();
-            const size_t cols = source.column_count();
-            const size_t channels = source.channel_count();
+            this->elementCount = 0;
+            this->biasFit = bias_fit;
+            this->minValue = 0;
+            this->maxValue = 0;
+            this->require0ForFit = require_0_for_fit;
+            const size_t rows = source.rowCount();
+            const size_t cols = source.columnCount();
+            const size_t channels = source.channelCount();
             auto bagCounts = std::make_shared<BagCounts>();
             // TODO: We can improve the conditions in which we are single threaded vs concurrent. This
             // works on my machine, but it isn't a general solution.
@@ -62,7 +62,7 @@ namespace microml {
                 for (size_t channel = 0; channel < channels; channel++) {
                     for (size_t row = 0; row < rows; row++) {
                         for (size_t col = 0; col < cols; col++) {
-                            populate_bags(&source, row, col, channel, bagCounts);
+                            populateBags(&source, row, col, channel, bagCounts);
                         }
                     }
                 }
@@ -76,7 +76,7 @@ namespace microml {
                     const size_t wait_amount = 8096;
                     for (size_t channel = 0; channel < channels; channel++) {
                         for (size_t row = 0; row < rows; row++) {
-                            auto next_async = std::async(std::launch::async, populate_bags_by_col, &source, row, cols,
+                            auto next_async = std::async(std::launch::async, populateBagsByCol, &source, row, cols,
                                                          channel,
                                                          bagCounts);
                             futures.push(std::move(next_async));
@@ -91,7 +91,7 @@ namespace microml {
                     const size_t wait_amount = 8096;
                     for (size_t channel = 0; channel < channels; channel++) {
                         for (size_t col = 0; col < cols; col++) {
-                            auto next_async = std::async(std::launch::async, populate_bags_by_row, &source, rows, col,
+                            auto next_async = std::async(std::launch::async, populateBagsByRow, &source, rows, col,
                                                          channel,
                                                          bagCounts);
                             futures.push(std::move(next_async));
@@ -105,85 +105,85 @@ namespace microml {
             }
 
             // counts should be same for all bags, so we'll just count one
-            count_elements_and_find_min_max(bagCounts->bag_counts_14);
+            countElementsAndFindMinMax(bagCounts->bagCounts14);
 
 
             // This could be more efficient. We calculate for bias 0, then discard after we find the target range
-            if (quarter_to_float(QUARTER_MIN, 14) <= min_value &&
-                    quarter_to_float(QUARTER_MAX, 14) >= max_value) {
+            if (quarterToFloat(QUARTER_MIN, 14) <= minValue &&
+                quarterToFloat(QUARTER_MAX, 14) >= maxValue) {
 //            std::cout << "min and max fit in quarter 14: " << min_value << " -> " << max_value << " must fit in "
 //                      << quarter_to_float(QUARTER_MIN, 14, 0) << " -> " << quarter_to_float(QUARTER_MAX, 14, 0)
 //                      << std::endl;
-                bag(bagCounts->bag_counts_14);
-            } else if (quarter_to_float(QUARTER_MIN, 8) <= min_value &&
-                    quarter_to_float(QUARTER_MAX, 8) >= max_value) {
+                bag(bagCounts->bagCounts14);
+            } else if (quarterToFloat(QUARTER_MIN, 8) <= minValue &&
+                       quarterToFloat(QUARTER_MAX, 8) >= maxValue) {
 //            std::cout << "min and max fit in quarter 8: " << min_value << " -> " << max_value << " must fit in "
 //                      << quarter_to_float(QUARTER_MIN, 8, 0) << " -> " << quarter_to_float(QUARTER_MAX, 8, 0)
 //                      << std::endl;
-                bag(bagCounts->bag_counts_8);
-            } else if (quarter_to_float(QUARTER_MIN, 4) <= min_value &&
-                    quarter_to_float(QUARTER_MAX, 4) >= max_value) {
+                bag(bagCounts->bagCounts8);
+            } else if (quarterToFloat(QUARTER_MIN, 4) <= minValue &&
+                       quarterToFloat(QUARTER_MAX, 4) >= maxValue) {
 //            std::cout << "min and max fit in quarter 4: " << min_value << " -> " << max_value << " must fit in "
 //                      << quarter_to_float(QUARTER_MIN, 4, 0) << " -> " << quarter_to_float(QUARTER_MAX, 4, 0)
 //                      << std::endl;
-                bag(bagCounts->bag_counts_4);
-            } else if (quarter_to_float(QUARTER_MIN, 1) <= min_value &&
-                    quarter_to_float(QUARTER_MAX, 1) >= max_value) {
+                bag(bagCounts->bagCounts4);
+            } else if (quarterToFloat(QUARTER_MIN, 1) <= minValue &&
+                       quarterToFloat(QUARTER_MAX, 1) >= maxValue) {
 //            std::cout << "min and max fit in quarter 1: " << min_value << " -> " << max_value << " must fit in "
 //                      << quarter_to_float(QUARTER_MIN, 1, 0) << " -> " << quarter_to_float(QUARTER_MAX, 1, 0)
 //                      << std::endl;
-                bag(bagCounts->bag_counts_1);
+                bag(bagCounts->bagCounts1);
             } else {
 //            std::cout << "min and max forced to fit in quarter -4: " << min_value << " -> " << max_value
 //                      << " must fit in " << quarter_to_float(QUARTER_MIN, -4, 0) << " -> "
 //                      << quarter_to_float(QUARTER_MAX, -4, 0) << std::endl;
-                bag(bagCounts->bag_counts_negative_4);
+                bag(bagCounts->bagCountsNegative4);
             }
             double wide_target_range;
             if (bias_fit == FIT_BIAS_FOR_80) {
-                wide_target_range = ten_to_90_range();
+                wide_target_range = tenTo90Range();
             } else if (bias_fit == FIT_BIAS_FOR_50) {
-                wide_target_range = q2_to_q3_range();
+                wide_target_range = q2ToQ3Range();
             } else {
-                wide_target_range = full_range();
+                wide_target_range = fullRange();
             }
 
 //        std::cout << "wide range: " << wide_target_range << std::endl;
-            if (bag_and_check_range_for_bias_goal(bagCounts->bag_counts_14, 14, wide_target_range)) {
-                recommended_bias = 14;
-            } else if (bag_and_check_range_for_bias_goal(bagCounts->bag_counts_8, 8, wide_target_range)) {
-                recommended_bias = 8;
-            } else if (bag_and_check_range_for_bias_goal(bagCounts->bag_counts_4, 4, wide_target_range)) {
-                recommended_bias = 4;
-            } else if (bag_and_check_range_for_bias_goal(bagCounts->bag_counts_1, 1, wide_target_range)) {
-                recommended_bias = 1;
+            if (bagAndCheckRangeForBiasGoal(bagCounts->bagCounts14, 14, wide_target_range)) {
+                recommendedBias = 14;
+            } else if (bagAndCheckRangeForBiasGoal(bagCounts->bagCounts8, 8, wide_target_range)) {
+                recommendedBias = 8;
+            } else if (bagAndCheckRangeForBiasGoal(bagCounts->bagCounts4, 4, wide_target_range)) {
+                recommendedBias = 4;
+            } else if (bagAndCheckRangeForBiasGoal(bagCounts->bagCounts1, 1, wide_target_range)) {
+                recommendedBias = 1;
             } else {
                 // we tried to fit, but we're left with the default
-                bag(bagCounts->bag_counts_negative_4);
-                recommended_bias = -4;
+                bag(bagCounts->bagCountsNegative4);
+                recommendedBias = -4;
             }
 
             const double half_range = wide_target_range / 2;
             if (bias_fit == FIT_BIAS_FOR_80) {
                 if (require_0_for_fit) {
-                    auto low = std::min(0.0f, eighty_values.at(1));
-                    recommended_offset = (float) (low + half_range);
+                    auto low = std::min(0.0f, eightyValues.at(1));
+                    recommendedOffset = (float) (low + half_range);
                 } else {
-                    recommended_offset = eighty_values.at(2);
+                    recommendedOffset = eightyValues.at(2);
                 }
             } else if (bias_fit == FIT_BIAS_FOR_50) {
                 if (require_0_for_fit) {
-                    auto low = std::min(0.0f, quarter_values.at(1));
-                    recommended_offset = (float) (low + half_range);
+                    auto low = std::min(0.0f, quarterValues.at(1));
+                    recommendedOffset = (float) (low + half_range);
                 } else {
-                    recommended_offset = quarter_values.at(2);
+                    recommendedOffset = quarterValues.at(2);
                 }
             } else {
                 if (require_0_for_fit) {
-                    auto low = std::min(0.0f, eighty_values.at(0));
-                    recommended_offset = (float) (low + half_range);
+                    auto low = std::min(0.0f, eightyValues.at(0));
+                    recommendedOffset = (float) (low + half_range);
                 } else {
-                    recommended_offset = (float) (eighty_values.at(0) + half_range);
+                    recommendedOffset = (float) (eightyValues.at(0) + half_range);
                 }
             }
 //        std::cout << "finished constructor" << std::endl;
@@ -191,12 +191,12 @@ namespace microml {
 
         void print() {
 //        std::cout << "Double max: " << std::fixed << std::numeric_limits<double>::max() << std::endl;
-            std::cout << "Bag contents(" << element_count << "/" << bag_elements.size() << "): [" << std::endl;
-            for (auto it = bag_elements.begin(); it != bag_elements.end(); ++it) {
+            std::cout << "Bag contents(" << elementCount << "/" << bagElements.size() << "): [" << std::endl;
+            for (auto it = bagElements.begin(); it != bagElements.end(); ++it) {
                 const auto val = (float) it->at(0);
                 const auto count = (unsigned long) it->at(1);
                 std::cout << std::fixed << "\t" << val << "\t" << std::setw(10) << count << "\t";
-                const auto dots_len = 100 * ((double) count / (double) element_count);
+                const auto dots_len = 100 * ((double) count / (double) elementCount);
                 for (uint32_t i = 0; i < dots_len; i++) {
                     std::cout << ".";
                 }
@@ -204,204 +204,204 @@ namespace microml {
             }
             std::cout << "]" << std::endl << "Quartile parts: ";
             std::string delim;
-            for (auto it = quarter_values.begin(); it != quarter_values.end(); ++it) {
+            for (auto it = quarterValues.begin(); it != quarterValues.end(); ++it) {
                 std::cout << delim << std::fixed << *it;
                 delim = ", ";
             }
             std::cout << std::endl << "80% parts: ";
             delim = "";
-            for (auto it = eighty_values.begin(); it != eighty_values.end(); ++it) {
+            for (auto it = eightyValues.begin(); it != eightyValues.end(); ++it) {
                 std::cout << delim << std::fixed << *it;
                 delim = ", ";
             }
-            std::cout << std::endl << "recommended bias: " << recommended_bias << std::endl;
-            std::cout << "recommended offset: " << std::fixed << std::setprecision(15) << recommended_offset
+            std::cout << std::endl << "recommended bias: " << recommendedBias << std::endl;
+            std::cout << "recommended offset: " << std::fixed << std::setprecision(15) << recommendedOffset
                       << std::endl;
-            std::cout << "min: " << std::fixed << min_value << std::endl;
-            std::cout << "max: " << std::fixed << max_value << std::endl;
-            std::cout << "range: " << std::fixed << (max_value - min_value) << std::endl;
-            std::cout << "Zero required for fit: " << (require_0_for_fit ? "true" : "false") << std::endl;
+            std::cout << "min: " << std::fixed << minValue << std::endl;
+            std::cout << "max: " << std::fixed << maxValue << std::endl;
+            std::cout << "range: " << std::fixed << (maxValue - minValue) << std::endl;
+            std::cout << "Zero required for fit: " << (require0ForFit ? "true" : "false") << std::endl;
         }
 
-        [[nodiscard]] int get_recommended_bias() const {
-            return recommended_bias;
+        [[nodiscard]] int getRecommendedBias() const {
+            return recommendedBias;
         }
 
-        [[nodiscard]] float get_recommended_offset() const {
-            return recommended_offset;
+        [[nodiscard]] float getRecommendedOffset() const {
+            return recommendedOffset;
         }
 
         // See FIT_BIAS_FOR_100, FIT_BIAS_FOR_90, FIT_BIAS_FOR_50
-        [[nodiscard]] bool target_bias_fit() const {
-            return bias_fit;
+        [[nodiscard]] bool targetBiasFit() const {
+            return biasFit;
         }
 
     private:
-        int bias_fit; // See FIT_BIAS_FOR_100, FIT_BIAS_FOR_90, FIT_BIAS_FOR_50
-        unsigned long element_count;
-        std::vector<std::array<double, 2>> bag_elements;
-        std::vector<float> quarter_values; // five values from: 0%, 25%, 50%, 75%, 100%
-        std::vector<float> eighty_values; // five values from: 0%, 10%, 50%, 90%, 100%
-        int recommended_bias;
-        float recommended_offset;
-        double min_value;
-        double max_value;
-        bool require_0_for_fit;
+        int biasFit; // See FIT_BIAS_FOR_100, FIT_BIAS_FOR_90, FIT_BIAS_FOR_50
+        unsigned long elementCount;
+        std::vector<std::array<double, 2>> bagElements;
+        std::vector<float> quarterValues; // five values from: 0%, 25%, 50%, 75%, 100%
+        std::vector<float> eightyValues; // five values from: 0%, 10%, 50%, 90%, 100%
+        int recommendedBias;
+        float recommendedOffset;
+        double minValue;
+        double maxValue;
+        bool require0ForFit;
 
-        static bool bag_entry_compare(std::array<double, 2> a, std::array<double, 2> b) {
+        static bool bagEntryCompare(std::array<double, 2> a, std::array<double, 2> b) {
             return a.at(0) < b.at(0);
         }
 
         struct BagCounts {
-            BagCounts() : bag_counts_14{}, bag_counts_8{}, bag_counts_4{}, bag_counts_1{}, bag_counts_negative_4{} {}
+            BagCounts() : bagCounts14{}, bagCounts8{}, bagCounts4{}, bagCounts1{}, bagCountsNegative4{} {}
 
-            std::mutex bag_mutex;
-            std::array<std::array<double, 2>, 256> bag_counts_14;
-            std::array<std::array<double, 2>, 256> bag_counts_8;
-            std::array<std::array<double, 2>, 256> bag_counts_4;
-            std::array<std::array<double, 2>, 256> bag_counts_1;
-            std::array<std::array<double, 2>, 256> bag_counts_negative_4;
+            std::mutex bagMutex;
+            std::array<std::array<double, 2>, 256> bagCounts14;
+            std::array<std::array<double, 2>, 256> bagCounts8;
+            std::array<std::array<double, 2>, 256> bagCounts4;
+            std::array<std::array<double, 2>, 256> bagCounts1;
+            std::array<std::array<double, 2>, 256> bagCountsNegative4;
         };
 
-        static void add_to_bag(std::array<std::array<double, 2>, 256> &bag_counts, const float f, const int bias) {
-            quarter q = float_to_quarter(f, bias);
+        static void addToBag(std::array<std::array<double, 2>, 256> &bagCounts, const float f, const int bias) {
+            quarter q = floatToQuarter(f, bias);
             // gravitate to numbers that are furthest from zero, unless zero (this may not be needed
             // since it should initialize to zero.)
             // is branching too expensive here? maybe we always assign, accepting slightly worse
             // results for better performance?
-            const auto old_val = bag_counts[q][0];
+            const auto old_val = bagCounts[q][0];
             if ((f > 0 && f > old_val) || (f < 0 && f < old_val) || (f == 0)) {
-                bag_counts[q][0] = f;
+                bagCounts[q][0] = f;
             }
-            bag_counts[q][1] += 1.0;
+            bagCounts[q][1] += 1.0;
         }
 
-        static void populate_bags(BaseTensor *source,
-                                  const size_t row,
-                                  const size_t col,
-                                  const size_t channel,
-                                  const std::shared_ptr<BagCounts> &bagCounts) {
-            float f = source->get_val(row, col, channel);
+        static void populateBags(BaseTensor *source,
+                                 const size_t row,
+                                 const size_t col,
+                                 const size_t channel,
+                                 const std::shared_ptr<BagCounts> &bagCounts) {
+            float f = source->getValue(row, col, channel);
             if (isinf(f) || isnan(f)) {
                 return;
             }
-            add_to_bag(bagCounts->bag_counts_14, f, 14);
-            add_to_bag(bagCounts->bag_counts_8, f, 8);
-            add_to_bag(bagCounts->bag_counts_4, f, 4);
-            add_to_bag(bagCounts->bag_counts_1, f, 1);
-            add_to_bag(bagCounts->bag_counts_negative_4, f, -4);
+            addToBag(bagCounts->bagCounts14, f, 14);
+            addToBag(bagCounts->bagCounts8, f, 8);
+            addToBag(bagCounts->bagCounts4, f, 4);
+            addToBag(bagCounts->bagCounts1, f, 1);
+            addToBag(bagCounts->bagCountsNegative4, f, -4);
         }
 
-        static void populate_bags_by_col(BaseTensor *source,
-                                         size_t row,
-                                         size_t max_cols,
-                                         size_t channel,
-                                         const std::shared_ptr<BagCounts> &bagCounts) {
+        static void populateBagsByCol(BaseTensor *source,
+                                      size_t row,
+                                      size_t maxCols,
+                                      size_t channel,
+                                      const std::shared_ptr<BagCounts> &bagCounts) {
             auto local = std::make_shared<BagCounts>();
-            for (size_t col = 0; col < max_cols; col++) {
-                populate_bags(source, row, col, channel, local);
+            for (size_t col = 0; col < maxCols; col++) {
+                populateBags(source, row, col, channel, local);
             }
-            const std::lock_guard<std::mutex> lock(bagCounts->bag_mutex);
+            const std::lock_guard<std::mutex> lock(bagCounts->bagMutex);
             size_t index = 0;
-            for (const auto &[val, count]: local->bag_counts_14) {
-                const double original = bagCounts->bag_counts_14[index][0];
+            for (const auto &[val, count]: local->bagCounts14) {
+                const double original = bagCounts->bagCounts14[index][0];
                 if ((val == 0) || (val < 0 && val < original) || (val > 0 && val > original)) {
-                    bagCounts->bag_counts_14[index][0] = val;
+                    bagCounts->bagCounts14[index][0] = val;
                 }
-                bagCounts->bag_counts_14[index][1] += count;
+                bagCounts->bagCounts14[index][1] += count;
                 index++;
             }
             index = 0;
-            for (const auto &[val, count]: local->bag_counts_8) {
-                const double original = bagCounts->bag_counts_8[index][0];
+            for (const auto &[val, count]: local->bagCounts8) {
+                const double original = bagCounts->bagCounts8[index][0];
                 if ((val == 0) || (val < 0 && val < original) || (val > 0 && val > original)) {
-                    bagCounts->bag_counts_8[index][0] = val;
+                    bagCounts->bagCounts8[index][0] = val;
                 }
-                bagCounts->bag_counts_8[index][1] += count;
+                bagCounts->bagCounts8[index][1] += count;
                 index++;
             }
             index = 0;
-            for (const auto &[val, count]: local->bag_counts_4) {
-                const double original = bagCounts->bag_counts_4[index][0];
+            for (const auto &[val, count]: local->bagCounts4) {
+                const double original = bagCounts->bagCounts4[index][0];
                 if ((val == 0) || (val < 0 && val < original) || (val > 0 && val > original)) {
-                    bagCounts->bag_counts_4[index][0] = val;
+                    bagCounts->bagCounts4[index][0] = val;
                 }
-                bagCounts->bag_counts_4[index][1] += count;
+                bagCounts->bagCounts4[index][1] += count;
                 index++;
             }
             index = 0;
-            for (const auto &[val, count]: local->bag_counts_1) {
-                const double original = bagCounts->bag_counts_1[index][0];
+            for (const auto &[val, count]: local->bagCounts1) {
+                const double original = bagCounts->bagCounts1[index][0];
                 if ((val == 0) || (val < 0 && val < original) || (val > 0 && val > original)) {
-                    bagCounts->bag_counts_1[index][0] = val;
+                    bagCounts->bagCounts1[index][0] = val;
                 }
-                bagCounts->bag_counts_1[index][1] += count;
+                bagCounts->bagCounts1[index][1] += count;
                 index++;
             }
             index = 0;
-            for (const auto &[val, count]: local->bag_counts_negative_4) {
-                const double original = bagCounts->bag_counts_negative_4[index][0];
+            for (const auto &[val, count]: local->bagCountsNegative4) {
+                const double original = bagCounts->bagCountsNegative4[index][0];
                 if ((val == 0) || (val < 0 && val < original) || (val > 0 && val > original)) {
-                    bagCounts->bag_counts_negative_4[index][0] = val;
+                    bagCounts->bagCountsNegative4[index][0] = val;
                 }
-                bagCounts->bag_counts_negative_4[index][1] += count;
+                bagCounts->bagCountsNegative4[index][1] += count;
                 index++;
             }
         }
 
-        static void populate_bags_by_row(BaseTensor *source,
-                                         size_t max_rows,
-                                         size_t col,
-                                         size_t channel,
-                                         const std::shared_ptr<BagCounts> &bagCounts) {
+        static void populateBagsByRow(BaseTensor *source,
+                                      size_t maxRows,
+                                      size_t col,
+                                      size_t channel,
+                                      const std::shared_ptr<BagCounts> &bagCounts) {
             auto local = std::make_shared<BagCounts>();
-            for (size_t row = 0; row < max_rows; row++) {
-                populate_bags(source, row, col, channel, local);
+            for (size_t row = 0; row < maxRows; row++) {
+                populateBags(source, row, col, channel, local);
             }
-            const std::lock_guard<std::mutex> lock(bagCounts->bag_mutex);
+            const std::lock_guard<std::mutex> lock(bagCounts->bagMutex);
             size_t index = 0;
-            for (const auto &[val, count]: local->bag_counts_14) {
-                const double original = bagCounts->bag_counts_14[index][0];
+            for (const auto &[val, count]: local->bagCounts14) {
+                const double original = bagCounts->bagCounts14[index][0];
                 if ((val == 0) || (val < 0 && val < original) || (val > 0 && val > original)) {
-                    bagCounts->bag_counts_14[index][0] = val;
+                    bagCounts->bagCounts14[index][0] = val;
                 }
-                bagCounts->bag_counts_14[index][1] += count;
+                bagCounts->bagCounts14[index][1] += count;
                 index++;
             }
             index = 0;
-            for (const auto &[val, count]: local->bag_counts_8) {
-                const double original = bagCounts->bag_counts_8[index][0];
+            for (const auto &[val, count]: local->bagCounts8) {
+                const double original = bagCounts->bagCounts8[index][0];
                 if ((val == 0) || (val < 0 && val < original) || (val > 0 && val > original)) {
-                    bagCounts->bag_counts_8[index][0] = val;
+                    bagCounts->bagCounts8[index][0] = val;
                 }
-                bagCounts->bag_counts_8[index][1] += count;
+                bagCounts->bagCounts8[index][1] += count;
                 index++;
             }
             index = 0;
-            for (const auto &[val, count]: local->bag_counts_4) {
-                const double original = bagCounts->bag_counts_4[index][0];
+            for (const auto &[val, count]: local->bagCounts4) {
+                const double original = bagCounts->bagCounts4[index][0];
                 if ((val == 0) || (val < 0 && val < original) || (val > 0 && val > original)) {
-                    bagCounts->bag_counts_4[index][0] = val;
+                    bagCounts->bagCounts4[index][0] = val;
                 }
-                bagCounts->bag_counts_4[index][1] += count;
+                bagCounts->bagCounts4[index][1] += count;
                 index++;
             }
             index = 0;
-            for (const auto &[val, count]: local->bag_counts_1) {
-                const double original = bagCounts->bag_counts_1[index][0];
+            for (const auto &[val, count]: local->bagCounts1) {
+                const double original = bagCounts->bagCounts1[index][0];
                 if ((val == 0) || (val < 0 && val < original) || (val > 0 && val > original)) {
-                    bagCounts->bag_counts_1[index][0] = val;
+                    bagCounts->bagCounts1[index][0] = val;
                 }
-                bagCounts->bag_counts_1[index][1] += count;
+                bagCounts->bagCounts1[index][1] += count;
                 index++;
             }
             index = 0;
-            for (const auto &[val, count]: local->bag_counts_negative_4) {
-                const double original = bagCounts->bag_counts_negative_4[index][0];
+            for (const auto &[val, count]: local->bagCountsNegative4) {
+                const double original = bagCounts->bagCountsNegative4[index][0];
                 if ((val == 0) || (val < 0 && val < original) || (val > 0 && val > original)) {
-                    bagCounts->bag_counts_negative_4[index][0] = val;
+                    bagCounts->bagCountsNegative4[index][0] = val;
                 }
-                bagCounts->bag_counts_negative_4[index][1] += count;
+                bagCounts->bagCountsNegative4[index][1] += count;
                 index++;
             }
         }
@@ -414,142 +414,142 @@ namespace microml {
         }
 
 
-        inline void count_elements_and_find_min_max(std::array<std::array<double, 2>, 256> &bag_counts) {
-            min_value = HUGE_VAL;
-            max_value = -HUGE_VAL;
-            for (auto &it: bag_counts) {
+        inline void countElementsAndFindMinMax(std::array<std::array<double, 2>, 256> &bagCounts) {
+            minValue = HUGE_VAL;
+            maxValue = -HUGE_VAL;
+            for (auto &it: bagCounts) {
                 double val = it.at(0);
-                if (val < min_value) {
-                    min_value = val;
+                if (val < minValue) {
+                    minValue = val;
                 }
-                if (val > max_value) {
-                    max_value = val;
+                if (val > maxValue) {
+                    maxValue = val;
                 }
-                element_count += (unsigned long) it.at(1);
+                elementCount += (unsigned long) it.at(1);
             }
         }
 
-        double q2_to_q3_range() {
-            if (quarter_values.size() != 5) {
-                std::cout << "Mid 50 quarter values size: " << quarter_values.size() << std::endl;
+        double q2ToQ3Range() {
+            if (quarterValues.size() != 5) {
+                std::cout << "Mid 50 quarter values size: " << quarterValues.size() << std::endl;
                 throw std::exception("Mid 50 range calculation only works after quarter_values are populated.");
             }
-            if (require_0_for_fit) {
-                return std::abs(std::max(0.0f, quarter_values.at(3)) - std::min(0.0f, quarter_values.at(1)));
+            if (require0ForFit) {
+                return std::abs(std::max(0.0f, quarterValues.at(3)) - std::min(0.0f, quarterValues.at(1)));
             }
-            return std::abs(quarter_values.at(3) - quarter_values.at(1));
+            return std::abs(quarterValues.at(3) - quarterValues.at(1));
         }
 
-        double ten_to_90_range() {
-            if (eighty_values.size() != 5) {
-                std::cout << "Mid 80 values size: " << eighty_values.size() << std::endl;
+        double tenTo90Range() {
+            if (eightyValues.size() != 5) {
+                std::cout << "Mid 80 values size: " << eightyValues.size() << std::endl;
                 throw std::exception("Mid 80 range calculation only works after eighty_values are populated.");
             }
-            if (require_0_for_fit) {
-                return std::abs(std::max(0.0f, eighty_values.at(3)) - std::min(0.0f, eighty_values.at(1)));
+            if (require0ForFit) {
+                return std::abs(std::max(0.0f, eightyValues.at(3)) - std::min(0.0f, eightyValues.at(1)));
             }
-            return std::abs(eighty_values.at(3) - eighty_values.at(1));
+            return std::abs(eightyValues.at(3) - eightyValues.at(1));
         }
 
-        double full_range() {
-            if (quarter_values.size() != 5) {
-                std::cout << "Full range quarter values size: " << quarter_values.size() << std::endl;
+        double fullRange() {
+            if (quarterValues.size() != 5) {
+                std::cout << "Full range quarter values size: " << quarterValues.size() << std::endl;
                 throw std::exception("full range calculation only works after quarter_values are populated.");
             }
-            if (require_0_for_fit) {
-                return std::abs(std::max(0.0f, quarter_values.at(4)) - std::min(0.0f, quarter_values.at(0)));
+            if (require0ForFit) {
+                return std::abs(std::max(0.0f, quarterValues.at(4)) - std::min(0.0f, quarterValues.at(0)));
             }
-            return std::abs(quarter_values.at(4) - quarter_values.at(0));
+            return std::abs(quarterValues.at(4) - quarterValues.at(0));
         }
 
         void bag(std::array<std::array<double, 2>, 256> &bag_counts) {
-            build_bag_from_counts(bag_counts);
-            calculate_quarters();
-            calculate_eighty_percent();
+            buildBagFromCounts(bag_counts);
+            calculateQuarters();
+            calculateEightyPercent();
         }
 
-        void calculate_eighty_percent() {
-            if (element_count == 0 || bag_elements.empty()) {
+        void calculateEightyPercent() {
+            if (elementCount == 0 || bagElements.empty()) {
                 return;
             }
-            const unsigned long ten_percent = element_count / 10;
-            const auto fifty_percent = std::min((unsigned long) (element_count * 0.5),
+            const unsigned long ten_percent = elementCount / 10;
+            const auto fifty_percent = std::min((unsigned long) (elementCount * 0.5),
                                                 5 * ten_percent); //round down for small values
-            const auto ninety_percent = std::min((unsigned long) (element_count * 0.9),
+            const auto ninety_percent = std::min((unsigned long) (elementCount * 0.9),
                                                  9 * ten_percent); //round down for small values
 //        std::cout << "Ten Percent Size: " << ten_percent << std::endl;
 //        std::cout << "Fifty Percent Boundary: " << fifty_percent << std::endl;
 //        std::cout << "Ninety Percent Boundary: " << ninety_percent << std::endl;
 
-            eighty_values.clear();
-            eighty_values.push_back((float) bag_elements.front().at(0));
+            eightyValues.clear();
+            eightyValues.push_back((float) bagElements.front().at(0));
             unsigned long current_element = 0;
-            for (auto it = bag_elements.begin(); it != bag_elements.end(); ++it) {
+            for (auto it = bagElements.begin(); it != bagElements.end(); ++it) {
                 current_element += (unsigned long) it->at(1);
-                if (eighty_values.size() == 3 && current_element >= ninety_percent) {
-                    eighty_values.push_back((float) it->at(0));
+                if (eightyValues.size() == 3 && current_element >= ninety_percent) {
+                    eightyValues.push_back((float) it->at(0));
                     break;
                 }
-                if (eighty_values.size() == 2 && current_element >= fifty_percent) {
-                    eighty_values.push_back((float) it->at(0));
+                if (eightyValues.size() == 2 && current_element >= fifty_percent) {
+                    eightyValues.push_back((float) it->at(0));
                 }
-                if (eighty_values.size() == 1 && current_element > ten_percent) {
-                    eighty_values.push_back((float) it->at(0));
+                if (eightyValues.size() == 1 && current_element > ten_percent) {
+                    eightyValues.push_back((float) it->at(0));
                 }
             }
-            while (eighty_values.size() < 5) {
-                eighty_values.push_back((float) bag_elements.back().at(0));
+            while (eightyValues.size() < 5) {
+                eightyValues.push_back((float) bagElements.back().at(0));
             }
         }
 
-        void calculate_quarters() {
-            const unsigned long quarter_size = element_count / 4;
+        void calculateQuarters() {
+            const unsigned long quarter_size = elementCount / 4;
 //        std::cout << "Quarter Size: " << quarter_size << std::endl;
             unsigned long next_quarter = quarter_size;
             unsigned long current_element = 0;
-            quarter_values.clear();
-            quarter_values.push_back((float) bag_elements.front().at(0));
-            for (auto it = bag_elements.begin(); it != bag_elements.end(); ++it) {
+            quarterValues.clear();
+            quarterValues.push_back((float) bagElements.front().at(0));
+            for (auto it = bagElements.begin(); it != bagElements.end(); ++it) {
 //            std::cout << "[" << it->at(0) << ", " <<  (unsigned long)it->at(1) << "]" << std::endl;
                 current_element += (unsigned long) it->at(1);
 //            std::cout << "current_element: " << current_element << std::endl;
                 while (current_element >= next_quarter) {
 //                std::cout << "adding quarter current_element: " << current_element
 //                          << " with value: " << it->at(0) << std::endl;
-                    quarter_values.push_back((float) it->at(0));
-                    if (quarter_values.size() == 4) {
+                    quarterValues.push_back((float) it->at(0));
+                    if (quarterValues.size() == 4) {
                         break;
                     }
                     next_quarter += quarter_size;
                 }
-                if (quarter_values.size() == 4) {
+                if (quarterValues.size() == 4) {
                     break;
                 }
             }
-            quarter_values.push_back((float) bag_elements.back().at(0));
+            quarterValues.push_back((float) bagElements.back().at(0));
 //        std::cout << "Done calculate_quarters" << std::endl;
         }
 
-        void build_bag_from_counts(std::array<std::array<double, 2>, 256> &bag_counts) {
-            bag_elements.clear();
-            for (auto &bag_count: bag_counts) {
-                if (bag_count.at(1) > 0) {
-                    bag_elements.push_back(bag_count);
+        void buildBagFromCounts(std::array<std::array<double, 2>, 256> &bagCounts) {
+            bagElements.clear();
+            for (auto &bagCount: bagCounts) {
+                if (bagCount.at(1) > 0) {
+                    bagElements.push_back(bagCount);
                 }
             }
-            std::sort(bag_elements.begin(), bag_elements.end(), bag_entry_compare);
+            std::sort(bagElements.begin(), bagElements.end(), bagEntryCompare);
         }
 
-        bool bag_and_check_range_for_bias_goal(std::array<std::array<double, 2>, 256> &bag_counts, int bias,
-                                               double wide_target_range) {
-            double bias_range = calculate_bias_range(bias);
-            if (bias_range < wide_target_range) {
+        bool bagAndCheckRangeForBiasGoal(std::array<std::array<double, 2>, 256> &bagCounts, int bias,
+                                         double wideTargetRange) {
+            double biasRange = calculateBiasRange(bias);
+            if (biasRange < wideTargetRange) {
                 return false;
             }
-            bag(bag_counts);
-            return (bias_fit == FIT_BIAS_FOR_100 && full_range() <= bias_range) ||
-                   (bias_fit == FIT_BIAS_FOR_80 && ten_to_90_range() <= bias_range) ||
-                   (bias_fit == FIT_BIAS_FOR_50 && q2_to_q3_range() <= bias_range);
+            bag(bagCounts);
+            return (biasFit == FIT_BIAS_FOR_100 && fullRange() <= biasRange) ||
+                   (biasFit == FIT_BIAS_FOR_80 && tenTo90Range() <= biasRange) ||
+                   (biasFit == FIT_BIAS_FOR_50 && q2ToQ3Range() <= biasRange);
         }
     };
 }

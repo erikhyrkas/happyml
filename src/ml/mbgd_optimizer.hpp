@@ -34,8 +34,8 @@ using namespace std;
 // given future input data.
 namespace microml {
     struct MBGDLearningState {
-        float learning_rate;
-        float bias_learning_rate;
+        float learningRate;
+        float biasLearningRate;
     };
 
 // full conv2d will be similar to valid, but needs some changes.
@@ -127,9 +127,9 @@ namespace microml {
 
                 const auto next_weight_error = make_shared<TensorValidCrossCorrelation2dView>(last_input, output_error_channel);
                 const auto next_weight_error_at_learning_rate = make_shared<TensorMultiplyByScalarView>(next_weight_error,
-                                                                                                        learning_state->learning_rate * mixed_precision_scale);
+                                                                                                        learning_state->learningRate * mixed_precision_scale);
                 const auto adjusted_weights = make_shared<TensorMinusTensorView>(weights[output_layer], next_weight_error_at_learning_rate);
-                weights[output_layer] = materialize_tensor(adjusted_weights, bits);
+                weights[output_layer] = materializeTensor(adjusted_weights, bits);
             }
             auto temp_ie_shape = input_error->getShape();
             if( temp_li_shape[0] != temp_ie_shape[0] || temp_li_shape[1] != temp_ie_shape[1] || temp_li_shape[2] != temp_ie_shape[2]) {
@@ -201,9 +201,9 @@ namespace microml {
             auto input_transposed = make_shared<TensorTransposeView>(last_input);
             auto weights_error = make_shared<TensorDotTensorView>(input_transposed, output_error);
             auto weights_error_at_learning_rate = make_shared<TensorMultiplyByScalarView>(weights_error,
-                                                                                          learning_state->learning_rate*mixed_precision_scale);
+                                                                                          learning_state->learningRate * mixed_precision_scale);
             auto adjusted_weights = make_shared<TensorMinusTensorView>(weights, weights_error_at_learning_rate);
-            weights = materialize_tensor(adjusted_weights, bits);
+            weights = materializeTensor(adjusted_weights, bits);
 
             last_input.reset();
             return input_error;
@@ -260,14 +260,14 @@ namespace microml {
                 // that are entirely 32-bit.
                 mixed_precision_scale = 0.1f;
             } else if(bits == 16) {
-                if( learning_state->learning_rate < 0.45) {
+                if(learning_state->learningRate < 0.45) {
                     // I made this number up. it seemed to work well for mixed-precision models.
                     mixed_precision_scale = 2.f;
                 } else {
                     mixed_precision_scale = 1.f;
                 }
             } else {
-                if( learning_state->learning_rate < 0.3) {
+                if(learning_state->learningRate < 0.3) {
                     // I made this number up. it seemed to work well for mixed-precision models.
                     mixed_precision_scale = 3.0f;
                 } else {
@@ -296,9 +296,9 @@ namespace microml {
             PROFILE_BLOCK(profileBlock);
 
             auto bias_error_at_learning_rate = std::make_shared<TensorMultiplyByScalarView>(output_error,
-                                                                                            learning_state->bias_learning_rate*mixed_precision_scale);
+                                                                                            learning_state->biasLearningRate * mixed_precision_scale);
             auto adjusted_bias = std::make_shared<TensorMinusTensorView>(bias, bias_error_at_learning_rate);
-            bias = materialize_tensor(adjusted_bias, bits);
+            bias = materializeTensor(adjusted_bias, bits);
 
             last_input.reset();
 //            auto adjusted_output = std::make_shared<TensorMinusTensorView>(output_error, adjusted_bias);
@@ -321,13 +321,13 @@ namespace microml {
     public:
         explicit SGDOptimizer(float learning_rate) {
             this->sgdLearningState = make_shared<MBGDLearningState>();
-            this->sgdLearningState->learning_rate = learning_rate;
-            this->sgdLearningState->bias_learning_rate = learning_rate * 0.1f;
+            this->sgdLearningState->learningRate = learning_rate;
+            this->sgdLearningState->biasLearningRate = learning_rate * 0.1f;
         }
         explicit SGDOptimizer(float learning_rate, float bias_learning_rate) {
             this->sgdLearningState = make_shared<MBGDLearningState>();
-            this->sgdLearningState->learning_rate = learning_rate;
-            this->sgdLearningState->bias_learning_rate = bias_learning_rate;
+            this->sgdLearningState->learningRate = learning_rate;
+            this->sgdLearningState->biasLearningRate = bias_learning_rate;
         }
 
         shared_ptr<NeuralNetworkFunction> createFullyConnectedNeurons(size_t input_size,

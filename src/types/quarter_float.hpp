@@ -139,6 +139,7 @@
 
 #define FLOAT_BIAS 127
 #define FLOAT_NAN 0b11111111110000000000000000000000
+#define FLOAT_NAN2 0b01111111110000000000000000000000
 #define FLOAT_INF 0b01111111100000000000000000000000
 #define FLOAT_NEG_INF 0b11111111100000000000000000000000
 #define QUARTER_NAN 0b11111111
@@ -155,7 +156,7 @@ namespace microml {
 
     typedef unsigned char quarter;
 
-    void print_bits(const quarter x) {
+    void printBits(const quarter x) {
         for (int i = 7; i >= 0; i--) {
             std::cout << ((x >> i) & 1);
             if (i == 7 || i == 3) std::cout << " ";
@@ -163,7 +164,7 @@ namespace microml {
         std::cout << std::endl;
     }
 
-    void print_bits(const uint32_t x) {
+    void printBits(const uint32_t x) {
         for (int i = 31; i >= 0; i--) {
             std::cout << ((x >> i) & 1);
             if (i == 31 || i == 23) std::cout << " ";
@@ -171,9 +172,9 @@ namespace microml {
         std::cout << std::endl;
     }
 
-    void print_bits(const float x) {
+    void printBits(const float x) {
         uint32_t b = *(uint32_t *) &x;
-        print_bits(b);
+        printBits(b);
     }
 
 
@@ -201,7 +202,7 @@ namespace microml {
 // This version avoids rounding to 0 and will change bias 0 to bias 1, because bias 0 would need
 // special handling to represent 1 and -1, which are important values in machine learning. You can look at the
 // other versions of this function at the bottom of this file.
-    quarter float_to_quarter(float original, int quarter_bias) {
+    quarter floatToQuarter(float original, int quarter_bias) {
         // This code looks crazy because I avoid branching (if statements) so the general case (happy path) is faster.
         // Convert the float to a datatype where we can easily do bit manipulation
         // avoid bias 0 because it would require special handling to represent 1 and -1
@@ -229,14 +230,14 @@ namespace microml {
         const uint32_t result_bits = (special_case_tiny) * 0b10000000 +
                                      (!special_case_tiny) * prepped_bits;
 
-        return (encoded_value == FLOAT_NAN) * QUARTER_NAN + (encoded_value == FLOAT_INF) * QUARTER_POS_INFINITY
+        return (encoded_value == FLOAT_NAN || encoded_value == FLOAT_NAN2) * QUARTER_NAN + (encoded_value == FLOAT_INF) * QUARTER_POS_INFINITY
                + (encoded_value == FLOAT_NEG_INF) * QUARTER_NEG_INFINITY +
-               ((encoded_value != FLOAT_NAN) && (encoded_value != FLOAT_INF) && (encoded_value != FLOAT_NEG_INF)) *
+               ((encoded_value != FLOAT_NAN && encoded_value != FLOAT_NAN2) && (encoded_value != FLOAT_INF) && (encoded_value != FLOAT_NEG_INF)) *
                result_bits;
     }
 
 
-    float quarter_to_float(quarter q, int quarter_bias) {
+    float quarterToFloat(quarter q, int quarter_bias) {
         // This code looks crazy because I avoid branching (if statements) so the general case (happy path) is faster.
         // avoid bias 0 because it would require special handling to represent 1 and -1
         const int bias = (quarter_bias == 0) + (quarter_bias != 0) * quarter_bias;
@@ -259,46 +260,43 @@ namespace microml {
         return distance_from_offset;
     }
 
-    quarter
-    quarter_multiply(quarter a, int a_bias, quarter b, int b_bias, int result_bias) {
-        const float af = quarter_to_float(a, a_bias);
-        const float bf = quarter_to_float(b, b_bias);
+    quarter quarterMultiply(quarter a, int a_bias, quarter b, int b_bias, int result_bias) {
+        const float af = quarterToFloat(a, a_bias);
+        const float bf = quarterToFloat(b, b_bias);
         const float result_float = af * bf;
-        return float_to_quarter(result_float, result_bias);
+        return floatToQuarter(result_float, result_bias);
     }
 
-    quarter
-    quarter_divide(quarter a, int a_bias, quarter b, int b_bias, int result_bias) {
-        const float af = quarter_to_float(a, a_bias);
-        const float bf = quarter_to_float(b, b_bias);
+    quarter quarterDivide(quarter a, int a_bias, quarter b, int b_bias, int result_bias) {
+        const float af = quarterToFloat(a, a_bias);
+        const float bf = quarterToFloat(b, b_bias);
         const float result_float = af / bf;
-        return float_to_quarter(result_float, result_bias);
+        return floatToQuarter(result_float, result_bias);
     }
 
-    quarter quarter_add(quarter a, int a_bias, quarter b, int b_bias, int result_bias) {
-        const float af = quarter_to_float(a, a_bias);
-        const float bf = quarter_to_float(b, b_bias);
+    quarter quarterAdd(quarter a, int a_bias, quarter b, int b_bias, int result_bias) {
+        const float af = quarterToFloat(a, a_bias);
+        const float bf = quarterToFloat(b, b_bias);
         const float result_float = af + bf;
-        return float_to_quarter(result_float, result_bias);
+        return floatToQuarter(result_float, result_bias);
     }
 
-    quarter
-    quarter_subtract(quarter a, int a_bias, quarter b, int b_bias, int result_bias) {
-        const float af = quarter_to_float(a, a_bias);
-        const float bf = quarter_to_float(b, b_bias);
+    quarter quarterSubtract(quarter a, int a_bias, quarter b, int b_bias, int result_bias) {
+        const float af = quarterToFloat(a, a_bias);
+        const float bf = quarterToFloat(b, b_bias);
         const float result_float = af - bf;
-        return float_to_quarter(result_float, result_bias);
+        return floatToQuarter(result_float, result_bias);
     }
 
-    float calculate_bias_range(int bias) {
-        const float min_for_bias = quarter_to_float(QUARTER_MIN, bias);
-        const float max_for_bias = quarter_to_float(QUARTER_MAX, bias);
+    float calculateBiasRange(int bias) {
+        const float min_for_bias = quarterToFloat(QUARTER_MIN, bias);
+        const float max_for_bias = quarterToFloat(QUARTER_MAX, bias);
         return std::abs(max_for_bias - min_for_bias);
     }
 
 // we're very, very approximate in this comparison, taking 1000x epsilon.
     template<typename T>
-    static bool roughly_equal(T f1, T f2) {
+    static bool roughlyEqual(T f1, T f2) {
         T abs_diff = std::fabs(f1 - f2);
         return (abs_diff <= std::numeric_limits<T>::epsilon() * 1000.0) || (abs_diff < std::numeric_limits<T>::min());
     }

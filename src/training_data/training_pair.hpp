@@ -44,8 +44,8 @@ namespace microml {
         }
 
         TrainingPair(const vector<float> &given, const vector<float> &expected) {
-            this->given.push_back(column_vector(given));
-            this->expected.push_back(column_vector(expected));
+            this->given.push_back(columnVector(given));
+            this->expected.push_back(columnVector(expected));
         }
 
         shared_ptr<BaseTensor> getFirstGiven() {

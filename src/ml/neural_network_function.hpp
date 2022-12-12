@@ -29,23 +29,23 @@ namespace microml {
         shared_ptr<BaseTensor> forward(const vector<shared_ptr<BaseTensor>> &input) override {
             // todo: throw error on wrong size input?
             PROFILE_BLOCK(profileBlock);
-            last_input = input[0];
-            return activationFunction->activate(last_input);
+            lastInput = input[0];
+            return activationFunction->activate(lastInput);
         }
 
         shared_ptr<BaseTensor> backward(const shared_ptr<BaseTensor> &output_error) override {
             PROFILE_BLOCK(profileBlock);
-            auto activation_derivative = activationFunction->derivative(last_input);
+            auto activation_derivative = activationFunction->derivative(lastInput);
             // this really threw me for a loop. I thought that this was supposed to be dot product, rather than
             // an element-wise-multiplication.
             auto base_output_error = std::make_shared<TensorMultiplyTensorView>(activation_derivative, output_error);
-            last_input = nullptr;
+            lastInput = nullptr;
             return base_output_error;
         }
 
     private:
         shared_ptr<ActivationFunction> activationFunction;
-        shared_ptr<BaseTensor> last_input;
+        shared_ptr<BaseTensor> lastInput;
     };
 
     class NeuralNetworkFlattenFunction : public NeuralNetworkFunction {
@@ -56,9 +56,9 @@ namespace microml {
                 throw exception("Cannot flatten multiple inputs at the same time. Please merge.");
             }
             const auto& last_input = input[0];
-            original_cols = last_input->column_count();
-            original_rows = last_input->row_count();
-            if (original_rows == 1) {
+            originalCols = last_input->columnCount();
+            originalRows = last_input->rowCount();
+            if (originalRows == 1) {
                 // This flatten function was added unnecessarily. We could throw an exception.
                 return last_input;
             }
@@ -67,16 +67,16 @@ namespace microml {
 
         shared_ptr<BaseTensor> backward(const shared_ptr<BaseTensor> &output_error) override {
             PROFILE_BLOCK(profileBlock);
-            if (original_rows == output_error->row_count() && original_cols == output_error->column_count()) {
+            if (originalRows == output_error->rowCount() && originalCols == output_error->columnCount()) {
                 // This flatten function was added unnecessarily. We could throw an exception.
                 return output_error;
             }
-            return make_shared<TensorReshapeView>(output_error, original_rows, original_cols);
+            return make_shared<TensorReshapeView>(output_error, originalRows, originalCols);
         }
 
     private:
-        size_t original_rows{};
-        size_t original_cols{};
+        size_t originalRows{};
+        size_t originalCols{};
     };
 }
 #endif //MICROML_NEURAL_NETWORK_FUNCTION_HPP

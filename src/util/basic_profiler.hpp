@@ -18,27 +18,27 @@ namespace microml {
             stringstream ss;
             ss << file  << ":" << func << ":" << line;
             this->label = ss.str();
-            block_entered();
+            blockEntered();
         }
         ~ProfileBlock() {
-            block_left();
+            blockLeft();
         }
 
-        void block_entered() {
-            start_time = chrono::high_resolution_clock::now();
+        void blockEntered() {
+            startTime = chrono::high_resolution_clock::now();
             cout << "||start " << label << "||" << endl;
         }
 
-        void block_left() {
+        void blockLeft() {
             thread_local map<string,chrono::microseconds> duration{};
-            auto stop_time = chrono::high_resolution_clock::now();
-            auto elapsed = chrono::duration_cast<chrono::microseconds>(stop_time - start_time);
+            auto stopTime = chrono::high_resolution_clock::now();
+            auto elapsed = chrono::duration_cast<chrono::microseconds>(stopTime - startTime);
             duration[label] += elapsed;
             cout << "||end " << label << " " << elapsed.count() << " ms (" << duration[label].count() << " ms)||" << endl;
         }
 
     private:
-        chrono::time_point<chrono::high_resolution_clock> start_time{};
+        chrono::time_point<chrono::high_resolution_clock> startTime{};
         string label;
     };
 

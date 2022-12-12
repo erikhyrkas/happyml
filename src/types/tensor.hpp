@@ -106,11 +106,11 @@ namespace microml {
 
     class BaseTensor : public enable_shared_from_this<BaseTensor> {
     public:
-        virtual size_t row_count() = 0;
+        virtual size_t rowCount() = 0;
 
-        virtual size_t column_count() = 0;
+        virtual size_t columnCount() = 0;
 
-        virtual size_t channel_count() = 0;
+        virtual size_t channelCount() = 0;
 
         virtual bool isMaterialized() {
             return false;
@@ -126,7 +126,7 @@ namespace microml {
         // fastest read is generally along columns because of how memory is organized,
         // but we can't do a parallel read if there's only one row.
         virtual bool readRowsInParallel() {
-            return (row_count() > 1);
+            return (rowCount() > 1);
         }
 
         virtual bool contains(const shared_ptr <BaseTensor> &other) {
@@ -134,38 +134,38 @@ namespace microml {
         }
 
         unsigned long size() {
-            return row_count() * column_count() * channel_count();
+            return rowCount() * columnCount() * channelCount();
         }
 
         unsigned long elements_per_channel() {
-            return row_count() * column_count();
+            return rowCount() * columnCount();
         }
 
-        virtual float get_val(size_t row, size_t column, size_t channel) = 0;
+        virtual float getValue(size_t row, size_t column, size_t channel) = 0;
 
         virtual vector <size_t> getShape() {
-            return {row_count(), column_count(), channel_count()};
+            return {rowCount(), columnCount(), channelCount()};
         }
 
-        float get_val(const unsigned long position_offset) {
-            const size_t cols = column_count();
-            const unsigned long matrix_size = cols * row_count();
+        float getValue(const unsigned long position_offset) {
+            const size_t cols = columnCount();
+            const unsigned long matrix_size = cols * rowCount();
             const size_t new_channel = position_offset / matrix_size;
             const unsigned long matrix_elements = position_offset % matrix_size;
             const size_t new_row = matrix_elements / cols;
             const size_t new_col = matrix_elements % cols;
-            return get_val(new_row, new_col, new_channel);
+            return getValue(new_row, new_col, new_channel);
         }
 
         double product() {
             double result = 1.0;
-            const size_t max_rows = row_count();
-            const size_t max_cols = column_count();
-            const size_t max_channels = channel_count();
+            const size_t max_rows = rowCount();
+            const size_t max_cols = columnCount();
+            const size_t max_channels = channelCount();
             for (size_t channel = 0; channel < max_channels; channel++) {
                 for (size_t row = 0; row < max_rows; row++) {
                     for (size_t col = 0; col < max_cols; col++) {
-                        result *= get_val(row, col, channel);
+                        result *= getValue(row, col, channel);
                     }
                 }
             }
@@ -174,13 +174,13 @@ namespace microml {
 
         double sum() {
             double result = 0.0;
-            const size_t max_rows = row_count();
-            const size_t max_cols = column_count();
-            const size_t max_channels = channel_count();
+            const size_t max_rows = rowCount();
+            const size_t max_cols = columnCount();
+            const size_t max_channels = channelCount();
             for (size_t channel = 0; channel < max_channels; channel++) {
                 for (size_t row = 0; row < max_rows; row++) {
                     for (size_t col = 0; col < max_cols; col++) {
-                        result += get_val(row, col, channel);
+                        result += getValue(row, col, channel);
                     }
                 }
             }
@@ -189,13 +189,13 @@ namespace microml {
 
         float max() {
             float result = -INFINITY;
-            const size_t max_rows = row_count();
-            const size_t max_cols = column_count();
-            const size_t max_channels = channel_count();
+            const size_t max_rows = rowCount();
+            const size_t max_cols = columnCount();
+            const size_t max_channels = channelCount();
             for (size_t channel = 0; channel < max_channels; channel++) {
                 for (size_t row = 0; row < max_rows; row++) {
                     for (size_t col = 0; col < max_cols; col++) {
-                        result = std::max(result, get_val(row, col, channel));
+                        result = std::max(result, getValue(row, col, channel));
                     }
                 }
             }
@@ -204,13 +204,13 @@ namespace microml {
 
         float min() {
             float result = INFINITY;
-            const size_t max_rows = row_count();
-            const size_t max_cols = column_count();
-            const size_t max_channels = channel_count();
+            const size_t max_rows = rowCount();
+            const size_t max_cols = columnCount();
+            const size_t max_channels = channelCount();
             for (size_t channel = 0; channel < max_channels; channel++) {
                 for (size_t row = 0; row < max_rows; row++) {
                     for (size_t col = 0; col < max_cols; col++) {
-                        result = std::min(result, get_val(row, col, channel));
+                        result = std::min(result, getValue(row, col, channel));
                     }
                 }
             }
@@ -220,13 +220,13 @@ namespace microml {
         pair<float, float> range() {
             float min_result = INFINITY;
             float max_result = -INFINITY;
-            const size_t max_rows = row_count();
-            const size_t max_cols = column_count();
-            const size_t max_channels = channel_count();
+            const size_t max_rows = rowCount();
+            const size_t max_cols = columnCount();
+            const size_t max_channels = channelCount();
             for (size_t channel = 0; channel < max_channels; channel++) {
                 for (size_t row = 0; row < max_rows; row++) {
                     for (size_t col = 0; col < max_cols; col++) {
-                        const auto val = get_val(row, col, channel);
+                        const auto val = getValue(row, col, channel);
                         min_result = std::min(min_result, val);
                         max_result = std::max(max_result, val);
                     }
@@ -235,69 +235,69 @@ namespace microml {
             return {min_result, max_result};
         }
 
-        size_t max_index(size_t channel, size_t row) {
+        size_t maxIndex(size_t channel, size_t row) {
             size_t result = 0;
-            float current_max = -INFINITY;
-            const size_t max_cols = column_count();
-            for (size_t col = 0; col < max_cols; col++) {
-                float next_val = get_val(row, col, channel);
-                if (next_val > current_max) {
-                    current_max = next_val;
+            float currentMax = -INFINITY;
+            const size_t maxCols = columnCount();
+            for (size_t col = 0; col < maxCols; col++) {
+                float nextVal = getValue(row, col, channel);
+                if (nextVal > currentMax) {
+                    currentMax = nextVal;
                     result = col;
                 }
             }
             return result;
         }
 
-        size_t min_index(size_t channel, size_t row) {
+        size_t minIndex(size_t channel, size_t row) {
             size_t result = 0;
-            float current_min = INFINITY;
-            const size_t max_cols = column_count();
-            for (size_t col = 0; col < max_cols; col++) {
-                float next_val = get_val(row, col, channel);
-                if (next_val < current_min) {
-                    current_min = next_val;
+            float currentMin = INFINITY;
+            const size_t maxCols = columnCount();
+            for (size_t col = 0; col < maxCols; col++) {
+                float nextVal = getValue(row, col, channel);
+                if (nextVal < currentMin) {
+                    currentMin = nextVal;
                     result = col;
                 }
             }
             return result;
         }
 
-        vector <size_t> max_indices(size_t channel, size_t row) {
+        vector<size_t> max_indices(size_t channel, size_t row) {
             vector<size_t> result;
             float current_max = -INFINITY;
-            const size_t max_cols = column_count();
-            for (size_t col = 0; col < max_cols; col++) {
-                float next_val = get_val(row, col, channel);
-                if (next_val > current_max) {
-                    current_max = next_val;
+            const size_t maxCols = columnCount();
+            for (size_t col = 0; col < maxCols; col++) {
+                float nextVal = getValue(row, col, channel);
+                if (nextVal > current_max) {
+                    current_max = nextVal;
                     result.clear();
                     result.push_back(col);
-                } else if (next_val == current_max) {
+                } else if (nextVal == current_max) {
                     result.push_back(col);
                 }
             }
             return result;
         }
 
-        vector <size_t> min_indices(size_t channel, size_t row) {
+        vector <size_t> minIndices(size_t channel, size_t row) {
             vector<size_t> result;
-            float current_min = INFINITY;
-            const size_t max_cols = column_count();
-            for (size_t col = 0; col < max_cols; col++) {
-                float next_val = get_val(row, col, channel);
-                if (next_val < current_min) {
-                    current_min = next_val;
+            float currentMin = INFINITY;
+            const size_t maxCols = columnCount();
+            for (size_t col = 0; col < maxCols; col++) {
+                float nextVal = getValue(row, col, channel);
+                if (nextVal < currentMin) {
+                    currentMin = nextVal;
                     result.clear();
                     result.push_back(col);
-                } else if (next_val == current_min) {
+                } else if (nextVal == currentMin) {
                     result.push_back(col);
                 }
             }
             return result;
         }
 
-        float arithmetic_mean() {
+        float arithmeticMean() {
             // This is your basic average.
             //
             // Calculating a mean is something every teenager does. You sum up the numbers and divide by
@@ -311,14 +311,14 @@ namespace microml {
             //   average = average + (val[offset] - average)/(offset+1)
             double average = 0;
             double index = 0;
-            const size_t rows = row_count();
-            const size_t cols = column_count();
-            const size_t max_channels = channel_count();
-            for (size_t channel = 0; channel < max_channels; channel++) {
+            const size_t rows = rowCount();
+            const size_t cols = columnCount();
+            const size_t maxChannels = channelCount();
+            for (size_t channel = 0; channel < maxChannels; channel++) {
                 for (size_t row = 0; row < rows; row++) {
                     for (size_t col = 0; col < cols; col++) {
                         index++;
-                        const double val = get_val(row, col, channel);
+                        const double val = getValue(row, col, channel);
                         average += (val - average) / index;
                     }
                 }
@@ -327,7 +327,7 @@ namespace microml {
             return (float) average;
         }
 
-        float geometric_mean() {
+        float geometricMean() {
             // Geometric mean is found by multiplying your list of numbers and then taking the n-th root of it, where
             // n is how many numbers we have.
             //
@@ -384,13 +384,13 @@ namespace microml {
             // and clearly don't fully understand.
             double sum = 0;
             double index = 0;
-            const size_t rows = row_count();
-            const size_t cols = column_count();
-            const size_t max_channels = channel_count();
-            for (size_t channel = 0; channel < max_channels; channel++) {
+            const size_t rows = rowCount();
+            const size_t cols = columnCount();
+            const size_t maxChannels = channelCount();
+            for (size_t channel = 0; channel < maxChannels; channel++) {
                 for (size_t row = 0; row < rows; row++) {
                     for (size_t col = 0; col < cols; col++) {
-                        const double val = ((double) get_val(row, col, channel));
+                        const double val = ((double) getValue(row, col, channel));
                         index++;
                         if (val <= 0) {
                             return NAN;
@@ -408,13 +408,13 @@ namespace microml {
         }
 
         void print(ostream &out) {
-            if (channel_count() > 1) {
+            if (channelCount() > 1) {
                 out << "[";
             }
             out << setprecision(3) << fixed << endl;
-            const size_t rows = row_count();
-            const size_t cols = column_count();
-            const size_t max_channels = channel_count();
+            const size_t rows = rowCount();
+            const size_t cols = columnCount();
+            const size_t max_channels = channelCount();
             for (size_t channel = 0; channel < max_channels; channel++) {
                 for (size_t row = 0; row < rows; row++) {
                     if (rows > 1) {
@@ -424,7 +424,7 @@ namespace microml {
                     }
                     string delim;
                     for (size_t col = 0; col < cols; col++) {
-                        out << delim << get_val(row, col, channel);
+                        out << delim << getValue(row, col, channel);
                         delim = ", ";
                     }
                     if (rows > 1) {
@@ -434,7 +434,7 @@ namespace microml {
                     }
                 }
             }
-            if (channel_count() > 1) {
+            if (channelCount() > 1) {
                 out << "]";
             }
         }
@@ -445,8 +445,7 @@ namespace microml {
     public:
         virtual void assign(const shared_ptr <BaseTensor> &other) = 0;
 
-        virtual void
-        assign(const shared_ptr <BaseTensor> &other, const shared_ptr <BaseAssignableTensor> &working_memory) = 0;
+        virtual void assign(const shared_ptr <BaseTensor> &other, const shared_ptr <BaseAssignableTensor> &working_memory) = 0;
 
         bool isMaterialized() override {
             return true;
@@ -467,26 +466,26 @@ namespace microml {
         }
 
         void printMaterializationPlan() override {
-            cout << "TensorFromFunction{" << row_count() << "," << column_count() << "," << channel_count() << "}";
+            cout << "TensorFromFunction{" << rowCount() << "," << columnCount() << "," << channelCount() << "}";
         }
 
         bool contains(const shared_ptr <BaseTensor> &other) override {
             return other == shared_from_this();
         }
 
-        size_t row_count() override {
+        size_t rowCount() override {
             return rows;
         }
 
-        size_t column_count() override {
+        size_t columnCount() override {
             return cols;
         }
 
-        size_t channel_count() override {
+        size_t channelCount() override {
             return channels;
         }
 
-        float get_val(size_t row, size_t column, size_t channel) override {
+        float getValue(size_t row, size_t column, size_t channel) override {
             return tensorFunction(row, column, channel);
         }
 
@@ -532,36 +531,36 @@ namespace microml {
         }
 
         TensorFromRandom(size_t rows, size_t cols, size_t channels, int bias) :
-                TensorFromRandom(rows, cols, channels, quarter_to_float(QUARTER_MIN, bias),
-                                 quarter_to_float(QUARTER_MAX, bias), 42) {
+                TensorFromRandom(rows, cols, channels, quarterToFloat(QUARTER_MIN, bias),
+                                 quarterToFloat(QUARTER_MAX, bias), 42) {
         }
 
         TensorFromRandom(size_t rows, size_t cols, size_t channels, int bias, uint32_t seed) :
-                TensorFromRandom(rows, cols, channels, quarter_to_float(QUARTER_MIN, bias),
-                                 quarter_to_float(QUARTER_MAX, bias), seed) {
+                TensorFromRandom(rows, cols, channels, quarterToFloat(QUARTER_MIN, bias),
+                                 quarterToFloat(QUARTER_MAX, bias), seed) {
         }
 
         void printMaterializationPlan() override {
-            cout << "TensorFromRandom{" << row_count() << "," << column_count() << "," << channel_count() << "}";
+            cout << "TensorFromRandom{" << rowCount() << "," << columnCount() << "," << channelCount() << "}";
         }
 
         bool contains(const shared_ptr <BaseTensor> &other) override {
             return other == shared_from_this();
         }
 
-        size_t row_count() override {
+        size_t rowCount() override {
             return rows;
         }
 
-        size_t column_count() override {
+        size_t columnCount() override {
             return cols;
         }
 
-        size_t channel_count() override {
+        size_t channelCount() override {
             return channels;
         }
 
-        float get_val(size_t row, size_t column, size_t channel) override {
+        float getValue(size_t row, size_t column, size_t channel) override {
             // nothing magical here... I'm finding an offset, expanding it by a massive amount relative to the range,
             // then forcing it into a range. I picked a few constants that I felt gave a reasonable looking distribution.
             const double offset = (((double) channel * channel_size) + ((double) row * (double) cols) +
@@ -605,26 +604,26 @@ namespace microml {
         }
 
         void printMaterializationPlan() override {
-            cout << "UniformTensor{" << row_count() << "," << column_count() << "," << channel_count() << "}";
+            cout << "UniformTensor{" << rowCount() << "," << columnCount() << "," << channelCount() << "}";
         }
 
         bool contains(const shared_ptr <BaseTensor> &other) override {
             return other == shared_from_this();
         }
 
-        size_t row_count() override {
+        size_t rowCount() override {
             return rows;
         }
 
-        size_t column_count() override {
+        size_t columnCount() override {
             return cols;
         }
 
-        size_t channel_count() override {
+        size_t channelCount() override {
             return channels;
         }
 
-        float get_val(size_t row, size_t column, size_t channel) override {
+        float getValue(size_t row, size_t column, size_t channel) override {
             return value;
         }
 
@@ -644,26 +643,26 @@ namespace microml {
         }
 
         void printMaterializationPlan() override {
-            cout << "IdentityTensor{" << row_count() << "," << column_count() << "," << channel_count() << "}";
+            cout << "IdentityTensor{" << rowCount() << "," << columnCount() << "," << channelCount() << "}";
         }
 
         bool contains(const shared_ptr <BaseTensor> &other) override {
             return other == shared_from_this();
         }
 
-        size_t row_count() override {
+        size_t rowCount() override {
             return rows;
         }
 
-        size_t column_count() override {
+        size_t columnCount() override {
             return cols;
         }
 
-        size_t channel_count() override {
+        size_t channelCount() override {
             return channels;
         }
 
-        float get_val(size_t row, size_t column, size_t channel) override {
+        float getValue(size_t row, size_t column, size_t channel) override {
             return row == column;
         }
 
@@ -687,16 +686,16 @@ namespace microml {
             return child->readRowsInParallel();
         }
 
-        size_t row_count() override {
-            return child->row_count();
+        size_t rowCount() override {
+            return child->rowCount();
         }
 
-        size_t column_count() override {
-            return child->column_count();
+        size_t columnCount() override {
+            return child->columnCount();
         }
 
-        size_t channel_count() override {
-            return child->channel_count();
+        size_t channelCount() override {
+            return child->channelCount();
         }
 
     protected:
@@ -716,8 +715,8 @@ namespace microml {
             return other == shared_from_this() || child1->contains(other) || child2->contains(other);
         }
 
-        size_t channel_count() override {
-            return child1->channel_count();
+        size_t channelCount() override {
+            return child1->channelCount();
         }
 
     protected:

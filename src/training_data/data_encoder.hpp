@@ -18,7 +18,7 @@ using namespace std;
 
 namespace microml {
 
-    string string_trim(string text) {
+    string stringTrim(string text) {
         // we intentionally copy the string so we can trim it
         text.erase(text.begin(), std::find_if(text.begin(), text.end(), [](unsigned char ch) {
             return !std::isspace(ch);
@@ -29,7 +29,7 @@ namespace microml {
         return text;
     }
 
-    float string_to_float(const string &text) {
+    float stringToFloat(const string &text) {
         float value = 0.0;
         auto [ptr, error_check] = std::from_chars(text.data(), text.data() + text.size(), value);
         if (error_check != std::errc()) {
@@ -62,14 +62,14 @@ namespace microml {
                 for (size_t row = 0; row < rows; row++) {
                     result[channel][row].resize(columns);
                     for (size_t column = 0; column < columns; column++) {
-                        string word = trim ? string_trim(words[offset]) : words[offset];
+                        string word = trim ? stringTrim(words[offset]) : words[offset];
                         // we store the value as percentage of 255.
-                        result[channel][row][column] = string_to_float(word) / 255.f;
+                        result[channel][row][column] = stringToFloat(word) / 255.f;
                         offset++;
                     }
                 }
             }
-            return pixel_tensor(result);
+            return pixelTensor(result);
         }
     };
 
@@ -85,8 +85,8 @@ namespace microml {
                 for (size_t row = 0; row < rows; row++) {
                     result[channel][row].resize(columns);
                     for (size_t column = 0; column < columns; column++) {
-                        string word = trim ? string_trim(words[offset]) : words[offset];
-                        result[channel][row][column] = string_to_float(word);
+                        string word = trim ? stringTrim(words[offset]) : words[offset];
+                        result[channel][row][column] = stringToFloat(word);
                         offset++;
                     }
                 }
@@ -119,7 +119,7 @@ namespace microml {
             for(const auto& word : words) {
                 size_t column_offset;
                 if( trim ) {
-                    column_offset = categoryMapping.at(string_trim(word));
+                    column_offset = categoryMapping.at(stringTrim(word));
                 } else {
                     column_offset = categoryMapping.at(word);
                 }

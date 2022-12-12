@@ -43,7 +43,7 @@ namespace microml {
 
         std::shared_ptr<BaseTensor> derivative(const std::shared_ptr<BaseTensor> &input) override {
             // sent all 1s to output in the same shape as input
-            return std::make_shared<UniformTensor>(input->row_count(), input->column_count(), input->channel_count(),
+            return std::make_shared<UniformTensor>(input->rowCount(), input->columnCount(), input->channelCount(),
                                                    1.0f);
         }
 
@@ -96,13 +96,13 @@ namespace microml {
         std::shared_ptr<BaseTensor> activate(const std::shared_ptr<BaseTensor> &input) override {
             float largest_value = input->max();
             double sum = 0.0;
-            if (input->row_count() == 1 && input->column_count() > 0) {
-                for (size_t col = 0; col < input->column_count(); col++) {
-                    sum += std::exp(input->get_val(0, col, 0) - largest_value);
+            if (input->rowCount() == 1 && input->columnCount() > 0) {
+                for (size_t col = 0; col < input->columnCount(); col++) {
+                    sum += std::exp(input->getValue(0, col, 0) - largest_value);
                 }
-            } else if (input->column_count() == 1 && input->row_count() > 0) {
-                for (size_t row = 0; row < input->row_count(); row++) {
-                    sum += std::exp(input->get_val(row, 0, 0) - largest_value);
+            } else if (input->columnCount() == 1 && input->rowCount() > 0) {
+                for (size_t row = 0; row < input->rowCount(); row++) {
+                    sum += std::exp(input->getValue(row, 0, 0) - largest_value);
                 }
             } else {
                 throw std::exception("Softmax supports input with a single row or single column.");
@@ -118,8 +118,8 @@ namespace microml {
             // fixme: broken. producing the wrong shape output. (The output shape is too small.)
             std::shared_ptr<BaseTensor> softmax_out = activate(input);
             auto negative = std::make_shared<TensorMultiplyByScalarView>(softmax_out, -1.0f);
-            auto reshape = std::make_shared<TensorReshapeView>(softmax_out, softmax_out->column_count(),
-                                                               softmax_out->row_count());
+            auto reshape = std::make_shared<TensorReshapeView>(softmax_out, softmax_out->columnCount(),
+                                                               softmax_out->rowCount());
             auto dot_product_view = std::make_shared<TensorDotTensorView>(negative, reshape);
             auto diag = std::make_shared<TensorDiagonalView>(softmax_out);
             cout << "softmax: work in progress... fix me." <<endl;

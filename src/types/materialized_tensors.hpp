@@ -17,7 +17,7 @@
 using namespace std;
 
 namespace microml {
-    void wait_for_futures(queue <future<void>> &futures) {
+    void waitForFutures(queue < future<void>> &futures) {
         while (!futures.empty()) {
             futures.front().wait();
             futures.pop();
@@ -41,9 +41,9 @@ namespace microml {
         }
 
         explicit FullTensor(const shared_ptr<BaseTensor> &original)
-                : FullTensor(original->row_count(),
-                             original->column_count(),
-                             original->channel_count()) {
+                : FullTensor(original->rowCount(),
+                             original->columnCount(),
+                             original->channelCount()) {
             do_assign(original);
         }
 
@@ -110,43 +110,43 @@ namespace microml {
             }
         }
 
-        size_t channel_count() override {
+        size_t channelCount() override {
             return data.size();
         }
 
-        size_t row_count() override {
+        size_t rowCount() override {
             if (data.empty()) {
                 return 0;
             }
             return data[0].size();
         }
 
-        size_t column_count() override {
+        size_t columnCount() override {
             if (data.empty() || data[0].empty()) {
                 return 0;
             }
             return data[0][0].size();
         }
 
-        float get_val(size_t row, size_t column, size_t channel) override {
+        float getValue(size_t row, size_t column, size_t channel) override {
             return data.at(channel).at(row).at(column);
         }
 
         void printMaterializationPlan() override {
-            cout << "FullTensor{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}";
+            cout << "FullTensor{" << rowCount() << "," << columnCount() << "," << channelCount() << "}";
         }
     private:
         vector <vector<vector < float>>> data;
 
         void do_assign(const shared_ptr<BaseTensor> &other) {
-            if (other->row_count() != row_count() && other->channel_count() != channel_count() &&
-                other->column_count() != column_count()) {
+            if (other->rowCount() != rowCount() && other->channelCount() != channelCount() &&
+                    other->columnCount() != columnCount()) {
                 throw exception("A tensor cannot be assigned from another tensor with a different shape");
             }
 
-            const size_t columns = column_count();
-            const size_t rows = row_count();
-            const size_t channels = channel_count();
+            const size_t columns = columnCount();
+            const size_t rows = rowCount();
+            const size_t channels = channelCount();
             if (rows <= 1 && columns < 10000) {
                 for (size_t channel = 0; channel < channels; channel++) {
                     for (size_t row = 0; row < rows; row++) {
@@ -170,7 +170,7 @@ namespace microml {
                                                     channel);
                             futures.push(std::move(next_async));
                             if (futures.size() >= wait_amount) {
-                                wait_for_futures(futures);
+                                waitForFutures(futures);
                             }
                         }
                     }
@@ -181,12 +181,12 @@ namespace microml {
                                                     channel);
                             futures.push(std::move(next_async));
                             if (futures.size() >= wait_amount) {
-                                wait_for_futures(futures);
+                                waitForFutures(futures);
                             }
                         }
                     }
                 }
-                wait_for_futures(futures);
+                waitForFutures(futures);
             }
         }
 
@@ -197,7 +197,7 @@ namespace microml {
                                     size_t max_cols,
                                     size_t channel) {
             for (size_t col = 0; col < max_cols; col++) {
-                dest->set_val(row, col, channel, source->get_val(row, col, channel));
+                dest->set_val(row, col, channel, source->getValue(row, col, channel));
             }
         }
 
@@ -207,7 +207,7 @@ namespace microml {
                                     size_t col,
                                     size_t channel) {
             for (size_t row = 0; row < max_rows; row++) {
-                dest->set_val(row, col, channel, source->get_val(row, col, channel));
+                dest->set_val(row, col, channel, source->getValue(row, col, channel));
             }
         }
 
@@ -238,9 +238,9 @@ namespace microml {
         }
 
         explicit PixelTensor(const shared_ptr<BaseTensor> &original)
-                : PixelTensor(original->row_count(),
-                              original->column_count(),
-                              original->channel_count()) {
+                : PixelTensor(original->rowCount(),
+                              original->columnCount(),
+                              original->channelCount()) {
             do_assign(original);
         }
 
@@ -309,44 +309,44 @@ namespace microml {
             }
         }
 
-        size_t channel_count() override {
+        size_t channelCount() override {
             return data.size();
         }
 
-        size_t row_count() override {
+        size_t rowCount() override {
             if (data.empty()) {
                 return 0;
             }
             return data[0].size();
         }
 
-        size_t column_count() override {
+        size_t columnCount() override {
             if (data.empty() || data[0].empty()) {
                 return 0;
             }
             return data[0][0].size();
         }
 
-        float get_val(size_t row, size_t column, size_t channel) override {
+        float getValue(size_t row, size_t column, size_t channel) override {
             return ((float) data.at(channel).at(row).at(column)) / 255.f;
         }
         void printMaterializationPlan() override {
-            cout << "PixelTensor{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}";
+            cout << "PixelTensor{" << rowCount() << "," << columnCount() << "," << channelCount() << "}";
         }
     private:
         vector <vector<vector < uint8_t>>>
         data;
 
         void do_assign(const shared_ptr<BaseTensor> &other) {
-            if (other->row_count() != row_count() && other->channel_count() != channel_count() &&
-                other->column_count() != column_count()) {
+            if (other->rowCount() != rowCount() && other->channelCount() != channelCount() &&
+                    other->columnCount() != columnCount()) {
                 throw exception(
                         "A tensor cannot be assigned from another tensor with a different shape");
             }
 
-            const size_t columns = column_count();
-            const size_t rows = row_count();
-            const size_t channels = channel_count();
+            const size_t columns = columnCount();
+            const size_t rows = rowCount();
+            const size_t channels = channelCount();
             if (rows <= 1 && columns < 10000) {
                 for (size_t channel = 0; channel < channels; channel++) {
                     for (size_t row = 0; row < rows; row++) {
@@ -370,7 +370,7 @@ namespace microml {
                                                     channel);
                             futures.push(std::move(next_async));
                             if (futures.size() >= wait_amount) {
-                                wait_for_futures(futures);
+                                waitForFutures(futures);
                             }
                         }
                     }
@@ -381,12 +381,12 @@ namespace microml {
                                                     channel);
                             futures.push(std::move(next_async));
                             if (futures.size() >= wait_amount) {
-                                wait_for_futures(futures);
+                                waitForFutures(futures);
                             }
                         }
                     }
                 }
-                wait_for_futures(futures);
+                waitForFutures(futures);
             }
         }
 
@@ -396,7 +396,7 @@ namespace microml {
                                     size_t max_cols,
                                     size_t channel) {
             for (size_t col = 0; col < max_cols; col++) {
-                dest->set_val(row, col, channel, source->get_val(row, col, channel));
+                dest->set_val(row, col, channel, source->getValue(row, col, channel));
             }
         }
 
@@ -406,7 +406,7 @@ namespace microml {
                                     size_t col,
                                     size_t channel) {
             for (size_t row = 0; row < max_rows; row++) {
-                dest->set_val(row, col, channel, source->get_val(row, col, channel));
+                dest->set_val(row, col, channel, source->getValue(row, col, channel));
             }
         }
 
@@ -429,9 +429,9 @@ namespace microml {
         }
 
         explicit QuarterTensor(const shared_ptr<BaseTensor> &original, const int bias)
-                : QuarterTensor(original->row_count(),
-                                original->column_count(),
-                                original->channel_count(),
+                : QuarterTensor(original->rowCount(),
+                                original->columnCount(),
+                                original->channelCount(),
                                 bias) {
             do_assign(original);
         }
@@ -455,26 +455,26 @@ namespace microml {
             }
         }
 
-        size_t channel_count() override {
+        size_t channelCount() override {
             return data.size();
         }
 
-        size_t row_count() override {
+        size_t rowCount() override {
             if (data.empty()) {
                 return 0;
             }
             return data[0].size();
         }
 
-        size_t column_count() override {
+        size_t columnCount() override {
             if (data.empty() || data[0].empty()) {
                 return 0;
             }
             return data[0][0].size();
         }
 
-        float get_val(size_t row, size_t column, size_t channel) override {
-            return quarter_to_float(data.at(channel).at(row).at(column), bias);
+        float getValue(size_t row, size_t column, size_t channel) override {
+            return quarterToFloat(data.at(channel).at(row).at(column), bias);
         }
 
 
@@ -520,22 +520,22 @@ namespace microml {
         }
 
         void printMaterializationPlan() override {
-            cout << "QuarterTensor{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}";
+            cout << "QuarterTensor{" << rowCount() << "," << columnCount() << "," << channelCount() << "}";
         }
     private:
         vector<vector<vector<quarter>>> data;
         int bias;
 
         void do_assign(const shared_ptr<BaseTensor> &other) {
-            if (other->row_count() != row_count() && other->channel_count() != channel_count() &&
-                other->column_count() != column_count()) {
+            if (other->rowCount() != rowCount() && other->channelCount() != channelCount() &&
+                    other->columnCount() != columnCount()) {
                 throw exception(
                         "A tensor cannot be assigned from another tensor with a different shape");
             }
 
-            const size_t columns = column_count();
-            const size_t rows = row_count();
-            const size_t channels = channel_count();
+            const size_t columns = columnCount();
+            const size_t rows = rowCount();
+            const size_t channels = channelCount();
             if (rows <= 1 && columns < 10000) {
                 for (size_t channel = 0; channel < channels; channel++) {
                     for (size_t row = 0; row < rows; row++) {
@@ -559,7 +559,7 @@ namespace microml {
                                                     channel);
                             futures.push(std::move(next_async));
                             if (futures.size() >= wait_amount) {
-                                wait_for_futures(futures);
+                                waitForFutures(futures);
                             }
                         }
                     }
@@ -570,12 +570,12 @@ namespace microml {
                                                     channel);
                             futures.push(std::move(next_async));
                             if (futures.size() >= wait_amount) {
-                                wait_for_futures(futures);
+                                waitForFutures(futures);
                             }
                         }
                     }
                 }
-                wait_for_futures(futures);
+                waitForFutures(futures);
             }
         }
 
@@ -587,7 +587,7 @@ namespace microml {
                                     size_t channel) {
 //            cout << "pop by col" <<endl;
             for (size_t col = 0; col < max_cols; col++) {
-                dest->set_val(row, col, channel, source->get_val(row, col, channel));
+                dest->set_val(row, col, channel, source->getValue(row, col, channel));
             }
         }
 
@@ -598,7 +598,7 @@ namespace microml {
                                     size_t channel) {
 //            cout << "pop by row" <<endl;
             for (size_t row = 0; row < max_rows; row++) {
-                const float source_val = source->get_val(row, col, channel);
+                const float source_val = source->getValue(row, col, channel);
                 dest->set_val(row, col, channel,source_val);
 //                const float dest_val = dest->get_val(row, col, channel);
 //                cout << "conversion: "<< source_val << " -> " << dest_val << endl;
@@ -619,7 +619,7 @@ namespace microml {
 //                // where I think this is problematic is over 96000 individual numbers in that original
 //                // 8000 epochs each being 0.01 off adds up to significant error.
 //            }
-            data.at(channel).at(row).at(column) = float_to_quarter(val, bias);
+            data.at(channel).at(row).at(column) = floatToQuarter(val, bias);
         }
     };
 
@@ -637,9 +637,9 @@ namespace microml {
         }
 
         explicit HalfTensor(const shared_ptr<BaseTensor> &original)
-                : HalfTensor(original->row_count(),
-                             original->column_count(),
-                             original->channel_count()) {
+                : HalfTensor(original->rowCount(),
+                             original->columnCount(),
+                             original->channelCount()) {
             do_assign(original);
         }
 
@@ -662,26 +662,26 @@ namespace microml {
             }
         }
 
-        size_t channel_count() override {
+        size_t channelCount() override {
             return data.size();
         }
 
-        size_t row_count() override {
+        size_t rowCount() override {
             if (data.empty()) {
                 return 0;
             }
             return data[0].size();
         }
 
-        size_t column_count() override {
+        size_t columnCount() override {
             if (data.empty() || data[0].empty()) {
                 return 0;
             }
             return data[0][0].size();
         }
 
-        float get_val(size_t row, size_t column, size_t channel) override {
-            return half_to_float(data.at(channel).at(row).at(column));
+        float getValue(size_t row, size_t column, size_t channel) override {
+            return halfToFloat(data.at(channel).at(row).at(column));
         }
 
         // We're potentially dealing with huge amounts of memory, and we don't want to
@@ -720,22 +720,22 @@ namespace microml {
         }
 
         void printMaterializationPlan() override {
-            cout << "HalfTensor{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}";
+            cout << "HalfTensor{" << rowCount() << "," << columnCount() << "," << channelCount() << "}";
         }
 
     private:
         vector<vector<vector<half>>> data;
 
         void do_assign(const shared_ptr<BaseTensor> &other) {
-            if (other->row_count() != row_count() && other->channel_count() != channel_count() &&
-                other->column_count() != column_count()) {
+            if (other->rowCount() != rowCount() && other->channelCount() != channelCount() &&
+                    other->columnCount() != columnCount()) {
                 throw exception(
                         "A tensor cannot be assigned from another tensor with a different shape");
             }
 
-            const size_t columns = column_count();
-            const size_t rows = row_count();
-            const size_t channels = channel_count();
+            const size_t columns = columnCount();
+            const size_t rows = rowCount();
+            const size_t channels = channelCount();
             if (rows <= 1 && columns < 10000) {
                 for (size_t channel = 0; channel < channels; channel++) {
                     for (size_t row = 0; row < rows; row++) {
@@ -760,7 +760,7 @@ namespace microml {
                                                     channel);
                             futures.push(std::move(next_async));
                             if (futures.size() >= wait_amount) {
-                                wait_for_futures(futures);
+                                waitForFutures(futures);
                             }
                         }
                     }
@@ -771,12 +771,12 @@ namespace microml {
                                                     channel);
                             futures.push(std::move(next_async));
                             if (futures.size() >= wait_amount) {
-                                wait_for_futures(futures);
+                                waitForFutures(futures);
                             }
                         }
                     }
                 }
-                wait_for_futures(futures);
+                waitForFutures(futures);
             }
         }
 
@@ -788,7 +788,7 @@ namespace microml {
                                     size_t channel) {
 //            cout << "pop by col" <<endl;
             for (size_t col = 0; col < max_cols; col++) {
-                dest->set_val(row, col, channel, source->get_val(row, col, channel));
+                dest->set_val(row, col, channel, source->getValue(row, col, channel));
             }
         }
 
@@ -799,7 +799,7 @@ namespace microml {
                                     size_t channel) {
 //            cout << "pop by row" <<endl;
             for (size_t row = 0; row < max_rows; row++) {
-                const float source_val = source->get_val(row, col, channel);
+                const float source_val = source->getValue(row, col, channel);
                 dest->set_val(row, col, channel,source_val);
 //                const float dest_val = dest->get_val(row, col, channel);
 //                cout << "conversion: "<< source_val << " -> " << dest_val << endl;
@@ -820,7 +820,7 @@ namespace microml {
 //                // where I think this is problematic is over 96000 individual numbers in that original
 //                // 8000 epochs each being 0.01 off adds up to significant error.
 //            }
-            data.at(channel).at(row).at(column) = float_to_half(val);
+            data.at(channel).at(row).at(column) = floatToHalf(val);
         }
     };
 }

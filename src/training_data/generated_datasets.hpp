@@ -14,8 +14,8 @@ namespace microml {
     class TestAdditionGeneratedDataSource : public TrainingDataSet {
     public:
         explicit TestAdditionGeneratedDataSource(size_t dataset_size) {
-            this->dataset_size = dataset_size;
-            this->current_offset = 0;
+            this->datasetSize = dataset_size;
+            this->currentOffset = 0;
             for (int i = 0; i < dataset_size; i++) {
                 std::vector<float> given{(float) (i), (float) (i + 1)};
                 std::vector<std::shared_ptr<BaseTensor>> next_given{std::make_shared<FullTensor>(given)};
@@ -27,8 +27,8 @@ namespace microml {
             }
         }
 
-        size_t record_count() override {
-            return dataset_size;
+        size_t recordCount() override {
+            return datasetSize;
         }
 
         void shuffle() override {
@@ -42,25 +42,25 @@ namespace microml {
             // todo: likely can be optimized
             std::random_device rd;
             std::mt19937 g(rd());
-            const size_t end = dataset_size - end_offset;
+            const size_t end = datasetSize - end_offset;
             // weird that I had to cast it down to an unsigned long
             // feels like a bug waiting to happen with a large data set.
             std::shuffle(pairs.begin() + (unsigned long) start_offset, pairs.end() - (unsigned long) end, g);
         }
 
         void restart() override {
-            current_offset = 0;
+            currentOffset = 0;
         }
 
         // populate a batch vector of vectors, reusing the structure. This is to save the time we'd otherwise use
         // to allocate.
-        std::vector<std::shared_ptr<TrainingPair>> next_batch(size_t batch_size) override {
+        std::vector<std::shared_ptr<TrainingPair>> nextBatch(size_t batch_size) override {
             std::vector<std::shared_ptr<TrainingPair>> result;
             for (size_t batch_offset = 0; batch_offset < batch_size; batch_offset++) {
-                if (current_offset >= dataset_size) {
+                if (currentOffset >= datasetSize) {
                     break;
                 }
-                std::shared_ptr<TrainingPair> next = next_record();
+                std::shared_ptr<TrainingPair> next = nextRecord();
                 if (next) {
                     result.push_back(next);
                 }
@@ -68,13 +68,13 @@ namespace microml {
             return result;
         }
 
-        std::shared_ptr<TrainingPair> next_record() override {
-            if (current_offset >= dataset_size) {
+        std::shared_ptr<TrainingPair> nextRecord() override {
+            if (currentOffset >= datasetSize) {
                 return nullptr;
             }
-            std::shared_ptr<TrainingPair> result = pairs.at(current_offset);
+            std::shared_ptr<TrainingPair> result = pairs.at(currentOffset);
             if (result) {
-                current_offset++;
+                currentOffset++;
             }
             return result;
         }
@@ -88,9 +88,9 @@ namespace microml {
         }
 
     private:
-        size_t dataset_size;
+        size_t datasetSize;
         std::vector<std::shared_ptr<TrainingPair>> pairs;
-        size_t current_offset;
+        size_t currentOffset;
     };
 }
 #endif //MICROML_GENERATED_DATASETS_HPP

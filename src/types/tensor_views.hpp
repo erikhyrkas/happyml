@@ -26,12 +26,12 @@ namespace microml {
         }
 
         void printMaterializationPlan() override {
-            cout << "TensorAddScalarView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            cout << "TensorAddScalarView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
             child->printMaterializationPlan();
         }
 
-        float get_val(size_t row, size_t column, size_t channel) override {
-            return child->get_val(row, column, channel) + adjustment;
+        float getValue(size_t row, size_t column, size_t channel) override {
+            return child->getValue(row, column, channel) + adjustment;
         }
 
         [[nodiscard]] float get_adjustment() const {
@@ -51,12 +51,12 @@ namespace microml {
         }
 
         void printMaterializationPlan() override {
-            cout << "TensorMultiplyByScalarView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            cout << "TensorMultiplyByScalarView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
             child->printMaterializationPlan();
         }
 
-        float get_val(size_t row, size_t column, size_t channel) override {
-            return scale * child->get_val(row, column, channel);
+        float getValue(size_t row, size_t column, size_t channel) override {
+            return scale * child->getValue(row, column, channel);
         }
 
         [[nodiscard]] float get_scale() const {
@@ -76,12 +76,12 @@ namespace microml {
         }
 
         void printMaterializationPlan() override {
-            cout << "TensorValueTransformView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            cout << "TensorValueTransformView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
             child->printMaterializationPlan();
         }
 
-        float get_val(size_t row, size_t column, size_t channel) override {
-            return transformFunction(child->get_val(row, column, channel));
+        float getValue(size_t row, size_t column, size_t channel) override {
+            return transformFunction(child->getValue(row, column, channel));
         }
 
     private:
@@ -99,12 +99,12 @@ namespace microml {
         }
 
         void printMaterializationPlan() override {
-            cout << "TensorValueTransform2View{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            cout << "TensorValueTransform2View{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
             child->printMaterializationPlan();
         }
 
-        float get_val(size_t row, size_t column, size_t channel) override {
-            return transformFunction(child->get_val(row, column, channel), constants);
+        float getValue(size_t row, size_t column, size_t channel) override {
+            return transformFunction(child->getValue(row, column, channel), constants);
         }
 
     private:
@@ -127,24 +127,24 @@ namespace microml {
         }
 
         void printMaterializationPlan() override {
-            cout << "TensorReshapeView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            cout << "TensorReshapeView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
             child->printMaterializationPlan();
         }
 
-        size_t row_count() override {
+        size_t rowCount() override {
             return rows;
         }
 
-        size_t column_count() override {
+        size_t columnCount() override {
             return columns;
         }
 
-        float get_val(size_t row, size_t column, size_t channel) override {
+        float getValue(size_t row, size_t column, size_t channel) override {
             const unsigned long position_offset = (row * columns) + column;
-            const size_t child_col_count = child->column_count();
+            const size_t child_col_count = child->columnCount();
             const size_t new_row = position_offset / child_col_count;
             const size_t new_col = position_offset % child_col_count;
-            return child->get_val(new_row, new_col, channel);
+            return child->getValue(new_row, new_col, channel);
         }
 
 
@@ -162,19 +162,19 @@ namespace microml {
         }
 
         void printMaterializationPlan() override {
-            cout << "TensorFlattenToRowView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            cout << "TensorFlattenToRowView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
             child->printMaterializationPlan();
         }
 
-        size_t row_count() override {
+        size_t rowCount() override {
             return 1;
         }
 
-        size_t column_count() override {
+        size_t columnCount() override {
             return columns;
         }
 
-        size_t channel_count() override {
+        size_t channelCount() override {
             return 1;
         }
 
@@ -182,11 +182,11 @@ namespace microml {
             return false;
         }
 
-        float get_val(size_t row, size_t column, size_t channel) override {
+        float getValue(size_t row, size_t column, size_t channel) override {
             if (row != 0 || channel != 0) {
                 throw exception("Row Vector has only a single row and channel.");
             }
-            return child->get_val(column);
+            return child->getValue(column);
         }
 
 
@@ -203,19 +203,19 @@ namespace microml {
         }
 
         void printMaterializationPlan() override {
-            cout << "TensorFlattenToColumnView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            cout << "TensorFlattenToColumnView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
             child->printMaterializationPlan();
         }
 
-        size_t row_count() override {
+        size_t rowCount() override {
             return rows;
         }
 
-        size_t column_count() override {
+        size_t columnCount() override {
             return 1;
         }
 
-        size_t channel_count() override {
+        size_t channelCount() override {
             return 1;
         }
 
@@ -223,11 +223,11 @@ namespace microml {
             return true;
         }
 
-        float get_val(size_t row, size_t column, size_t channel) override {
+        float getValue(size_t row, size_t column, size_t channel) override {
             if (column != 0 || channel != 0) {
                 throw exception("Column Vector has only a single column and channel.");
             }
-            return child->get_val(row);
+            return child->getValue(row);
         }
 
 
@@ -241,31 +241,31 @@ namespace microml {
         }
 
         void printMaterializationPlan() override {
-            cout << "TensorTransposeView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            cout << "TensorTransposeView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
             child->printMaterializationPlan();
         }
 
-        size_t row_count() override {
-            return child->column_count();
+        size_t rowCount() override {
+            return child->columnCount();
         }
 
-        size_t column_count() override {
-            return child->row_count();
+        size_t columnCount() override {
+            return child->rowCount();
         }
 
-        size_t channel_count() override {
-            return child->channel_count();
+        size_t channelCount() override {
+            return child->channelCount();
         }
 
         bool readRowsInParallel() override {
             return !child->readRowsInParallel();
         }
 
-        float get_val(size_t row, size_t column, size_t channel) override {
+        float getValue(size_t row, size_t column, size_t channel) override {
             // making it obvious that we intend to swap column and row. Compiler will optimize this out.
             const size_t swapped_row = column;
             const size_t swapped_col = row;
-            return child->get_val(swapped_row, swapped_col, channel);
+            return child->getValue(swapped_row, swapped_col, channel);
         }
     };
 
@@ -292,21 +292,21 @@ namespace microml {
         TensorDiagonalView(const shared_ptr <BaseTensor> &tensor, size_t row_offset) : BaseTensorUnaryOperatorView(
                 tensor) {
             this->row_offset = row_offset;
-            this->is_1d = tensor->row_count() == 1;
+            this->is_1d = tensor->rowCount() == 1;
             if(!is_1d) {
                 // we only have as many columns as there were rows
-                this->columns = tensor->row_count() - row_offset;
+                this->columns = tensor->rowCount() - row_offset;
                 // we either have 0 or 1 result row
-                this->rows = row_offset < tensor->row_count();
+                this->rows = row_offset < tensor->rowCount();
             } else {
-                this->columns = tensor->column_count() - row_offset;
+                this->columns = tensor->columnCount() - row_offset;
                 this->rows = this->columns;
             }
 
         }
 
         void printMaterializationPlan() override {
-            cout << "TensorDiagonalView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            cout << "TensorDiagonalView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
             child->printMaterializationPlan();
         }
 
@@ -314,11 +314,11 @@ namespace microml {
                 : TensorDiagonalView(tensor, 0) {
         }
 
-        size_t row_count() override {
+        size_t rowCount() override {
             return rows;
         }
 
-        size_t column_count() override {
+        size_t columnCount() override {
             return columns;
         }
 
@@ -326,15 +326,15 @@ namespace microml {
             return false;
         }
 
-        float get_val(size_t row, size_t column, size_t channel) override {
+        float getValue(size_t row, size_t column, size_t channel) override {
             if( is_1d) {
                 if( row + row_offset == column) {
-                    child->get_val(0, column, channel);
+                    child->getValue(0, column, channel);
                 }
                 return 0.f;
             }
             // we aren't bounds checking, so the caller better make sure that row_count > 0
-            return child->get_val(column + row_offset, column, channel);
+            return child->getValue(column + row_offset, column, channel);
         }
 
     private:
@@ -349,12 +349,12 @@ namespace microml {
     public:
         explicit TensorNoOpView(const shared_ptr <BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {}
 
-        float get_val(size_t row, size_t column, size_t channel) override {
-            return child->get_val(row, column, channel);
+        float getValue(size_t row, size_t column, size_t channel) override {
+            return child->getValue(row, column, channel);
         }
 
         void printMaterializationPlan() override {
-            cout << "TensorNoOpView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            cout << "TensorNoOpView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
             child->printMaterializationPlan();
         }
 
@@ -365,39 +365,39 @@ namespace microml {
     public:
         TensorDotTensorView(const shared_ptr <BaseTensor> &tensor1,
                             const shared_ptr <BaseTensor> &tensor2) : BaseTensorBinaryOperatorView(tensor1, tensor2) {
-            if (tensor1->column_count() != tensor2->row_count()) {
-                cout << "[" << tensor1->row_count() << ", " << tensor1->column_count() << ", " << tensor1->channel_count() << "] dot [";
-                cout << tensor2->row_count() << ", " << tensor2->column_count() << ", " << tensor2->channel_count() << "]" << endl;
+            if (tensor1->columnCount() != tensor2->rowCount()) {
+                cout << "[" << tensor1->rowCount() << ", " << tensor1->columnCount() << ", " << tensor1->channelCount() << "] dot [";
+                cout << tensor2->rowCount() << ", " << tensor2->columnCount() << ", " << tensor2->channelCount() << "]" << endl;
                 throw exception("Dot product tensor1.cols must match tensor2.rows in length");
             }
-            if (tensor1->channel_count() != tensor2->channel_count()) {
+            if (tensor1->channelCount() != tensor2->channelCount()) {
                 throw exception("Dot product tensor1.channels must match tensor2.channels in length");
             }
         }
 
         void printMaterializationPlan() override {
-            cout << "TensorDotTensorView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->(";
+            cout << "TensorDotTensorView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->(";
             child1->printMaterializationPlan();
             cout << ") + (";
             child2->printMaterializationPlan();
             cout << ")";
         }
 
-        size_t row_count() override {
-            return child1->row_count();
+        size_t rowCount() override {
+            return child1->rowCount();
         }
 
-        size_t column_count() override {
-            return child2->column_count();
+        size_t columnCount() override {
+            return child2->columnCount();
         }
 
-        float get_val(size_t row, size_t column, size_t channel) override {
+        float getValue(size_t row, size_t column, size_t channel) override {
 //        cout << "getting val: " << row << ", " << column << endl;
             // TODO: I think I should switch to #pragma omp for
             float val = 0;
-            for (size_t t1_col = 0; t1_col < child1->column_count(); t1_col++) {
+            for (size_t t1_col = 0; t1_col < child1->columnCount(); t1_col++) {
 //            cout << "... + "<< child1->get_val(row, t1_col, channel) <<" (" << row << ", " << t1_col << ") * " << child2->get_val(t1_col, column, channel) << "( " << t1_col << ", " << column << ")" << endl;
-                val += child1->get_val(row, t1_col, channel) * child2->get_val(t1_col, column, channel);
+                val += child1->getValue(row, t1_col, channel) * child2->getValue(t1_col, column, channel);
             }
             return val;
         }
@@ -408,37 +408,37 @@ namespace microml {
         TensorMultiplyTensorView(const shared_ptr <BaseTensor> &tensor1,
                                  const shared_ptr <BaseTensor> &tensor2) : BaseTensorBinaryOperatorView(tensor1,
                                                                                                         tensor2) {
-            if (tensor1->column_count() != tensor2->column_count() || tensor1->row_count() != tensor2->row_count()) {
-                cout << "[" << tensor1->row_count() << ", " << tensor1->column_count() << ", " << tensor1->channel_count() << "] * [";
-                cout << tensor2->row_count() << ", " << tensor2->column_count() << ", " << tensor2->channel_count() << "]" << endl;
+            if (tensor1->columnCount() != tensor2->columnCount() || tensor1->rowCount() != tensor2->rowCount()) {
+                cout << "[" << tensor1->rowCount() << ", " << tensor1->columnCount() << ", " << tensor1->channelCount() << "] * [";
+                cout << tensor2->rowCount() << ", " << tensor2->columnCount() << ", " << tensor2->channelCount() << "]" << endl;
                 throw exception("Multiply cols and rows much match in length");
             }
-            if (tensor1->channel_count() != tensor2->channel_count()) {
-                cout << "[" << tensor1->row_count() << ", " << tensor1->column_count() << ", " << tensor1->channel_count() << "] * [";
-                cout << tensor2->row_count() << ", " << tensor2->column_count() << ", " << tensor2->channel_count() << "]" << endl;
+            if (tensor1->channelCount() != tensor2->channelCount()) {
+                cout << "[" << tensor1->rowCount() << ", " << tensor1->columnCount() << ", " << tensor1->channelCount() << "] * [";
+                cout << tensor2->rowCount() << ", " << tensor2->columnCount() << ", " << tensor2->channelCount() << "]" << endl;
                 throw exception("Multiply product tensor1.channels must match tensor2.channels in length");
             }
         }
 
         void printMaterializationPlan() override {
-            cout << "TensorMultiplyTensorView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->(";
+            cout << "TensorMultiplyTensorView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->(";
             child1->printMaterializationPlan();
             cout << ") + (";
             child2->printMaterializationPlan();
             cout << ")";
         }
 
-        size_t row_count() override {
-            return child1->row_count();
+        size_t rowCount() override {
+            return child1->rowCount();
         }
 
-        size_t column_count() override {
-            return child1->column_count();
+        size_t columnCount() override {
+            return child1->columnCount();
         }
 
-        float get_val(size_t row, size_t column, size_t channel) override {
+        float getValue(size_t row, size_t column, size_t channel) override {
 //        cout << "getting val: " << row << ", " << column << endl;
-            return child1->get_val(row, column, channel) * child2->get_val(row, column, channel);
+            return child1->getValue(row, column, channel) * child2->getValue(row, column, channel);
         }
     };
 
@@ -446,32 +446,32 @@ namespace microml {
     public:
         TensorAddTensorView(const shared_ptr <BaseTensor> &tensor1,
                             const shared_ptr <BaseTensor> &tensor2) : BaseTensorBinaryOperatorView(tensor1, tensor2) {
-            if (tensor1->channel_count() != tensor2->channel_count() || tensor1->row_count() != tensor2->row_count() ||
-                tensor1->column_count() != tensor2->column_count()) {
-                cout << "[" << tensor1->row_count() << ", " << tensor1->column_count() << ", " << tensor1->channel_count() << "] + [";
-                cout << tensor2->row_count() << ", " << tensor2->column_count() << ", " << tensor2->channel_count() << "]" << endl;
+            if (tensor1->channelCount() != tensor2->channelCount() || tensor1->rowCount() != tensor2->rowCount() ||
+                    tensor1->columnCount() != tensor2->columnCount()) {
+                cout << "[" << tensor1->rowCount() << ", " << tensor1->columnCount() << ", " << tensor1->channelCount() << "] + [";
+                cout << tensor2->rowCount() << ", " << tensor2->columnCount() << ", " << tensor2->channelCount() << "]" << endl;
                 throw exception("You can only add two tensors of the same dimensions together.");
             }
         }
 
         void printMaterializationPlan() override {
-            cout << "TensorAddTensorView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->(";
+            cout << "TensorAddTensorView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->(";
             child1->printMaterializationPlan();
             cout << ") + (";
             child2->printMaterializationPlan();
             cout << ")";
         }
 
-        size_t row_count() override {
-            return child1->row_count();
+        size_t rowCount() override {
+            return child1->rowCount();
         }
 
-        size_t column_count() override {
-            return child1->column_count();
+        size_t columnCount() override {
+            return child1->columnCount();
         }
 
-        float get_val(size_t row, size_t column, size_t channel) override {
-            return child1->get_val(row, column, channel) + child2->get_val(row, column, channel);
+        float getValue(size_t row, size_t column, size_t channel) override {
+            return child1->getValue(row, column, channel) + child2->getValue(row, column, channel);
         }
     };
 
@@ -479,32 +479,32 @@ namespace microml {
     public:
         TensorMinusTensorView(const shared_ptr <BaseTensor> &tensor1,
                               const shared_ptr <BaseTensor> &tensor2) : BaseTensorBinaryOperatorView(tensor1, tensor2) {
-            if (tensor1->channel_count() != tensor2->channel_count() || tensor1->row_count() != tensor2->row_count() ||
-                tensor1->column_count() != tensor2->column_count()) {
-                cout << "[" << tensor1->row_count() << ", " << tensor1->column_count() << ", " << tensor1->channel_count() << "] - [";
-                cout << tensor2->row_count() << ", " << tensor2->column_count() << ", " << tensor2->channel_count() << "]" << endl;
+            if (tensor1->channelCount() != tensor2->channelCount() || tensor1->rowCount() != tensor2->rowCount() ||
+                    tensor1->columnCount() != tensor2->columnCount()) {
+                cout << "[" << tensor1->rowCount() << ", " << tensor1->columnCount() << ", " << tensor1->channelCount() << "] - [";
+                cout << tensor2->rowCount() << ", " << tensor2->columnCount() << ", " << tensor2->channelCount() << "]" << endl;
                 throw exception("You can only add two tensors of the same dimensions together.");
             }
         }
 
         void printMaterializationPlan() override {
-            cout << "TensorMinusTensorView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->(";
+            cout << "TensorMinusTensorView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->(";
             child1->printMaterializationPlan();
             cout << ") + (";
             child2->printMaterializationPlan();
             cout << ")";
         }
 
-        size_t row_count() override {
-            return child1->row_count();
+        size_t rowCount() override {
+            return child1->rowCount();
         }
 
-        size_t column_count() override {
-            return child1->column_count();
+        size_t columnCount() override {
+            return child1->columnCount();
         }
 
-        float get_val(size_t row, size_t column, size_t channel) override {
-            return child1->get_val(row, column, channel) - child2->get_val(row, column, channel);
+        float getValue(size_t row, size_t column, size_t channel) override {
+            return child1->getValue(row, column, channel) - child2->getValue(row, column, channel);
         }
     };
 
@@ -515,13 +515,13 @@ namespace microml {
             this->power = power;
         }
 
-        float get_val(size_t row, size_t column, size_t channel) override {
-            const float val = child->get_val(row, column, channel);
+        float getValue(size_t row, size_t column, size_t channel) override {
+            const float val = child->getValue(row, column, channel);
             return powf(val, power);
         }
 
         void printMaterializationPlan() override {
-            cout << "TensorMinusTensorView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            cout << "TensorMinusTensorView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
             child->printMaterializationPlan();
         }
     private:
@@ -533,11 +533,11 @@ namespace microml {
         explicit TensorLogView(const shared_ptr <BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
         }
         void printMaterializationPlan() override {
-            cout << "TensorLogView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            cout << "TensorLogView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
             child->printMaterializationPlan();
         }
-        float get_val(size_t row, size_t column, size_t channel) override {
-            const float val = child->get_val(row, column, channel);
+        float getValue(size_t row, size_t column, size_t channel) override {
+            const float val = child->getValue(row, column, channel);
             return log(val);
         }
 
@@ -549,11 +549,11 @@ namespace microml {
         explicit TensorLog2View(const shared_ptr <BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
         }
         void printMaterializationPlan() override {
-            cout << "TensorLog2View{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            cout << "TensorLog2View{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
             child->printMaterializationPlan();
         }
-        float get_val(size_t row, size_t column, size_t channel) override {
-            const float val = child->get_val(row, column, channel);
+        float getValue(size_t row, size_t column, size_t channel) override {
+            const float val = child->getValue(row, column, channel);
             return log2(val);
         }
 
@@ -563,15 +563,15 @@ namespace microml {
     class TensorRotate180View : public BaseTensorUnaryOperatorView {
     public:
         explicit TensorRotate180View(const shared_ptr<BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
-            row_base_value = child->row_count() - 1;
-            column_base_value = child->column_count() - 1;
+            row_base_value = child->rowCount() - 1;
+            column_base_value = child->columnCount() - 1;
         }
         void printMaterializationPlan() override {
-            cout << "TensorRotate180View{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            cout << "TensorRotate180View{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
             child->printMaterializationPlan();
         }
-        float get_val(size_t row, size_t column, size_t channel) override {
-            const float val = child->get_val(row_base_value - row, column_base_value - column, channel);
+        float getValue(size_t row, size_t column, size_t channel) override {
+            const float val = child->getValue(row_base_value - row, column_base_value - column, channel);
             return val;
         }
     private:
@@ -584,11 +584,11 @@ namespace microml {
         explicit TensorRoundedView(const shared_ptr<BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
         }
         void printMaterializationPlan() override {
-            cout << "TensorRoundedView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            cout << "TensorRoundedView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
             child->printMaterializationPlan();
         }
-        float get_val(size_t row, size_t column, size_t channel) override {
-            const float val = child->get_val(row, column, channel);
+        float getValue(size_t row, size_t column, size_t channel) override {
+            const float val = child->getValue(row, column, channel);
             return round(val);
         }
 
@@ -605,23 +605,23 @@ namespace microml {
             this->number_of_channels = number_of_channels;
         }
         void printMaterializationPlan() override {
-            cout << "TensorToChannelView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            cout << "TensorToChannelView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
             child->printMaterializationPlan();
         }
 
-        size_t channel_count() override {
+        size_t channelCount() override {
             return number_of_channels;
         }
 
-        float get_val(size_t row, size_t column, size_t channel) override {
+        float getValue(size_t row, size_t column, size_t channel) override {
             if(channel != data_channel_index) {
                 return 0.f;
             }
             float result = 0.f;
-            const size_t channels = child->channel_count();
+            const size_t channels = child->channelCount();
             // TODO: I think I should switch to #pragma omp for
             for( size_t next_channel = 0; next_channel < channels; next_channel++) {
-                result += child->get_val(row, column, next_channel);
+                result += child->getValue(row, column, next_channel);
             }
             return result;
         }
@@ -635,7 +635,7 @@ namespace microml {
         explicit TensorSumChannelsView(const shared_ptr<BaseTensor> &tensor) : TensorToChannelView(tensor, 0, 1) {
         }
         void printMaterializationPlan() override {
-            cout << "TensorSumChannelsView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            cout << "TensorSumChannelsView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
             child->printMaterializationPlan();
         }
     };
@@ -646,20 +646,20 @@ namespace microml {
             this->channel_offset = channel_offset;
         }
         void printMaterializationPlan() override {
-            cout << "TensorChannelToChannel{" << row_count() << "," <<column_count()<<",1}->";
+            cout << "TensorChannelToChannel{" << rowCount() << "," << columnCount() << ",1}->";
             child->printMaterializationPlan();
         }
 
-        size_t channel_count() override {
+        size_t channelCount() override {
             return 1;
         }
 
-        float get_val(size_t row, size_t column, size_t channel) override {
+        float getValue(size_t row, size_t column, size_t channel) override {
             if(channel != 0) {
                 return 0.f;
             }
 
-            const float val = child->get_val(row, column, channel+channel_offset);
+            const float val = child->getValue(row, column, channel + channel_offset);
             return val;
         }
     private:
@@ -680,30 +680,30 @@ namespace microml {
         }
 
         void printMaterializationPlan() override {
-            cout << "TensorZeroPaddedView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->";
+            cout << "TensorZeroPaddedView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
             child->printMaterializationPlan();
         }
 
-        float get_val(size_t row, size_t column, size_t channel) override {
+        float getValue(size_t row, size_t column, size_t channel) override {
             const auto adjusted_row = row - top_padding;
             const auto adjusted_col = column - left_padding;
             // todo: for performance, we can potentially store rowcount as a constant when we make this object.
-            if(row < top_padding || adjusted_row >= child->row_count() ||
-               column < left_padding || adjusted_col >= child->column_count()) {
+            if(row < top_padding || adjusted_row >= child->rowCount() ||
+               column < left_padding || adjusted_col >= child->columnCount()) {
                 return 0.f;
             }
-            const float val = child->get_val(adjusted_row, adjusted_col, channel);
+            const float val = child->getValue(adjusted_row, adjusted_col, channel);
             return val;
         }
 
-        size_t row_count() override {
+        size_t rowCount() override {
             const size_t padding = right_padding + left_padding;
-            return child->row_count()+padding;
+            return child->rowCount() + padding;
         }
 
-        size_t column_count() override {
+        size_t columnCount() override {
             const size_t padding = bottom_padding + top_padding;
-            return child->column_count()+padding;
+            return child->columnCount() + padding;
         }
     private:
         size_t top_padding;
@@ -716,44 +716,44 @@ namespace microml {
     public:
         TensorValidCrossCorrelation2dView(const shared_ptr<BaseTensor> &tensor, const shared_ptr<BaseTensor> &kernel)
                 : BaseTensorBinaryOperatorView(tensor, kernel) {
-            rows = child1->row_count() - child2->row_count() + 1;
-            cols = child1->column_count() - child2->column_count() + 1;
+            rows = child1->rowCount() - child2->rowCount() + 1;
+            cols = child1->columnCount() - child2->columnCount() + 1;
         }
 
         void printMaterializationPlan() override {
-            cout << "TensorValidCrossCorrelation2dView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->(";
+            cout << "TensorValidCrossCorrelation2dView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->(";
             child1->printMaterializationPlan();
             cout << ") + (";
             child2->printMaterializationPlan();
             cout << ")";
         }
 
-        float get_val(size_t row, size_t column, size_t channel) override {
+        float getValue(size_t row, size_t column, size_t channel) override {
             // iterate over filter
-            const auto kernel_rows = child2->row_count();
-            const auto kernel_cols = child2->column_count();
+            const auto kernel_rows = child2->rowCount();
+            const auto kernel_cols = child2->columnCount();
             float result = 0.f;
             // TODO: I think I should switch to #pragma omp for collapse(2)
             for(size_t kernel_row = 0; kernel_row < kernel_rows; kernel_row++) {
                 for(size_t kernel_col = 0; kernel_col < kernel_cols; kernel_col++) {
-                    const auto filter_val = child2->get_val(kernel_row, kernel_col, channel);
-                    const auto tensor_val = child1->get_val(row + kernel_row, column + kernel_col, channel);
+                    const auto filter_val = child2->getValue(kernel_row, kernel_col, channel);
+                    const auto tensor_val = child1->getValue(row + kernel_row, column + kernel_col, channel);
                     result += filter_val + tensor_val;
                 }
             }
             return result;
         }
 
-        size_t row_count() override {
+        size_t rowCount() override {
             return rows;
         }
 
-        size_t column_count() override {
+        size_t columnCount() override {
             return cols;
         }
 
-        size_t channel_count() override {
-            return child1->channel_count();
+        size_t channelCount() override {
+            return child1->channelCount();
         }
     private:
         size_t rows;
@@ -772,15 +772,15 @@ namespace microml {
         TensorFullCrossCorrelation2dView(const shared_ptr<BaseTensor> &tensor, const shared_ptr<BaseTensor> &kernel)
                 : TensorValidCrossCorrelation2dView(
                 make_shared<TensorZeroPaddedView>(tensor,
-                                                  (size_t)round(((double)kernel->row_count() - 1) / 2.0),
-                                                  (size_t)round(((double)kernel->row_count() - 1) / 2.0),
-                                                  (size_t)round(((double)kernel->column_count() - 1) / 2.0),
-                                                  (size_t)round(((double)kernel->column_count() - 1) / 2.0)),
+                                                  (size_t)round(((double) kernel->rowCount() - 1) / 2.0),
+                                                  (size_t)round(((double) kernel->rowCount() - 1) / 2.0),
+                                                  (size_t)round(((double) kernel->columnCount() - 1) / 2.0),
+                                                  (size_t)round(((double) kernel->columnCount() - 1) / 2.0)),
                 kernel) {
         }
 
         void printMaterializationPlan() override {
-            cout << "TensorFullCrossCorrelation2dView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->(";
+            cout << "TensorFullCrossCorrelation2dView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->(";
             child1->printMaterializationPlan();
             cout << ") + (";
             child2->printMaterializationPlan();
@@ -799,7 +799,7 @@ namespace microml {
         }
 
         void printMaterializationPlan() override {
-            cout << "TensorFullConvolve2dView{" << row_count() << "," <<column_count()<<","<<channel_count()<<"}->(";
+            cout << "TensorFullConvolve2dView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->(";
             child1->printMaterializationPlan();
             cout << ") + (";
             child2->printMaterializationPlan();
