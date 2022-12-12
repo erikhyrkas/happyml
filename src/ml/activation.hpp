@@ -94,20 +94,20 @@ namespace microml {
     // usually represents a probability between 0 and 1 of each element in a classifications of multiple possibilities
     class SoftmaxActivationFunction : public ActivationFunction {
         std::shared_ptr<BaseTensor> activate(const std::shared_ptr<BaseTensor> &input) override {
-            float largest_value = input->max();
+            float largestValue = input->max();
             double sum = 0.0;
             if (input->rowCount() == 1 && input->columnCount() > 0) {
                 for (size_t col = 0; col < input->columnCount(); col++) {
-                    sum += std::exp(input->getValue(0, col, 0) - largest_value);
+                    sum += std::exp(input->getValue(0, col, 0) - largestValue);
                 }
             } else if (input->columnCount() == 1 && input->rowCount() > 0) {
                 for (size_t row = 0; row < input->rowCount(); row++) {
-                    sum += std::exp(input->getValue(row, 0, 0) - largest_value);
+                    sum += std::exp(input->getValue(row, 0, 0) - largestValue);
                 }
             } else {
                 throw std::exception("Softmax supports input with a single row or single column.");
             }
-            std::vector<double> constants{largest_value, sum};
+            std::vector<double> constants{largestValue, sum};
             auto transformFunction = [](float original, std::vector<double> constants) {
                 return ((double) std::expf(original - (float) constants[0])) / constants[1];
             };
@@ -116,14 +116,14 @@ namespace microml {
 
         std::shared_ptr<BaseTensor> derivative(const std::shared_ptr<BaseTensor> &input) override {
             // fixme: broken. producing the wrong shape output. (The output shape is too small.)
-            std::shared_ptr<BaseTensor> softmax_out = activate(input);
-            auto negative = std::make_shared<TensorMultiplyByScalarView>(softmax_out, -1.0f);
-            auto reshape = std::make_shared<TensorReshapeView>(softmax_out, softmax_out->columnCount(),
-                                                               softmax_out->rowCount());
+            std::shared_ptr<BaseTensor> softmaxOut = activate(input);
+            auto negative = std::make_shared<TensorMultiplyByScalarView>(softmaxOut, -1.0f);
+            auto reshape = std::make_shared<TensorReshapeView>(softmaxOut, softmaxOut->columnCount(),
+                                                               softmaxOut->rowCount());
             auto dot_product_view = std::make_shared<TensorDotTensorView>(negative, reshape);
-            auto diag = std::make_shared<TensorDiagonalView>(softmax_out);
+            auto diag = std::make_shared<TensorDiagonalView>(softmaxOut);
             cout << "softmax: work in progress... fix me." <<endl;
-            softmax_out->print();
+            softmaxOut->print();
             diag->print();
             dot_product_view->print();
             return std::make_shared<TensorAddTensorView>(dot_product_view, diag);
@@ -179,8 +179,8 @@ namespace microml {
             PROFILE_BLOCK(profileBlock);
             auto transformFunction = [](float original) {
                 // tanh(x) = 2 * sigmoid(2x) - 1
-                const float two_x = (2 * original);
-                auto sigmoid = 1.0f / (1.0f + std::exp(-1.0f * two_x));
+                const float twoX = (2 * original);
+                auto sigmoid = 1.0f / (1.0f + std::exp(-1.0f * twoX));
 //                auto sigmoid = 0.5f * ((original / (1.0f + std::abs(original))) + 1); //super approx
                 return (2 * sigmoid) - 1;
             };

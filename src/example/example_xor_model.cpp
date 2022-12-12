@@ -29,10 +29,10 @@ void usingTanh() {
     neuralNetwork->train(xorDataSource, 500, 1, true);
 
     cout << fixed << setprecision(2);
-    cout << "0 xor 0 = 0 Prediction: " << neuralNetwork->predict_scalar(columnVector({0.f, 0.f})) << endl;
-    cout << "0 xor 1 = 1 Prediction: " << neuralNetwork->predict_scalar(columnVector({0.f, 1.f})) << endl;
-    cout << "1 xor 0 = 1 Prediction: " << neuralNetwork->predict_scalar(columnVector({1.f, 0.f})) << endl;
-    cout << "1 xor 1 = 0 Prediction: " << neuralNetwork->predict_scalar(columnVector({1.f, 1.f})) << endl;
+    cout << "0 xor 0 = 0 Prediction: " << neuralNetwork->predictScalar(columnVector({0.f, 0.f})) << endl;
+    cout << "0 xor 1 = 1 Prediction: " << neuralNetwork->predictScalar(columnVector({0.f, 1.f})) << endl;
+    cout << "1 xor 0 = 1 Prediction: " << neuralNetwork->predictScalar(columnVector({1.f, 0.f})) << endl;
+    cout << "1 xor 1 = 0 Prediction: " << neuralNetwork->predictScalar(columnVector({1.f, 1.f})) << endl;
 }
 
 void usingSigmoid() {
@@ -57,10 +57,10 @@ void usingSigmoid() {
     neuralNetwork->train(xorDataSource, 1000, 1, true);
 
     cout << fixed << setprecision(2);
-    cout << "0 xor 0 = 0 Prediction: " << neuralNetwork->predict_scalar(columnVector({0.f, 0.f})) << endl;
-    cout << "0 xor 1 = 1 Prediction: " << neuralNetwork->predict_scalar(columnVector({0.f, 1.f})) << endl;
-    cout << "1 xor 0 = 1 Prediction: " << neuralNetwork->predict_scalar(columnVector({1.f, 0.f})) << endl;
-    cout << "1 xor 1 = 0 Prediction: " << neuralNetwork->predict_scalar(columnVector({1.f, 1.f})) << endl;
+    cout << "0 xor 0 = 0 Prediction: " << neuralNetwork->predictScalar(columnVector({0.f, 0.f})) << endl;
+    cout << "0 xor 1 = 1 Prediction: " << neuralNetwork->predictScalar(columnVector({0.f, 1.f})) << endl;
+    cout << "1 xor 0 = 1 Prediction: " << neuralNetwork->predictScalar(columnVector({1.f, 0.f})) << endl;
+    cout << "1 xor 1 = 0 Prediction: " << neuralNetwork->predictScalar(columnVector({1.f, 1.f})) << endl;
 }
 
 
@@ -81,10 +81,10 @@ void usingRelu() {
     neuralNetwork->train(xorDataSource, 1000, 1, true);
 
     cout << fixed << setprecision(2);
-    cout << "0 xor 0 = 0 Prediction: " << neuralNetwork->predict_scalar(columnVector({0.f, 0.f})) << endl;
-    cout << "0 xor 1 = 1 Prediction: " << neuralNetwork->predict_scalar(columnVector({0.f, 1.f})) << endl;
-    cout << "1 xor 0 = 1 Prediction: " << neuralNetwork->predict_scalar(columnVector({1.f, 0.f})) << endl;
-    cout << "1 xor 1 = 0 Prediction: " << neuralNetwork->predict_scalar(columnVector({1.f, 1.f})) << endl;
+    cout << "0 xor 0 = 0 Prediction: " << neuralNetwork->predictScalar(columnVector({0.f, 0.f})) << endl;
+    cout << "0 xor 1 = 1 Prediction: " << neuralNetwork->predictScalar(columnVector({0.f, 1.f})) << endl;
+    cout << "1 xor 0 = 1 Prediction: " << neuralNetwork->predictScalar(columnVector({1.f, 0.f})) << endl;
+    cout << "1 xor 1 = 0 Prediction: " << neuralNetwork->predictScalar(columnVector({1.f, 1.f})) << endl;
 }
 
 int main() {

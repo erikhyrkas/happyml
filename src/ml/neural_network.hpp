@@ -225,30 +225,30 @@ namespace microml {
     class NeuralNetwork {
     public:
 
-        float predict_scalar(const shared_ptr<BaseTensor> &given_inputs) {
-            return scalar(predict(given_inputs)[0]);
+        float predictScalar(const shared_ptr<BaseTensor> &givenInputs) {
+            return scalar(predict(givenInputs)[0]);
         }
 
-        shared_ptr<BaseTensor> predictOne(const shared_ptr<BaseTensor> &given_inputs) {
-            return predict(given_inputs)[0];
+        shared_ptr<BaseTensor> predictOne(const shared_ptr<BaseTensor> &givenInputs) {
+            return predict(givenInputs)[0];
         }
 
-        vector<shared_ptr<BaseTensor>> predict(const shared_ptr<BaseTensor> &given_inputs) {
-            return predict(vector<shared_ptr<BaseTensor>>{given_inputs});
+        vector<shared_ptr<BaseTensor>> predict(const shared_ptr<BaseTensor> &givenInputs) {
+            return predict(vector<shared_ptr<BaseTensor>>{givenInputs});
         }
 
         // predict/infer
         // I chose the word "predict" because it is more familiar than the word "infer"
         // and the meaning is more or less the same.
-        vector<shared_ptr<BaseTensor>> predict(const vector<shared_ptr<BaseTensor>> &given_inputs) {
-            if (given_inputs.size() != head_nodes.size()) {
+        vector<shared_ptr<BaseTensor>> predict(const vector<shared_ptr<BaseTensor>> &givenInputs) {
+            if (givenInputs.size() != headNodes.size()) {
                 throw exception("infer requires as many input tensors as there are input nodes");
             }
-            for (size_t i = 0; i < head_nodes.size(); i++) {
-                head_nodes[i]->forwardFromInput(given_inputs[i]);
+            for (size_t i = 0; i < headNodes.size(); i++) {
+                headNodes[i]->forwardFromInput(givenInputs[i]);
             }
             vector<shared_ptr<BaseTensor>> results;
-            for (const auto &output: output_nodes) {
+            for (const auto &output: outputNodes) {
                 results.push_back(output->consumeLastOutput());
             }
 
@@ -256,16 +256,16 @@ namespace microml {
         }
 
         void addHead(const shared_ptr<NeuralNetworkNode> &head) {
-            head_nodes.push_back(head);
+            headNodes.push_back(head);
         }
 
         void addOutput(const shared_ptr<NeuralNetworkOutputNode> &output) {
-            output_nodes.push_back(output);
+            outputNodes.push_back(output);
         }
 
     protected:
-        vector<shared_ptr<NeuralNetworkNode>> head_nodes;
-        vector<shared_ptr<NeuralNetworkOutputNode>> output_nodes;
+        vector<shared_ptr<NeuralNetworkNode>> headNodes;
+        vector<shared_ptr<NeuralNetworkOutputNode>> outputNodes;
     };
 
     class NeuralNetworkForTraining : public NeuralNetwork {
@@ -275,8 +275,8 @@ namespace microml {
             this->optimizer = optimizer;
         }
 
-        void setLossFunction(const shared_ptr<LossFunction> &loss_function) {
-            this->lossFunction = loss_function;
+        void setLossFunction(const shared_ptr<LossFunction> &f) {
+            this->lossFunction = f;
         }
 
         shared_ptr<Optimizer> getOptimizer() {
@@ -286,75 +286,75 @@ namespace microml {
         // a sample is a single record
         // a batch is the number of samples (records) to look at before updating weights
         // train/fit
-        void train(const shared_ptr<TrainingDataSet> &source, size_t epochs, int batch_size = 1,
-                   bool overwrite_output_lines = false) {
+        void train(const shared_ptr<TrainingDataSet> &source, size_t epochs, int batchSize = 1,
+                   bool overwriteOutputLines = false) {
             auto total_records = source->recordCount();
-            if (batch_size > total_records) {
+            if (batchSize > total_records) {
                 throw exception("Batch Size cannot be larger than source data set.");
             }
-            ElapsedTimer total_timer;
-            const size_t output_size = output_nodes.size();
+            ElapsedTimer totalTimer;
+            const size_t outputSize = outputNodes.size();
             cout << endl;
-            log_training(0, -1, epochs, 0, ceil(total_records / batch_size), batch_size, 0, 0, overwrite_output_lines);
+            logTraining(0, -1, epochs, 0, ceil(total_records / batchSize), batchSize, 0, 0, overwriteOutputLines);
             for (size_t epoch = 0; epoch < epochs; epoch++) {
                 ElapsedTimer timer;
                 source->shuffle();
 
-                int batch_offset = 0;
-                vector<vector<shared_ptr<BaseTensor>>> batch_predictions;
-                vector<vector<shared_ptr<BaseTensor>>> batch_truths;
-                batch_predictions.resize(output_size);
-                batch_truths.resize(output_size);
+                int batchOffset = 0;
+                vector<vector<shared_ptr<BaseTensor>>> batchPredictions;
+                vector<vector<shared_ptr<BaseTensor>>> batchTruths;
+                batchPredictions.resize(outputSize);
+                batchTruths.resize(outputSize);
 
                 size_t current_record = 0;
-                auto next_record = source->nextRecord();
-                while (next_record != nullptr) {
+                auto nextRecord = source->nextRecord();
+                while (nextRecord != nullptr) {
                     current_record++;
-                    auto next_given = next_record->getGiven();
-                    auto next_truth = next_record->getExpected();
-                    auto next_prediction = predict(next_given);
-                    for (size_t output_index = 0; output_index < output_size; output_index++) {
-                        batch_predictions[output_index].push_back(next_prediction[output_index]);
-                        batch_truths[output_index].push_back(next_truth[output_index]);
+                    auto nextGiven = nextRecord->getGiven();
+                    auto nextTruth = nextRecord->getExpected();
+                    auto nextPrediction = predict(nextGiven);
+                    for (size_t outputIndex = 0; outputIndex < outputSize; outputIndex++) {
+                        batchPredictions[outputIndex].push_back(nextPrediction[outputIndex]);
+                        batchTruths[outputIndex].push_back(nextTruth[outputIndex]);
 //                        if(batch_predictions.size() != batch_truths.size()) {
 //                            throw exception("truths and predictions should be equal");
 //                        }
                     }
-                    batch_offset++;
-                    next_record = source->nextRecord();
-                    if (batch_offset >= batch_size || next_record == nullptr) {
-                        for (size_t output_index = 0; output_index < output_size; output_index++) {
+                    batchOffset++;
+                    nextRecord = source->nextRecord();
+                    if (batchOffset >= batchSize || nextRecord == nullptr) {
+                        for (size_t outputIndex = 0; outputIndex < outputSize; outputIndex++) {
                             // TODO: materializing the error into a full tensor helps performance at the cost of memory.
                             //  we should be able to determine the best strategy at runtime. Sometimes, memory is too valuable
                             //  to use for performance.
-                            auto total_error = make_shared<FullTensor>(
-                                    lossFunction->calculateTotalError(batch_truths[output_index],
-                                                                      batch_predictions[output_index]));
+                            auto totalError = make_shared<FullTensor>(
+                                    lossFunction->calculateTotalError(batchTruths[outputIndex],
+                                                                      batchPredictions[outputIndex]));
 //                            auto total_error = lossFunction->calculateTotalError(batch_truths[output_index], batch_predictions[output_index]);
-                            auto loss = lossFunction->compute(total_error);
+                            auto loss = lossFunction->compute(totalError);
                             // batch_offset should be equal to batch_size, unless we are out of records.
-                            auto loss_derivative = lossFunction->partialDerivative(total_error, (float) batch_offset);
+                            auto lossDerivative = lossFunction->partialDerivative(totalError, (float) batchOffset);
 
-                            auto elapsed_time = timer.getMilliseconds();
-                            log_training(elapsed_time, epoch, epochs, ceil(current_record / batch_size),
-                                         ceil(total_records / batch_size), batch_offset, loss, 1,
-                                         overwrite_output_lines);
+                            auto elapsedTime = timer.getMilliseconds();
+                            logTraining(elapsedTime, epoch, epochs, ceil(current_record / batchSize),
+                                        ceil(total_records / batchSize), batchOffset, loss, 1,
+                                        overwriteOutputLines);
                             // todo: we don't weight loss when there are multiple outputs back propagating. we should, instead of treating them as equals.
-                            output_nodes[output_index]->backward(loss_derivative);
+                            outputNodes[outputIndex]->backward(lossDerivative);
 
-                            elapsed_time = timer.getMilliseconds();
-                            log_training(elapsed_time, epoch, epochs, ceil(current_record / batch_size),
-                                         ceil(total_records / batch_size), batch_offset, loss, 2,
-                                         overwrite_output_lines);
-                            batch_truths[output_index].clear();
-                            batch_predictions[output_index].clear();
+                            elapsedTime = timer.getMilliseconds();
+                            logTraining(elapsedTime, epoch, epochs, ceil(current_record / batchSize),
+                                        ceil(total_records / batchSize), batchOffset, loss, 2,
+                                        overwriteOutputLines);
+                            batchTruths[outputIndex].clear();
+                            batchPredictions[outputIndex].clear();
                         }
-                        batch_offset = 0;
+                        batchOffset = 0;
                     }
                 }
                 source->restart();
             }
-            long long int elapsed = total_timer.getMilliseconds();
+            long long int elapsed = totalTimer.getMilliseconds();
             if (elapsed < 2000) {
                 cout << endl << "Finished training in " << elapsed << " milliseconds." << endl;
             } else if (elapsed < 120000) {
@@ -364,39 +364,39 @@ namespace microml {
             }
         }
 
-        static void log_training(long long int elapsed_time, size_t epoch, size_t epochs,
-                                 size_t current_record, size_t total_records, int batch_size,
-                                 float loss, int stage, bool overwrite) {
+        static void logTraining(long long int elapsedTime, size_t epoch, size_t epochs,
+                                size_t currentRecord, size_t totalRecords, int batchSize,
+                                float loss, int stage, bool overwrite) {
             // printf is about 6x faster than cout. I'm not sure why, since neither should flush without an end line.
             // I can only assume it relates to how cout processes numbers to strings.
-            string status_message;
+            string statusMessage;
             switch (stage) {
                 case 0:
-                    status_message = "to initialize";
+                    statusMessage = "to initialize";
                     break;
                 case 1:
-                    status_message = "to predict";
+                    statusMessage = "to predict";
                     break;
                 case 2:
-                    status_message = "to learn";
+                    statusMessage = "to learn";
                     break;
                 default:
-                    status_message = "unknown";
+                    statusMessage = "unknown";
             }
-            if (elapsed_time > 120000) {
-                auto min = elapsed_time / 60000;
-                auto sec = (elapsed_time % 60000) / 1000;
+            if (elapsedTime > 120000) {
+                auto min = elapsedTime / 60000;
+                auto sec = (elapsedTime % 60000) / 1000;
                 printf("%5zd m %zd s %-13s \tEpoch: %6zd/%zd \tBatch: %4zd/%zd Batch Size: %3d \tLoss: %11f      ",
-                       min, sec, status_message.c_str(), (epoch + 1), epochs,
-                       current_record, total_records, batch_size, loss);
-            } else if (elapsed_time > 2000) {
+                       min, sec, statusMessage.c_str(), (epoch + 1), epochs,
+                       currentRecord, totalRecords, batchSize, loss);
+            } else if (elapsedTime > 2000) {
                 printf("%5zd s %-13s \tEpoch: %6zd/%zd \tBatch: %4zd/%zd Batch Size: %3d \tLoss: %11f            ",
-                       (elapsed_time / 1000), status_message.c_str(), (epoch + 1), epochs,
-                       current_record, total_records, batch_size, loss);
+                       (elapsedTime / 1000), statusMessage.c_str(), (epoch + 1), epochs,
+                       currentRecord, totalRecords, batchSize, loss);
             } else {
                 printf("%5zd ms %-13s \tEpoch: %6zd/%zd \tBatch: %4zd/%zd Batch Size: %3d \tLoss: %11f           ",
-                       elapsed_time, status_message.c_str(), (epoch + 1), epochs,
-                       current_record, total_records, batch_size, loss);
+                       elapsedTime, statusMessage.c_str(), (epoch + 1), epochs,
+                       currentRecord, totalRecords, batchSize, loss);
             }
             if (overwrite) {
                 printf("\r");
