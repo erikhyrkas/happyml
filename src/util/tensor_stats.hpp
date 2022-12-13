@@ -53,12 +53,12 @@ namespace microml {
             const size_t rows = source.rowCount();
             const size_t cols = source.columnCount();
             const size_t channels = source.channelCount();
-            auto bagCounts = std::make_shared<BagCounts>();
+            auto bagCounts = make_shared<BagCounts>();
             // TODO: We can improve the conditions in which we are single threaded vs concurrent. This
             // works on my machine, but it isn't a general solution.
-//        std::cout << "elements_per_channel: " << source.elements_per_channel() << std::endl;
+//        cout << "elements_per_channel: " << source.elements_per_channel() << endl;
             if (source.elements_per_channel() < 100000000) {
-//            std::cout << "single thread" << std::endl;
+//            cout << "single thread" << endl;
                 for (size_t channel = 0; channel < channels; channel++) {
                     for (size_t row = 0; row < rows; row++) {
                         for (size_t col = 0; col < cols; col++) {
@@ -67,11 +67,11 @@ namespace microml {
                     }
                 }
             } else {
-                std::queue<std::future<void>> futures;
+                queue<future<void>> futures;
                 // this is an imperfect rule. We want to have adequate work for each thread to
                 // do that it makes up for the overhead of the thread itself.
                 if (cols >= rows) {
-//                std::cout << "by col " << rows << ", " << cols << std::endl;
+//                cout << "by col " << rows << ", " << cols << endl;
                     // TODO: this isn't a general solution. Works on my machine.
                     const size_t wait_amount = 8096;
                     for (size_t channel = 0; channel < channels; channel++) {
@@ -86,7 +86,7 @@ namespace microml {
                         }
                     }
                 } else {
-//                std::cout << "by row " << rows << ", " << cols << std::endl;
+//                cout << "by row " << rows << ", " << cols << endl;
                     // TODO: this isn't a general solution. Works on my machine.
                     const size_t wait_amount = 8096;
                     for (size_t channel = 0; channel < channels; channel++) {
@@ -111,32 +111,32 @@ namespace microml {
             // This could be more efficient. We calculate for bias 0, then discard after we find the target range
             if (quarterToFloat(QUARTER_MIN, 14) <= minValue &&
                 quarterToFloat(QUARTER_MAX, 14) >= maxValue) {
-//            std::cout << "min and max fit in quarter 14: " << min_value << " -> " << max_value << " must fit in "
+//            cout << "min and max fit in quarter 14: " << min_value << " -> " << max_value << " must fit in "
 //                      << quarter_to_float(QUARTER_MIN, 14, 0) << " -> " << quarter_to_float(QUARTER_MAX, 14, 0)
-//                      << std::endl;
+//                      << endl;
                 bag(bagCounts->bagCounts14);
             } else if (quarterToFloat(QUARTER_MIN, 8) <= minValue &&
                        quarterToFloat(QUARTER_MAX, 8) >= maxValue) {
-//            std::cout << "min and max fit in quarter 8: " << min_value << " -> " << max_value << " must fit in "
+//            cout << "min and max fit in quarter 8: " << min_value << " -> " << max_value << " must fit in "
 //                      << quarter_to_float(QUARTER_MIN, 8, 0) << " -> " << quarter_to_float(QUARTER_MAX, 8, 0)
-//                      << std::endl;
+//                      << endl;
                 bag(bagCounts->bagCounts8);
             } else if (quarterToFloat(QUARTER_MIN, 4) <= minValue &&
                        quarterToFloat(QUARTER_MAX, 4) >= maxValue) {
-//            std::cout << "min and max fit in quarter 4: " << min_value << " -> " << max_value << " must fit in "
+//            cout << "min and max fit in quarter 4: " << min_value << " -> " << max_value << " must fit in "
 //                      << quarter_to_float(QUARTER_MIN, 4, 0) << " -> " << quarter_to_float(QUARTER_MAX, 4, 0)
-//                      << std::endl;
+//                      << endl;
                 bag(bagCounts->bagCounts4);
             } else if (quarterToFloat(QUARTER_MIN, 1) <= minValue &&
                        quarterToFloat(QUARTER_MAX, 1) >= maxValue) {
-//            std::cout << "min and max fit in quarter 1: " << min_value << " -> " << max_value << " must fit in "
+//            cout << "min and max fit in quarter 1: " << min_value << " -> " << max_value << " must fit in "
 //                      << quarter_to_float(QUARTER_MIN, 1, 0) << " -> " << quarter_to_float(QUARTER_MAX, 1, 0)
-//                      << std::endl;
+//                      << endl;
                 bag(bagCounts->bagCounts1);
             } else {
-//            std::cout << "min and max forced to fit in quarter -4: " << min_value << " -> " << max_value
+//            cout << "min and max forced to fit in quarter -4: " << min_value << " -> " << max_value
 //                      << " must fit in " << quarter_to_float(QUARTER_MIN, -4, 0) << " -> "
-//                      << quarter_to_float(QUARTER_MAX, -4, 0) << std::endl;
+//                      << quarter_to_float(QUARTER_MAX, -4, 0) << endl;
                 bag(bagCounts->bagCountsNegative4);
             }
             double wide_target_range;
@@ -148,7 +148,7 @@ namespace microml {
                 wide_target_range = fullRange();
             }
 
-//        std::cout << "wide range: " << wide_target_range << std::endl;
+//        cout << "wide range: " << wide_target_range << endl;
             if (bagAndCheckRangeForBiasGoal(bagCounts->bagCounts14, 14, wide_target_range)) {
                 recommendedBias = 14;
             } else if (bagAndCheckRangeForBiasGoal(bagCounts->bagCounts8, 8, wide_target_range)) {
@@ -186,41 +186,41 @@ namespace microml {
                     recommendedOffset = (float) (eightyValues.at(0) + half_range);
                 }
             }
-//        std::cout << "finished constructor" << std::endl;
+//        cout << "finished constructor" << endl;
         }
 
         void print() {
-//        std::cout << "Double max: " << std::fixed << std::numeric_limits<double>::max() << std::endl;
-            std::cout << "Bag contents(" << elementCount << "/" << bagElements.size() << "): [" << std::endl;
+//        cout << "Double max: " << std::fixed << std::numeric_limits<double>::max() << endl;
+            cout << "Bag contents(" << elementCount << "/" << bagElements.size() << "): [" << endl;
             for (auto it = bagElements.begin(); it != bagElements.end(); ++it) {
                 const auto val = (float) it->at(0);
                 const auto count = (unsigned long) it->at(1);
-                std::cout << std::fixed << "\t" << val << "\t" << std::setw(10) << count << "\t";
+                cout << std::fixed << "\t" << val << "\t" << std::setw(10) << count << "\t";
                 const auto dots_len = 100 * ((double) count / (double) elementCount);
                 for (uint32_t i = 0; i < dots_len; i++) {
-                    std::cout << ".";
+                    cout << ".";
                 }
-                std::cout << std::endl;
+                cout << endl;
             }
-            std::cout << "]" << std::endl << "Quartile parts: ";
-            std::string delim;
+            cout << "]" << endl << "Quartile parts: ";
+            string delim;
             for (auto it = quarterValues.begin(); it != quarterValues.end(); ++it) {
-                std::cout << delim << std::fixed << *it;
+                cout << delim << std::fixed << *it;
                 delim = ", ";
             }
-            std::cout << std::endl << "80% parts: ";
+            cout << endl << "80% parts: ";
             delim = "";
             for (auto it = eightyValues.begin(); it != eightyValues.end(); ++it) {
-                std::cout << delim << std::fixed << *it;
+                cout << delim << std::fixed << *it;
                 delim = ", ";
             }
-            std::cout << std::endl << "recommended bias: " << recommendedBias << std::endl;
-            std::cout << "recommended offset: " << std::fixed << std::setprecision(15) << recommendedOffset
-                      << std::endl;
-            std::cout << "min: " << std::fixed << minValue << std::endl;
-            std::cout << "max: " << std::fixed << maxValue << std::endl;
-            std::cout << "range: " << std::fixed << (maxValue - minValue) << std::endl;
-            std::cout << "Zero required for fit: " << (require0ForFit ? "true" : "false") << std::endl;
+            cout << endl << "recommended bias: " << recommendedBias << endl;
+            cout << "recommended offset: " << std::fixed << std::setprecision(15) << recommendedOffset
+                      << endl;
+            cout << "min: " << std::fixed << minValue << endl;
+            cout << "max: " << std::fixed << maxValue << endl;
+            cout << "range: " << std::fixed << (maxValue - minValue) << endl;
+            cout << "Zero required for fit: " << (require0ForFit ? "true" : "false") << endl;
         }
 
         [[nodiscard]] int getRecommendedBias() const {
@@ -239,31 +239,31 @@ namespace microml {
     private:
         int biasFit; // See FIT_BIAS_FOR_100, FIT_BIAS_FOR_90, FIT_BIAS_FOR_50
         unsigned long elementCount;
-        std::vector<std::array<double, 2>> bagElements;
-        std::vector<float> quarterValues; // five values from: 0%, 25%, 50%, 75%, 100%
-        std::vector<float> eightyValues; // five values from: 0%, 10%, 50%, 90%, 100%
+        vector<array<double, 2>> bagElements;
+        vector<float> quarterValues; // five values from: 0%, 25%, 50%, 75%, 100%
+        vector<float> eightyValues; // five values from: 0%, 10%, 50%, 90%, 100%
         int recommendedBias;
         float recommendedOffset;
         double minValue;
         double maxValue;
         bool require0ForFit;
 
-        static bool bagEntryCompare(std::array<double, 2> a, std::array<double, 2> b) {
+        static bool bagEntryCompare(array<double, 2> a, array<double, 2> b) {
             return a.at(0) < b.at(0);
         }
 
         struct BagCounts {
             BagCounts() : bagCounts14{}, bagCounts8{}, bagCounts4{}, bagCounts1{}, bagCountsNegative4{} {}
 
-            std::mutex bagMutex;
-            std::array<std::array<double, 2>, 256> bagCounts14;
-            std::array<std::array<double, 2>, 256> bagCounts8;
-            std::array<std::array<double, 2>, 256> bagCounts4;
-            std::array<std::array<double, 2>, 256> bagCounts1;
-            std::array<std::array<double, 2>, 256> bagCountsNegative4;
+            mutex bagMutex;
+            array<array<double, 2>, 256> bagCounts14;
+            array<array<double, 2>, 256> bagCounts8;
+            array<array<double, 2>, 256> bagCounts4;
+            array<array<double, 2>, 256> bagCounts1;
+            array<array<double, 2>, 256> bagCountsNegative4;
         };
 
-        static void addToBag(std::array<std::array<double, 2>, 256> &bagCounts, const float f, const int bias) {
+        static void addToBag(array<array<double, 2>, 256> &bagCounts, const float f, const int bias) {
             quarter q = floatToQuarter(f, bias);
             // gravitate to numbers that are furthest from zero, unless zero (this may not be needed
             // since it should initialize to zero.)
@@ -280,7 +280,7 @@ namespace microml {
                                  const size_t row,
                                  const size_t col,
                                  const size_t channel,
-                                 const std::shared_ptr<BagCounts> &bagCounts) {
+                                 const shared_ptr<BagCounts> &bagCounts) {
             float f = source->getValue(row, col, channel);
             if (isinf(f) || isnan(f)) {
                 return;
@@ -296,12 +296,12 @@ namespace microml {
                                       size_t row,
                                       size_t maxCols,
                                       size_t channel,
-                                      const std::shared_ptr<BagCounts> &bagCounts) {
-            auto local = std::make_shared<BagCounts>();
+                                      const shared_ptr<BagCounts> &bagCounts) {
+            auto local = make_shared<BagCounts>();
             for (size_t col = 0; col < maxCols; col++) {
                 populateBags(source, row, col, channel, local);
             }
-            const std::lock_guard<std::mutex> lock(bagCounts->bagMutex);
+            const lock_guard<mutex> lock(bagCounts->bagMutex);
             size_t index = 0;
             for (const auto &[val, count]: local->bagCounts14) {
                 const double original = bagCounts->bagCounts14[index][0];
@@ -353,12 +353,12 @@ namespace microml {
                                       size_t maxRows,
                                       size_t col,
                                       size_t channel,
-                                      const std::shared_ptr<BagCounts> &bagCounts) {
-            auto local = std::make_shared<BagCounts>();
+                                      const shared_ptr<BagCounts> &bagCounts) {
+            auto local = make_shared<BagCounts>();
             for (size_t row = 0; row < maxRows; row++) {
                 populateBags(source, row, col, channel, local);
             }
-            const std::lock_guard<std::mutex> lock(bagCounts->bagMutex);
+            const lock_guard<mutex> lock(bagCounts->bagMutex);
             size_t index = 0;
             for (const auto &[val, count]: local->bagCounts14) {
                 const double original = bagCounts->bagCounts14[index][0];
@@ -406,7 +406,7 @@ namespace microml {
             }
         }
 
-        static void wait(std::queue<std::future<void>> &futures) {
+        static void wait(queue<future<void>> &futures) {
             while (!futures.empty()) {
                 futures.front().wait();
                 futures.pop();
@@ -414,7 +414,7 @@ namespace microml {
         }
 
 
-        inline void countElementsAndFindMinMax(std::array<std::array<double, 2>, 256> &bagCounts) {
+        inline void countElementsAndFindMinMax(array<array<double, 2>, 256> &bagCounts) {
             minValue = HUGE_VAL;
             maxValue = -HUGE_VAL;
             for (auto &it: bagCounts) {
@@ -431,8 +431,8 @@ namespace microml {
 
         double q2ToQ3Range() {
             if (quarterValues.size() != 5) {
-                std::cout << "Mid 50 quarter values size: " << quarterValues.size() << std::endl;
-                throw std::exception("Mid 50 range calculation only works after quarter_values are populated.");
+                cout << "Mid 50 quarter values size: " << quarterValues.size() << endl;
+                throw exception("Mid 50 range calculation only works after quarter_values are populated.");
             }
             if (require0ForFit) {
                 return std::abs(std::max(0.0f, quarterValues.at(3)) - std::min(0.0f, quarterValues.at(1)));
@@ -442,8 +442,8 @@ namespace microml {
 
         double tenTo90Range() {
             if (eightyValues.size() != 5) {
-                std::cout << "Mid 80 values size: " << eightyValues.size() << std::endl;
-                throw std::exception("Mid 80 range calculation only works after eighty_values are populated.");
+                cout << "Mid 80 values size: " << eightyValues.size() << endl;
+                throw exception("Mid 80 range calculation only works after eighty_values are populated.");
             }
             if (require0ForFit) {
                 return std::abs(std::max(0.0f, eightyValues.at(3)) - std::min(0.0f, eightyValues.at(1)));
@@ -453,8 +453,8 @@ namespace microml {
 
         double fullRange() {
             if (quarterValues.size() != 5) {
-                std::cout << "Full range quarter values size: " << quarterValues.size() << std::endl;
-                throw std::exception("full range calculation only works after quarter_values are populated.");
+                cout << "Full range quarter values size: " << quarterValues.size() << endl;
+                throw exception("full range calculation only works after quarter_values are populated.");
             }
             if (require0ForFit) {
                 return std::abs(std::max(0.0f, quarterValues.at(4)) - std::min(0.0f, quarterValues.at(0)));
@@ -462,7 +462,7 @@ namespace microml {
             return std::abs(quarterValues.at(4) - quarterValues.at(0));
         }
 
-        void bag(std::array<std::array<double, 2>, 256> &bag_counts) {
+        void bag(array<array<double, 2>, 256> &bag_counts) {
             buildBagFromCounts(bag_counts);
             calculateQuarters();
             calculateEightyPercent();
@@ -477,9 +477,9 @@ namespace microml {
                                                 5 * ten_percent); //round down for small values
             const auto ninety_percent = std::min((unsigned long) (elementCount * 0.9),
                                                  9 * ten_percent); //round down for small values
-//        std::cout << "Ten Percent Size: " << ten_percent << std::endl;
-//        std::cout << "Fifty Percent Boundary: " << fifty_percent << std::endl;
-//        std::cout << "Ninety Percent Boundary: " << ninety_percent << std::endl;
+//        cout << "Ten Percent Size: " << ten_percent << endl;
+//        cout << "Fifty Percent Boundary: " << fifty_percent << endl;
+//        cout << "Ninety Percent Boundary: " << ninety_percent << endl;
 
             eightyValues.clear();
             eightyValues.push_back((float) bagElements.front().at(0));
@@ -504,18 +504,18 @@ namespace microml {
 
         void calculateQuarters() {
             const unsigned long quarter_size = elementCount / 4;
-//        std::cout << "Quarter Size: " << quarter_size << std::endl;
+//        cout << "Quarter Size: " << quarter_size << endl;
             unsigned long next_quarter = quarter_size;
             unsigned long current_element = 0;
             quarterValues.clear();
             quarterValues.push_back((float) bagElements.front().at(0));
             for (auto it = bagElements.begin(); it != bagElements.end(); ++it) {
-//            std::cout << "[" << it->at(0) << ", " <<  (unsigned long)it->at(1) << "]" << std::endl;
+//            cout << "[" << it->at(0) << ", " <<  (unsigned long)it->at(1) << "]" << endl;
                 current_element += (unsigned long) it->at(1);
-//            std::cout << "current_element: " << current_element << std::endl;
+//            cout << "current_element: " << current_element << endl;
                 while (current_element >= next_quarter) {
-//                std::cout << "adding quarter current_element: " << current_element
-//                          << " with value: " << it->at(0) << std::endl;
+//                cout << "adding quarter current_element: " << current_element
+//                          << " with value: " << it->at(0) << endl;
                     quarterValues.push_back((float) it->at(0));
                     if (quarterValues.size() == 4) {
                         break;
@@ -527,10 +527,10 @@ namespace microml {
                 }
             }
             quarterValues.push_back((float) bagElements.back().at(0));
-//        std::cout << "Done calculate_quarters" << std::endl;
+//        cout << "Done calculate_quarters" << endl;
         }
 
-        void buildBagFromCounts(std::array<std::array<double, 2>, 256> &bagCounts) {
+        void buildBagFromCounts(array<array<double, 2>, 256> &bagCounts) {
             bagElements.clear();
             for (auto &bagCount: bagCounts) {
                 if (bagCount.at(1) > 0) {
@@ -540,7 +540,7 @@ namespace microml {
             std::sort(bagElements.begin(), bagElements.end(), bagEntryCompare);
         }
 
-        bool bagAndCheckRangeForBiasGoal(std::array<std::array<double, 2>, 256> &bagCounts, int bias,
+        bool bagAndCheckRangeForBiasGoal(array<array<double, 2>, 256> &bagCounts, int bias,
                                          double wideTargetRange) {
             double biasRange = calculateBiasRange(bias);
             if (biasRange < wideTargetRange) {

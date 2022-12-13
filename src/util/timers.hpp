@@ -15,32 +15,32 @@ namespace microml {
     class ElapsedTimer {
     public:
         ElapsedTimer() {
-            startTime = std::chrono::high_resolution_clock::now();
+            startTime = chrono::high_resolution_clock::now();
         }
 
         long long int getMicroseconds() {
-            auto stopTime = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stopTime - startTime);
-            startTime = std::chrono::high_resolution_clock::now();
+            auto stopTime = chrono::high_resolution_clock::now();
+            auto duration = chrono::duration_cast<chrono::microseconds>(stopTime - startTime);
+            startTime = chrono::high_resolution_clock::now();
             return duration.count();
         }
 
         long long int getMilliseconds() {
-            auto stopTime = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stopTime - startTime);
-            startTime = std::chrono::high_resolution_clock::now();
+            auto stopTime = chrono::high_resolution_clock::now();
+            auto duration = chrono::duration_cast<chrono::milliseconds>(stopTime - startTime);
+            startTime = chrono::high_resolution_clock::now();
             return duration.count();
         }
 
         long long int getSeconds() {
-            auto stopTime = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::seconds>(stopTime - startTime);
-            startTime = std::chrono::high_resolution_clock::now();
+            auto stopTime = chrono::high_resolution_clock::now();
+            auto duration = chrono::duration_cast<chrono::seconds>(stopTime - startTime);
+            startTime = chrono::high_resolution_clock::now();
             return duration.count();
         }
 
     private:
-        std::chrono::time_point<std::chrono::high_resolution_clock> startTime;
+        chrono::time_point<chrono::high_resolution_clock> startTime;
     };
 
     class SimpleTimer {

@@ -26,8 +26,8 @@ void testConv2D() {
 int main() {
     try {
         testConv2D();
-    } catch (const std::exception &e) {
-        std::cout << e.what() << std::endl;
+    } catch (const exception &e) {
+        cout << e.what() << endl;
     }
 
     return 0;

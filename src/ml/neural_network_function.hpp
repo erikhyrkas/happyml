@@ -38,7 +38,7 @@ namespace microml {
             auto activation_derivative = activationFunction->derivative(lastInput);
             // this really threw me for a loop. I thought that this was supposed to be dot product, rather than
             // an element-wise-multiplication.
-            auto base_output_error = std::make_shared<TensorMultiplyTensorView>(activation_derivative, output_error);
+            auto base_output_error = make_shared<TensorMultiplyTensorView>(activation_derivative, output_error);
             lastInput = nullptr;
             return base_output_error;
         }

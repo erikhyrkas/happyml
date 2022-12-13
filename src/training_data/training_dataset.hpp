@@ -28,17 +28,17 @@ namespace microml {
 
         virtual void restart() = 0;
 
-        virtual std::vector<std::shared_ptr<TrainingPair>> nextBatch(size_t batch_size) = 0;
+        virtual vector<shared_ptr<TrainingPair>> nextBatch(size_t batch_size) = 0;
 
-        virtual std::shared_ptr<TrainingPair> nextRecord() = 0;
+        virtual shared_ptr<TrainingPair> nextRecord() = 0;
 
-        virtual std::vector<std::vector<size_t>> getGivenShapes() = 0;
+        virtual vector<vector<size_t>> getGivenShapes() = 0;
 
         virtual vector<size_t> getGivenShape() {
             return getGivenShapes()[0];
         }
 
-        virtual std::vector<std::vector<size_t>> getExpectedShapes() = 0;
+        virtual vector<vector<size_t>> getExpectedShapes() = 0;
 
         virtual vector<size_t> getExpectedShape() {
             return getExpectedShapes()[0];
@@ -56,28 +56,28 @@ namespace microml {
 
         void restart() override {}
 
-        std::vector<std::shared_ptr<TrainingPair>> nextBatch(size_t batch_size) override {
-            std::vector<std::shared_ptr<TrainingPair>> result;
+        vector<shared_ptr<TrainingPair>> nextBatch(size_t batch_size) override {
+            vector<shared_ptr<TrainingPair>> result;
             return result;
         }
 
-        std::shared_ptr<TrainingPair> nextRecord() override {
+        shared_ptr<TrainingPair> nextRecord() override {
             return nullptr;
         }
 
-        std::vector<std::vector<size_t>> getGivenShapes() override {
-            return std::vector<std::vector<size_t>>{{1, 1, 1}};
+        vector<vector<size_t>> getGivenShapes() override {
+            return vector<vector<size_t>>{{1, 1, 1}};
         }
 
-        std::vector<std::vector<size_t>> getExpectedShapes() override {
-            return std::vector<std::vector<size_t>>{{1, 1, 1}};
+        vector<vector<size_t>> getExpectedShapes() override {
+            return vector<vector<size_t>>{{1, 1, 1}};
         }
     };
 
     class PartialTrainingDataSet : public TrainingDataSet {
     public:
         //
-        PartialTrainingDataSet(const std::shared_ptr<TrainingDataSet> &dataSource, size_t first_record_offset,
+        PartialTrainingDataSet(const shared_ptr<TrainingDataSet> &dataSource, size_t first_record_offset,
                                size_t last_record_offset) {
             this->dataSource = dataSource;
             this->firstRecordOffset = first_record_offset;
@@ -85,10 +85,10 @@ namespace microml {
             this->count = last_record_offset - first_record_offset;
             this->currentOffset = first_record_offset;
             if (first_record_offset > last_record_offset) {
-                throw std::exception("First offset must be before last offset");
+                throw exception("First offset must be before last offset");
             }
             if (last_record_offset >= dataSource->recordCount()) {
-                throw std::exception("Record offset out of bounds");
+                throw exception("Record offset out of bounds");
             }
         }
 
@@ -100,7 +100,7 @@ namespace microml {
             const size_t new_first = firstRecordOffset + start_offset;
             const size_t new_end = firstRecordOffset + end_offset;
             if (new_first > lastRecordOffset || new_end > lastRecordOffset) {
-                throw std::exception("shuffle offset out of range");
+                throw exception("shuffle offset out of range");
             }
             restart();
             dataSource->shuffle(new_first, new_end);
@@ -114,8 +114,8 @@ namespace microml {
             currentOffset = firstRecordOffset;
         }
 
-        std::vector<std::shared_ptr<TrainingPair>> nextBatch(size_t batch_size) override {
-            std::vector<std::shared_ptr<TrainingPair>> result;
+        vector<shared_ptr<TrainingPair>> nextBatch(size_t batch_size) override {
+            vector<shared_ptr<TrainingPair>> result;
             const size_t target_last_offset = currentOffset + batch_size;
             if (target_last_offset <= lastRecordOffset) {
                 for (size_t batch_offset = 0; batch_offset < batch_size; batch_offset++) {
@@ -125,8 +125,8 @@ namespace microml {
             return result;
         }
 
-        std::shared_ptr<TrainingPair> nextRecord() override {
-            std::shared_ptr<TrainingPair> result = dataSource->nextRecord();
+        shared_ptr<TrainingPair> nextRecord() override {
+            shared_ptr<TrainingPair> result = dataSource->nextRecord();
             if (result) {
                 currentOffset++;
             }
@@ -134,7 +134,7 @@ namespace microml {
         }
 
     private:
-        std::shared_ptr<TrainingDataSet> dataSource;
+        shared_ptr<TrainingDataSet> dataSource;
         size_t firstRecordOffset;
         size_t lastRecordOffset;
         size_t count;
@@ -149,11 +149,11 @@ namespace microml {
         }
 
         void addTrainingData(const shared_ptr<BaseTensor> &given, float expected) {
-            pairs.push_back(std::make_shared<TrainingPair>(given, columnVector({expected})));
+            pairs.push_back(make_shared<TrainingPair>(given, columnVector({expected})));
         }
 
         void addTrainingData(const shared_ptr<BaseTensor> &given, const shared_ptr<BaseTensor> &expected) {
-            pairs.push_back(std::make_shared<TrainingPair>(given, expected));
+            pairs.push_back(make_shared<TrainingPair>(given, expected));
         }
 
         size_t recordCount() override {
@@ -162,16 +162,16 @@ namespace microml {
 
         void shuffle() override {
             // todo: likely can be optimized
-            std::random_device rd;
-            std::mt19937 g(rd());
+            random_device rd;
+            mt19937 g(rd());
             std::shuffle(pairs.begin(), pairs.end(), g);
             restart();
         }
 
         void shuffle(size_t start_offset, size_t end_offset) override {
             // todo: likely can be optimized
-            std::random_device rd;
-            std::mt19937 g(rd());
+            random_device rd;
+            mt19937 g(rd());
             const size_t end = recordCount() - end_offset;
             // weird that I had to cast it down to an unsigned long
             // feels like a bug waiting to happen with a large data set.
@@ -185,13 +185,13 @@ namespace microml {
 
         // populate a batch vector of vectors, reusing the structure. This is to save the time we'd otherwise use
         // to allocate.
-        std::vector<std::shared_ptr<TrainingPair>> nextBatch(size_t batch_size) override {
-            std::vector<std::shared_ptr<TrainingPair>> result;
+        vector<shared_ptr<TrainingPair>> nextBatch(size_t batch_size) override {
+            vector<shared_ptr<TrainingPair>> result;
             for (size_t batch_offset = 0; batch_offset < batch_size; batch_offset++) {
                 if (current_offset >= recordCount()) {
                     break;
                 }
-                std::shared_ptr<TrainingPair> next = nextRecord();
+                shared_ptr<TrainingPair> next = nextRecord();
                 if (next) {
                     result.push_back(next);
                 }
@@ -199,35 +199,35 @@ namespace microml {
             return result;
         }
 
-        std::shared_ptr<TrainingPair> nextRecord() override {
+        shared_ptr<TrainingPair> nextRecord() override {
             if (current_offset >= recordCount()) {
                 return nullptr;
             }
-            std::shared_ptr<TrainingPair> result = pairs.at(current_offset);
+            shared_ptr<TrainingPair> result = pairs.at(current_offset);
             if (result) {
                 current_offset++;
             }
             return result;
         }
 
-        std::vector<std::vector<size_t>> getGivenShapes() override {
+        vector<vector<size_t>> getGivenShapes() override {
             if (pairs.empty()) {
-                return std::vector<std::vector<size_t>>{{0, 0, 0}};
+                return vector<vector<size_t>>{{0, 0, 0}};
             }
             auto given = pairs[0]->getGiven();
-            std::vector<std::vector<size_t>> result;
+            vector<vector<size_t>> result;
             for (const auto &next: given) {
                 result.push_back(next->getShape());
             }
             return result;
         }
 
-        std::vector<std::vector<size_t>> getExpectedShapes() override {
+        vector<vector<size_t>> getExpectedShapes() override {
             if (pairs.empty()) {
-                return std::vector<std::vector<size_t>>{{0, 0, 0}};
+                return vector<vector<size_t>>{{0, 0, 0}};
             }
             auto expected = pairs[0]->getExpected();
-            std::vector<std::vector<size_t>> result;
+            vector<vector<size_t>> result;
             for (const auto &next: expected) {
                 result.push_back(next->getShape());
             }
@@ -235,7 +235,7 @@ namespace microml {
         }
 
     private:
-        std::vector<std::shared_ptr<TrainingPair>> pairs;
+        vector<shared_ptr<TrainingPair>> pairs;
         size_t current_offset;
     };
 
@@ -264,11 +264,11 @@ namespace microml {
         }
 
 
-        std::vector<std::vector<size_t>> getGivenShapes() override {
+        vector<vector<size_t>> getGivenShapes() override {
             return {givenShape};
         }
 
-        std::vector<std::vector<size_t>> getExpectedShapes() override {
+        vector<vector<size_t>> getExpectedShapes() override {
             return {expectedShape};
         }
 
@@ -313,10 +313,10 @@ namespace microml {
                 auto record = delimitedTextFileReader.nextRecord();
                 auto middleIter(record.begin());
                 std::advance(middleIter, first_size);
-                std::vector<string> firstHalf(record.begin(), middleIter);
+                vector<string> firstHalf(record.begin(), middleIter);
                 auto firstTensor = firstEncoder->encode(firstHalf, first_shape[0], first_shape[1], first_shape[2],
                                                         trimStrings);
-                std::vector<string> secondHalf(middleIter, record.end());
+                vector<string> secondHalf(middleIter, record.end());
                 auto secondTensor = secondEncoder->encode(secondHalf, second_shape[0], second_shape[1],
                                                           second_shape[2], trimStrings);
                 if (expectedFirst) {

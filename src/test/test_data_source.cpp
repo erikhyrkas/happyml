@@ -10,15 +10,15 @@ using namespace std;
 
 void testAdditionSource() {
     TestAdditionGeneratedDataSource testAdditionGeneratedDataSource(10);
-    std::shared_ptr<TrainingPair> nextRecord;
+    shared_ptr<TrainingPair> nextRecord;
     do {
         nextRecord = testAdditionGeneratedDataSource.nextRecord();
         if (nextRecord) {
-            std::cout << "GIVEN: " << std::endl;
+            cout << "GIVEN: " << endl;
             for (const auto &given: nextRecord->getGiven()) {
                 given->print();
             }
-            std::cout << "EXPECTED: " << std::endl;
+            cout << "EXPECTED: " << endl;
             for (size_t i = 0; i < nextRecord->getExpectedSize(); i++) {
                 for (const auto &expected: nextRecord->getExpected()) {
                     expected->print();
@@ -34,8 +34,8 @@ void testAdditionSource() {
 int main() {
     try {
         testAdditionSource();
-    } catch (const std::exception &e) {
-        std::cout << e.what() << std::endl;
+    } catch (const exception &e) {
+        cout << e.what() << endl;
     }
 
     return 0;

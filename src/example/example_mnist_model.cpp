@@ -39,7 +39,7 @@ void testMnistFull() {
             ->addNode(50, NodeType::full, ActivationType::tanh_approx)
             ->addOutput(mnistDataSource->getExpectedShape(), ActivationType::tanh_approx)
             ->build();
-    neuralNetwork->train(mnistDataSource, 3, 128); // todo: find correct number of epochs after optimizing
+    neuralNetwork->train(mnistDataSource, 1000, 256); // todo: find correct number of epochs after optimizing
 
 
     auto testMnistDataSource = make_shared<InMemoryDelimitedValuesTrainingDataSet>("..\\test_data\\small_mnist_format.csv", ',',
@@ -107,7 +107,7 @@ void testMnistConvolution() {
 int main() {
     try {
         testMnistFull();
-    } catch (const std::exception &e) {
-        std::cout << e.what() << std::endl;
+    } catch (const exception &e) {
+        cout << e.what() << endl;
     }
 }

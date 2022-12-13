@@ -28,22 +28,22 @@ namespace microml {
 
     class ActivationFunction {
     public:
-        virtual std::shared_ptr<BaseTensor> activate(const std::shared_ptr<BaseTensor> &input) = 0;
+        virtual shared_ptr<BaseTensor> activate(const shared_ptr<BaseTensor> &input) = 0;
 
-        virtual std::shared_ptr<BaseTensor> derivative(const std::shared_ptr<BaseTensor> &input) = 0;
+        virtual shared_ptr<BaseTensor> derivative(const shared_ptr<BaseTensor> &input) = 0;
     };
 
     // also known as the "identity" activation function.
     // do nothing. useful for basic linear regression where we don't have an activation function.
     class LinearActivationFunction : public ActivationFunction {
-        std::shared_ptr<BaseTensor> activate(const std::shared_ptr<BaseTensor> &input) override {
+        shared_ptr<BaseTensor> activate(const shared_ptr<BaseTensor> &input) override {
             // copy input to output without changing it
-            return std::make_unique<TensorNoOpView>(input);
+            return make_unique<TensorNoOpView>(input);
         }
 
-        std::shared_ptr<BaseTensor> derivative(const std::shared_ptr<BaseTensor> &input) override {
+        shared_ptr<BaseTensor> derivative(const shared_ptr<BaseTensor> &input) override {
             // sent all 1s to output in the same shape as input
-            return std::make_shared<UniformTensor>(input->rowCount(), input->columnCount(), input->channelCount(),
+            return make_shared<UniformTensor>(input->rowCount(), input->columnCount(), input->channelCount(),
                                                    1.0f);
         }
 
@@ -51,34 +51,34 @@ namespace microml {
 
     // small negative number to infinity
     class LeakyReLUActivationFunction : public ActivationFunction {
-        std::shared_ptr<BaseTensor> activate(const std::shared_ptr<BaseTensor> &input) override {
+        shared_ptr<BaseTensor> activate(const shared_ptr<BaseTensor> &input) override {
             auto transformFunction = [](float original) {
                 // avoid branching in a loop. give negative values a small value.
                 return ((float) (original < 0.0f)) * (0.01f * original) + ((float) (original >= 0.0f)) * original;
             };
-            return std::make_shared<TensorValueTransformView>(input, transformFunction);
+            return make_shared<TensorValueTransformView>(input, transformFunction);
         }
 
-        std::shared_ptr<BaseTensor> derivative(const std::shared_ptr<BaseTensor> &input) override {
+        shared_ptr<BaseTensor> derivative(const shared_ptr<BaseTensor> &input) override {
             auto transformFunction = [](float original) {
                 // avoid branching in a loop. give negative values a small value.
                 return ((float) (original < 0.0f)) * 0.01f + ((float) (original >= 0.0f)) * 1.0f;
             };
-            return std::make_shared<TensorValueTransformView>(input, transformFunction);
+            return make_shared<TensorValueTransformView>(input, transformFunction);
         }
     };
 
     // Useful in the hidden layers of a neural network, especially deep neural networks and convolutional neural networks.
     // 0 to infinity
     class ReLUActivationFunction : public ActivationFunction {
-        std::shared_ptr<BaseTensor> activate(const std::shared_ptr<BaseTensor> &input) override {
+        shared_ptr<BaseTensor> activate(const shared_ptr<BaseTensor> &input) override {
             auto transformFunction = [](float original) {
                 return std::max(original, 0.0f);
             };
-            return std::make_shared<TensorValueTransformView>(input, transformFunction);
+            return make_shared<TensorValueTransformView>(input, transformFunction);
         }
 
-        std::shared_ptr<BaseTensor> derivative(const std::shared_ptr<BaseTensor> &input) override {
+        shared_ptr<BaseTensor> derivative(const shared_ptr<BaseTensor> &input) override {
             auto transformFunction = [](float original) {
                 // derivative original == 0 is undefined.
                 if(original > 0.f) {
@@ -86,14 +86,14 @@ namespace microml {
                 }
                 return 0.f;
             };
-            return std::make_shared<TensorValueTransformView>(input, transformFunction);
+            return make_shared<TensorValueTransformView>(input, transformFunction);
         }
     };
 
     // result tensor elements sum to 1, representing the percentage of importance of each element in original tensor
     // usually represents a probability between 0 and 1 of each element in a classifications of multiple possibilities
     class SoftmaxActivationFunction : public ActivationFunction {
-        std::shared_ptr<BaseTensor> activate(const std::shared_ptr<BaseTensor> &input) override {
+        shared_ptr<BaseTensor> activate(const shared_ptr<BaseTensor> &input) override {
             float largestValue = input->max();
             double sum = 0.0;
             if (input->rowCount() == 1 && input->columnCount() > 0) {
@@ -105,28 +105,28 @@ namespace microml {
                     sum += std::exp(input->getValue(row, 0, 0) - largestValue);
                 }
             } else {
-                throw std::exception("Softmax supports input with a single row or single column.");
+                throw exception("Softmax supports input with a single row or single column.");
             }
-            std::vector<double> constants{largestValue, sum};
-            auto transformFunction = [](float original, std::vector<double> constants) {
+            vector<double> constants{largestValue, sum};
+            auto transformFunction = [](float original, vector<double> constants) {
                 return ((double) std::expf(original - (float) constants[0])) / constants[1];
             };
-            return std::make_shared<TensorValueTransform2View>(input, transformFunction, constants);
+            return make_shared<TensorValueTransform2View>(input, transformFunction, constants);
         }
 
-        std::shared_ptr<BaseTensor> derivative(const std::shared_ptr<BaseTensor> &input) override {
+        shared_ptr<BaseTensor> derivative(const shared_ptr<BaseTensor> &input) override {
             // fixme: broken. producing the wrong shape output. (The output shape is too small.)
-            std::shared_ptr<BaseTensor> softmaxOut = activate(input);
-            auto negative = std::make_shared<TensorMultiplyByScalarView>(softmaxOut, -1.0f);
-            auto reshape = std::make_shared<TensorReshapeView>(softmaxOut, softmaxOut->columnCount(),
+            shared_ptr<BaseTensor> softmaxOut = activate(input);
+            auto negative = make_shared<TensorMultiplyByScalarView>(softmaxOut, -1.0f);
+            auto reshape = make_shared<TensorReshapeView>(softmaxOut, softmaxOut->columnCount(),
                                                                softmaxOut->rowCount());
-            auto dot_product_view = std::make_shared<TensorDotTensorView>(negative, reshape);
-            auto diag = std::make_shared<TensorDiagonalView>(softmaxOut);
+            auto dot_product_view = make_shared<TensorDotTensorView>(negative, reshape);
+            auto diag = make_shared<TensorDiagonalView>(softmaxOut);
             cout << "softmax: work in progress... fix me." <<endl;
             softmaxOut->print();
             diag->print();
             dot_product_view->print();
-            return std::make_shared<TensorAddTensorView>(dot_product_view, diag);
+            return make_shared<TensorAddTensorView>(dot_product_view, diag);
         }
     };
 
@@ -134,48 +134,48 @@ namespace microml {
     // f(x) = 0.5 * (x / (1 + abs(x)) + 1)
     // 0 to 1
     class SigmoidApproximationActivationFunction : public ActivationFunction {
-        std::shared_ptr<BaseTensor> activate(const std::shared_ptr<BaseTensor> &input) override {
+        shared_ptr<BaseTensor> activate(const shared_ptr<BaseTensor> &input) override {
             auto transformFunction = [](float original) {
                 return 0.5f * ((original / (1.0f + std::abs(original))) + 1);
             };
-            return std::make_shared<TensorValueTransformView>(input, transformFunction);
+            return make_shared<TensorValueTransformView>(input, transformFunction);
         }
 
-        std::shared_ptr<BaseTensor> derivative(const std::shared_ptr<BaseTensor> &input) override {
+        shared_ptr<BaseTensor> derivative(const shared_ptr<BaseTensor> &input) override {
             // result = sigmoid(x) * (1.0 - sigmoid(x))
             auto transformFunction = [](float original) {
                 // todo: validate math.
                 auto sig = 0.5f * ((original / (1.0f + std::abs(original))) + 1);
                 return sig * (1.f - sig);
             };
-            return std::make_shared<TensorValueTransformView>(input, transformFunction);
+            return make_shared<TensorValueTransformView>(input, transformFunction);
         }
     };
 // I found this article useful in verifying the formula: https://towardsdatascience.com/derivative-of-the-sigmoid-function-536880cf918e
 // I also checked this understanding here: https://medium.com/@DannyDenenberg/derivative-of-the-sigmoid-function-774446dfa462
 // 0 to 1
     class SigmoidActivationFunction : public ActivationFunction {
-        std::shared_ptr<BaseTensor> activate(const std::shared_ptr<BaseTensor> &input) override {
+        shared_ptr<BaseTensor> activate(const shared_ptr<BaseTensor> &input) override {
             auto transformFunction = [](float original) {
                 return 1.0f / (1.0f + std::exp(-1.0f * original));
             };
-            return std::make_shared<TensorValueTransformView>(input, transformFunction);
+            return make_shared<TensorValueTransformView>(input, transformFunction);
         }
 
-        std::shared_ptr<BaseTensor> derivative(const std::shared_ptr<BaseTensor> &input) override {
+        shared_ptr<BaseTensor> derivative(const shared_ptr<BaseTensor> &input) override {
             // result = sigmoid(x) * (1.0 - sigmoid(x))
             auto transformFunction = [](float original) {
                 auto sig = 1.0f / (1.0f + std::exp(-1.0f * original));
                 return sig * (1.f - sig);
             };
-            return std::make_shared<TensorValueTransformView>(input, transformFunction);
+            return make_shared<TensorValueTransformView>(input, transformFunction);
         }
     };
 
     // approximate tanh
     // I read about this here: https://www.ipol.im/pub/art/2015/137/article_lr.pdf
     class TanhApproximationActivationFunction : public ActivationFunction {
-        std::shared_ptr<BaseTensor> activate(const std::shared_ptr<BaseTensor> &input) override {
+        shared_ptr<BaseTensor> activate(const shared_ptr<BaseTensor> &input) override {
             PROFILE_BLOCK(profileBlock);
             auto transformFunction = [](float original) {
                 // tanh(x) = 2 * sigmoid(2x) - 1
@@ -184,10 +184,10 @@ namespace microml {
 //                auto sigmoid = 0.5f * ((original / (1.0f + std::abs(original))) + 1); //super approx
                 return (2 * sigmoid) - 1;
             };
-            return std::make_shared<TensorValueTransformView>(input, transformFunction);
+            return make_shared<TensorValueTransformView>(input, transformFunction);
         }
 
-        std::shared_ptr<BaseTensor> derivative(const std::shared_ptr<BaseTensor> &input) override {
+        shared_ptr<BaseTensor> derivative(const shared_ptr<BaseTensor> &input) override {
             PROFILE_BLOCK(profileBlock);
             // result = sigmoid(x) * (1.0 - sigmoid(x))
             auto transformFunction = [](float original) {
@@ -199,13 +199,13 @@ namespace microml {
                 const float th = (2 * sigmoid) - 1;
                 return 1 - (th * th);
             };
-            return std::make_shared<TensorValueTransformView>(input, transformFunction);
+            return make_shared<TensorValueTransformView>(input, transformFunction);
         }
     };
     // Generally used for classification
     // -1 to 1
     class TanhActivationFunction : public ActivationFunction {
-        std::shared_ptr<BaseTensor> activate(const std::shared_ptr<BaseTensor> &input) override {
+        shared_ptr<BaseTensor> activate(const shared_ptr<BaseTensor> &input) override {
             auto transformFunction = [](float original) {
                 // optimization or waste of energy?
                 // tanh(x) = 2 * sigmoid(2x) - 1
@@ -214,16 +214,16 @@ namespace microml {
 //            return (2 * sigmoid) - 1;
                 return tanh(original);
             };
-            return std::make_shared<TensorValueTransformView>(input, transformFunction);
+            return make_shared<TensorValueTransformView>(input, transformFunction);
         }
 
-        std::shared_ptr<BaseTensor> derivative(const std::shared_ptr<BaseTensor> &input) override {
+        shared_ptr<BaseTensor> derivative(const shared_ptr<BaseTensor> &input) override {
             auto transformFunction = [](float original) {
                 // 1 - tanh^2{x}
                 const float th = tanh(original);
                 return 1 - (th * th);
             };
-            return std::make_shared<TensorValueTransformView>(input, transformFunction);
+            return make_shared<TensorValueTransformView>(input, transformFunction);
         }
     };
 }

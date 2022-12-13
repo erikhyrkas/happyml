@@ -15,7 +15,7 @@ using namespace std;
 namespace microml {
     class TextLineFileReader {
     public:
-        explicit TextLineFileReader(const std::string &path) {
+        explicit TextLineFileReader(const string &path) {
             this->filename = path;
             stream.open(filename);
             has_next = true;
@@ -36,7 +36,7 @@ namespace microml {
             return has_next;
         }
 
-        std::string nextLine() {
+        string nextLine() {
             // we have read ahead one line, so we know our result.
             string result = next_line;
             // now we need to keep reading ahead if we can
@@ -46,7 +46,7 @@ namespace microml {
                     has_next = false;
                     next_line = "";
                 } else {
-                    std::string line;
+                    string line;
                     if (!std::getline(stream, line)) {
                         // we reached the end of the file. let's release the file handle now.
                         stream.close();
@@ -61,15 +61,15 @@ namespace microml {
         }
 
     private:
-        std::string filename;
-        std::ifstream stream;
+        string filename;
+        ifstream stream;
         bool has_next;
-        std::string next_line;
+        string next_line;
     };
 
     class DelimitedTextFileReader {
     public:
-        DelimitedTextFileReader(const std::string &path, char delimiter) : lineReader(path) {
+        DelimitedTextFileReader(const string &path, char delimiter) : lineReader(path) {
             this->delimiter = delimiter;
         }
 

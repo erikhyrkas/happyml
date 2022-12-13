@@ -97,7 +97,7 @@ namespace microml {
 
     class TextToCategoryEncoder : public TrainingDataInputEncoder {
     public:
-        explicit TextToCategoryEncoder(const std::map<string,size_t> &categoryMapping) {
+        explicit TextToCategoryEncoder(const map<string,size_t> &categoryMapping) {
             this->categoryMapping = categoryMapping;
         }
 
@@ -130,7 +130,7 @@ namespace microml {
             return tensor(result);
         }
     private:
-        std::map<string,size_t> categoryMapping;
+        map<string,size_t> categoryMapping;
     };
 
 

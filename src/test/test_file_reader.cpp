@@ -24,7 +24,7 @@ int main() {
         ASSERT_TRUE(4 == csv_record.size());
         textFileReader->close();
 
-    } catch (const std::exception &e) {
-        std::cout << e.what() << std::endl;
+    } catch (const exception &e) {
+        cout << e.what() << endl;
     }
 }

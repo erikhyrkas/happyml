@@ -16,29 +16,29 @@ void printConversion(int bias, float i, bool brief) {
 //    const quarter quarter_no_round = float_to_quarter_v1(i, bias, 0);
 //    const float float_no_round = quarter_to_float_v2(quarter_no_round, bias, 0);
     if (brief) {
-        std::cout << "bias " << bias << " value: " << std::setprecision(3) << i << std::fixed << std::setprecision(20)
+        cout << "bias " << bias << " value: " << std::setprecision(3) << i << std::fixed << std::setprecision(20)
                   << " default: " << float_default
 //                  << " nearest: " << float_round
 //                  << " nearest avoid zero: " << float_round_avoid_zero
 //                  << " no round: " << float_no_round
-                  << std::endl;
+                  << endl;
     } else {
         //<< std::fixed << std::setprecision(35)
-        std::cout << std::endl << "Bias: " << bias << " Original value: " << std::setprecision(3) << i << std::endl;
+        cout << endl << "Bias: " << bias << " Original value: " << std::setprecision(3) << i << endl;
         printBits(i);
-        std::cout << "quarter default: " << float_default << std::endl;
+        cout << "quarter default: " << float_default << endl;
         printBits(float_default);
         printBits(quarter_default);
-//        std::cout << "quarter round: " << float_round << std::endl;
+//        cout << "quarter round: " << float_round << endl;
 //        print_bits(float_round);
 //        print_bits(quarter_round);
-//        std::cout << "quarter round avoid zero: " << float_round_avoid_zero << std::endl;
+//        cout << "quarter round avoid zero: " << float_round_avoid_zero << endl;
 //        print_bits(float_round_avoid_zero);
 //        print_bits(quarter_round_avoid_zero);
-//        std::cout << "quarter no round: " << float_no_round << std::endl;
+//        cout << "quarter no round: " << float_no_round << endl;
 //        print_bits(float_no_round);
 //        print_bits(quarter_no_round);
-        std::cout << std::endl;
+        cout << endl;
     }
 }
 
@@ -72,18 +72,18 @@ void printConversionsBigNumbers(int bias, bool brief) {
 void testAdd(float a, float b, float expected_result, int bias) {
     // yes this bounces back and forth between float and quarter a lot, but it's good exercise.
 //    float real_result = a + b;
-//    std::cout << "Real result: " << real_result << " "
+//    cout << "Real result: " << real_result << " "
 //              << quarter_to_float(float_to_quarter_round_nearest_not_zero(real_result, bias, 0), bias, 0) << " vs "
-//              << quarter_to_float(float_to_quarter_round_nearest_not_zero(expected_result, bias, 0), bias, 0) << std::endl;
+//              << quarter_to_float(float_to_quarter_round_nearest_not_zero(expected_result, bias, 0), bias, 0) << endl;
 
     quarter expected_result_quarter = floatToQuarter(expected_result, bias);
     quarter first = floatToQuarter(a, bias);
     quarter second = floatToQuarter(b, bias);
     quarter add_result = quarterAdd(first, bias, second, bias, bias);
     float add_result_float = quarterToFloat(add_result, bias);
-    std::cout << std::endl << "Testing: " << bias << ": " << a << "(" << quarterToFloat(first, bias) << ")"
+    cout << endl << "Testing: " << bias << ": " << a << "(" << quarterToFloat(first, bias) << ")"
               << " + " << b << "(" << quarterToFloat(second, bias) << ")" << " = " << add_result_float << "("
-              << quarterToFloat(expected_result_quarter, bias) << ")" << std::endl;
+              << quarterToFloat(expected_result_quarter, bias) << ")" << endl;
     printBits(add_result);
     printBits(expected_result_quarter);
     ASSERT_TRUE(roughlyEqual(add_result, expected_result_quarter));
@@ -96,7 +96,7 @@ void testSubtract(float a, float b, float expected_result, int bias) {
     quarter second = floatToQuarter(b, bias);
     quarter add_result = quarterSubtract(first, bias, second, bias, bias);
     float add_result_float = quarterToFloat(add_result, bias);
-    std::cout << std::endl << "Testing: " << a << " - " << b << " = " << add_result_float << std::endl;
+    cout << endl << "Testing: " << a << " - " << b << " = " << add_result_float << endl;
     ASSERT_TRUE(add_result == expected_result_quarter);
 }
 
@@ -107,7 +107,7 @@ void testMultiply(float a, float b, float expected_result, int bias) {
     quarter second = floatToQuarter(b, bias);
     quarter add_result = quarterMultiply(first, bias, second, bias, bias);
     float add_result_float = quarterToFloat(add_result, bias);
-    std::cout << std::endl << "Testing: " << a << " * " << b << " = " << add_result_float << std::endl;
+    cout << endl << "Testing: " << a << " * " << b << " = " << add_result_float << endl;
     ASSERT_TRUE(add_result == expected_result_quarter);
 }
 
@@ -118,18 +118,18 @@ void testDivide(float a, float b, float expected_result, int bias) {
     quarter second = floatToQuarter(b, bias);
     quarter add_result = quarterDivide(first, bias, second, bias, bias);
     float add_result_float = quarterToFloat(add_result, bias);
-    std::cout << std::endl << "Testing: " << a << " / " << b << " = " << add_result_float << std::endl;
+    cout << endl << "Testing: " << a << " / " << b << " = " << add_result_float << endl;
     ASSERT_TRUE(add_result == expected_result_quarter);
 }
 
 int testOneQuarter(float f, int quarterBias) {
-    std::cout << std::endl << "Testing: " << f << std::endl;
+    cout << endl << "Testing: " << f << endl;
     quarter q = floatToQuarter(f, quarterBias);
     float f2 = quarterToFloat(q, quarterBias);
     printBits(f);
     printBits(q);
     printBits(f2);
-    std::cout << "Received: " << f2 << std::endl;
+    cout << "Received: " << f2 << endl;
     if (isnan(f) && isnan(f2)) {
         return 1;
     }
@@ -137,7 +137,7 @@ int testOneQuarter(float f, int quarterBias) {
 }
 
 int minMaxSmallestTest(int bias) {
-    std::cout << std::endl << bias << " bias:" << std::endl;
+    cout << endl << bias << " bias:" << endl;
     int result = testOneQuarter(quarterToFloat(QUARTER_MAX, bias), bias);
     result &= testOneQuarter(quarterToFloat(QUARTER_MIN, bias), bias);
     result &= testOneQuarter(quarterToFloat(QUARTER_SMALLEST, bias), bias);
@@ -229,8 +229,8 @@ int main() {
 
         printConversionsSmallNumbers(14, true);
         printConversionsBigNumbers(14, true);
-    } catch (const std::exception &e) {
-        std::cout << e.what() << std::endl;
+    } catch (const exception &e) {
+        cout << e.what() << endl;
     }
 
     return 0;

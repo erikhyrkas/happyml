@@ -98,7 +98,7 @@ int main() {
         usingSigmoid();
         usingRelu();
 
-    } catch (const std::exception &e) {
-        std::cout << e.what() << std::endl;
+    } catch (const exception &e) {
+        cout << e.what() << endl;
     }
 }

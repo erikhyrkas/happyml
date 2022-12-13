@@ -152,24 +152,26 @@
 #define QUARTER_SECOND_SMALLEST 0b00000010
 #define QUARTER_SECOND_MIN 0b11110110
 
+using namespace std;
+
 namespace microml {
 
     typedef unsigned char quarter;
 
     void printBits(const quarter x) {
         for (int i = 7; i >= 0; i--) {
-            std::cout << ((x >> i) & 1);
-            if (i == 7 || i == 3) std::cout << " ";
+            cout << ((x >> i) & 1);
+            if (i == 7 || i == 3) cout << " ";
         }
-        std::cout << std::endl;
+        cout << endl;
     }
 
     void printBits(const uint32_t x) {
         for (int i = 31; i >= 0; i--) {
-            std::cout << ((x >> i) & 1);
-            if (i == 31 || i == 23) std::cout << " ";
+            cout << ((x >> i) & 1);
+            if (i == 31 || i == 23) cout << " ";
         }
-        std::cout << std::endl;
+        cout << endl;
     }
 
     void printBits(const float x) {

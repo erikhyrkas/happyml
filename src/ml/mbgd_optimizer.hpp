@@ -295,13 +295,13 @@ namespace microml {
         shared_ptr<BaseTensor> backward(const shared_ptr<BaseTensor> &output_error) override {
             PROFILE_BLOCK(profileBlock);
 
-            auto bias_error_at_learning_rate = std::make_shared<TensorMultiplyByScalarView>(output_error,
+            auto bias_error_at_learning_rate = make_shared<TensorMultiplyByScalarView>(output_error,
                                                                                             learningState->biasLearningRate * mixedPrecisionScale);
-            auto adjusted_bias = std::make_shared<TensorMinusTensorView>(bias, bias_error_at_learning_rate);
+            auto adjusted_bias = make_shared<TensorMinusTensorView>(bias, bias_error_at_learning_rate);
             bias = materializeTensor(adjusted_bias, bits);
 
             lastInput.reset();
-//            auto adjusted_output = std::make_shared<TensorMinusTensorView>(output_error, adjusted_bias);
+//            auto adjusted_output = make_shared<TensorMinusTensorView>(output_error, adjusted_bias);
             // TODO: partial derivative of bias would always be 1, so we pass along original error. I'm fairly sure this is right.
             // but I notice that the quarter float doesn't handle big shifts in scale very well
             return output_error;
