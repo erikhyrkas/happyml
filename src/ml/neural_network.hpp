@@ -290,7 +290,7 @@ namespace microml {
         // a batch is the number of samples (records) to look at before updating weights
         // train/fit
         void train(const shared_ptr<TrainingDataSet> &source, size_t epochs, int batchSize = 1,
-                   bool overwriteOutputLines = false) {
+                   bool overwriteOutputLines = true) {
             auto total_records = source->recordCount();
             if (batchSize > total_records) {
                 throw exception("Batch Size cannot be larger than source data set.");
@@ -298,12 +298,13 @@ namespace microml {
             ElapsedTimer totalTimer;
             const size_t outputSize = outputNodes.size();
             cout << endl;
-            logTraining(0, -1, epochs, 0, ceil(total_records / batchSize), batchSize, 0, 0, overwriteOutputLines);
+            logTraining(0, -1, epochs, 0, ceil(total_records / batchSize), batchSize, 0, overwriteOutputLines);
             for (size_t epoch = 0; epoch < epochs; epoch++) {
                 ElapsedTimer timer;
                 source->shuffle();
 
                 int batchOffset = 0;
+                float epochLoss = 0.f;
                 vector<vector<shared_ptr<BaseTensor>>> batchPredictions;
                 vector<vector<shared_ptr<BaseTensor>>> batchTruths;
                 batchPredictions.resize(outputSize);
@@ -326,6 +327,8 @@ namespace microml {
                     batchOffset++;
                     nextRecord = source->nextRecord();
                     if (batchOffset >= batchSize || nextRecord == nullptr) {
+                        size_t currentBatch = ceil(current_record / batchSize);
+                        double totalBatchOutputLoss = 0;
                         for (size_t outputIndex = 0; outputIndex < outputSize; outputIndex++) {
                             // TODO: materializing the error into a full tensor helps performance at the cost of memory.
                             //  we should be able to determine the best strategy at runtime. Sometimes, memory is too valuable
@@ -333,25 +336,27 @@ namespace microml {
                             auto totalError = make_shared<FullTensor>(
                                     lossFunction->calculateTotalError(batchTruths[outputIndex],
                                                                       batchPredictions[outputIndex]));
-//                            auto total_error = lossFunction->calculateTotalError(batch_truths[output_index], batch_predictions[output_index]);
-                            auto loss = lossFunction->compute(totalError) / (float)batchOffset;
-                            // batch_offset should be equal to batch_size, unless we are out of records.
+                            auto totalLoss = lossFunction->compute(totalError);
+                            auto batchLoss = totalLoss / (float)batchOffset;
+                            totalBatchOutputLoss += batchLoss;
+
+                            // batchOffset should be equal to batch_size, unless we are out of records.
                             auto lossDerivative = lossFunction->partialDerivative(totalError, (float) batchOffset);
 
-                            auto elapsedTime = timer.getMilliseconds();
-                            logTraining(elapsedTime, epoch, epochs, ceil(current_record / batchSize),
-                                        ceil(total_records / batchSize), batchOffset, loss, 1,
-                                        overwriteOutputLines);
                             // todo: we don't weight loss when there are multiple outputs back propagating. we should, instead of treating them as equals.
                             outputNodes[outputIndex]->backward(lossDerivative);
 
-                            elapsedTime = timer.getMilliseconds();
-                            logTraining(elapsedTime, epoch, epochs, ceil(current_record / batchSize),
-                                        ceil(total_records / batchSize), batchOffset, loss, 2,
-                                        overwriteOutputLines);
                             batchTruths[outputIndex].clear();
                             batchPredictions[outputIndex].clear();
                         }
+                        // for each offset:
+                        //   average = average + (val[offset] - average)/(offset+1)
+                        // TODO: this loss assumes that all outputs have the same weight, which may not be true:
+                        epochLoss += (float) (((totalBatchOutputLoss/(double)outputSize) - epochLoss) / (double)currentBatch);
+                        auto elapsedTime = timer.getMilliseconds();
+                        logTraining(elapsedTime, epoch, epochs, currentBatch,
+                                    ceil(total_records / batchSize), batchOffset, epochLoss,
+                                    overwriteOutputLines);
                         batchOffset = 0;
                     }
                 }
@@ -369,36 +374,23 @@ namespace microml {
 
         static void logTraining(long long int elapsedTime, size_t epoch, size_t epochs,
                                 size_t currentRecord, size_t totalRecords, int batchSize,
-                                float loss, int stage, bool overwrite) {
+                                float loss, bool overwrite) {
             // printf is about 6x faster than cout. I'm not sure why, since neither should flush without an end line.
             // I can only assume it relates to how cout processes numbers to strings.
-            string statusMessage;
-            switch (stage) {
-                case 0:
-                    statusMessage = "to initialize";
-                    break;
-                case 1:
-                    statusMessage = "to predict";
-                    break;
-                case 2:
-                    statusMessage = "to learn";
-                    break;
-                default:
-                    statusMessage = "unknown";
-            }
+
             if (elapsedTime > 120000) {
                 auto min = elapsedTime / 60000;
                 auto sec = (elapsedTime % 60000) / 1000;
-                printf("%5zd m %zd s %-13s \tEpoch: %6zd/%zd \tBatch: %4zd/%zd Batch Size: %3d \tLoss: %11f      ",
-                       min, sec, statusMessage.c_str(), (epoch + 1), epochs,
+                printf("%5zd m %zd s\tEpoch: %6zd/%zd \tBatch: %4zd/%zd Batch Size: %3d \tLoss: %11f      ",
+                       min, sec, (epoch + 1), epochs,
                        currentRecord, totalRecords, batchSize, loss);
             } else if (elapsedTime > 2000) {
-                printf("%5zd s %-13s \tEpoch: %6zd/%zd \tBatch: %4zd/%zd Batch Size: %3d \tLoss: %11f            ",
-                       (elapsedTime / 1000), statusMessage.c_str(), (epoch + 1), epochs,
+                printf("%5zd s\tEpoch: %6zd/%zd \tBatch: %4zd/%zd Batch Size: %3d \tLoss: %11f            ",
+                       (elapsedTime / 1000), (epoch + 1), epochs,
                        currentRecord, totalRecords, batchSize, loss);
             } else {
-                printf("%5zd ms %-13s \tEpoch: %6zd/%zd \tBatch: %4zd/%zd Batch Size: %3d \tLoss: %11f           ",
-                       elapsedTime, statusMessage.c_str(), (epoch + 1), epochs,
+                printf("%5zd ms\tEpoch: %6zd/%zd \tBatch: %4zd/%zd Batch Size: %3d \tLoss: %11f           ",
+                       elapsedTime, (epoch + 1), epochs,
                        currentRecord, totalRecords, batchSize, loss);
             }
             if (overwrite) {
