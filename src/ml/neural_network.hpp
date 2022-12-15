@@ -41,8 +41,8 @@ namespace microml {
 
         // todo: right now, i'm assuming this is a directed acyclic graph, this may not work for everything.
         //  It is possible, I'll have to track visited nodes to avoid infinite cycles.
-        void doForward(const vector<shared_ptr<BaseTensor>> &inputs) {
-            auto input_to_next = neuralNetworkFunction->forward(inputs);
+        void doForward(const vector<shared_ptr<BaseTensor>> &inputs, bool forTraining) {
+            auto input_to_next = neuralNetworkFunction->forward(inputs, forTraining);
             if (materialized) {
                 // TODO: materializing the output into a full tensor helps performance at the cost of memory.
                 //  we should be able to determine the best strategy at runtime. Sometimes, memory is too valuable
@@ -56,15 +56,15 @@ namespace microml {
             }
             for (const auto &output_connection: connection_outputs) {
                 output_connection->next_input = input_to_next;
-                output_connection->to->forwardFromConnection();
+                output_connection->to->forwardFromConnection(forTraining);
             }
         }
 
-        void forwardFromInput(const shared_ptr<BaseTensor> &input) {
-            return doForward({input});
+        void forwardFromInput(const shared_ptr<BaseTensor> &input, bool forTraining) {
+            return doForward({input}, forTraining);
         }
 
-        void forwardFromConnection() {
+        void forwardFromConnection(bool forTraining) {
             vector<shared_ptr<BaseTensor>> inputs;
             for (const auto &input: connection_inputs) {
                 if (input.lock()->next_input == nullptr) {
@@ -72,7 +72,7 @@ namespace microml {
                 }
                 inputs.push_back(input.lock()->next_input);
             }
-            doForward(inputs);
+            doForward(inputs, forTraining);
             for (const auto &input: connection_inputs) {
                 input.lock()->next_input = nullptr;
             }
@@ -237,15 +237,18 @@ namespace microml {
             return predict(vector<shared_ptr<BaseTensor>>{givenInputs});
         }
 
+        vector<shared_ptr<BaseTensor>> predict(const vector<shared_ptr<BaseTensor>> &givenInputs) {
+            return predict(givenInputs, false);
+        }
         // predict/infer
         // I chose the word "predict" because it is more familiar than the word "infer"
         // and the meaning is more or less the same.
-        vector<shared_ptr<BaseTensor>> predict(const vector<shared_ptr<BaseTensor>> &givenInputs) {
+        vector<shared_ptr<BaseTensor>> predict(const vector<shared_ptr<BaseTensor>> &givenInputs, bool forTraining) {
             if (givenInputs.size() != headNodes.size()) {
                 throw exception("infer requires as many input tensors as there are input nodes");
             }
             for (size_t i = 0; i < headNodes.size(); i++) {
-                headNodes[i]->forwardFromInput(givenInputs[i]);
+                headNodes[i]->forwardFromInput(givenInputs[i], forTraining);
             }
             vector<shared_ptr<BaseTensor>> results;
             for (const auto &output: outputNodes) {
@@ -312,7 +315,7 @@ namespace microml {
                     current_record++;
                     auto nextGiven = nextRecord->getGiven();
                     auto nextTruth = nextRecord->getExpected();
-                    auto nextPrediction = predict(nextGiven);
+                    auto nextPrediction = predict(nextGiven, true);
                     for (size_t outputIndex = 0; outputIndex < outputSize; outputIndex++) {
                         batchPredictions[outputIndex].push_back(nextPrediction[outputIndex]);
                         batchTruths[outputIndex].push_back(nextTruth[outputIndex]);
@@ -331,7 +334,7 @@ namespace microml {
                                     lossFunction->calculateTotalError(batchTruths[outputIndex],
                                                                       batchPredictions[outputIndex]));
 //                            auto total_error = lossFunction->calculateTotalError(batch_truths[output_index], batch_predictions[output_index]);
-                            auto loss = lossFunction->compute(totalError);
+                            auto loss = lossFunction->compute(totalError) / (float)batchOffset;
                             // batch_offset should be equal to batch_size, unless we are out of records.
                             auto lossDerivative = lossFunction->partialDerivative(totalError, (float) batchOffset);
 

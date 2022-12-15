@@ -71,9 +71,17 @@ namespace microml {
             }
 
         }
-        shared_ptr<BaseTensor> forward(const vector<shared_ptr<BaseTensor>> &input) override {
+        shared_ptr<BaseTensor> forward(const vector<shared_ptr<BaseTensor>> &input, bool forTraining) override {
             PROFILE_BLOCK(profileBlock);
-            lastInput = input[0]; // ignore other inputs, as they aren't valid. TODO: throw exception
+            if( input.size() > 1) {
+                throw exception("MBGDConvolution2dFunction only supports a single input.");
+            }
+
+            auto lastInput = input[0];
+            if(forTraining) {
+                lastInputs.push(lastInput);
+            }
+
             // filters are the number of output channels we have
             const size_t filters = outputShape[2];
             shared_ptr<BaseTensor> result = nullptr;
@@ -105,8 +113,23 @@ namespace microml {
             // filters are the number of output channels we have
             const size_t filters = outputShape[2];
 
+            size_t lastInputsSize = lastInputs.size();
+            if(lastInputsSize < 1) {
+                throw exception("MBGDFullyConnectedNeurons.backward() called without previous inputs.");
+            }
+            shared_ptr<BaseTensor> average_last_inputs = lastInputs.front();
+            lastInputs.pop();
+            while(!lastInputs.empty()) {
+                auto nextLastInput = lastInputs.front();
+                lastInputs.pop();
+                average_last_inputs = make_shared<TensorAddTensorView>(average_last_inputs, nextLastInput);
+            }
+            if(lastInputsSize > 1) {
+                average_last_inputs = materializeTensor(make_shared<TensorMultiplyByScalarView>(average_last_inputs, 1.f/(float)lastInputsSize));
+            }
+
             // todo: delete temp
-            auto tempLiShape = lastInput->getShape();
+            auto tempLiShape = average_last_inputs->getShape();
 
             for(size_t output_layer = 0; output_layer < filters; output_layer++) {
                 const auto output_error_channel = make_shared<TensorChannelToTensorView>(outputError, output_layer);
@@ -125,7 +148,7 @@ namespace microml {
                     inputError = nextInputError;
                 }
 
-                const auto nextWeightError = make_shared<TensorValidCrossCorrelation2dView>(lastInput, output_error_channel);
+                const auto nextWeightError = make_shared<TensorValidCrossCorrelation2dView>(average_last_inputs, output_error_channel);
                 const auto nextWeightErrorAtLearningRate = make_shared<TensorMultiplyByScalarView>(nextWeightError,
                                                                                                         learningState->learningRate * mixedPrecisionScale);
                 const auto adjusted_weights = make_shared<TensorMinusTensorView>(weights[output_layer], nextWeightErrorAtLearningRate);
@@ -135,11 +158,10 @@ namespace microml {
             if(tempLiShape[0] != tempIeShape[0] || tempLiShape[1] != tempIeShape[1] || tempLiShape[2] != tempIeShape[2]) {
                 throw exception("last input shape doesn't match the shape of the error we are back propagating");
             }
-            lastInput.reset();
             return inputError;
         }
     private:
-        shared_ptr<BaseTensor> lastInput;
+        queue<shared_ptr<BaseTensor>> lastInputs;
         vector<shared_ptr<BaseTensor>> weights;
         uint8_t bits;
         float mixedPrecisionScale;
@@ -176,9 +198,17 @@ namespace microml {
         }
 
         // predicting
-        shared_ptr<BaseTensor> forward(const vector<shared_ptr<BaseTensor>> &input) override {
+        shared_ptr<BaseTensor> forward(const vector<shared_ptr<BaseTensor>> &input, bool forTraining) override {
             PROFILE_BLOCK(profileBlock);
-            lastInput = input[0];
+            if( input.size() > 1) {
+                throw exception("MBGDFullyConnectedNeurons only supports a single input.");
+            }
+
+            auto lastInput = input[0];
+            if(forTraining) {
+                lastInputs.push(lastInput);
+            }
+
             return make_shared<TensorDotTensorView>(lastInput, weights);
         }
 
@@ -186,6 +216,20 @@ namespace microml {
         // TODO: I think this can return a unique pointer.
         shared_ptr<BaseTensor> backward(const shared_ptr<BaseTensor> &output_error) override {
             PROFILE_BLOCK(profileBlock);
+            size_t lastInputsSize = lastInputs.size();
+            if(lastInputsSize < 1) {
+                throw exception("MBGDFullyConnectedNeurons.backward() called without previous inputs.");
+            }
+            shared_ptr<BaseTensor> average_last_inputs = lastInputs.front();
+            lastInputs.pop();
+            while(!lastInputs.empty()) {
+                auto nextLastInput = lastInputs.front();
+                lastInputs.pop();
+                average_last_inputs = make_shared<TensorAddTensorView>(average_last_inputs, nextLastInput);
+            }
+            if(lastInputsSize > 1) {
+                average_last_inputs = materializeTensor(make_shared<TensorMultiplyByScalarView>(average_last_inputs, 1.f/(float)lastInputsSize));
+            }
 
 //            output_error->printMaterializationPlanLine();
 
@@ -198,14 +242,13 @@ namespace microml {
 //            shared_ptr<BaseTensor> input_error = make_shared<TensorDotTensorView>(output_error, weights_transposed);
 
             // update weights
-            auto input_transposed = make_shared<TensorTransposeView>(lastInput);
+            auto input_transposed = make_shared<TensorTransposeView>(average_last_inputs);
             auto weights_error = make_shared<TensorDotTensorView>(input_transposed, output_error);
             auto weights_error_at_learning_rate = make_shared<TensorMultiplyByScalarView>(weights_error,
                                                                                           learningState->learningRate * mixedPrecisionScale);
             auto adjusted_weights = make_shared<TensorMinusTensorView>(weights, weights_error_at_learning_rate);
             weights = materializeTensor(adjusted_weights, bits);
 
-            lastInput.reset();
             return input_error;
         }
 
@@ -213,7 +256,7 @@ namespace microml {
 
     private:
         shared_ptr<BaseTensor> weights;
-        shared_ptr<BaseTensor> lastInput;
+        queue<shared_ptr<BaseTensor>> lastInputs;
         uint8_t bits;
         float mixedPrecisionScale;
         vector<vector<size_t>> inputShapes;
@@ -274,6 +317,7 @@ namespace microml {
                     mixedPrecisionScale = 1.0f;
                 }
             }
+            this->current_batch_size = 0;
         }
 
         vector<vector<size_t>> getInputShapes() {
@@ -285,10 +329,16 @@ namespace microml {
         }
 
         // predicting
-        shared_ptr<BaseTensor> forward(const vector<shared_ptr<BaseTensor>> &input) override {
+        shared_ptr<BaseTensor> forward(const vector<shared_ptr<BaseTensor>> &input, bool forTraining) override {
             PROFILE_BLOCK(profileBlock);
-            lastInput = input[0];
-            return make_shared<TensorAddTensorView>(lastInput, bias);
+            if( input.size() > 1) {
+                throw exception("MBGDBias only supports a single input.");
+            }
+            if(forTraining) {
+                current_batch_size++;
+            }
+
+            return make_shared<TensorAddTensorView>(input[0], bias);
         }
 
         // learning
@@ -296,11 +346,11 @@ namespace microml {
             PROFILE_BLOCK(profileBlock);
 
             auto bias_error_at_learning_rate = make_shared<TensorMultiplyByScalarView>(output_error,
-                                                                                            learningState->biasLearningRate * mixedPrecisionScale);
+                                                                                            learningState->biasLearningRate * mixedPrecisionScale / (float)current_batch_size);
             auto adjusted_bias = make_shared<TensorMinusTensorView>(bias, bias_error_at_learning_rate);
             bias = materializeTensor(adjusted_bias, bits);
 
-            lastInput.reset();
+            current_batch_size = 0;
 //            auto adjusted_output = make_shared<TensorMinusTensorView>(output_error, adjusted_bias);
             // TODO: partial derivative of bias would always be 1, so we pass along original error. I'm fairly sure this is right.
             // but I notice that the quarter float doesn't handle big shifts in scale very well
@@ -309,7 +359,7 @@ namespace microml {
 
     private:
         shared_ptr<BaseTensor> bias;
-        shared_ptr<BaseTensor> lastInput;
+        int current_batch_size;
         uint8_t bits;
         float mixedPrecisionScale;
         vector<vector<size_t>> inputShapes;
