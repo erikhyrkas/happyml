@@ -9,7 +9,7 @@ based on the [CMakeLists.txt](CMakeLists.txt).
 
 # Current State
 This isn't even in a complete alpha stage, yet. 
-* Need to format the code to C++ standards, since I've been doing so many languages that I have clearly forgotten what is standard. 
+* _I think I've updated most of the formatting at this point._ ~~Need to format the code to C++ standards, since I've been doing so many languages that I have clearly forgotten what is standard.~~  
 * Need to fix convolutional layers. I'm not far away from it, but it's not done.
 * Need to fix and check-in Adam optimizer. I'm not even going to check it in until it seems plausibly right and I need to refactor the model object's training to support it correctly.
 * Need to finish the half float and test.

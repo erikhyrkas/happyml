@@ -1,4 +1,4 @@
-# How To Get
+# How To Get Test Data
 I downloaded the mnist test data from:
 https://www.kaggle.com/datasets/oddrationale/mnist-in-csv?resource=download
 
