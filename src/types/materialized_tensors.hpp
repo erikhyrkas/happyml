@@ -147,47 +147,56 @@ namespace microml {
             const size_t columns = columnCount();
             const size_t rows = rowCount();
             const size_t channels = channelCount();
-            if (rows <= 1 && columns < 10000) {
-                for (size_t channel = 0; channel < channels; channel++) {
-                    for (size_t row = 0; row < rows; row++) {
-                        populate_by_col(other, this, row, columns, channel);
-                    }
-                }
-            } else if(columns <= 1 && rows < 10000) {
-                for (size_t channel = 0; channel < channels; channel++) {
+
+            #pragma omp for collapse(3)
+            for (size_t channel = 0; channel < channels; channel++) {
+                for (size_t row = 0; row < rows; row++) {
                     for (size_t col = 0; col < columns; col++) {
-                        populate_by_row(other, this, rows, col, channel);
-                    }
-                }
-            } else {
-                // TODO: I think I should switch to #pragma omp for collapse(3)
-                queue<future<void>> futures;
-                const size_t wait_amount = 8096;
-                if( readRowsInParallel() ) {
-                    for (size_t channel = 0; channel < channels; channel++) {
-                        for (size_t row = 0; row < rows; row++) {
-                            auto next_async = async(launch::async, populate_by_col, other, this, row, columns,
-                                                    channel);
-                            futures.push(std::move(next_async));
-                            if (futures.size() >= wait_amount) {
-                                waitForFutures(futures);
-                            }
-                        }
-                    }
-                } else {
-                    for (size_t channel = 0; channel < channels; channel++) {
-                        for (size_t col = 0; col < columns; col++) {
-                            auto next_async = async(launch::async, populate_by_row, other, this, rows, col,
-                                                    channel);
-                            futures.push(std::move(next_async));
-                            if (futures.size() >= wait_amount) {
-                                waitForFutures(futures);
-                            }
-                        }
-                    }
-                }
-                waitForFutures(futures);
+                        set_val(row, col, channel, other->getValue(row, col, channel));
+                    }                }
             }
+//
+//            if (rows <= 1 && columns < 10000) {
+//                for (size_t channel = 0; channel < channels; channel++) {
+//                    for (size_t row = 0; row < rows; row++) {
+//                        populate_by_col(other, this, row, columns, channel);
+//                    }
+//                }
+//            } else if(columns <= 1 && rows < 10000) {
+//                for (size_t channel = 0; channel < channels; channel++) {
+//                    for (size_t col = 0; col < columns; col++) {
+//                        populate_by_row(other, this, rows, col, channel);
+//                    }
+//                }
+//            } else {
+//                // TODO: I think I should switch to #pragma omp for collapse(3)
+//                queue<future<void>> futures;
+//                const size_t wait_amount = 8096;
+//                if( readRowsInParallel() ) {
+//                    for (size_t channel = 0; channel < channels; channel++) {
+//                        for (size_t row = 0; row < rows; row++) {
+//                            auto next_async = async(launch::async, populate_by_col, other, this, row, columns,
+//                                                    channel);
+//                            futures.push(std::move(next_async));
+//                            if (futures.size() >= wait_amount) {
+//                                waitForFutures(futures);
+//                            }
+//                        }
+//                    }
+//                } else {
+//                    for (size_t channel = 0; channel < channels; channel++) {
+//                        for (size_t col = 0; col < columns; col++) {
+//                            auto next_async = async(launch::async, populate_by_row, other, this, rows, col,
+//                                                    channel);
+//                            futures.push(std::move(next_async));
+//                            if (futures.size() >= wait_amount) {
+//                                waitForFutures(futures);
+//                            }
+//                        }
+//                    }
+//                }
+//                waitForFutures(futures);
+//            }
         }
 
 
@@ -347,47 +356,56 @@ namespace microml {
             const size_t columns = columnCount();
             const size_t rows = rowCount();
             const size_t channels = channelCount();
-            if (rows <= 1 && columns < 10000) {
-                for (size_t channel = 0; channel < channels; channel++) {
-                    for (size_t row = 0; row < rows; row++) {
-                        populate_by_col(other, this, row, columns, channel);
-                    }
-                }
-            } else if(columns <= 1 && rows < 10000) {
-                for (size_t channel = 0; channel < channels; channel++) {
+
+            #pragma omp for collapse(3)
+            for (size_t channel = 0; channel < channels; channel++) {
+                for (size_t row = 0; row < rows; row++) {
                     for (size_t col = 0; col < columns; col++) {
-                        populate_by_row(other, this, rows, col, channel);
-                    }
-                }
-            } else {
-                // TODO: I think I should switch to #pragma omp for collapse(3)
-                queue<future<void>> futures;
-                const size_t wait_amount = 8096;
-                if( readRowsInParallel()) {
-                    for (size_t channel = 0; channel < channels; channel++) {
-                        for (size_t row = 0; row < rows; row++) {
-                            auto next_async = async(launch::async, populate_by_col, other, this, row, columns,
-                                                    channel);
-                            futures.push(std::move(next_async));
-                            if (futures.size() >= wait_amount) {
-                                waitForFutures(futures);
-                            }
-                        }
-                    }
-                } else {
-                    for (size_t channel = 0; channel < channels; channel++) {
-                        for (size_t col = 0; col < columns; col++) {
-                            auto next_async = async(launch::async, populate_by_row, other, this, rows, col,
-                                                    channel);
-                            futures.push(std::move(next_async));
-                            if (futures.size() >= wait_amount) {
-                                waitForFutures(futures);
-                            }
-                        }
-                    }
-                }
-                waitForFutures(futures);
+                        set_val(row, col, channel, other->getValue(row, col, channel));
+                    }                }
             }
+//
+//            if (rows <= 1 && columns < 10000) {
+//                for (size_t channel = 0; channel < channels; channel++) {
+//                    for (size_t row = 0; row < rows; row++) {
+//                        populate_by_col(other, this, row, columns, channel);
+//                    }
+//                }
+//            } else if(columns <= 1 && rows < 10000) {
+//                for (size_t channel = 0; channel < channels; channel++) {
+//                    for (size_t col = 0; col < columns; col++) {
+//                        populate_by_row(other, this, rows, col, channel);
+//                    }
+//                }
+//            } else {
+//                // TODO: I think I should switch to #pragma omp for collapse(3)
+//                queue<future<void>> futures;
+//                const size_t wait_amount = 8096;
+//                if( readRowsInParallel()) {
+//                    for (size_t channel = 0; channel < channels; channel++) {
+//                        for (size_t row = 0; row < rows; row++) {
+//                            auto next_async = async(launch::async, populate_by_col, other, this, row, columns,
+//                                                    channel);
+//                            futures.push(std::move(next_async));
+//                            if (futures.size() >= wait_amount) {
+//                                waitForFutures(futures);
+//                            }
+//                        }
+//                    }
+//                } else {
+//                    for (size_t channel = 0; channel < channels; channel++) {
+//                        for (size_t col = 0; col < columns; col++) {
+//                            auto next_async = async(launch::async, populate_by_row, other, this, rows, col,
+//                                                    channel);
+//                            futures.push(std::move(next_async));
+//                            if (futures.size() >= wait_amount) {
+//                                waitForFutures(futures);
+//                            }
+//                        }
+//                    }
+//                }
+//                waitForFutures(futures);
+//            }
         }
 
         static void populate_by_col(const shared_ptr<BaseTensor> &source,
@@ -536,47 +554,56 @@ namespace microml {
             const size_t columns = columnCount();
             const size_t rows = rowCount();
             const size_t channels = channelCount();
-            if (rows <= 1 && columns < 10000) {
-                for (size_t channel = 0; channel < channels; channel++) {
-                    for (size_t row = 0; row < rows; row++) {
-                        populate_by_col(other, this, row, columns, channel);
-                    }
-                }
-            } else if(columns <= 1 && rows < 10000) {
-                for (size_t channel = 0; channel < channels; channel++) {
+
+            #pragma omp for collapse(3)
+            for (size_t channel = 0; channel < channels; channel++) {
+                for (size_t row = 0; row < rows; row++) {
                     for (size_t col = 0; col < columns; col++) {
-                        populate_by_row(other, this, rows, col, channel);
-                    }
-                }
-            } else {
-                // TODO: I think I should switch to #pragma omp for collapse(3)
-                queue<future<void>> futures;
-                const size_t wait_amount = 8096;
-                if( readRowsInParallel()) {
-                    for (size_t channel = 0; channel < channels; channel++) {
-                        for (size_t row = 0; row < rows; row++) {
-                            auto next_async = async(launch::async, populate_by_col, other, this, row, columns,
-                                                    channel);
-                            futures.push(std::move(next_async));
-                            if (futures.size() >= wait_amount) {
-                                waitForFutures(futures);
-                            }
-                        }
-                    }
-                } else {
-                    for (size_t channel = 0; channel < channels; channel++) {
-                        for (size_t col = 0; col < columns; col++) {
-                            auto next_async = async(launch::async, populate_by_row, other, this, rows, col,
-                                                    channel);
-                            futures.push(std::move(next_async));
-                            if (futures.size() >= wait_amount) {
-                                waitForFutures(futures);
-                            }
-                        }
-                    }
-                }
-                waitForFutures(futures);
+                        set_val(row, col, channel, other->getValue(row, col, channel));
+                    }                }
             }
+//
+//            if (rows <= 1 && columns < 10000) {
+//                for (size_t channel = 0; channel < channels; channel++) {
+//                    for (size_t row = 0; row < rows; row++) {
+//                        populate_by_col(other, this, row, columns, channel);
+//                    }
+//                }
+//            } else if(columns <= 1 && rows < 10000) {
+//                for (size_t channel = 0; channel < channels; channel++) {
+//                    for (size_t col = 0; col < columns; col++) {
+//                        populate_by_row(other, this, rows, col, channel);
+//                    }
+//                }
+//            } else {
+//                // TODO: I think I should switch to #pragma omp for collapse(3)
+//                queue<future<void>> futures;
+//                const size_t wait_amount = 8096;
+//                if( readRowsInParallel()) {
+//                    for (size_t channel = 0; channel < channels; channel++) {
+//                        for (size_t row = 0; row < rows; row++) {
+//                            auto next_async = async(launch::async, populate_by_col, other, this, row, columns,
+//                                                    channel);
+//                            futures.push(std::move(next_async));
+//                            if (futures.size() >= wait_amount) {
+//                                waitForFutures(futures);
+//                            }
+//                        }
+//                    }
+//                } else {
+//                    for (size_t channel = 0; channel < channels; channel++) {
+//                        for (size_t col = 0; col < columns; col++) {
+//                            auto next_async = async(launch::async, populate_by_row, other, this, rows, col,
+//                                                    channel);
+//                            futures.push(std::move(next_async));
+//                            if (futures.size() >= wait_amount) {
+//                                waitForFutures(futures);
+//                            }
+//                        }
+//                    }
+//                }
+//                waitForFutures(futures);
+//            }
         }
 
 
@@ -736,48 +763,55 @@ namespace microml {
             const size_t columns = columnCount();
             const size_t rows = rowCount();
             const size_t channels = channelCount();
-            if (rows <= 1 && columns < 10000) {
-                for (size_t channel = 0; channel < channels; channel++) {
-                    for (size_t row = 0; row < rows; row++) {
-                        populate_by_col(other, this, row, columns, channel);
-                    }
-                }
-            } else if(columns <= 1 && rows < 10000) {
-                for (size_t channel = 0; channel < channels; channel++) {
+            #pragma omp for collapse(3)
+            for (size_t channel = 0; channel < channels; channel++) {
+                for (size_t row = 0; row < rows; row++) {
                     for (size_t col = 0; col < columns; col++) {
-                        populate_by_row(other, this, rows, col, channel);
-                    }
-                }
-            } else {
-                // TODO: I think I should switch to #pragma omp for collapse(3)
-
-                queue<future<void>> futures;
-                const size_t wait_amount = 8096;
-                if( readRowsInParallel()) {
-                    for (size_t channel = 0; channel < channels; channel++) {
-                        for (size_t row = 0; row < rows; row++) {
-                            auto next_async = async(launch::async, populate_by_col, other, this, row, columns,
-                                                    channel);
-                            futures.push(std::move(next_async));
-                            if (futures.size() >= wait_amount) {
-                                waitForFutures(futures);
-                            }
-                        }
-                    }
-                } else {
-                    for (size_t channel = 0; channel < channels; channel++) {
-                        for (size_t col = 0; col < columns; col++) {
-                            auto next_async = async(launch::async, populate_by_row, other, this, rows, col,
-                                                    channel);
-                            futures.push(std::move(next_async));
-                            if (futures.size() >= wait_amount) {
-                                waitForFutures(futures);
-                            }
-                        }
-                    }
-                }
-                waitForFutures(futures);
+                        set_val(row, col, channel, other->getValue(row, col, channel));
+                    }                }
             }
+//            if (rows <= 1 && columns < 10000) {
+//                for (size_t channel = 0; channel < channels; channel++) {
+//                    for (size_t row = 0; row < rows; row++) {
+//                        populate_by_col(other, this, row, columns, channel);
+//                    }
+//                }
+//            } else if(columns <= 1 && rows < 10000) {
+//                for (size_t channel = 0; channel < channels; channel++) {
+//                    for (size_t col = 0; col < columns; col++) {
+//                        populate_by_row(other, this, rows, col, channel);
+//                    }
+//                }
+//            } else {
+//                // TODO: I think I should switch to #pragma omp for collapse(3)
+//
+//                queue<future<void>> futures;
+//                const size_t wait_amount = 8096;
+//                if( readRowsInParallel()) {
+//                    for (size_t channel = 0; channel < channels; channel++) {
+//                        for (size_t row = 0; row < rows; row++) {
+//                            auto next_async = async(launch::async, populate_by_col, other, this, row, columns,
+//                                                    channel);
+//                            futures.push(std::move(next_async));
+//                            if (futures.size() >= wait_amount) {
+//                                waitForFutures(futures);
+//                            }
+//                        }
+//                    }
+//                } else {
+//                    for (size_t channel = 0; channel < channels; channel++) {
+//                        for (size_t col = 0; col < columns; col++) {
+//                            auto next_async = async(launch::async, populate_by_row, other, this, rows, col,
+//                                                    channel);
+//                            futures.push(std::move(next_async));
+//                            if (futures.size() >= wait_amount) {
+//                                waitForFutures(futures);
+//                            }
+//                        }
+//                    }
+//                }
+//                waitForFutures(futures);
+//            }
         }
 
 
