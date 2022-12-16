@@ -93,7 +93,7 @@ void testMnistFull8bit() {
             ->addOutput(mnistDataSource->getExpectedShape(), ActivationType::sigmoid_approx)
             ->build();
     neuralNetwork->train(mnistDataSource, 20, 4);
-    // Trained 20 epochs using a batch size of 4 in x minutes with a loss of x.
+    // Trained 20 epochs using a batch size of 4 in 128 minutes with a loss of 0.022950.
 
     auto testMnistDataSource = make_shared<InMemoryDelimitedValuesTrainingDataSet>("..\\data\\mnist_test.csv", ',',
                                                                                    true, false, true,
