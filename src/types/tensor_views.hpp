@@ -392,13 +392,10 @@ namespace microml {
         }
 
         float getValue(size_t row, size_t column, size_t channel) override {
-//        cout << "getting val: " << row << ", " << column << endl;
-            // TODO: I think I should switch to #pragma omp for
             float val = 0;
             const auto childColumnCount = child1->columnCount();
             #pragma omp for
             for (size_t t1_col = 0; t1_col <childColumnCount; t1_col++) {
-//            cout << "... + "<< child1->get_val(row, t1_col, channel) <<" (" << row << ", " << t1_col << ") * " << child2->get_val(t1_col, column, channel) << "( " << t1_col << ", " << column << ")" << endl;
                 val += child1->getValue(row, t1_col, channel) * child2->getValue(t1_col, column, channel);
             }
             return val;
@@ -621,7 +618,6 @@ namespace microml {
             }
             float result = 0.f;
             const size_t channels = child->channelCount();
-            // TODO: I think I should switch to #pragma omp for
             #pragma omp for
             for( size_t next_channel = 0; next_channel < channels; next_channel++) {
                 result += child->getValue(row, column, next_channel);
@@ -732,11 +728,9 @@ namespace microml {
         }
 
         float getValue(size_t row, size_t column, size_t channel) override {
-            // iterate over filter
             const auto kernel_rows = child2->rowCount();
             const auto kernel_cols = child2->columnCount();
             float result = 0.f;
-            // TODO: I think I should switch to #pragma omp for collapse(2)
             #pragma omp for collapse(2)
             for(size_t kernel_row = 0; kernel_row < kernel_rows; kernel_row++) {
                 for(size_t kernel_col = 0; kernel_col < kernel_cols; kernel_col++) {

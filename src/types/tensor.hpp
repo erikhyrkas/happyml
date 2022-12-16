@@ -445,8 +445,6 @@ namespace microml {
     public:
         virtual void assign(const shared_ptr <BaseTensor> &other) = 0;
 
-        virtual void assign(const shared_ptr <BaseTensor> &other, const shared_ptr <BaseAssignableTensor> &working_memory) = 0;
-
         bool isMaterialized() override {
             return true;
         }
