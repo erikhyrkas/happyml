@@ -44,7 +44,7 @@ namespace microml {
 //            // code to break.
 //            size_t rows = 2*((size_t)std::round(((double)kernel_size - 1)/2.0)); // 1 = 0, 2 = 2, 3 = 2, 4 = 4, 5 = 4
 //            size_t cols = rows; // I could eventually support other shapes, but it's not critical right now.
-//            this->output_shape = {input_shape[0]+rows, input_shape[1]+cols, output_depth};
+//            this->outputShape = {input_shape[0]+rows, input_shape[1]+cols, output_depth};
     // Here's an interesting, related read:
     // https://towardsdatascience.com/convolution-vs-correlation-af868b6b4fb5
     // also:
@@ -88,7 +88,7 @@ namespace microml {
             for(size_t outputLayer = 0; outputLayer < filters; outputLayer++) {
                 const auto currentWeights = weights[outputLayer];
                 const auto correlation2d = make_shared<TensorValidCrossCorrelation2dView>(lastInput, currentWeights);
-                const shared_ptr<BaseTensor> summedCorrelation2d = make_shared<TensorToChannelView>(correlation2d, outputLayer, filters);
+                const shared_ptr<BaseTensor> summedCorrelation2d = make_shared<TensorSumToChannelView>(correlation2d, outputLayer, filters);
                 if(!result) {
                     result = summedCorrelation2d;
                 } else {
@@ -125,40 +125,47 @@ namespace microml {
             // the sum of the fullConvolve2d of the output errors and the weights
             // filters are the number of output channels we have
             const size_t filters = outputShape[2];
+            const size_t inputDepth = inputShapes[0][2];
             shared_ptr<BaseTensor> inputError = nullptr;
             for(size_t outputLayer = 0; outputLayer < filters; outputLayer++) {
-                const auto nextInputError = make_shared<TensorFullConvolve2dView>(outputError, weights[outputLayer]);
-                if(inputError) {
-                    inputError = make_shared<TensorAddTensorView>(inputError, nextInputError);
-                } else {
-                    inputError = nextInputError;
+                const auto outputErrorForLayer = make_shared<TensorChannelToTensorView>(outputError, outputLayer);
+                shared_ptr<BaseTensor> weightChanges = nullptr;
+                for(size_t inputLayer = 0; inputLayer < inputDepth; inputLayer++) {
+                    const auto weightForInputLayer = make_shared<TensorChannelToTensorView>(weights[outputLayer], inputLayer);
+                    const auto nextInputError = make_shared<TensorFullConvolve2dView>(outputErrorForLayer, weightForInputLayer);
+                    const auto inputErrorToInputChannel = make_shared<TensorSumToChannelView>(nextInputError, inputLayer, inputDepth);
+                    if(inputError) {
+                        inputError = make_shared<TensorAddTensorView>(inputError, inputErrorToInputChannel);
+                    } else {
+                        inputError = inputErrorToInputChannel;
+                    }
+//                    inputError->print();
+                    const auto inputLayerChannel = make_shared<TensorChannelToTensorView>(averageLastInputs, inputLayer);
+                    const auto nextWeightError = make_shared<TensorValidCrossCorrelation2dView>(inputLayerChannel, outputErrorForLayer);
+                    const auto nextWeightToInputChannel = make_shared<TensorSumToChannelView>(nextWeightError, inputLayer, inputDepth);
+                    if(weightChanges) {
+                        weightChanges = make_shared<TensorAddTensorView>(weightChanges, nextWeightToInputChannel);
+                    } else {
+                        weightChanges = nextWeightToInputChannel;
+                    }
                 }
-
-//                cout << endl << "averageLastInputs: "  << outputLayer<< endl;
-//                averageLastInputs->print();
-                const auto outputErrorChannel = make_shared<TensorChannelToTensorView>(outputError, outputLayer);
-//                cout << endl << "outputError: "  << outputLayer<< endl;
-//                outputErrorChannel->print();
-                const auto nextWeightError = make_shared<TensorValidCrossCorrelation2dView>(averageLastInputs, outputErrorChannel);
-//                cout << endl << "nextWeightError: "  << outputLayer<< endl;
-//                nextWeightError->print();
-
-                const auto nextWeightErrorAtLearningRate = make_shared<TensorMultiplyByScalarView>(nextWeightError,
+                const auto nextWeightErrorAtLearningRate = make_shared<TensorMultiplyByScalarView>(weightChanges,
                                                                                                         learningState->learningRate * mixedPrecisionScale);
-//                cout << "nextWeightErrorAtLearningRate[" << outputLayer << "]" << endl;
+//                cout << endl << "nextWeightErrorAtLearningRate[" << outputLayer << "]" << endl;
 //                nextWeightErrorAtLearningRate->print();
-                const auto adjustedWeights = make_shared<TensorMinusTensorView>(weights[outputLayer], nextWeightErrorAtLearningRate);
 //                cout << "pre adjust weights[" << outputLayer << "]" << endl;
 //                weights[outputLayer]->print();
-//                cout << "adjustedWeights[" << outputLayer << "]" << endl;
-//                adjustedWeights->print();
+
+                const auto adjustedWeights = make_shared<TensorMinusTensorView>(weights[outputLayer], nextWeightErrorAtLearningRate);
+
                 weights[outputLayer] = materializeTensor(adjustedWeights, bits);
 
-//                cout << "weights[" << outputLayer << "]" << endl;
+//                cout << "adjustedWeights[" << outputLayer << "]" << endl;
 //                weights[outputLayer]->print();
             }
 
-            return make_shared<TensorSumChannelsView>(inputError);
+            const auto resultError = make_shared<TensorSumChannelsView>(inputError);
+            return resultError;
         }
     private:
         queue<shared_ptr<BaseTensor>> lastInputs;
@@ -274,7 +281,7 @@ namespace microml {
             // This may be a mistake.
             this->bias = make_shared<UniformTensor>(outputShape[0], outputShape[1], outputShape[2], 0.f);
             // Original code started with a random value between -0.5 and 0.5:
-            //this->bias = make_shared<TensorFromRandom>(output_shape[0], output_shape[1],output_shape[2], -0.5f, 0.5f, 42);
+            //this->bias = make_shared<TensorFromRandom>(outputShape[0], outputShape[1],outputShape[2], -0.5f, 0.5f, 42);
             this->bits = bits;
             this->learningState = learningState;
             // With models that are not fully 32-bit, if you don't scale the loss

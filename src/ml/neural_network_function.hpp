@@ -36,7 +36,7 @@ namespace microml {
             return activationFunction->activate(lastInput);
         }
 
-        shared_ptr<BaseTensor> backward(const shared_ptr<BaseTensor> &output_error) override {
+        shared_ptr<BaseTensor> backward(const shared_ptr<BaseTensor> &outputError) override {
             PROFILE_BLOCK(profileBlock);
             size_t lastInputsSize = lastInputs.size();
             if(lastInputsSize < 1) {
@@ -45,22 +45,22 @@ namespace microml {
             // TODO: it's really inefficient to calculate the derivative of every previous batch input and average it
             //  but doing an average first and then a derivative isn't right.
             //  I think I'm doing the back propagation incorrectly for mini-batch here.
-            shared_ptr<BaseTensor> average_activation_derivative= activationFunction->derivative(lastInputs.front());
+            shared_ptr<BaseTensor> averageActivationDerivative= activationFunction->derivative(lastInputs.front());
             lastInputs.pop();
             while(!lastInputs.empty()) {
                 auto nextLastInput = activationFunction->derivative(lastInputs.front());
                 lastInputs.pop();
-                average_activation_derivative = make_shared<TensorAddTensorView>(average_activation_derivative, nextLastInput);
+                averageActivationDerivative = make_shared<TensorAddTensorView>(averageActivationDerivative, nextLastInput);
             }
             if(lastInputsSize > 1) {
-                average_activation_derivative = materializeTensor(make_shared<TensorMultiplyByScalarView>(average_activation_derivative, 1.f/(float)lastInputsSize));
+                averageActivationDerivative = materializeTensor(make_shared<TensorMultiplyByScalarView>(averageActivationDerivative, 1.f / (float)lastInputsSize));
             }
 
             //auto activation_derivative = activationFunction->derivative(average_last_inputs);
             // this really threw me for a loop. I thought that this was supposed to be dot product, rather than
             // an element-wise-multiplication.
-            auto base_output_error = make_shared<TensorMultiplyTensorView>(average_activation_derivative, output_error);
-            return base_output_error;
+            auto baseOutputError = make_shared<TensorMultiplyTensorView>(averageActivationDerivative, outputError);
+            return baseOutputError;
         }
 
     private:

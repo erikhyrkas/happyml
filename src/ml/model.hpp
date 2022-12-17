@@ -97,7 +97,7 @@ namespace micromldsl {
                 this->node_type = nodeType;
                 this->activation_type = activation_type;
                 this->input_shape = input_shape;
-                this->output_shape = output_shape;
+                this->outputShape = output_shape;
                 this->bits = 32;
                 this->use_bias = true;
                 this->materialized = false;
@@ -114,7 +114,7 @@ namespace micromldsl {
                 this->node_type = nodeType;
                 this->activation_type = activation_type;
                 this->input_shape = input_shape;
-                this->output_shape = {input_shape[0]-kernel_size+1, input_shape[1]-kernel_size+1, filters};
+                this->outputShape = {input_shape[0] - kernel_size + 1, input_shape[1] - kernel_size + 1, filters};
                 this->bits = 32;
                 this->use_bias = true;
                 this->materialized = true;
@@ -146,23 +146,29 @@ namespace micromldsl {
             };
 
             shared_ptr<NNVertex> addOutput(const size_t outputShape, ActivationType activationType) {
-                return addNode(this->output_shape, {1, outputShape, 1}, NodeType::full, true, activationType);
+                return addNode(this->outputShape, {1, outputShape, 1}, NodeType::full, true, activationType);
             }
 
             shared_ptr<NNVertex> addOutput(const vector<size_t> &outputShape, ActivationType activationType) {
-                return addNode(this->output_shape,outputShape, NodeType::full, true, activationType);
+                return addNode(this->outputShape, outputShape, NodeType::full, true, activationType);
             }
 
-            shared_ptr<NNVertex> addOutput(const vector<size_t> &outputShape, const size_t output_kernel_size,
+            shared_ptr<NNVertex> addOutput(const vector<size_t> &outputShape, const size_t outputKernelSize,
                                            NodeType nodeType, ActivationType activationType) {
 
-                auto result = addNode(outputShape[2], output_kernel_size, NodeType::convolution2d, true,
+                auto result = addNode(outputShape[2], outputKernelSize, NodeType::convolution2d, true,
                                       activationType);
-                if(result->output_shape[0] != outputShape[0] ||
-                   result->output_shape[1] != outputShape[1] ||
-                   result->output_shape[2] != outputShape[2]) {
+                if(result->outputShape[0] != outputShape[0] ||
+                   result->outputShape[1] != outputShape[1] ||
+                   result->outputShape[2] != outputShape[2]) {
+                    stringstream ss;
+                    ss << "The calculated output shape of the convolution2d node ("
+                       << result->outputShape[0] << ", " << result->outputShape[1] << ", " << result->outputShape[2]
+                       << ") didn't match the desired output shape ("
+                       << outputShape[0] << ", " << outputShape[1] << ", " << outputShape[2] << ")";
+
                     // todo: could we have taken other action here to avoid an error and reshape the output?
-                    throw exception("The calculated output shape of the convolution2d node didn't match the desired output shape.");
+                    throw exception(ss.str().c_str());
                 }
                 return result;
             }
@@ -173,7 +179,7 @@ namespace micromldsl {
 
             shared_ptr<NNVertex> addNode(const vector<size_t> &outputShape, NodeType nodeType,
                                          ActivationType activationType) {
-                return addNode(this->output_shape, outputShape, nodeType, false, activationType);
+                return addNode(this->outputShape, outputShape, nodeType, false, activationType);
             }
 
             shared_ptr<NNVertex> addNode(const size_t next_filters, const size_t next_kernel_size, NodeType nodeType,
@@ -183,7 +189,7 @@ namespace micromldsl {
 
             shared_ptr<NNVertex> addNode(const size_t next_filters, const size_t next_kernel_size,
                                          NodeType nodeType, bool next_for_output, ActivationType activationType) {
-                auto nnv = make_shared<NNVertex>(parent.lock(), nodeType, this->output_shape,
+                auto nnv = make_shared<NNVertex>(parent.lock(), nodeType, this->outputShape,
                                                  next_filters, next_kernel_size, next_for_output, activationType);
                 auto nne = make_shared<NNEdge>();
                 nne->from = shared_from_this();
@@ -224,7 +230,7 @@ namespace micromldsl {
                         last_node = appendNode(last_node, flatten_node);
                     }
                     next_node = make_shared<NeuralNetworkNode>(
-                            optimizer->createFullyConnectedNeurons(input_shape[0]*input_shape[1]*input_shape[2], output_shape[0]*output_shape[1]*output_shape[2], bits));
+                            optimizer->createFullyConnectedNeurons(input_shape[0]*input_shape[1]*input_shape[2], outputShape[0] * outputShape[1] * outputShape[2], bits));
                 } else if(node_type == NodeType::convolution2d) {
                     next_node = make_shared<NeuralNetworkNode>(optimizer->createConvolutional2d(input_shape, filters,
                                                                                                 kernel_size, bits));
@@ -235,7 +241,7 @@ namespace micromldsl {
                 last_node = appendNode(last_node, next_node);
 
                 if (use_bias) {
-                    auto bias_node = make_shared<NeuralNetworkNode>(optimizer->createBias(output_shape, output_shape, bits));
+                    auto bias_node = make_shared<NeuralNetworkNode>(optimizer->createBias(outputShape, outputShape, bits));
                     last_node = appendNode(last_node, bias_node);
                 }
 
@@ -299,7 +305,7 @@ namespace micromldsl {
             vector<shared_ptr<NNEdge>> edges;
             NodeType node_type;
             vector<size_t> input_shape;
-            vector<size_t> output_shape;
+            vector<size_t> outputShape;
             ActivationType activation_type;
             bool materialized;
             bool use_bias;

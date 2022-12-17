@@ -49,12 +49,12 @@ namespace microml {
                 //  to use for performance.
                 input_to_next = materializeTensor(input_to_next);
             }
-            if (connection_outputs.empty()) {
+            if (connectionOutputs.empty()) {
                 // there are no nodes after this one, so we return our result.
                 sendOutput(input_to_next);
                 return;
             }
-            for (const auto &output_connection: connection_outputs) {
+            for (const auto &output_connection: connectionOutputs) {
                 output_connection->next_input = input_to_next;
                 output_connection->to->forwardFromConnection(forTraining);
             }
@@ -66,14 +66,15 @@ namespace microml {
 
         void forwardFromConnection(bool forTraining) {
             vector<shared_ptr<BaseTensor>> inputs;
-            for (const auto &input: connection_inputs) {
-                if (input.lock()->next_input == nullptr) {
+            for (const auto &input: connectionInputs) {
+                auto lockedInput = input.lock();
+                if (lockedInput->next_input == nullptr) {
                     return; // a different branch will populate the rest of the inputs, and we'll proceed then.
                 }
-                inputs.push_back(input.lock()->next_input);
+                inputs.push_back(lockedInput->next_input);
             }
             doForward(inputs, forTraining);
-            for (const auto &input: connection_inputs) {
+            for (const auto &input: connectionInputs) {
                 input.lock()->next_input = nullptr;
             }
         }
@@ -87,45 +88,45 @@ namespace microml {
 //            cout <<endl;
             PROFILE_BLOCK(profileBlock);
 
-            auto prior_error = neuralNetworkFunction->backward(output_error);
+            auto priorError = neuralNetworkFunction->backward(output_error);
             if (materialized) {
-                prior_error = materializeTensor(prior_error);
+                priorError = materializeTensor(priorError);
             }
-            for (const auto &input_connection: connection_inputs) {
+            for (const auto &inputConnection: connectionInputs) {
                 PROFILE_BLOCK(backwardBlockLoop);
-                const auto conn = input_connection.lock();
+                const auto conn = inputConnection.lock();
                 const auto from = conn->from.lock();
-                const auto from_connection_output_size = from->connection_outputs.size();
-                if (from_connection_output_size == 1) {
+                const auto fromConnectionOutputSize = from->connectionOutputs.size();
+                if (fromConnectionOutputSize == 1) {
                     PROFILE_BLOCK(backwardBlock);
                     // most of the time there is only one from, so, ship it instead of doing extra wasted calculations
-                    from->backward(prior_error);
+                    from->backward(priorError);
                 } else {
                     PROFILE_BLOCK(backwardBlock);
                     // We'll save the error we calculated, because we need to sum the errors from all outputs
                     // and not all outputs may be ready yet.
-                    conn->prior_error = prior_error;
+                    conn->priorError = priorError;
                     bool ready = true;
                     shared_ptr<BaseTensor> sum = nullptr;
-                    for (const auto &output_conn: from->connection_outputs) {
-                        if (output_conn->prior_error == nullptr) {
+                    for (const auto &output_conn: from->connectionOutputs) {
+                        if (output_conn->priorError == nullptr) {
                             ready = false;
                             break;
                         }
                         if (sum == nullptr) {
-                            sum = make_shared<TensorAddTensorView>(prior_error, output_conn->prior_error);
+                            sum = make_shared<TensorAddTensorView>(priorError, output_conn->priorError);
                         } else {
-                            sum = make_shared<TensorAddTensorView>(sum, output_conn->prior_error);
+                            sum = make_shared<TensorAddTensorView>(sum, output_conn->priorError);
                         }
                     }
                     if (!ready) {
                         continue;
                     }
                     shared_ptr<BaseTensor> average_error = make_shared<TensorMultiplyByScalarView>(sum, 1.0f /
-                                                                                                        (float) from_connection_output_size);
+                                                                                                        (float) fromConnectionOutputSize);
                     from->backward(average_error);
-                    for (const auto &output_conn: from->connection_outputs) {
-                        output_conn->prior_error = nullptr;
+                    for (const auto &output_conn: from->connectionOutputs) {
+                        output_conn->priorError = nullptr;
                     }
                 }
             }
@@ -148,7 +149,7 @@ namespace microml {
         // A connection is also known as an "edge" in a graph, but not everybody remembers technical terms
         struct NeuralNetworkConnection {
             shared_ptr<BaseTensor> next_input;
-            shared_ptr<BaseTensor> prior_error;
+            shared_ptr<BaseTensor> priorError;
             weak_ptr<NeuralNetworkNode> from;
             shared_ptr<NeuralNetworkNode> to;
         };
@@ -160,9 +161,9 @@ namespace microml {
             // We strongly own objects from the start of the graph toward the end,
             // rather than the end toward the start.
             connection->to = child; // strong reference to child
-            connection_outputs.push_back(connection); // strong reference to connection to child
+            connectionOutputs.push_back(connection); // strong reference to connection to child
             connection->from = shared_from_this(); // weak reference to parent
-            child->connection_inputs.push_back(connection); // weak reference to connection from parent
+            child->connectionInputs.push_back(connection); // weak reference to connection from parent
             connection->next_input = nullptr;
             return child; // this lets us chain together calls in a builder format.
         }
@@ -185,8 +186,8 @@ namespace microml {
 //        }
 
     private:
-        vector<weak_ptr<NeuralNetworkConnection>> connection_inputs;
-        vector<shared_ptr<NeuralNetworkConnection>> connection_outputs;
+        vector<weak_ptr<NeuralNetworkConnection>> connectionInputs;
+        vector<shared_ptr<NeuralNetworkConnection>> connectionOutputs;
         shared_ptr<NeuralNetworkFunction> neuralNetworkFunction;
         bool materialized;
 //        shared_ptr<Optimizer> optimizer;

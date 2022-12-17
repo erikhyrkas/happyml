@@ -11,6 +11,7 @@
 #include <utility>
 #include <vector>
 #include <iomanip>
+#include <sstream>
 #include "tensor.hpp"
 
 using namespace std;
@@ -408,14 +409,17 @@ namespace microml {
                                  const shared_ptr <BaseTensor> &tensor2) : BaseTensorBinaryOperatorView(tensor1,
                                                                                                         tensor2) {
             if (tensor1->columnCount() != tensor2->columnCount() || tensor1->rowCount() != tensor2->rowCount()) {
-                cout << "[" << tensor1->rowCount() << ", " << tensor1->columnCount() << ", " << tensor1->channelCount() << "] * [";
-                cout << tensor2->rowCount() << ", " << tensor2->columnCount() << ", " << tensor2->channelCount() << "]" << endl;
-                throw exception("Multiply cols and rows much match in length");
+                stringstream ss;
+                ss << "Multiply cols and rows much match in length. Attempted: " << "[" << tensor1->rowCount() << ", " << tensor1->columnCount() << ", " << tensor1->channelCount() << "] * [";
+                ss << tensor2->rowCount() << ", " << tensor2->columnCount() << ", " << tensor2->channelCount() << "]" << endl;
+                throw exception(ss.str().c_str());
             }
             if (tensor1->channelCount() != tensor2->channelCount()) {
-                cout << "[" << tensor1->rowCount() << ", " << tensor1->columnCount() << ", " << tensor1->channelCount() << "] * [";
-                cout << tensor2->rowCount() << ", " << tensor2->columnCount() << ", " << tensor2->channelCount() << "]" << endl;
-                throw exception("Multiply product tensor1.channels must match tensor2.channels in length");
+                stringstream ss;
+                ss << "Multiply product channels must match in length. Attempted: " << "[" << tensor1->rowCount() << ", " << tensor1->columnCount() << ", " << tensor1->channelCount() << "] * [";
+                ss << tensor2->rowCount() << ", " << tensor2->columnCount() << ", " << tensor2->channelCount() << "]" << endl;
+                throw exception(ss.str().c_str());
+
             }
         }
 
@@ -594,17 +598,17 @@ namespace microml {
     private:
     };
 
-    // For a given tensor, sum the all values and place at a specific channel index, while other channels
+    // For a given tensor, sum the all values at a column and row and place at a specific channel index, while other channels
     // are all zero. This allows us to not only sum the tensors channels into a single channel,
     // but combine the resulting tensor with other tensors.
-    class TensorToChannelView : public BaseTensorUnaryOperatorView {
+    class TensorSumToChannelView : public BaseTensorUnaryOperatorView {
     public:
-        TensorToChannelView(const shared_ptr<BaseTensor> &tensor, size_t data_channel_index, size_t number_of_channels) : BaseTensorUnaryOperatorView(tensor) {
+        TensorSumToChannelView(const shared_ptr<BaseTensor> &tensor, size_t data_channel_index, size_t number_of_channels) : BaseTensorUnaryOperatorView(tensor) {
             this->data_channel_index = data_channel_index;
             this->number_of_channels = number_of_channels;
         }
         void printMaterializationPlan() override {
-            cout << "TensorToChannelView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
+            cout << "TensorSumToChannelView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
             child->printMaterializationPlan();
         }
 
@@ -629,9 +633,9 @@ namespace microml {
         size_t number_of_channels;
     };
 
-    class TensorSumChannelsView : public TensorToChannelView {
+    class TensorSumChannelsView : public TensorSumToChannelView {
     public:
-        explicit TensorSumChannelsView(const shared_ptr<BaseTensor> &tensor) : TensorToChannelView(tensor, 0, 1) {
+        explicit TensorSumChannelsView(const shared_ptr<BaseTensor> &tensor) : TensorSumToChannelView(tensor, 0, 1) {
         }
         void printMaterializationPlan() override {
             cout << "TensorSumChannelsView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
@@ -639,6 +643,8 @@ namespace microml {
         }
     };
 
+    // Creates a tensor from a single channel of another tensor, ignoring other channels
+    // all data is at channel 0, and channel count is 1.
     class TensorChannelToTensorView : public BaseTensorUnaryOperatorView {
     public:
         explicit TensorChannelToTensorView(const shared_ptr<BaseTensor> &tensor, size_t channel_offset) : BaseTensorUnaryOperatorView(tensor) {
@@ -734,7 +740,7 @@ namespace microml {
             #pragma omp for collapse(2)
             for(size_t kernel_row = 0; kernel_row < kernel_rows; kernel_row++) {
                 for(size_t kernel_col = 0; kernel_col < kernel_cols; kernel_col++) {
-                    const auto kernel_val = child2->getValue(kernel_row, kernel_col, 0); // channel 0 is applied to all channels of tensor
+                    const auto kernel_val = child2->getValue(kernel_row, kernel_col, channel); // channel 0 is applied to all channels of tensor
                     const auto tensor_val = child1->getValue(row + kernel_row, column + kernel_col, channel);
                     result += kernel_val * tensor_val;
                 }
@@ -770,10 +776,10 @@ namespace microml {
         TensorFullCrossCorrelation2dView(const shared_ptr<BaseTensor> &tensor, const shared_ptr<BaseTensor> &kernel)
                 : TensorValidCrossCorrelation2dView(
                 make_shared<TensorZeroPaddedView>(tensor,
-                                                  (size_t)round(((double) kernel->rowCount()) / 2.0),
-                                                  (size_t)round(((double) kernel->rowCount()) / 2.0),
-                                                  (size_t)round(((double) kernel->columnCount()) / 2.0),
-                                                  (size_t)round(((double) kernel->columnCount()) / 2.0)),
+                                                  (kernel->rowCount() > 1)*(size_t)round(((double) kernel->rowCount()) / 2.0),
+                                                  (kernel->rowCount() > 1)*(size_t)round(((double) kernel->rowCount()) / 2.0),
+                                                  (kernel->columnCount() > 1)*(size_t)round(((double) kernel->columnCount()) / 2.0),
+                                                  (kernel->columnCount() > 1)*(size_t)round(((double) kernel->columnCount()) / 2.0)),
                 kernel) {
         }
 
