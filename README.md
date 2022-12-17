@@ -40,7 +40,7 @@ Must-haves for alpha:
 
 Nice-to-haves for alpha:
 * _I think I've updated most of the formatting at this point._ ~~Need to format the code to C++ standards, since I've been doing so many languages that I have clearly forgotten what is standard.~~
-* Need to fix and check-in Adam optimizer. I'm not even going to check it in until it seems plausibly right and I need to refactor the model object's training to support it correctly. I built the mini-batch gradient decent optimizer first because it was easier to make (even though I still had issues building it correctly -- that is part of the learning process), and it let me assertEqual all the other code.
+* Need to fix and check-in Adam optimizer. I'm not even going to check it in until it seems plausibly right and I need to refactor the model object's training to support it correctly. I built the mini-batch gradient decent optimizer first because it was easier to make (even though I still had issues building it correctly -- that is part of the learning process), and it let me test all the other code.
 * Need to finish the half float and test. It currently doesn't handle any edge conditions and could produce incorrect results in some situations.
  
 
