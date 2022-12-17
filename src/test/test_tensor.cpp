@@ -448,8 +448,8 @@ void testMatrixAddition() {
 void testPixel() {
     auto matrix = make_shared<TensorFromRandom>(5, 5, 1, 0.f, 1.f, 42);
     auto pixel_test = make_shared<PixelTensor>(matrix);
-    pixel_test->print();
-    matrix->print();
+//    pixel_test->print();
+//    matrix->print();
     // todo: assert rather than print.
 }
 
@@ -481,8 +481,8 @@ void testFullConvolve2dView() {
     auto matrix1 = make_shared<UniformTensor>(3, 3, 1, 1.f);
     auto matrix2 = make_shared<UniformTensor>(3, 3, 1, 1.f);
     auto conv2d = make_shared<TensorFullConvolve2dView>(matrix1, matrix2);
-    matrix1->print();
-    conv2d->print();
+//    matrix1->print();
+//    conv2d->print();
     ASSERT_TRUE(conv2d->columnCount() == 5);
     ASSERT_TRUE(conv2d->rowCount() == 5);
     ASSERT_TRUE(conv2d->channelCount() == 1);
@@ -541,8 +541,8 @@ void testFullCrossCorrelation2d() {
          << ((double) matrix1->rowCount()) / 2.0 << endl;
     ASSERT_TRUE(2 == padding);
     auto conv2d = make_shared<TensorFullCrossCorrelation2dView>(matrix1, matrix2);
-    matrix1->print();
-    conv2d->print();
+//    matrix1->print();
+//    conv2d->print();
 
     ASSERT_TRUE(conv2d->columnCount() == 5);
     ASSERT_TRUE(conv2d->rowCount() == 5);
@@ -567,7 +567,7 @@ void testValidCrossCorrelation2d() {
     auto matrix1 = make_shared<UniformTensor>(3, 3, 1, 1.f);
     auto matrix2 = make_shared<UniformTensor>(3, 3, 1, 1.f);
     auto validCrossCorrelation2DView = make_shared<TensorValidCrossCorrelation2dView>(matrix1, matrix2);
-    matrix1->print();
+//    matrix1->print();
     validCrossCorrelation2DView->print();
     //Expected
     //[[9]]
@@ -591,7 +591,7 @@ void test2ValidCrossCorrelation2d() {
                                         {-1.720, -0.312, 0.060, -0.343}}};
     auto matrix2 = make_shared<FullTensor>(b);
     auto validCrossCorrelation2DView = make_shared<TensorValidCrossCorrelation2dView>(matrix1, matrix2);
-    matrix1->print();
+//    matrix1->print();
     validCrossCorrelation2DView->print();
     //Expected
     // [[-1.299014 -3.235515 -2.408694]
@@ -704,10 +704,10 @@ int main() {
         timer.printMilliseconds();
         testTensorRotate2();
         timer.printMilliseconds();
-
         test2FullConvolve2dView();
         timer.printMilliseconds();
 
+        // need to finish writing this test:
         //test_pixel()
         //timer.print_milliseconds();
         // slow to test and not worth using day-to-day on my machine
