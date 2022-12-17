@@ -53,7 +53,7 @@ namespace microml {
     public:
         MBGDConvolution2dFunction(vector<size_t> inputShape, size_t filters, size_t kernelSize, uint8_t bits,
                                   const shared_ptr<MBGDLearningState> &learningState) {
-            this->inputShapes = vector < vector < size_t >> {inputShape};
+            this->inputShapes = vector<vector<size_t>> {inputShape};
             this->kernelSize = kernelSize;
             this->outputShape = {inputShape[0] - kernelSize + 1, inputShape[1] - kernelSize + 1, filters};
             this->bits = bits;
@@ -106,59 +106,59 @@ namespace microml {
         }
 
         shared_ptr<BaseTensor> backward(const shared_ptr<BaseTensor> &outputError) override {
-            shared_ptr<BaseTensor> inputError = nullptr;
+            size_t lastInputsSize = lastInputs.size();
+            if(lastInputsSize < 1) {
+                throw exception("MBGDFullyConnectedNeurons.backward() called without previous inputs.");
+            }
+            shared_ptr<BaseTensor> averageLastInputs = lastInputs.front();
+            lastInputs.pop();
+            while(!lastInputs.empty()) {
+                auto nextLastInput = lastInputs.front();
+                lastInputs.pop();
+                averageLastInputs = make_shared<TensorAddTensorView>(averageLastInputs, nextLastInput);
+            }
+            if(lastInputsSize > 1) {
+                averageLastInputs = materializeTensor(make_shared<TensorMultiplyByScalarView>(averageLastInputs, 1.f / (float)lastInputsSize));
+            }
 
             // input error for each input channel is
             // the sum of the fullConvolve2d of the output errors and the weights
             // filters are the number of output channels we have
             const size_t filters = outputShape[2];
-
-            size_t lastInputsSize = lastInputs.size();
-            if(lastInputsSize < 1) {
-                throw exception("MBGDFullyConnectedNeurons.backward() called without previous inputs.");
-            }
-            shared_ptr<BaseTensor> average_last_inputs = lastInputs.front();
-            lastInputs.pop();
-            while(!lastInputs.empty()) {
-                auto nextLastInput = lastInputs.front();
-                lastInputs.pop();
-                average_last_inputs = make_shared<TensorAddTensorView>(average_last_inputs, nextLastInput);
-            }
-            if(lastInputsSize > 1) {
-                average_last_inputs = materializeTensor(make_shared<TensorMultiplyByScalarView>(average_last_inputs, 1.f/(float)lastInputsSize));
-            }
-
-            // todo: delete temp
-            auto tempLiShape = average_last_inputs->getShape();
-
-            for(size_t output_layer = 0; output_layer < filters; output_layer++) {
-                const auto output_error_channel = make_shared<TensorChannelToTensorView>(outputError, output_layer);
-
-                const auto nextInputError = make_shared<TensorFullConvolve2dView>(output_error_channel, weights[output_layer]);
-
-                // todo: delete temp
-                const auto tempNieShape = nextInputError->getShape();
-                if(tempLiShape[0] != tempNieShape[0] || tempLiShape[1] != tempNieShape[1] || tempLiShape[2] != tempNieShape[2]) {
-                    throw exception("last input shape doesn't match the shape of the error we are back propagating");
-                }
-
+            shared_ptr<BaseTensor> inputError = nullptr;
+            for(size_t outputLayer = 0; outputLayer < filters; outputLayer++) {
+                const auto nextInputError = make_shared<TensorFullConvolve2dView>(outputError, weights[outputLayer]);
                 if(inputError) {
                     inputError = make_shared<TensorAddTensorView>(inputError, nextInputError);
                 } else {
                     inputError = nextInputError;
                 }
 
-                const auto nextWeightError = make_shared<TensorValidCrossCorrelation2dView>(average_last_inputs, output_error_channel);
+//                cout << endl << "averageLastInputs: "  << outputLayer<< endl;
+//                averageLastInputs->print();
+                const auto outputErrorChannel = make_shared<TensorChannelToTensorView>(outputError, outputLayer);
+//                cout << endl << "outputError: "  << outputLayer<< endl;
+//                outputErrorChannel->print();
+                const auto nextWeightError = make_shared<TensorValidCrossCorrelation2dView>(averageLastInputs, outputErrorChannel);
+//                cout << endl << "nextWeightError: "  << outputLayer<< endl;
+//                nextWeightError->print();
+
                 const auto nextWeightErrorAtLearningRate = make_shared<TensorMultiplyByScalarView>(nextWeightError,
                                                                                                         learningState->learningRate * mixedPrecisionScale);
-                const auto adjusted_weights = make_shared<TensorMinusTensorView>(weights[output_layer], nextWeightErrorAtLearningRate);
-                weights[output_layer] = materializeTensor(adjusted_weights, bits);
+//                cout << "nextWeightErrorAtLearningRate[" << outputLayer << "]" << endl;
+//                nextWeightErrorAtLearningRate->print();
+                const auto adjustedWeights = make_shared<TensorMinusTensorView>(weights[outputLayer], nextWeightErrorAtLearningRate);
+//                cout << "pre adjust weights[" << outputLayer << "]" << endl;
+//                weights[outputLayer]->print();
+//                cout << "adjustedWeights[" << outputLayer << "]" << endl;
+//                adjustedWeights->print();
+                weights[outputLayer] = materializeTensor(adjustedWeights, bits);
+
+//                cout << "weights[" << outputLayer << "]" << endl;
+//                weights[outputLayer]->print();
             }
-            auto tempIeShape = inputError->getShape();
-            if(tempLiShape[0] != tempIeShape[0] || tempLiShape[1] != tempIeShape[1] || tempLiShape[2] != tempIeShape[2]) {
-                throw exception("last input shape doesn't match the shape of the error we are back propagating");
-            }
-            return inputError;
+
+            return make_shared<TensorSumChannelsView>(inputError);
         }
     private:
         queue<shared_ptr<BaseTensor>> lastInputs;

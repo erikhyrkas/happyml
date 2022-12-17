@@ -34,5 +34,4 @@
                           << std::endl
 
 
-
 #endif //MICROML_UNIT_TEST_HPP

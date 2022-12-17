@@ -16,6 +16,7 @@
 #include <iterator>
 #include <future>
 #include <execution>
+#include <sstream>
 
 using namespace std;
 
@@ -30,7 +31,7 @@ namespace microml {
     }
 
     shared_ptr<BaseTensor> randomTensor(size_t rows, size_t cols, size_t channels) {
-        return make_shared<TensorFromRandom>(rows, cols, channels, 0.f, 1.f);
+        return make_shared<TensorFromRandom>(rows, cols, channels, 0.f, 1.f, 42);
     }
 
     float scalar(const shared_ptr<BaseTensor> &tensor) {
@@ -87,6 +88,30 @@ namespace microml {
 
     shared_ptr<FullTensor> tensor(const vector<vector<vector<float>>> &t) {
         return make_shared<FullTensor>(t);
+    }
+
+    void assertEqual(const shared_ptr<BaseTensor> &t1, const shared_ptr<BaseTensor> &t2) {
+        if(t1->channelCount() != t2->channelCount()) {
+            throw exception("Tensors don't have the same number of channels.");
+        }
+        if(t1->rowCount() != t2->rowCount()) {
+            throw exception("Tensors don't have the same number of rows.");
+        }
+        if(t1->columnCount() != t2->columnCount()) {
+            throw exception("Tensors don't have the same number of columns.");
+        }
+        for(size_t channel = 0; channel < t1->channelCount(); channel++) {
+            for( size_t row = 0; row < t1->rowCount(); row++) {
+                for(size_t col = 0; col < t1->columnCount(); col++) {
+                    if(!roughlyEqual(t1->getValue(row, col, channel), t2->getValue(row, col, channel))) {
+                        ostringstream message;
+                        message << "Value " << t1->getValue(row, col, channel) << " does not equal "
+                                << t2->getValue(row, col, channel) << " at " << row << ", " << col << ", " << channel;
+                        throw exception(message.str().c_str());
+                    }
+                }
+            }
+        }
     }
 }
 

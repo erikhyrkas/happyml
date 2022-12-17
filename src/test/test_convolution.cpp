@@ -16,11 +16,19 @@ void testConv2D() {
     conv2dDataSource->addTrainingData(randomTensor(10, 10, 1), randomTensor(4, 4, 2));
 
     auto neuralNetwork = neuralNetworkBuilder()
-            ->addInput(conv2dDataSource->getGivenShape(), 1, 3, micromldsl::convolution2d, tanh_approx)
-            ->addNode(1, 3, micromldsl::convolution2d, tanh_approx)
-            ->addOutput(conv2dDataSource->getExpectedShape(), 3, micromldsl::convolution2d, tanh_approx)
+            ->addInput(conv2dDataSource->getGivenShape(), 1, 3, micromldsl::convolution2d, tanh_approx)->setUseBias(false)
+            ->addNode(1, 3, micromldsl::convolution2d, tanh_approx)->setUseBias(false)
+            ->addOutput(conv2dDataSource->getExpectedShape(), 3, micromldsl::convolution2d, tanh_approx)->setUseBias(false)
             ->build();
-    neuralNetwork->train(conv2dDataSource, 100, 1);
+    neuralNetwork->train(conv2dDataSource, 3000, 1);
+
+    conv2dDataSource->restart();
+    auto record = conv2dDataSource->nextRecord();
+    auto result = neuralNetwork->predict(record->getFirstGiven());
+    cout << "Result: " << endl;
+    result[0]->print();
+    cout << "Expected: " << endl;
+    record->getFirstExpected()->print();
 }
 
 int main() {

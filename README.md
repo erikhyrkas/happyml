@@ -1,5 +1,5 @@
 # Compiling
-I use CLion with Visual Studio 2022 community for the c++ runtime libraries.
+I use CLion with Visual Studio 2022 community for the C++ runtime libraries.
 * https://visualstudio.microsoft.com/downloads/
 
 Look at the [clion_settings.png](clion_settings.png) for an example on configuring CLion. Pay special attention to the x64 setting. I had to type that value, since it was not in the dropdown options.
@@ -7,39 +7,49 @@ Look at the [clion_settings.png](clion_settings.png) for an example on configuri
 I didn't include the idea project settings files, so you'll have to make a project from source, but everything should work
 based on the [CMakeLists.txt](CMakeLists.txt).
 
+# microml
+
+Why did you build this? You shouldn't have. 
+
+Seriously, why did you do this?
+
+Three reasons:
+1. LEARNING: I want to understand every aspect of what goes into the science and algorithms fueling the future, and share what I learn along the way. The next generation can pick up this torch and build their own dreams.
+2. DEMOCRATIZING POWER: The most powerful machine learning done today is done on millions of dollars of hardware by a relatively few people. While I may not invent a way of democratizing the power of machine learning, I hope this is a small step toward inspiring somebody smarter than me to bring it about. See the section on democratizing power.
+3. STUBBORNNESS: There are a million reasons not to build this, which is enough to harden my resolve to build it.
 
 # Democratizing the Power of ML
 
 Here are the three ways this project aims to democratize the power of ML:
 1. Support building large models that train on inexpensive, commodity hardware.
-2. Provide an interface to using ML without needing to be a data scientist.
+2. Provide an interface to using common machine learning approaches to software and data engineers without needing to be a data scientist.
 3. Create a place for people to learn about ML that doesn't assume you have formal training or the math background to understand it.
 
-The first goal reduces the expense of building models. Right now, the cutting edge models of the world can only be built on very expensive hardware. There's no chance this framework will ever be as fast as what can be done by throwing money at the problem, but making large models possible for less money, even if they are slower to run is a huge win for democratizing the power of ML.
+The first goal reduces the expense of building models. Right now, the cutting edge models of the world can only be built on very expensive hardware. There's no chance this framework will ever be as fast as what can be done by throwing money at the problem, but making large models possible for less money, even if they are slower to run is a huge win for democratizing the power of ML. There might come a time where the price of hardware goes down dramatically and this goal will seem ridiculous. I'm counting on the complexity of ML to keep pace with the advancements in hardware.
 
-The second goal is about providing an interface to ML that let's software developers communicate their end goal in a way they are familiar with and then building the model for them. This is similar to how SQL works with databases. You specify what you want, not how you want it retrieved. You leave it to the database to calculate the optimal path to get that data. I think ML needs to get to this point so that it usable by a larger audience who might not be mathematicians and data scientists.
+The second goal is about providing an interface to ML that lets software developers communicate their end goal in a way they are familiar with and then building the model for them. This is similar to how SQL works with databases. You specify what you want, not how you want it retrieved. You leave it to the database to calculate the optimal path to get that data. I think ML needs to get to this point so that it usable by a larger audience who might not be mathematicians and data scientists. There are already tools available and are growing to make ML available through simple web interfaces, but these tools aren't for software engineers, and they aren't free. I see a future where microml may be something directly used by code or deployed as a webservice and accessed through a REST API.
 
 The last goal is an area that there is already a huge push for, which is creating means for people to learn the math and science of ML. I want to support this goal, but at the same time, this is already the area that is the strongest.
 
 # Current State
-This isn't even in a complete alpha stage, yet.
+This project isn't even in a complete alpha stage, yet.
+
+Must-haves for alpha:
+* Need to fix convolutional layers. I'm not far away from it, but it's not done. I paused this work because I found an issue with the mini-batch gradient decent training.
+* Need to be able to save and restore state, even if in a simple format.
+
+Nice-to-haves for alpha:
 * _I think I've updated most of the formatting at this point._ ~~Need to format the code to C++ standards, since I've been doing so many languages that I have clearly forgotten what is standard.~~
-* Need to fix convolutional layers. I'm not far away from it, but it's not done.
-* Need to fix and check-in Adam optimizer. I'm not even going to check it in until it seems plausibly right and I need to refactor the model object's training to support it correctly.
-* Need to finish the half float and test.
-  At that point, the code will be in an alpha state, but I still won't have even tackled encoder-decoder and decoder-only requirements. For beta, I'd like to see at least decoder-only support. There's also Reinforcement Learning from Human Feedback (RLHF) that I'll ponder, but I doubt I can work that into the beta let along the alpha. That journey will continue.
+* Need to fix and check-in Adam optimizer. I'm not even going to check it in until it seems plausibly right and I need to refactor the model object's training to support it correctly. I built the mini-batch gradient decent optimizer first because it was easier to make (even though I still had issues building it correctly -- that is part of the learning process), and it let me assertEqual all the other code.
+* Need to finish the half float and test. It currently doesn't handle any edge conditions and could produce incorrect results in some situations.
+ 
 
-This project is still a long way off from democratizing the power of ml. Right now, it's mostly focused on making large models run on commodity hardware. Next steps will be to make the interface to using it easier for people without a data science background. And finally, I hope that everything I build it educational.
+At that point, the code will be in an alpha state, but I still won't have even tackled encoder-decoder and decoder-only requirements. For beta, I'd like to see at least decoder-only support. There's also Reinforcement Learning from Human Feedback (RLHF) that I'll ponder, but I doubt I can work that into the beta let along the alpha. That journey will continue.
 
-# microml
+This project is still a long way off from democratizing the power of ml. Right now, it's mostly focused on making large models run on commodity hardware. Next steps will be to make the interface to using it easier for people without a data science background. And finally, I hope that everything I build is educational.
 
-Why did you build this? You shouldn't have. Seriously. Why?
 
-Three reasons: 
-1. LEARNING: I want to understand every aspect of what goes into the science and algorithms fueling the future, and share what I learn along the way. The next generation can pick up this torch and build their own dreams.
-2. DEMOCRATIZING POWER: The most powerful machine learning done today is done on millions of dollars of hardware by a relatively few people. While I may not invent a way of democratizing the power of machine learning, I hope this is a small step toward inspiring somebody smarter than me to bring it about. See the section on democratizing power.
-3. STUBBORNNESS: There are a million reasons not to build this, which is enough to harden my resolve to build it. 
-
+# Learning more
 If you want to use the latest and coolest algorithms, you can use them relatively cheaply if you have some rudimentary programming skills to build some amazing things:
 * https://openai.com/api/
 * https://www.midjourney.com/
@@ -167,7 +177,7 @@ There is a lot of gate keeping in machine learning.
 
 Data scientists study for years, working hard to obtain the knowledge necessary to create new algorithms -- machine learning models. It requires huge amounts of effort to gain that understanding, and even more effort to apply it in real life situations.
 
-The idea that the average developer could use a machine learning algorithm is laughable from the perspective of somebody who has a deep understanding of the math and how to build and configure models. It shouldn't be. The reason it is so hard is that the state of the technology is not accessible.
+The idea that the average software developer could use a machine learning algorithm is laughable from the perspective of somebody who has a deep understanding of the math and how to build and configure models. It shouldn't be. The reason it is so hard is that the state of the technology is not accessible.
 
 In addition, a lot of corporate data science has a low tolerance for risk and is both hard and rather boring -- there's a couple of popular techniques around regression and classification that require a tremendous amount of knowledge to apply, and a lot of research into the data to even attempt, but the end results are something that follows a fairly predictable pattern.
 

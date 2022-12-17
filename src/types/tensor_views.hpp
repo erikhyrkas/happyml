@@ -734,9 +734,9 @@ namespace microml {
             #pragma omp for collapse(2)
             for(size_t kernel_row = 0; kernel_row < kernel_rows; kernel_row++) {
                 for(size_t kernel_col = 0; kernel_col < kernel_cols; kernel_col++) {
-                    const auto filter_val = child2->getValue(kernel_row, kernel_col, channel);
+                    const auto kernel_val = child2->getValue(kernel_row, kernel_col, 0); // channel 0 is applied to all channels of tensor
                     const auto tensor_val = child1->getValue(row + kernel_row, column + kernel_col, channel);
-                    result += filter_val + tensor_val;
+                    result += kernel_val * tensor_val;
                 }
             }
             return result;
@@ -770,10 +770,10 @@ namespace microml {
         TensorFullCrossCorrelation2dView(const shared_ptr<BaseTensor> &tensor, const shared_ptr<BaseTensor> &kernel)
                 : TensorValidCrossCorrelation2dView(
                 make_shared<TensorZeroPaddedView>(tensor,
-                                                  (size_t)round(((double) kernel->rowCount() - 1) / 2.0),
-                                                  (size_t)round(((double) kernel->rowCount() - 1) / 2.0),
-                                                  (size_t)round(((double) kernel->columnCount() - 1) / 2.0),
-                                                  (size_t)round(((double) kernel->columnCount() - 1) / 2.0)),
+                                                  (size_t)round(((double) kernel->rowCount()) / 2.0),
+                                                  (size_t)round(((double) kernel->rowCount()) / 2.0),
+                                                  (size_t)round(((double) kernel->columnCount()) / 2.0),
+                                                  (size_t)round(((double) kernel->columnCount()) / 2.0)),
                 kernel) {
         }
 

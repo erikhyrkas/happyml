@@ -408,14 +408,14 @@ namespace microml {
         }
 
         void print(ostream &out) {
-            if (channelCount() > 1) {
-                out << "[";
-            }
             out << setprecision(3) << fixed << endl;
             const size_t rows = rowCount();
             const size_t cols = columnCount();
             const size_t maxChannels = channelCount();
             for (size_t channel = 0; channel < maxChannels; channel++) {
+                if (maxChannels > 1) {
+                    out << "[" << endl;
+                }
                 for (size_t row = 0; row < rows; row++) {
                     if (rows > 1) {
                         cout << "|";
@@ -433,9 +433,9 @@ namespace microml {
                         out << "]" << endl;
                     }
                 }
-            }
-            if (channelCount() > 1) {
-                out << "]";
+                if (maxChannels > 1) {
+                    out << "]" << endl;
+                }
             }
         }
     };
