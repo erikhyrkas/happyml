@@ -109,6 +109,7 @@ void testMnistFull8bit() {
         nextRecord = testMnistDataSource->nextRecord();
     }
 }
+
 void testMnistConvolution() {
     map<string, size_t> categories;
     categories["0"] = 0;
@@ -126,7 +127,7 @@ void testMnistConvolution() {
     // making the shape square (28x28) just to test the auto-flattening capabilities of the network.
     //"..\\test_data\\small_mnist_format.csv"
     //"..\\data\\mnist_test.csv"
-    auto mnistDataSource = make_shared<InMemoryDelimitedValuesTrainingDataSet>("..\\data\\mnist_test.csv", ',',
+    auto mnistDataSource = make_shared<InMemoryDelimitedValuesTrainingDataSet>("..\\data\\mnist_train.csv", ',',
                                                                                true, false, true,
                                                                                1, 28*28,
                                                                                vector<size_t>{1,10,1},vector<size_t>{28, 28,1},//vector<size_t>{28,28,1},
@@ -134,14 +135,15 @@ void testMnistConvolution() {
     cout << "Loaded training data." << endl;
 
     auto neuralNetwork = neuralNetworkBuilder()
-            ->addInput(mnistDataSource->getGivenShape(), 100, full, tanh_approx)
-            ->addNode(50, full, tanh_approx)
-            ->addOutput(mnistDataSource->getExpectedShape(), tanh_approx)
+            ->addInput(mnistDataSource->getGivenShape(), 1, 3, convolution2d, ActivationType::relu)->setUseBias(false)
+            ->addNode(100, full, ActivationType::relu)->setUseBias(false)
+            ->addOutput(mnistDataSource->getExpectedShape(), micromldsl::sigmoid_approx)
             ->build();
-    neuralNetwork->train(mnistDataSource, 100, 128);
+    neuralNetwork->train(mnistDataSource, 20, 4);
+    // Trained 20 epochs using a batch size of 4 in 52 minutes with a loss of 0.009784.
 
 
-    auto testMnistDataSource = make_shared<InMemoryDelimitedValuesTrainingDataSet>("..\\test_data\\small_mnist_format.csv", ',',
+    auto testMnistDataSource = make_shared<InMemoryDelimitedValuesTrainingDataSet>("..\\data\\mnist_test.csv", ',',
                                                                                    true, false, true,
                                                                                    1, 28*28,
                                                                                    vector<size_t>{1,10,1},vector<size_t>{28, 28,1},//vector<size_t>{28,28,1},,vector<size_t>{28,28,1},
@@ -159,7 +161,8 @@ void testMnistConvolution() {
 int main() {
     try {
         testMnistFull();
-//        testMnistFull8bit();
+        testMnistFull8bit();
+        testMnistConvolution();
     } catch (const exception &e) {
         cout << e.what() << endl;
     }
