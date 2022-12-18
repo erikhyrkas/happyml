@@ -30,8 +30,8 @@ namespace microml {
         return make_shared<FullTensor>(t);
     }
 
-    shared_ptr<BaseTensor> randomTensor(size_t rows, size_t cols, size_t channels) {
-        return make_shared<TensorFromRandom>(rows, cols, channels, 0.f, 1.f, 42);
+    shared_ptr<BaseTensor> randomTensor(size_t rows, size_t cols, size_t channels, float min_value, float max_value) {
+        return make_shared<TensorFromRandom>(rows, cols, channels, min_value, max_value, 42);
     }
 
     float scalar(const shared_ptr<BaseTensor> &tensor) {

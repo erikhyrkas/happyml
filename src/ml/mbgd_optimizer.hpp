@@ -84,11 +84,22 @@ namespace microml {
 
             // filters are the number of output channels we have
             const size_t filters = outputShape[2];
+            const size_t inputDepth = inputShapes[0][2];
             shared_ptr<BaseTensor> result = nullptr;
             for(size_t outputLayer = 0; outputLayer < filters; outputLayer++) {
-                const auto currentWeights = weights[outputLayer];
-                const auto correlation2d = make_shared<TensorValidCrossCorrelation2dView>(lastInput, currentWeights);
-                const shared_ptr<BaseTensor> summedCorrelation2d = make_shared<TensorSumToChannelView>(correlation2d, outputLayer, filters);
+                shared_ptr<BaseTensor> outputTensor = nullptr;
+                for(size_t inputLayer = 0; inputLayer < inputDepth; inputLayer++) {
+                    const auto weightForInputLayer = make_shared<TensorChannelToTensorView>(weights[outputLayer],
+                                                                                            inputLayer);
+                    const auto inputChannel = make_shared<TensorChannelToTensorView>(lastInput, inputLayer);
+                    const auto correlation2d = make_shared<TensorValidCrossCorrelation2dView>(inputChannel, weightForInputLayer);
+                    if(outputTensor) {
+                        outputTensor = make_shared<TensorAddTensorView>(outputTensor, correlation2d);
+                    } else {
+                        outputTensor = correlation2d;
+                    }
+                }
+                const shared_ptr<BaseTensor> summedCorrelation2d = make_shared<TensorSumToChannelView>(outputTensor, outputLayer, filters);
                 if(!result) {
                     result = summedCorrelation2d;
                 } else {
@@ -139,7 +150,6 @@ namespace microml {
                     } else {
                         inputError = inputErrorToInputChannel;
                     }
-//                    inputError->print();
                     const auto inputLayerChannel = make_shared<TensorChannelToTensorView>(averageLastInputs, inputLayer);
                     const auto nextWeightError = make_shared<TensorValidCrossCorrelation2dView>(inputLayerChannel, outputErrorForLayer);
                     const auto nextWeightToInputChannel = make_shared<TensorSumToChannelView>(nextWeightError, inputLayer, inputDepth);
@@ -151,17 +161,8 @@ namespace microml {
                 }
                 const auto nextWeightErrorAtLearningRate = make_shared<TensorMultiplyByScalarView>(weightChanges,
                                                                                                         learningState->learningRate * mixedPrecisionScale);
-//                cout << endl << "nextWeightErrorAtLearningRate[" << outputLayer << "]" << endl;
-//                nextWeightErrorAtLearningRate->print();
-//                cout << "pre adjust weights[" << outputLayer << "]" << endl;
-//                weights[outputLayer]->print();
-
                 const auto adjustedWeights = make_shared<TensorMinusTensorView>(weights[outputLayer], nextWeightErrorAtLearningRate);
-
                 weights[outputLayer] = materializeTensor(adjustedWeights, bits);
-
-//                cout << "adjustedWeights[" << outputLayer << "]" << endl;
-//                weights[outputLayer]->print();
             }
 
             const auto resultError = make_shared<TensorSumChannelsView>(inputError);
@@ -238,7 +239,6 @@ namespace microml {
                 average_last_inputs = materializeTensor(make_shared<TensorMultiplyByScalarView>(average_last_inputs, 1.f/(float)lastInputsSize));
             }
 
-//            output_error->printMaterializationPlanLine();
 
             // find the error
             auto weights_transposed = make_shared<TensorTransposeView>(weights);
@@ -246,7 +246,6 @@ namespace microml {
             //  considerably more memory than we need. Part of me thinks that all dot product tensors should be materialized,
             //  and part of me thinks that there are situations of simple dot products don't need to be.
             shared_ptr<BaseTensor> input_error = make_shared<FullTensor>(make_shared<TensorDotTensorView>(output_error, weights_transposed));
-//            shared_ptr<BaseTensor> input_error = make_shared<TensorDotTensorView>(output_error, weights_transposed);
 
             // update weights
             auto input_transposed = make_shared<TensorTransposeView>(average_last_inputs);
@@ -358,7 +357,6 @@ namespace microml {
             bias = materializeTensor(adjusted_bias, bits);
 
             current_batch_size = 0;
-//            auto adjusted_output = make_shared<TensorMinusTensorView>(output_error, adjusted_bias);
             // TODO: partial derivative of bias would always be 1, so we pass along original error. I'm fairly sure this is right.
             // but I notice that the quarter float doesn't handle big shifts in scale very well
             return output_error;

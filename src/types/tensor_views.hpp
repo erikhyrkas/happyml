@@ -486,7 +486,7 @@ namespace microml {
                     tensor1->columnCount() != tensor2->columnCount()) {
                 cout << "[" << tensor1->rowCount() << ", " << tensor1->columnCount() << ", " << tensor1->channelCount() << "] - [";
                 cout << tensor2->rowCount() << ", " << tensor2->columnCount() << ", " << tensor2->channelCount() << "]" << endl;
-                throw exception("You can only add two tensors of the same dimensions together.");
+                throw exception("You can only subtract two tensors of the same dimensions together.");
             }
         }
 

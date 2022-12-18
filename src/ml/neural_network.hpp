@@ -81,14 +81,11 @@ namespace microml {
 
         // todo: right now, i'm assuming this is a directed acyclic graph, this may not work for everything.
         //  It is possible, I'll have to track visited nodes to avoid infinite cycles.
-        void backward(shared_ptr<BaseTensor> &output_error) {
+        void backward(shared_ptr<BaseTensor> &outputError) {
             // TODO: for multiple errors, I'm currently averaging the errors as they propagate, but it probably should be a weighted average
-//            cout <<endl << "Backward output error: " <<endl;
-//            output_error->print();
-//            cout <<endl;
             PROFILE_BLOCK(profileBlock);
 
-            auto priorError = neuralNetworkFunction->backward(output_error);
+            auto priorError = neuralNetworkFunction->backward(outputError);
             if (materialized) {
                 priorError = materializeTensor(priorError);
             }
@@ -341,7 +338,7 @@ namespace microml {
                             auto batchLoss = totalLoss / (float)batchOffset;
                             totalBatchOutputLoss += batchLoss;
 
-                            // batchOffset should be equal to batch_size, unless we are out of records.
+                            // batchOffset should be equal to batch_size, unless we are on the last partial batch.
                             auto lossDerivative = lossFunction->partialDerivative(totalError, (float) batchOffset);
 
                             // todo: we don't weight loss when there are multiple outputs back propagating. we should, instead of treating them as equals.
