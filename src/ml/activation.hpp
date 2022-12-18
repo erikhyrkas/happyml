@@ -36,6 +36,7 @@ namespace microml {
     // also known as the "identity" activation function.
     // do nothing. useful for basic linear regression where we don't have an activation function.
     class LinearActivationFunction : public ActivationFunction {
+    public:
         shared_ptr<BaseTensor> activate(const shared_ptr<BaseTensor> &input) override {
             // copy input to output without changing it
             return make_unique<TensorNoOpView>(input);
@@ -51,6 +52,7 @@ namespace microml {
 
     // small negative number to infinity
     class LeakyReLUActivationFunction : public ActivationFunction {
+    public:
         shared_ptr<BaseTensor> activate(const shared_ptr<BaseTensor> &input) override {
             auto transformFunction = [](float original) {
                 // avoid branching in a loop. give negative values a small value.
@@ -71,6 +73,7 @@ namespace microml {
     // Useful in the hidden layers of a neural network, especially deep neural networks and convolutional neural networks.
     // 0 to infinity
     class ReLUActivationFunction : public ActivationFunction {
+    public:
         shared_ptr<BaseTensor> activate(const shared_ptr<BaseTensor> &input) override {
             auto transformFunction = [](float original) {
                 return std::max(original, 0.0f);
@@ -93,6 +96,7 @@ namespace microml {
     // result tensor elements sum to 1, representing the percentage of importance of each element in original tensor
     // usually represents a probability between 0 and 1 of each element in a classifications of multiple possibilities
     class SoftmaxActivationFunction : public ActivationFunction {
+    public:
         shared_ptr<BaseTensor> activate(const shared_ptr<BaseTensor> &input) override {
             float largestValue = input->max();
             double sum = 0.0;
@@ -134,6 +138,7 @@ namespace microml {
     // f(x) = 0.5 * (x / (1 + abs(x)) + 1)
     // 0 to 1
     class SigmoidApproximationActivationFunction : public ActivationFunction {
+    public:
         shared_ptr<BaseTensor> activate(const shared_ptr<BaseTensor> &input) override {
             auto transformFunction = [](float original) {
                 return 0.5f * ((original / (1.0f + std::abs(original))) + 1);
@@ -155,6 +160,7 @@ namespace microml {
 // I also checked this understanding here: https://medium.com/@DannyDenenberg/derivative-of-the-sigmoid-function-774446dfa462
 // 0 to 1
     class SigmoidActivationFunction : public ActivationFunction {
+    public:
         shared_ptr<BaseTensor> activate(const shared_ptr<BaseTensor> &input) override {
             auto transformFunction = [](float original) {
                 return 1.0f / (1.0f + std::exp(-1.0f * original));
@@ -175,6 +181,7 @@ namespace microml {
     // approximate tanh
     // I read about this here: https://www.ipol.im/pub/art/2015/137/article_lr.pdf
     class TanhApproximationActivationFunction : public ActivationFunction {
+    public:
         shared_ptr<BaseTensor> activate(const shared_ptr<BaseTensor> &input) override {
             PROFILE_BLOCK(profileBlock);
             auto transformFunction = [](float original) {
@@ -205,6 +212,7 @@ namespace microml {
     // Generally used for classification
     // -1 to 1
     class TanhActivationFunction : public ActivationFunction {
+    public:
         shared_ptr<BaseTensor> activate(const shared_ptr<BaseTensor> &input) override {
             auto transformFunction = [](float original) {
                 // optimization or waste of energy?

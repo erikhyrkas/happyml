@@ -18,3 +18,5 @@ add_executable(test_data_source src/test/test_data_source.cpp)
 add_executable(test_file_reader src/test/test_file_reader.cpp)
 
 add_executable(test_convolution src/test/test_convolution.cpp)
+
+add_executable(test_activation src/test/test_activation.cpp)
