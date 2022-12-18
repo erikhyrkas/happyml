@@ -25,7 +25,6 @@ void testMnistFull() {
     auto expectedEncoder = make_shared<TextToCategoryEncoder>(categories);
     auto givenEncoder = make_shared<TextToPixelEncoder>();
     // making the shape square (28x28) just to test the auto-flattening capabilities of the network.
-    //"..\\test_data\\small_mnist_format.csv"
     //"..\\data\\mnist_test.csv"
     //"..\\data\\mnist_train.csv"
     auto mnistDataSource = make_shared<InMemoryDelimitedValuesTrainingDataSet>("..\\data\\mnist_train.csv", ',',
@@ -77,7 +76,6 @@ void testMnistFull8bit() {
     auto expectedEncoder = make_shared<TextToCategoryEncoder>(categories);
     auto givenEncoder = make_shared<TextToPixelEncoder>();
     // making the shape square (28x28) just to test the auto-flattening capabilities of the network.
-    //"..\\test_data\\small_mnist_format.csv"
     //"..\\data\\mnist_test.csv"
     //"..\\data\\mnist_train.csv"
     auto mnistDataSource = make_shared<InMemoryDelimitedValuesTrainingDataSet>("..\\data\\mnist_train.csv", ',',
@@ -125,7 +123,6 @@ void testMnistConvolution() {
     auto expectedEncoder = make_shared<TextToCategoryEncoder>(categories);
     auto givenEncoder = make_shared<TextToPixelEncoder>();
     // making the shape square (28x28) just to test the auto-flattening capabilities of the network.
-    //"..\\test_data\\small_mnist_format.csv"
     //"..\\data\\mnist_test.csv"
     auto mnistDataSource = make_shared<InMemoryDelimitedValuesTrainingDataSet>("..\\data\\mnist_train.csv", ',',
                                                                                true, false, true,

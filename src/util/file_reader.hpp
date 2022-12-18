@@ -42,7 +42,6 @@ namespace microml {
             // now we need to keep reading ahead if we can
             if (has_next) {
                 if (!stream.is_open()) {
-                    // maybe this should be an exception.
                     has_next = false;
                     next_line = "";
                 } else {
