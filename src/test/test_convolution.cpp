@@ -148,14 +148,38 @@ void testConv2DComplexBias() {
     record->getFirstExpected()->print();
 }
 
+
+void testConv2DComplexTanhBias() {
+    auto conv2dDataSource = make_shared<InMemoryTrainingDataSet>();
+    // given input, expected result
+    conv2dDataSource->addTrainingData(randomTensor(10, 10, 1, 0.f, 1.f), randomTensor(4, 4, 2, 0.f, 1.f));
+
+    auto neuralNetwork = neuralNetworkBuilder()->setLearningRate(0.01)
+            ->addInput(conv2dDataSource->getGivenShape(), 1, 3, micromldsl::convolution2d, tanh_approx)->setUseBias(
+                    false)
+            ->addNode(1, 3, micromldsl::convolution2d, tanh_approx)->setUseBias(false)
+            ->addOutput(conv2dDataSource->getExpectedShape(), 3, micromldsl::convolution2d, micromldsl::tanh_approx)
+            ->build();
+    neuralNetwork->train(conv2dDataSource, 20000, 1);
+
+    conv2dDataSource->restart();
+    auto record = conv2dDataSource->nextRecord();
+    auto result = neuralNetwork->predict(record->getFirstGiven());
+    cout << "Result: " << endl;
+    result[0]->print();
+    cout << "Expected: " << endl;
+    record->getFirstExpected()->print();
+}
+
 int main() {
     try {
-        testSimpleConv2DNoBias();
-        testSimpleConv2DBias();
-        testConv2DWithFilterNoBias();
-        testConv2DWithFilterBias();
-        testConv2DComplexNoBias();
-        testConv2DComplexBias();
+//        testSimpleConv2DNoBias();
+//        testSimpleConv2DBias();
+//        testConv2DWithFilterNoBias();
+//        testConv2DWithFilterBias();
+//        testConv2DComplexNoBias();
+//        testConv2DComplexBias();
+        testConv2DComplexTanhBias();
     } catch (const exception &e) {
         cout << e.what() << endl;
     }
