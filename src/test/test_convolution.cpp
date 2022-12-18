@@ -173,12 +173,12 @@ void testConv2DComplexTanhBias() {
 
 int main() {
     try {
-//        testSimpleConv2DNoBias();
-//        testSimpleConv2DBias();
-//        testConv2DWithFilterNoBias();
-//        testConv2DWithFilterBias();
-//        testConv2DComplexNoBias();
-//        testConv2DComplexBias();
+        testSimpleConv2DNoBias();
+        testSimpleConv2DBias();
+        testConv2DWithFilterNoBias();
+        testConv2DWithFilterBias();
+        testConv2DComplexNoBias();
+        testConv2DComplexBias();
         testConv2DComplexTanhBias();
     } catch (const exception &e) {
         cout << e.what() << endl;
