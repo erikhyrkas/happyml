@@ -38,11 +38,15 @@ Must-haves for alpha:
 * _Convolutional Layers are training slow, but seem to train now._ ~~Need to fix convolutional layers.~~
 * I think there's a bug in tanh_approx, maybe tanh as well.
 * Need to be able to save and restore state, even if in a simple format.
+* A test() function that could take a test data set and return a loss. This could be used for early stopping, but also for tests. 
 
 Nice-to-haves for alpha:
 * _I think I've updated most of the formatting at this point._ ~~Need to format the code to C++ standards, since I've been doing so many languages that I have clearly forgotten what is standard.~~
 * Need to fix and check-in Adam optimizer. I'm not even going to check it in until it seems plausibly right and I need to refactor the model object's training to support it correctly. I built the mini-batch gradient decent optimizer first because it was easier to make (even though I still had issues building it correctly -- that is part of the learning process), and it let me test all the other code.
 * Need to finish the half float and test. It currently doesn't handle any edge conditions and could produce incorrect results in some situations.
+
+Stretch goals for alpha:
+* Lexer/parser to take in an input stream and create, train, load, and use models through a standard input stream
  
 
 At that point, the code will be in an alpha state, but I still won't have even tackled encoder-decoder and decoder-only requirements. For beta, I'd like to see at least decoder-only support. There's also Reinforcement Learning from Human Feedback (RLHF) that I'll ponder, but I doubt I can work that into the beta let along the alpha. That journey will continue.

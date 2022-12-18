@@ -11,6 +11,7 @@ int main() {
     // are abstracted away, but I'll try to find ways to give hints to allow people control
 
     // syntax might be something like:
+    // set output <human/machine>
     // create <data set type> dataset <name> from <location> [with <format>]
     // create [<adjective>*] <model type> model <model name> [<model version>] using <data set name>
     // tune <model name> [<model version>] [as [<model name>] [<model version>]] using <data set name>
