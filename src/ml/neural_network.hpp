@@ -1,5 +1,5 @@
 //
-// Created by ehyrk on 11/23/2022.
+// Created by Erik Hyrkas on 11/23/2022.
 //
 
 #ifndef MICROML_NEURAL_NETWORK_HPP
