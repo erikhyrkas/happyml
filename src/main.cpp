@@ -12,7 +12,12 @@ int main() {
 
     // syntax might be something like:
     // set output <human/machine>
+
     // create <data set type> dataset <name> from <location> [with <format>]
+    // add rows to dataset <name> using delimited data:
+    // 1, 2, 3, 4
+    // <empty line to denote end of data>
+
     // create [<adjective>*] <model type> model <model name> [<model version>] using <data set name>
     // tune <model name> [<model version>] [as [<model name>] [<model version>]] using <data set name>
     // retrain <model name> [<model version>] [as [<model name>] [<model version>]] using <data set name>

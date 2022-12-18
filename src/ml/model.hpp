@@ -21,7 +21,7 @@ namespace micromldsl {
         mse
     };
     enum NodeType {
-        full, convolution2d
+        full, convolution2dValid
     };
     enum ActivationType {
         relu, tanh, sigmoid, leaky, softmax, sigmoid_approx, tanh_approx
@@ -155,14 +155,14 @@ namespace micromldsl {
 
             shared_ptr<NNVertex> addOutput(const vector<size_t> &outputShape, const size_t outputKernelSize,
                                            NodeType nodeType, ActivationType activationType) {
-
-                auto result = addNode(outputShape[2], outputKernelSize, NodeType::convolution2d, true,
+                // todo: support other types of convolution nodes here
+                auto result = addNode(outputShape[2], outputKernelSize, NodeType::convolution2dValid, true,
                                       activationType);
                 if(result->outputShape[0] != outputShape[0] ||
                    result->outputShape[1] != outputShape[1] ||
                    result->outputShape[2] != outputShape[2]) {
                     stringstream ss;
-                    ss << "The calculated output shape of the convolution2d node ("
+                    ss << "The calculated output shape of the node ("
                        << result->outputShape[0] << ", " << result->outputShape[1] << ", " << result->outputShape[2]
                        << ") didn't match the desired output shape ("
                        << outputShape[0] << ", " << outputShape[1] << ", " << outputShape[2] << ")";
@@ -231,7 +231,7 @@ namespace micromldsl {
                     }
                     next_node = make_shared<NeuralNetworkNode>(
                             optimizer->createFullyConnectedNeurons(input_shape[0]*input_shape[1]*input_shape[2], outputShape[0] * outputShape[1] * outputShape[2], bits));
-                } else if(node_type == NodeType::convolution2d) {
+                } else if(node_type == NodeType::convolution2dValid) {
                     next_node = make_shared<NeuralNetworkNode>(optimizer->createConvolutional2d(input_shape, filters,
                                                                                                 kernel_size, bits));
                 } else {

@@ -38,21 +38,14 @@ namespace microml {
         float biasLearningRate;
     };
 
-// full conv2d will be similar to valid, but needs some changes.
-//            // this will look crazy, but it's dealing with even kernel sizes, which
-//            // are not really a great idea as far as I can tell, but I don't want the
-//            // code to break.
-//            size_t rows = 2*((size_t)std::round(((double)kernel_size - 1)/2.0)); // 1 = 0, 2 = 2, 3 = 2, 4 = 4, 5 = 4
-//            size_t cols = rows; // I could eventually support other shapes, but it's not critical right now.
-//            this->outputShape = {input_shape[0]+rows, input_shape[1]+cols, output_depth};
     // Here's an interesting, related read:
     // https://towardsdatascience.com/convolution-vs-correlation-af868b6b4fb5
     // also:
     // https://medium.com/@2017csm1006/forward-and-backpropagation-in-convolutional-neural-network-4dfa96d7b37e
-    class MBGDConvolution2dFunction : public NeuralNetworkFunction {
+    class MBGDConvolution2dValidFunction : public NeuralNetworkFunction {
     public:
-        MBGDConvolution2dFunction(vector<size_t> inputShape, size_t filters, size_t kernelSize, uint8_t bits,
-                                  const shared_ptr<MBGDLearningState> &learningState) {
+        MBGDConvolution2dValidFunction(vector<size_t> inputShape, size_t filters, size_t kernelSize, uint8_t bits,
+                                       const shared_ptr<MBGDLearningState> &learningState) {
             this->inputShapes = vector<vector<size_t>> {inputShape};
             this->kernelSize = kernelSize;
             this->outputShape = {inputShape[0] - kernelSize + 1, inputShape[1] - kernelSize + 1, filters};
@@ -74,7 +67,7 @@ namespace microml {
         shared_ptr<BaseTensor> forward(const vector<shared_ptr<BaseTensor>> &input, bool forTraining) override {
             PROFILE_BLOCK(profileBlock);
             if( input.size() > 1) {
-                throw exception("MBGDConvolution2dFunction only supports a single input.");
+                throw exception("MBGDConvolution2dValidFunction only supports a single input.");
             }
 
             auto lastInput = input[0];
@@ -398,7 +391,7 @@ namespace microml {
         shared_ptr<NeuralNetworkFunction> createConvolutional2d(vector<size_t> input_shape,
                                                                 size_t filters, size_t kernel_size,
                                                                 uint8_t bits) override {
-            return make_shared<MBGDConvolution2dFunction>(input_shape, filters, kernel_size, bits, sgdLearningState);
+            return make_shared<MBGDConvolution2dValidFunction>(input_shape, filters, kernel_size, bits, sgdLearningState);
         }
 
     private:

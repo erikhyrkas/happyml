@@ -135,7 +135,7 @@ void testMnistConvolution() {
     cout << "Loaded training data." << endl;
 
     auto neuralNetwork = neuralNetworkBuilder()
-            ->addInput(mnistDataSource->getGivenShape(), 1, 3, convolution2d, ActivationType::relu)->setUseBias(false)
+            ->addInput(mnistDataSource->getGivenShape(), 1, 3, convolution2dValid, ActivationType::relu)->setUseBias(false)
             ->addNode(100, full, ActivationType::relu)->setUseBias(false)
             ->addOutput(mnistDataSource->getExpectedShape(), micromldsl::sigmoid_approx)
             ->build();
