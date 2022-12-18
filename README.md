@@ -35,7 +35,8 @@ The last goal is an area that there is already a huge push for, which is creatin
 This project isn't even in a complete alpha stage, yet.
 
 Must-haves for alpha:
-* Need to fix convolutional layers. I'm not far away from it, but it's not done. I paused this work because I found an issue with the mini-batch gradient decent training.
+* _Convolutional Layers are training slow, but seem to train now._ ~~Need to fix convolutional layers.~~
+* I think there's a bug in tanh_approx, maybe tanh as well.
 * Need to be able to save and restore state, even if in a simple format.
 
 Nice-to-haves for alpha:
