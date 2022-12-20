@@ -15,7 +15,7 @@
 // an excessive amount of directives that are OS specific. We'll see if I regret this later.
 //
 // Really, I imagine there's a lot of work to be done to make this project
-// portable across operating systems, but this was a problem I wanted to tackle
+// portable across operating systems, but the byte order issue was a problem I wanted to tackle
 // while I had it on my mind. There are probably going to be compiling issues
 // using gcc that I'll deal with later and issues around 32-bit, but I'll get to them.
 // I've more-or-less tried to stay on top of it, but I haven't been testing
