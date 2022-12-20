@@ -122,7 +122,7 @@ namespace microml {
             this->rows = rows;
             this->columns = columns;
             this->elements_per_channel = (unsigned long) rows * (unsigned long) columns;
-            if (tensor->elements_per_channel() != elements_per_channel) {
+            if (tensor->elementsPerChannel() != elements_per_channel) {
                 throw exception("A matrix view must be put over a matrix with the same number of elements.");
             }
         }

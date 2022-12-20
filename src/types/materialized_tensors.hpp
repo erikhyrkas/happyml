@@ -13,6 +13,7 @@
 #include "quarter_float.hpp"
 #include "half_float.hpp"
 #include "tensor.hpp"
+#include "../util/portable_bytes.hpp"
 
 using namespace std;
 
@@ -68,6 +69,42 @@ namespace microml {
                     row_index++;
                 }
                 channel_index++;
+            }
+        }
+
+        explicit FullTensor(const string &fileName) {
+            try {
+                ifstream stream;
+                stream.open(fileName,ifstream::in | ios::binary);
+                uint64_t channels;
+                uint64_t rows;
+                uint64_t columns;
+
+                stream.read(reinterpret_cast<char*>(&channels), sizeof(channels));
+                channels = portableBytes(channels);
+                stream.read(reinterpret_cast<char*>(&rows), sizeof(rows));
+                rows = portableBytes(rows);
+                stream.read(reinterpret_cast<char*>(&columns), sizeof(columns));
+                columns = portableBytes(columns);
+
+                data.resize(channels);
+                for (size_t channel = 0; channel < channels; channel++) {
+                    data.at(channel).resize(rows);
+                    for (size_t row = 0; row < rows; row++) {
+                        data.at(channel).at(row).resize(columns);
+                        for(size_t column = 0; column < columns; column++) {
+                            uint32_t val;
+                            stream.read(reinterpret_cast<char*>(&val), sizeof(val));
+                            val = portableBytes(val);
+                            float nextVal = *(float*) &val;
+                            setVal(row, column, channel, nextVal);
+                        }
+                    }
+                }
+                stream.close();
+            } catch(ofstream::failure &e) {
+                cerr << "Failed to load: " << fileName << endl << e.what() << endl;
+                throw e;
             }
         }
 

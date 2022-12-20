@@ -641,6 +641,26 @@ void testTensorRotate2() {
     assertEqual(rotated, matrix2);
 }
 
+void testFullSaveLoad() {
+    string filename = "..\\test_data\\unit_test_fullsaveload.tensor";
+
+    try {
+        vector<vector<vector<float>>> a = {{{10, 11, 12},
+                                            {13, 14, 15},
+                                            {16, 17, 18}}};
+        auto matrix1 = make_shared<FullTensor>(a);
+        matrix1->save(filename);
+        auto matrix2 = make_shared<FullTensor>(filename);
+//        matrix1->print();
+//        matrix2->print();
+        assertEqual(matrix1, matrix2);
+    } catch (const exception &e) {
+        remove(filename.c_str());
+        throw e;
+    }
+    remove(filename.c_str());
+}
+
 int main() {
     try {
         // TODO: a lot of these tests don't cover the situation where we have many channels
@@ -705,6 +725,8 @@ int main() {
         testTensorRotate2();
         timer.printMilliseconds();
         test2FullConvolve2dView();
+        timer.printMilliseconds();
+        testFullSaveLoad();
         timer.printMilliseconds();
 
         // need to finish writing this test:

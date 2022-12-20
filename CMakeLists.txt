@@ -20,3 +20,5 @@ add_executable(test_file_reader src/test/test_file_reader.cpp)
 add_executable(test_convolution src/test/test_convolution.cpp)
 
 add_executable(test_activation src/test/test_activation.cpp)
+
+add_executable(test_portable_bytes src/test/test_portable_bytes.cpp)

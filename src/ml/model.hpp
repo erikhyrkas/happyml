@@ -9,8 +9,10 @@
 #include "../training_data/training_dataset.hpp"
 #include "optimizer.hpp"
 #include "mbgd_optimizer.hpp"
+#include <chrono>
 
 using namespace microml;
+using namespace std;
 
 namespace micromldsl {
 
@@ -29,37 +31,49 @@ namespace micromldsl {
 
     class MicromlDSL : public enable_shared_from_this<MicromlDSL> {
     public:
-        explicit MicromlDSL(ModelType modelType) {
+        explicit MicromlDSL(ModelType modelType, const string &modelName="unnamed", const string &repoRootPath="repo") {
             this->modelType = modelType;
+            this->modelName = modelName;
+            if(!std::all_of(modelName.begin(), modelName.end(), ::isalnum)) {
+                throw exception("Model name must contain only alphanumeric characters.");
+            }
+            auto ms = std::to_string(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
             switch (modelType) {
                 case microbatch:
-                    this->learning_rate = 0.1;
-                    this->bias_learning_rate = 0.01;
+                    this->learningRate = 0.1;
+                    this->biasLearningRate = 0.01;
+                    this->modelPath = modelName+"_microbatch_"+ms;
                     break;
                 default:
-                    this->learning_rate = 0.1;
-                    this->bias_learning_rate = 0.01;
+                    throw exception("Unsupported model type.");
             }
-            this->loss_type = LossType::mse;
+            this->lossType = LossType::mse;
+            this->repoRootPath = repoRootPath;
+            this->vertexUniqueSequenceCounter = 0;
         }
 
-        shared_ptr<MicromlDSL> setBiasLearningRate(float biasLearningRate) {
-            this->bias_learning_rate = biasLearningRate;
+        shared_ptr<MicromlDSL> setBiasLearningRate(float biasLearningRateValue) {
+            this->biasLearningRate = biasLearningRateValue;
             return shared_from_this();
         }
-        shared_ptr<MicromlDSL> setLearningRate(float learningRate) {
-            this->learning_rate = learningRate;
+        shared_ptr<MicromlDSL> setLearningRate(float learningRateValue) {
+            this->learningRate = learningRateValue;
             return shared_from_this();
         }
 
-        shared_ptr<MicromlDSL> setLossFunction(LossType lossType) {
-            this->loss_type = lossType;
+        shared_ptr<MicromlDSL> setLossFunction(LossType lossTypeValue) {
+            this->lossType = lossTypeValue;
+            return shared_from_this();
+        }
+
+        shared_ptr<MicromlDSL> setModelName(const string &modelNameValue) {
+            this->modelName = modelNameValue;
             return shared_from_this();
         }
 
         shared_ptr<NeuralNetworkForTraining> build() {
             shared_ptr<LossFunction> lossFunction;
-            switch (loss_type) {
+            switch (lossType) {
                 case LossType::mse:
                     lossFunction = make_shared<MeanSquaredErrorLossFunction>();
                     break;
@@ -69,10 +83,10 @@ namespace micromldsl {
             shared_ptr<Optimizer> optimizer;
             switch (modelType) {
                 case ModelType::microbatch:
-                    optimizer = make_shared<SGDOptimizer>(learning_rate, bias_learning_rate);
+                    optimizer = make_shared<SGDOptimizer>(learningRate, biasLearningRate);
                     break;
                 default:
-                    optimizer = make_shared<SGDOptimizer>(learning_rate, bias_learning_rate);
+                    optimizer = make_shared<SGDOptimizer>(learningRate, biasLearningRate);
             }
 
             auto neuralNetwork = make_shared<NeuralNetworkForTraining>(lossFunction, optimizer);
@@ -81,6 +95,12 @@ namespace micromldsl {
             }
 
             return neuralNetwork;
+        }
+
+        uint32_t nextVertexId() {
+            // TODO: this isn't thread safe. I may need to think more on concurrent vertex creation
+            vertexUniqueSequenceCounter++;
+            return vertexUniqueSequenceCounter;
         }
 
         // vertex aka node
@@ -92,7 +112,7 @@ namespace micromldsl {
             // used for non-convolutional layers
             NNVertex(const weak_ptr<MicromlDSL> &parent, NodeType nodeType, const vector<size_t> &input_shape,
                      const vector<size_t> &output_shape, bool for_output,
-                     ActivationType activation_type) {
+                     ActivationType activation_type, uint32_t vertexUniqueId) {
                 this->parent = parent;
                 this->node_type = nodeType;
                 this->activation_type = activation_type;
@@ -105,11 +125,13 @@ namespace micromldsl {
                 this->for_output = for_output;
                 this->kernel_size = 0;
                 this->filters = 0;
+                this->vertexUniqueId = vertexUniqueId;
             }
 
             // used for convolutional layers
             NNVertex(const weak_ptr<MicromlDSL> &parent, NodeType nodeType, const vector<size_t> &input_shape,
-                     const size_t filters, const size_t kernel_size, bool for_output, ActivationType activation_type) {
+                     const size_t filters, const size_t kernel_size, bool for_output,
+                     ActivationType activation_type, uint32_t vertexUniqueId) {
                 this->parent = parent;
                 this->node_type = nodeType;
                 this->activation_type = activation_type;
@@ -122,6 +144,7 @@ namespace micromldsl {
                 this->kernel_size = kernel_size;
                 this->filters = filters;
                 this->for_output = for_output;
+                this->vertexUniqueId = vertexUniqueId;
             }
 
             shared_ptr<NNVertex> setUseBias(bool b) {
@@ -145,27 +168,27 @@ namespace micromldsl {
                 shared_ptr<NNVertex> to;
             };
 
-            shared_ptr<NNVertex> addOutput(const size_t outputShape, ActivationType activationType) {
-                return addNode(this->outputShape, {1, outputShape, 1}, NodeType::full, true, activationType);
+            shared_ptr<NNVertex> addOutput(const size_t nodeOutputShape, ActivationType activationType) {
+                return addNode(this->outputShape, {1, nodeOutputShape, 1}, NodeType::full, true, activationType);
             }
 
-            shared_ptr<NNVertex> addOutput(const vector<size_t> &outputShape, ActivationType activationType) {
-                return addNode(this->outputShape, outputShape, NodeType::full, true, activationType);
+            shared_ptr<NNVertex> addOutput(const vector<size_t> &nodeOutputShape, ActivationType activationType) {
+                return addNode(this->outputShape, nodeOutputShape, NodeType::full, true, activationType);
             }
 
-            shared_ptr<NNVertex> addOutput(const vector<size_t> &outputShape, const size_t outputKernelSize,
+            shared_ptr<NNVertex> addOutput(const vector<size_t> &nodeOutputShape, const size_t outputKernelSize,
                                            NodeType nodeType, ActivationType activationType) {
                 // todo: support other types of convolution nodes here
-                auto result = addNode(outputShape[2], outputKernelSize, NodeType::convolution2dValid, true,
+                auto result = addNode(nodeOutputShape[2], outputKernelSize, NodeType::convolution2dValid, true,
                                       activationType);
-                if(result->outputShape[0] != outputShape[0] ||
-                   result->outputShape[1] != outputShape[1] ||
-                   result->outputShape[2] != outputShape[2]) {
+                if(result->outputShape[0] != nodeOutputShape[0] ||
+                   result->outputShape[1] != nodeOutputShape[1] ||
+                   result->outputShape[2] != nodeOutputShape[2]) {
                     stringstream ss;
                     ss << "The calculated output shape of the node ("
                        << result->outputShape[0] << ", " << result->outputShape[1] << ", " << result->outputShape[2]
                        << ") didn't match the desired output shape ("
-                       << outputShape[0] << ", " << outputShape[1] << ", " << outputShape[2] << ")";
+                       << nodeOutputShape[0] << ", " << nodeOutputShape[1] << ", " << nodeOutputShape[2] << ")";
 
                     // todo: could we have taken other action here to avoid an error and reshape the output?
                     throw exception(ss.str().c_str());
@@ -173,13 +196,13 @@ namespace micromldsl {
                 return result;
             }
 
-            shared_ptr<NNVertex> addNode(const size_t outputShape, NodeType nodeType, ActivationType activationType) {
-                return addNode({1, outputShape, 1}, nodeType, activationType);
+            shared_ptr<NNVertex> addNode(const size_t nodeOutputShape, NodeType nodeType, ActivationType activationType) {
+                return addNode({1, nodeOutputShape, 1}, nodeType, activationType);
             }
 
-            shared_ptr<NNVertex> addNode(const vector<size_t> &outputShape, NodeType nodeType,
+            shared_ptr<NNVertex> addNode(const vector<size_t> &nodeOutputShape, NodeType nodeType,
                                          ActivationType activationType) {
-                return addNode(this->outputShape, outputShape, nodeType, false, activationType);
+                return addNode(this->outputShape, nodeOutputShape, nodeType, false, activationType);
             }
 
             shared_ptr<NNVertex> addNode(const size_t next_filters, const size_t next_kernel_size, NodeType nodeType,
@@ -189,8 +212,10 @@ namespace micromldsl {
 
             shared_ptr<NNVertex> addNode(const size_t next_filters, const size_t next_kernel_size,
                                          NodeType nodeType, bool next_for_output, ActivationType activationType) {
-                auto nnv = make_shared<NNVertex>(parent.lock(), nodeType, this->outputShape,
-                                                 next_filters, next_kernel_size, next_for_output, activationType);
+                auto parentObject = parent.lock();
+                auto nnv = make_shared<NNVertex>(parentObject, nodeType, this->outputShape,
+                                                 next_filters, next_kernel_size, next_for_output,
+                                                 activationType, parentObject->nextVertexId());
                 auto nne = make_shared<NNEdge>();
                 nne->from = shared_from_this();
                 nne->to = nnv;
@@ -199,9 +224,11 @@ namespace micromldsl {
             }
 
             shared_ptr<NNVertex> addNode(const vector<size_t> &inputShape,
-                                         const vector<size_t> &outputShape, NodeType nodeType,
+                                         const vector<size_t> &nodeOutputShape, NodeType nodeType,
                                          bool next_for_output, ActivationType activationType) {
-                auto nnv = make_shared<NNVertex>(parent.lock(), nodeType, inputShape, outputShape, next_for_output, activationType);
+                auto parentObject = parent.lock();
+                auto nnv = make_shared<NNVertex>(parentObject, nodeType, inputShape, nodeOutputShape,
+                                                 next_for_output, activationType, parentObject->nextVertexId());
                 auto nne = make_shared<NNEdge>();
                 nne->from = shared_from_this();
                 nne->to = nnv;
@@ -314,6 +341,7 @@ namespace micromldsl {
             size_t kernel_size{};
             size_t filters{};
             bool for_output;
+            uint32_t vertexUniqueId;
         };
 
         shared_ptr<NNVertex> addInput(const size_t input_shape, const size_t output_shape, NodeType nodeType,
@@ -324,7 +352,8 @@ namespace micromldsl {
         shared_ptr<NNVertex> addInput(const vector<size_t> &input_shape,
                                       const vector<size_t> &output_shape, NodeType nodeType,
                                       ActivationType activationType) {
-            auto nnv = make_shared<NNVertex>(shared_from_this(), nodeType, input_shape, output_shape, false, activationType);
+            auto nnv = make_shared<NNVertex>(shared_from_this(), nodeType, input_shape,
+                                             output_shape, false, activationType, nextVertexId());
             heads.push_back(nnv);
             return nnv;
         }
@@ -332,7 +361,8 @@ namespace micromldsl {
         shared_ptr<NNVertex> addInputOutput(const vector<size_t> &input_shape,
                                       const vector<size_t> &output_shape, NodeType nodeType,
                                       ActivationType activationType) {
-            auto nnv = make_shared<NNVertex>(shared_from_this(), nodeType, input_shape, output_shape, true, activationType);
+            auto nnv = make_shared<NNVertex>(shared_from_this(), nodeType, input_shape,
+                                             output_shape, true, activationType, nextVertexId());
             heads.push_back(nnv);
             return nnv;
         }
@@ -343,7 +373,8 @@ namespace micromldsl {
                                       const size_t filters, const size_t kernel_size,
                                       NodeType nodeType,
                  ActivationType activationType) {
-            auto nnv = make_shared<NNVertex>(shared_from_this(), nodeType, input_shape, filters, kernel_size, false, activationType);
+            auto nnv = make_shared<NNVertex>(shared_from_this(), nodeType, input_shape,
+                                             filters, kernel_size, false, activationType, nextVertexId());
             heads.push_back(nnv);
             return nnv;
         }
@@ -351,7 +382,8 @@ namespace micromldsl {
         shared_ptr<NNVertex> addInputOutput(const vector<size_t> &input_shape,
                                             const size_t filters, const size_t kernel_size,
                                             NodeType nodeType, ActivationType activationType) {
-            auto nnv = make_shared<NNVertex>(shared_from_this(), nodeType, input_shape, filters, kernel_size, true, activationType);
+            auto nnv = make_shared<NNVertex>(shared_from_this(), nodeType, input_shape,
+                                             filters, kernel_size, true, activationType, nextVertexId());
             heads.push_back(nnv);
             return nnv;
         }
@@ -368,10 +400,14 @@ namespace micromldsl {
 
     private:
         ModelType modelType;
-        LossType loss_type;
-        float learning_rate;
-        float bias_learning_rate;
+        LossType lossType;
+        float learningRate;
+        float biasLearningRate;
         vector<shared_ptr<NNVertex>> heads;
+        string modelName;
+        string modelPath;
+        string repoRootPath;
+        uint32_t vertexUniqueSequenceCounter;
     };
 
     shared_ptr<MicromlDSL> neuralNetworkBuilder(ModelType modelType) {

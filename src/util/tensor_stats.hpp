@@ -56,8 +56,8 @@ namespace microml {
             auto bagCounts = make_shared<BagCounts>();
             // TODO: We can improve the conditions in which we are single threaded vs concurrent. This
             // works on my machine, but it isn't a general solution.
-//        cout << "elements_per_channel: " << source.elements_per_channel() << endl;
-            if (source.elements_per_channel() < 100000000) {
+//        cout << "elements_per_channel: " << source.elementsPerChannel() << endl;
+            if (source.elementsPerChannel() < 100000000) {
 //            cout << "single thread" << endl;
                 for (size_t channel = 0; channel < channels; channel++) {
                     for (size_t row = 0; row < rows; row++) {
