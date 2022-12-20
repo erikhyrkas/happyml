@@ -20,7 +20,6 @@ using namespace std;
 void productTest() {
     auto matrixFunc = [](size_t row, size_t col, size_t channel) { return (float) (row + 1); };
     auto matrix = make_shared<TensorFromFunction>(matrixFunc, 3, 3, 1);
-//    matrix->print();
 //    1.000, 1.000, 1.000
 //    2.000, 2.000, 2.000
 //    3.000, 3.000, 3.000
@@ -38,9 +37,7 @@ void randomTest() {
     // is to not use a view and persist all the random values on creation, which works
     // but would require gigabytes of memory for a matrix of any significant size.
     auto matrix1 = make_unique<TensorFromRandom>(2, 2, 1, -1000.0f, 1000.0f, 42);
-//    matrix1->print();
     auto matrix2 = make_unique<TensorFromRandom>(2, 2, 1, -1000.0f, 1000.0f, 42);
-//    matrix2->print();
     ASSERT_TRUE(matrix1->getValue(0, 0, 0) == matrix2->getValue(0, 0, 0));
     ASSERT_TRUE(matrix1->getValue(0, 1, 0) == matrix2->getValue(0, 1, 0));
     ASSERT_TRUE(matrix1->getValue(1, 0, 0) == matrix2->getValue(1, 0, 0));
@@ -55,7 +52,6 @@ void randomTest() {
         // tested with much larger matrices, but it's too slow to leave in for day-to-day testing
         auto matrix5 = make_unique<TensorFromRandom>(100, 100, 1, -1000.0f, 1000.0f, i);
         float mean = std::abs(matrix5->arithmeticMean());
-//        cout << "Seed: " << i << " Abs Mean: " << std::fixed << std::setprecision(38) << mean << endl;
         ASSERT_TRUE(mean < 1.0f);
     }
 }
@@ -63,7 +59,6 @@ void randomTest() {
 void sumTest() {
     auto matrixFunc = [](size_t row, size_t col, size_t channel) { return (float) (row + 1); };
     auto matrix = make_shared<TensorFromFunction>(matrixFunc, 3, 3, 1);
-//    matrix->print();
 //    1.000, 1.000, 1.000
 //    2.000, 2.000, 2.000
 //    3.000, 3.000, 3.000
@@ -72,23 +67,7 @@ void sumTest() {
 
 void assignSmallTest() {
     auto matrixRandom = make_shared<TensorFromRandom>(101, 103, 1, 4);
-//    matrix_random->print();
     auto matrix = make_shared<QuarterTensor>(matrixRandom, 4);
-//    matrix->print();
-//    cout << "0, 0 original random: " << matrix_random->get_val(0, 0, 0) << " quantized: " << quarter_to_float(float_to_quarter(matrix_random->get_val(0, 0, 0), 4, 0), 4, 0) << endl;
-//    cout << "0, 0 new matrix: " << matrix->get_val(0, 0, 0) << endl;
-//    cout << "5, 4 original random: " << matrix_random->get_val(5, 4, 0) << " quantized: " << quarter_to_float(float_to_quarter(matrix_random->get_val(5, 4, 0), 4, 0), 4, 0) << endl;
-//    cout << "5, 4 new matrix: " << matrix->get_val(5, 4, 0) << endl;
-//    cout << "12, 10 original random: " << matrix_random->get_val(12, 10, 0) << " quantized: " << quarter_to_float(float_to_quarter(matrix_random->get_val(12, 10, 0), 4, 0), 4, 0) << endl;
-//    cout << "12, 10 new matrix: " << matrix->get_val(12, 10, 0) << endl;
-//    cout << "50, 10 original random: " << matrix_random->get_val(50, 10, 0) << " quantized: " << quarter_to_float(float_to_quarter(matrix_random->get_val(50, 10, 0), 4, 0), 4, 0) << endl;
-//    cout << "50, 10 new matrix: " << matrix->get_val(50, 10, 0) << endl;
-//    cout << "99, 99 original random: " << matrix_random->get_val(99, 99, 0) << " quantized: " << quarter_to_float(float_to_quarter(matrix_random->get_val(99, 99, 0), 4, 0), 4, 0) << endl;
-//    cout << "99, 99 new matrix: " << matrix->get_val(99, 99, 0) << endl;
-//
-//    cout << "99, 99 original random: " << matrix_random->get_val(100, 102, 0) << " quantized: " << quarter_to_float(float_to_quarter(matrix_random->get_val(100, 102, 0), 4, 0), 4, 0) << endl;
-//    cout << "99, 99 new matrix: " << matrix->get_val(100, 102, 0) << endl;
-
     ASSERT_TRUE(matrix->getValue(0, 0, 0) ==
                 quarterToFloat(floatToQuarter(matrixRandom->getValue(0, 0, 0), 4), 4));
     ASSERT_TRUE(matrix->getValue(5, 4, 0) ==
@@ -106,21 +85,7 @@ void assignSmallTest() {
 
 void assignMediumTest() {
     auto matrixRandom = make_shared<TensorFromRandom>(1001, 10003, 1, 4);
-//    matrix_random->print();
     auto matrix = make_shared<QuarterTensor>(matrixRandom, 4);
-//    matrix->print();
-//    cout << "0, 0 original random: " << matrix_random->get_val(0, 0, 0) << " quantized: " << quarter_to_float(float_to_quarter(matrix_random->get_val(0, 0, 0), 4, 0), 4, 0) << endl;
-//    cout << "0, 0 new matrix: " << matrix->get_val(0, 0, 0) << endl;
-//    cout << "5, 4 original random: " << matrix_random->get_val(5, 4, 0) << " quantized: " << quarter_to_float(float_to_quarter(matrix_random->get_val(5, 4, 0), 4, 0), 4, 0) << endl;
-//    cout << "5, 4 new matrix: " << matrix->get_val(5, 4, 0) << endl;
-//    cout << "12, 10 original random: " << matrix_random->get_val(12, 10, 0) << " quantized: " << quarter_to_float(float_to_quarter(matrix_random->get_val(12, 10, 0), 4, 0), 4, 0) << endl;
-//    cout << "12, 10 new matrix: " << matrix->get_val(12, 10, 0) << endl;
-//    cout << "50, 10 original random: " << matrix_random->get_val(50, 10, 0) << " quantized: " << quarter_to_float(float_to_quarter(matrix_random->get_val(50, 10, 0), 4, 0), 4, 0) << endl;
-//    cout << "50, 10 new matrix: " << matrix->get_val(50, 10, 0) << endl;
-//    cout << "99, 99 original random: " << matrix_random->get_val(99, 99, 0) << " quantized: " << quarter_to_float(float_to_quarter(matrix_random->get_val(99, 99, 0), 4, 0), 4, 0) << endl;
-//    cout << "99, 99 new matrix: " << matrix->get_val(99, 99, 0) << endl;
-//    cout << "1000, 10002 original random: " << matrix_random->get_val(1000, 10002, 0) << " quantized: " << quarter_to_float(float_to_quarter(matrix_random->get_val(1000, 10002, 0), 4, 0), 4, 0) << endl;
-//    cout << "1000, 10002 new matrix: " << matrix->get_val(1000, 10002, 0) << endl;
     ASSERT_TRUE(matrix->getValue(0, 0, 0) ==
                 quarterToFloat(floatToQuarter(matrixRandom->getValue(0, 0, 0), 4), 4));
     ASSERT_TRUE(matrix->getValue(5, 4, 0) ==
@@ -138,12 +103,6 @@ void assignMediumTest() {
 void assignLargeTest() {
     auto matrixRandom = make_shared<TensorFromRandom>(200000, 200001, 1, 4);
     auto matrix = make_shared<QuarterTensor>(matrixRandom, 4);
-    cout << "0, 0 original random: " << matrixRandom->getValue(0, 0, 0) << " quantized: "
-         << quarterToFloat(floatToQuarter(matrixRandom->getValue(0, 0, 0), 4), 4) << endl;
-    cout << "0, 0 new matrix: " << matrix->getValue(0, 0, 0) << endl;
-    cout << "199999, 199999 original random: " << matrixRandom->getValue(199999, 199999, 0) << " quantized: "
-         << quarterToFloat(floatToQuarter(matrixRandom->getValue(199999, 199999, 0), 4), 4) << endl;
-    cout << "199999, 199999 new matrix: " << matrix->getValue(199999, 199999, 0) << endl;
     ASSERT_TRUE(matrix->getValue(0, 0, 0) ==
                 quarterToFloat(floatToQuarter(matrixRandom->getValue(0, 0, 0), 4), 4));
     ASSERT_TRUE(matrix->getValue(100, 50, 0) ==
@@ -164,9 +123,7 @@ void assignLargeTest() {
 
 void reshapeTest() {
     auto matrixRandom = make_shared<TensorFromRandom>(1, 5, 1, 4);
-//    matrix_random->print();
     auto matrix = make_shared<QuarterTensor>(matrixRandom, 4);
-//    matrix->print();
     auto reshape = make_shared<TensorReshapeView>(matrixRandom, 5, 1);
     auto other = make_unique<QuarterTensor>(reshape, 4);
     ASSERT_TRUE(matrix->getValue(0, 0, 0) == other->getValue(0, 0, 0));
@@ -191,9 +148,7 @@ void testCreate() {
 void testScalarMultiplication() {
     auto matrixFunc = [](size_t row, size_t col, size_t channel) { return (float) row; };
     auto matrix = make_shared<TensorFromFunction>(matrixFunc, 5, 5, 1);
-//    matrix->print();
     auto scaledMatrix = make_unique<TensorMultiplyByScalarView>(matrix, 6.0f);
-//    scaled_matrix->print();
     ASSERT_TRUE(0 == scaledMatrix->getValue(0, 0, 0));
     ASSERT_TRUE(0 == scaledMatrix->getValue(0, 2, 0));
     ASSERT_TRUE(0 == scaledMatrix->getValue(0, 4, 0));
@@ -214,7 +169,6 @@ void testStackingMultiplyViews() {
     auto timesHalf = make_shared<TensorMultiplyByScalarView>(times2, 0.5f);
     for (size_t r = 0; r < 5; r++) {
         for (size_t c = 0; c < 5; c++) {
-//            cout << matrix->get_val(r, c, 0) << " == " << timesHalf->get_val(r, c, 0) << endl;
             ASSERT_TRUE(roughlyEqual(matrix->getValue(r, c, 0), timesHalf->getValue(r, c, 0)));
         }
     }
@@ -236,7 +190,6 @@ void testStackingMultiplyViews() {
 void testArithmeticMean() {
     auto matrixFunc = [](size_t row, size_t col, size_t channel) { return (float) row; };
     auto matrix = make_unique<TensorFromFunction>(matrixFunc, 2, 2, 1);
-//    matrix->print();
 //    0.000, 0.000
 //    1.000, 1.000
     ASSERT_TRUE(0.5 == matrix->arithmeticMean());
@@ -244,25 +197,20 @@ void testArithmeticMean() {
 
 void testGeometricMean() {
     auto matrix = make_unique<TensorFromRandom>(2, 2, 1, -10.0f, 0.0f, 9);
-//    matrix->print();
 //    -5.236, -6.793
 //    -1.519, -3.077
     ASSERT_TRUE(isnan(matrix->geometricMean()));
     auto matrix2 = make_unique<TensorFromRandom>(2, 2, 1, 1.0f, 10.0f, 36);
-//    matrix2->print();
 //    5.288, 3.886
 //    8.004, 6.603
     float gm = matrix2->geometricMean();
-//    cout << "GM: " << std::fixed << std::setprecision(38) << gm << endl;
     ASSERT_TRUE(roughlyEqual(5.7405242919921875f, gm));
 }
 
 void testBigStats() {
     // 200,000 x 200,000 = 40 billion elements = ~38gb matrix
     auto matrix = make_shared<TensorFromRandom>(200000, 200000, 1, 7);
-//    matrix->print();
     auto stats = make_unique<TensorStats>(*matrix, FIT_BIAS_FOR_50);
-    stats->print();
     ASSERT_TRUE(8 == stats->getRecommendedBias());
     ASSERT_TRUE(roughlyEqual(-120.0f, stats->getRecommendedOffset()));
 }
@@ -270,18 +218,14 @@ void testBigStats() {
 void testMediumStats() {
     // 50,000 x 50,000 = 2.5 billion elements = ~2gb matrix
     auto matrix = make_shared<TensorFromRandom>(50000, 50000, 1, 14);
-//    matrix->print();
     auto stats = make_unique<TensorStats>(*matrix, FIT_BIAS_FOR_50);
-    stats->print();
     ASSERT_TRUE(14 == stats->getRecommendedBias());
     ASSERT_TRUE(roughlyEqual(0.0f, stats->getRecommendedOffset()));
 }
 
 void testSmallStats() {
     auto matrix = make_shared<TensorFromRandom>(50, 50, 1, 4);
-//    matrix->print();
     auto stats = make_unique<TensorStats>(*matrix, FIT_BIAS_FOR_100);
-//    stats->print();
     ASSERT_TRUE(4 == stats->getRecommendedBias());
     ASSERT_TRUE(roughlyEqual(-3.16455078125f, stats->getRecommendedOffset()));
 }
@@ -291,9 +235,7 @@ void testSmallStats() {
 void testEvenDistributionQuarterMedium() {
     auto matrixFunc = [](size_t row, size_t col, size_t channel) { return ((float) (row + 1)) / 200.0; };
     auto matrix = make_unique<TensorFromFunction>(matrixFunc, 10000, 10000, 1);
-//    matrix->print();
     auto stats = make_unique<TensorStats>(*matrix, FIT_BIAS_FOR_80);
-//    stats->print();
     ASSERT_TRUE(8 == stats->getRecommendedBias());
     ASSERT_TRUE(roughlyEqual(0.0f, stats->getRecommendedOffset()));
 }
@@ -301,21 +243,16 @@ void testEvenDistributionQuarterMedium() {
 void test_even_distribution_quarter_small() {
     auto matrixFunc = [](size_t row, size_t col, size_t channel) { return ((float) (row + 1)) / 200.0; };
     auto matrix = make_unique<TensorFromFunction>(matrixFunc, 350, 350, 1);
-//    matrix->print();
     auto stats = make_unique<TensorStats>(*matrix, FIT_BIAS_FOR_80);
-//    stats->print();
     ASSERT_TRUE(14 == stats->getRecommendedBias());
     const auto ro = stats->getRecommendedOffset();
-//    cout << std::fixed << std::setprecision(38) << ro << endl;
     ASSERT_TRUE(roughlyEqual(0.8424999713897705078125f, ro));
 }
 
 void testEvenDistributionQuarterBig() {
     auto matrixFunc = [](size_t row, size_t col, size_t channel) { return ((float) (row + 1)) / 20000.0; };
     auto matrix = make_unique<TensorFromFunction>(matrixFunc, 100000000, 1, 1);
-//    matrix->print();
     auto stats = make_unique<TensorStats>(*matrix, FIT_BIAS_FOR_80);
-    stats->print();
     ASSERT_TRUE(1 == stats->getRecommendedBias());
     ASSERT_TRUE(roughlyEqual(2431.999756f, stats->getRecommendedOffset()));
 }
@@ -323,9 +260,7 @@ void testEvenDistributionQuarterBig() {
 void testEvenDistributionQuarterHugeNumbers() {
     auto matrixFunc = [](size_t row, size_t col, size_t channel) { return ((float) (row + 1)) * 500.0; };
     auto matrix = make_unique<TensorFromFunction>(matrixFunc, 1000, 1, 1);
-//    matrix->print();
     auto stats = make_unique<TensorStats>(*matrix, FIT_BIAS_FOR_80);
-//    stats->print();
     ASSERT_TRUE(-4 == stats->getRecommendedBias());
     ASSERT_TRUE(roughlyEqual(237500.0f, stats->getRecommendedOffset()));
 }
@@ -337,7 +272,6 @@ void testConstant() {
             ASSERT_TRUE(0.0f == matrix->getValue(i, j, 0));
         }
     }
-//    matrix->print();
 }
 
 
@@ -352,16 +286,13 @@ void testIdentity() {
             }
         }
     }
-//    matrix->print();
 }
 
 void testDotProduct() {
     auto matrixFunc = [](size_t row, size_t col, size_t channel) { return ((float) (row + col)); };
     auto matrix1 = make_shared<TensorFromFunction>(matrixFunc, 2, 2, 1);
-//    matrix_1->print();
     auto matrix2 = make_shared<TensorFromFunction>(matrixFunc, 2, 2, 1);
     auto dotProductView = make_shared<TensorDotTensorView>(matrix1, matrix2);
-//    dot_product_view->print();
     ASSERT_TRUE(1.0f == dotProductView->getValue(0, 0, 0));
     ASSERT_TRUE(2.0f == dotProductView->getValue(0, 1, 0));
     ASSERT_TRUE(2.0f == dotProductView->getValue(1, 0, 0));
@@ -372,12 +303,10 @@ void testDotProduct2() {
     vector<vector<float>> a = {{4, 2},
                                {0, 3}};
     auto matrix1 = make_shared<QuarterTensor>(a, 8);
-//    matrix_1->print();
     vector<vector<float>> b = {{4, 0},
                                {1, 4}};
     auto matrix2 = make_shared<QuarterTensor>(b, 8);
     auto dotProductView = make_shared<TensorDotTensorView>(matrix1, matrix2);
-//    dot_product_view->print();
     ASSERT_TRUE(18.0f == dotProductView->getValue(0, 0, 0));
     ASSERT_TRUE(8.0f == dotProductView->getValue(0, 1, 0));
     ASSERT_TRUE(3.0f == dotProductView->getValue(1, 0, 0));
@@ -389,12 +318,10 @@ void testDotProduct3() {
                                {0, 3},
                                {0, 4}};
     auto matrix1 = make_shared<QuarterTensor>(a, 8);
-//    matrix_1->print();
     vector<vector<float>> b = {{2, 1, 2},
                                {3, 2, 4}};
     auto matrix2 = make_shared<QuarterTensor>(b, 8);
     auto dotProductView = make_shared<TensorDotTensorView>(matrix1, matrix2);
-//    dot_product_view->print();
     ASSERT_TRUE(10.0f == dotProductView->getValue(0, 0, 0));
     ASSERT_TRUE(6.0f == dotProductView->getValue(0, 1, 0));
     ASSERT_TRUE(12.0f == dotProductView->getValue(0, 2, 0));
@@ -410,13 +337,11 @@ void testDotProduct4() {
     vector<vector<float>> a = {{1, 2, 3},
                                {4, 5, 6}};
     auto matrix1 = make_shared<QuarterTensor>(a, 8);
-//    matrix_1->print();
     vector<vector<float>> b = {{7,  8},
                                {9,  10},
                                {11, 12}};
     auto matrix2 = make_shared<QuarterTensor>(b, 8);
     auto dotProductView = make_shared<TensorDotTensorView>(matrix1, matrix2);
-//    dot_product_view->print();
     ASSERT_TRUE(58.0f == dotProductView->getValue(0, 0, 0));
     ASSERT_TRUE(64.0f == dotProductView->getValue(0, 1, 0));
     ASSERT_TRUE(139.0f == dotProductView->getValue(1, 0, 0));
@@ -428,7 +353,6 @@ void testMatrixAddition() {
                                {2,  -3, 1},
                                {3,  1,  -2}};
     auto matrix1 = make_shared<QuarterTensor>(a, 8);
-//    matrix_1->print();
     vector<vector<float>> b = {{3, -1, 2},
                                {1, 0,  3},
                                {2, -1, 0}};
@@ -456,7 +380,6 @@ void testPixel() {
 void testZeroPaddedView() {
     auto matrix = make_shared<UniformTensor>(1, 1, 1, 5.f);
     auto padded = make_shared<TensorZeroPaddedView>(matrix, 2, 2, 2, 2);
-//    padded->print();
     ASSERT_TRUE(5 == padded->rowCount());
     ASSERT_TRUE(5 == padded->columnCount());
     ASSERT_TRUE(1 == padded->channelCount());
@@ -468,7 +391,6 @@ void testZeroPaddedView() {
 void testZeroPaddedView2() {
     auto matrix = make_shared<UniformTensor>(2, 3, 1, 5.f);
     auto padded = make_shared<TensorZeroPaddedView>(matrix, 1, 1, 2, 2);
-//    padded->print();
     ASSERT_TRUE(4 == padded->rowCount());
     ASSERT_TRUE(7 == padded->columnCount());
     ASSERT_TRUE(1 == padded->channelCount());
@@ -481,8 +403,6 @@ void testFullConvolve2dView() {
     auto matrix1 = make_shared<UniformTensor>(3, 3, 1, 1.f);
     auto matrix2 = make_shared<UniformTensor>(3, 3, 1, 1.f);
     auto conv2d = make_shared<TensorFullConvolve2dView>(matrix1, matrix2);
-//    matrix1->print();
-//    conv2d->print();
     ASSERT_TRUE(conv2d->columnCount() == 5);
     ASSERT_TRUE(conv2d->rowCount() == 5);
     ASSERT_TRUE(conv2d->channelCount() == 1);
@@ -513,8 +433,6 @@ void test2FullConvolve2dView() {
                                         {16, 17, 18}}};
     auto matrix2 = make_shared<FullTensor>(b);
     auto conv2d = make_shared<TensorFullConvolve2dView>(matrix1, matrix2);
-//    matrix1->print();
-//    conv2d->print();
     ASSERT_TRUE(conv2d->columnCount() == 5);
     ASSERT_TRUE(conv2d->rowCount() == 5);
     ASSERT_TRUE(conv2d->channelCount() == 1);
@@ -537,13 +455,8 @@ void testFullCrossCorrelation2d() {
     auto matrix1 = make_shared<UniformTensor>(3, 3, 1, 1.f);
     auto matrix2 = make_shared<UniformTensor>(3, 3, 1, 1.f);
     auto padding = (size_t) round(((double) matrix1->rowCount()) / 2.0);
-    cout << "Padding: " << padding << " ... " << ((double) matrix1->rowCount() - 1) << " ... "
-         << ((double) matrix1->rowCount()) / 2.0 << endl;
     ASSERT_TRUE(2 == padding);
     auto conv2d = make_shared<TensorFullCrossCorrelation2dView>(matrix1, matrix2);
-//    matrix1->print();
-//    conv2d->print();
-
     ASSERT_TRUE(conv2d->columnCount() == 5);
     ASSERT_TRUE(conv2d->rowCount() == 5);
     ASSERT_TRUE(conv2d->channelCount() == 1);
@@ -567,8 +480,6 @@ void testValidCrossCorrelation2d() {
     auto matrix1 = make_shared<UniformTensor>(3, 3, 1, 1.f);
     auto matrix2 = make_shared<UniformTensor>(3, 3, 1, 1.f);
     auto validCrossCorrelation2DView = make_shared<TensorValidCrossCorrelation2dView>(matrix1, matrix2);
-//    matrix1->print();
-    validCrossCorrelation2DView->print();
     //Expected
     //[[9]]
     ASSERT_TRUE(validCrossCorrelation2DView->columnCount() == 1);
@@ -591,8 +502,6 @@ void test2ValidCrossCorrelation2d() {
                                         {-1.720, -0.312, 0.060, -0.343}}};
     auto matrix2 = make_shared<FullTensor>(b);
     auto validCrossCorrelation2DView = make_shared<TensorValidCrossCorrelation2dView>(matrix1, matrix2);
-//    matrix1->print();
-    validCrossCorrelation2DView->print();
     //Expected
     // [[-1.299014 -3.235515 -2.408694]
     // [-1.356435  0.487984  1.401795]
@@ -617,13 +526,12 @@ void testTensorRotate180() {
                                         {7, 8, 9}}};
     auto matrix1 = make_shared<FullTensor>(a);
     auto rotated = make_shared<TensorRotate180View>(matrix1);
-//    matrix1->print();
-//    rotated->print();
     vector<vector<vector<float>>> b = {{{9, 8, 7},
                                         {6, 5, 4},
                                         {3, 2, 1}}};
     auto matrix2 = make_shared<FullTensor>(b);
     assertEqual(rotated, matrix2);
+    PASS_TEST();
 }
 
 void testTensorRotate2() {
@@ -632,13 +540,12 @@ void testTensorRotate2() {
                                         {16, 17, 18}}};
     auto matrix1 = make_shared<FullTensor>(a);
     auto rotated = make_shared<TensorRotate180View>(matrix1);
-//    matrix1->print();
-//    rotated->print();
     vector<vector<vector<float>>> b = {{{18, 17, 16},
                                         {15, 14, 13},
                                         {12, 11, 10}}};
     auto matrix2 = make_shared<FullTensor>(b);
     assertEqual(rotated, matrix2);
+    PASS_TEST();
 }
 
 void testFullSaveLoad() {
@@ -651,12 +558,11 @@ void testFullSaveLoad() {
         auto matrix1 = make_shared<FullTensor>(a);
         matrix1->save(filename);
         auto matrix2 = make_shared<FullTensor>(filename);
-//        matrix1->print();
-//        matrix2->print();
         assertEqual(matrix1, matrix2);
+        PASS_TEST();
     } catch (const exception &e) {
         remove(filename.c_str());
-        throw e;
+        FAIL_TEST(e);
     }
     remove(filename.c_str());
 }
