@@ -18,26 +18,6 @@ namespace microml {
         shared_ptr<BaseTensor> calculateError(shared_ptr<BaseTensor> &truth, shared_ptr<BaseTensor> &prediction) {
             return make_shared<TensorMinusTensorView>(prediction, truth);
         }
-        shared_ptr<BaseTensor> calculateAverageError(vector<shared_ptr<BaseTensor>> &truths, vector<shared_ptr<BaseTensor>> &predictions) {
-            size_t count = truths.size();
-            if( count == 1) {
-               return calculateError(truths[0], predictions[0]);
-            }
-            shared_ptr<BaseTensor> total_error = calculateError(truths[0], predictions[0]);
-//            cout << endl;
-            for(size_t i = 1; i < count; i++) {
-//                total_error->print();
-                auto next_error = calculateError(truths[i], predictions[i]);
-//                next_error->print();
-                total_error = make_shared<TensorAddTensorView>(total_error, next_error);
-            }
-
-            auto average_error = make_shared<TensorMultiplyByScalarView>(total_error, 1.f/(float)count);
-//            total_error->print();
-//            average_error->print();
-//            cout << endl;
-            return average_error;
-        }
 
         shared_ptr<BaseTensor> calculateTotalError(vector<shared_ptr<BaseTensor>> &truths, vector<shared_ptr<BaseTensor>> &predictions) {
             PROFILE_BLOCK(profileBlock);
@@ -46,18 +26,13 @@ namespace microml {
                 return calculateError(truths[0], predictions[0]);
             }
             shared_ptr<BaseTensor> total_error = calculateError(truths[0], predictions[0]);
-//            cout << endl;
             for(size_t i = 1; i < count; i++) {
-//                total_error->print();
                 auto next_error = calculateError(truths[i], predictions[i]);
-//                next_error->print();
                 total_error = make_shared<TensorAddTensorView>(total_error, next_error);
             }
-
-//            total_error->print();
-//            cout << endl;
-            return total_error; //make_shared<FullTensor>(total_error);
+            return total_error;
         }
+
         // mostly for display, but can be used for early stopping.
         virtual float compute(shared_ptr<BaseTensor> total_error) = 0;
 

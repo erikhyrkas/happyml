@@ -46,7 +46,7 @@ namespace microml {
     public:
         MBGDConvolution2dValidFunction(vector<size_t> inputShape, size_t filters, size_t kernelSize, uint8_t bits,
                                        const shared_ptr<MBGDLearningState> &learningState) {
-            this->inputShapes = vector<vector<size_t>> {inputShape};
+            this->inputShape = inputShape;
             this->kernelSize = kernelSize;
             this->outputShape = {inputShape[0] - kernelSize + 1, inputShape[1] - kernelSize + 1, filters};
             this->bits = bits;
@@ -77,7 +77,7 @@ namespace microml {
 
             // filters are the number of output channels we have
             const size_t filters = outputShape[2];
-            const size_t inputDepth = inputShapes[0][2];
+            const size_t inputDepth = inputShape[2];
             shared_ptr<BaseTensor> result = nullptr;
             for(size_t outputLayer = 0; outputLayer < filters; outputLayer++) {
                 shared_ptr<BaseTensor> outputTensor = nullptr;
@@ -129,7 +129,7 @@ namespace microml {
             // the sum of the fullConvolve2d of the output errors and the weights
             // filters are the number of output channels we have
             const size_t filters = outputShape[2];
-            const size_t inputDepth = inputShapes[0][2];
+            const size_t inputDepth = inputShape[2];
             shared_ptr<BaseTensor> inputError = nullptr;
             for(size_t outputLayer = 0; outputLayer < filters; outputLayer++) {
                 const auto outputErrorForLayer = make_shared<TensorChannelToTensorView>(outputError, outputLayer);
@@ -166,7 +166,7 @@ namespace microml {
         vector<shared_ptr<BaseTensor>> weights;
         uint8_t bits;
         float mixedPrecisionScale;
-        vector<vector<size_t>> inputShapes;
+        vector<size_t> inputShape;
         vector<size_t> outputShape;
         size_t kernelSize;
         shared_ptr<MBGDLearningState> learningState;

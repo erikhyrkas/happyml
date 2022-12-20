@@ -26,9 +26,8 @@ namespace microml {
     class NeuralNetworkNode : public enable_shared_from_this<NeuralNetworkNode> {
     public:
         explicit NeuralNetworkNode(
-                const shared_ptr<NeuralNetworkFunction> &neuralNetworkFunction) { //}, const shared_ptr<Optimizer> &optimizer) {
+                const shared_ptr<NeuralNetworkFunction> &neuralNetworkFunction) {
             this->neuralNetworkFunction = neuralNetworkFunction;
-            //this->optimizer = optimizer;
             this->materialized = true;
         }
 
@@ -165,29 +164,11 @@ namespace microml {
             return child; // this lets us chain together calls in a builder format.
         }
 
-//        shared_ptr<NeuralNetworkNode> addFullyConnected(size_t input_size, size_t output_size, bool use_32_bit) {
-//            auto networkFunction = optimizer->createFullyConnectedNeurons(input_size, output_size, use_32_bit);
-//            auto networkNode = make_shared<NeuralNetworkNode>(networkFunction, optimizer);
-//            return add(networkNode);
-//        }
-//
-//        shared_ptr<NeuralNetworkNode> addActivation(const shared_ptr<ActivationFunction> &activationFunction) {
-//            auto networkFunction = make_shared<NeuralNetworkActivationFunction>(activationFunction);
-//            auto networkNode = make_shared<NeuralNetworkNode>(networkFunction, optimizer);
-//            return add(networkNode);
-//        }
-//        shared_ptr<NeuralNetworkNode> addBias() {
-//            auto networkFunction = make_shared<NeuralNetworkBias>(activationFunction);
-//            auto networkNode = make_shared<NeuralNetworkNode>(networkFunction, optimizer);
-//            return add(networkNode);
-//        }
-
     private:
         vector<weak_ptr<NeuralNetworkConnection>> connectionInputs;
         vector<shared_ptr<NeuralNetworkConnection>> connectionOutputs;
         shared_ptr<NeuralNetworkFunction> neuralNetworkFunction;
         bool materialized;
-//        shared_ptr<Optimizer> optimizer;
     };
 
     class NeuralNetworkOutputNode : public NeuralNetworkNode {
