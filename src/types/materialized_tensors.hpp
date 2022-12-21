@@ -30,24 +30,27 @@ namespace microml {
 // may work.
     class FullTensor : public BaseAssignableTensor {
     public:
-        FullTensor(const size_t rows, const size_t columns, const size_t channels) {
-            data.resize(channels);
+        explicit FullTensor(const shared_ptr<BaseTensor> &original) {
+            allocate(original->rowCount(),
+                     original->columnCount(),
+                     original->channelCount());
+
+            const size_t columns = columnCount();
+            const size_t rows = rowCount();
+            const size_t channels = channelCount();
+
+            #pragma omp for collapse(3)
             for (size_t channel = 0; channel < channels; channel++) {
-                data.at(channel).resize(rows);
                 for (size_t row = 0; row < rows; row++) {
-                    data.at(channel).at(row).resize(columns);
+                    for (size_t col = 0; col < columns; col++) {
+                        setVal(row, col, channel, original->getValue(row, col, channel));
+                    }
                 }
             }
         }
 
-        explicit FullTensor(const shared_ptr<BaseTensor> &original)
-                : FullTensor(original->rowCount(),
-                             original->columnCount(),
-                             original->channelCount()) {
-            doAssign(original);
-        }
-
-        explicit FullTensor(const vector<float> &values) : FullTensor(1, values.size(), 1) {
+        explicit FullTensor(const vector<float> &values) {
+            allocate(1, values.size(), 1);
             size_t col = 0;
             for (float const &val: values) {
                 setVal(0, col, 0, val);
@@ -55,11 +58,10 @@ namespace microml {
             }
         }
 
-
         // get a weird warning here that CLion can't resolve constructor. I believe this is a bug with CLion itself:
         // https://youtrack.jetbrains.com/issue/CPP-24510/Bad-detection-of-Constructor-is-not-implemented
-        explicit FullTensor(const vector<vector<vector<float>>> &values) :
-                FullTensor(values[0].size(), values[0][0].size(), values.size()) {
+        explicit FullTensor(const vector<vector<vector<float>>> &values) {
+            allocate(values[0].size(), values[0][0].size(), values.size());
             size_t channel_index = 0;
             for (const vector <vector<float>> &next_channel: values) {
                 size_t row_index = 0;
@@ -119,18 +121,13 @@ namespace microml {
     private:
         vector <vector<vector < float>>> data;
 
-        // will assign the values from other to this tensor, but if the other tensor is
-        // a view that contains us, then we avoid data corruption by copying to a temporary
-        // tensor first.
-        void assign(const shared_ptr<BaseTensor> &other) {
-            if (other == shared_from_this()) {
-                return; //assignment to self is pointless and expensive
-            }
-            if (contains(other)) {
-                auto temp = make_shared<FullTensor>(other);
-                data = std::move(temp->data); // steal memory from temp
-            } else {
-                doAssign(other);
+        void allocate(const size_t rows, const size_t columns, const size_t channels) {
+            data.resize(channels);
+            for (size_t channel = 0; channel < channels; channel++) {
+                data.at(channel).resize(rows);
+                for (size_t row = 0; row < rows; row++) {
+                    data.at(channel).at(row).resize(columns);
+                }
             }
         }
 
@@ -162,26 +159,6 @@ namespace microml {
             }
         }
 
-        void doAssign(const shared_ptr<BaseTensor> &other) {
-            if (other->rowCount() != rowCount() && other->channelCount() != channelCount() &&
-                    other->columnCount() != columnCount()) {
-                throw exception("A tensor cannot be assigned from another tensor with a different shape");
-            }
-
-            const size_t columns = columnCount();
-            const size_t rows = rowCount();
-            const size_t channels = channelCount();
-
-            #pragma omp for collapse(3)
-            for (size_t channel = 0; channel < channels; channel++) {
-                for (size_t row = 0; row < rows; row++) {
-                    for (size_t col = 0; col < columns; col++) {
-                        setVal(row, col, channel, other->getValue(row, col, channel));
-                    }
-                }
-            }
-        }
-
         inline void setVal(size_t row, size_t column, size_t channel, float val) {
             data.at(channel).at(row).at(column) = val;
         }
@@ -198,26 +175,30 @@ namespace microml {
 // float and 8-bits.
     class PixelTensor : public BaseAssignableTensor {
     public:
-        PixelTensor(const size_t rows, const size_t columns, const size_t channels) {
-            data.resize(channels);
+
+        explicit PixelTensor(const shared_ptr<BaseTensor> &original) {
+            allocate(original->rowCount(),
+                     original->columnCount(),
+                     original->channelCount());
+
+            const size_t columns = columnCount();
+            const size_t rows = rowCount();
+            const size_t channels = channelCount();
+
+            #pragma omp for collapse(3)
             for (size_t channel = 0; channel < channels; channel++) {
-                data.at(channel).resize(rows);
                 for (size_t row = 0; row < rows; row++) {
-                    data.at(channel).at(row).resize(columns);
+                    for (size_t col = 0; col < columns; col++) {
+                        setVal(row, col, channel, original->getValue(row, col, channel));
+                    }
                 }
             }
         }
 
-        explicit PixelTensor(const shared_ptr<BaseTensor> &original)
-                : PixelTensor(original->rowCount(),
-                              original->columnCount(),
-                              original->channelCount()) {
-            doAssign(original);
-        }
-
         // If you use this constructor, you've already wasted a lot of memory.
         // Maybe you can just use a full tensor?
-        explicit PixelTensor(const vector<float> &values) : PixelTensor(1, values.size(), 1) {
+        explicit PixelTensor(const vector<float> &values) {
+            allocate(1, values.size(), 1);
             size_t col = 0;
             for (float const &val: values) {
                 setVal(0, col, 0, val);
@@ -228,8 +209,8 @@ namespace microml {
         // see the note by FullTensor about the CLion warning bug.
         // If you use this constructor, you've already wasted a lot of memory.
         // Maybe you can just use a full tensor?
-        explicit PixelTensor(const vector<vector<vector<float>>> &values) :
-        PixelTensor(values[0].size(), values[0][0].size(), values.size()) {
+        explicit PixelTensor(const vector<vector<vector<float>>> &values) {
+            allocate(values[0].size(), values[0][0].size(), values.size());
             size_t channel_index = 0;
             for (const auto &next_channel: values) {
                 size_t row_index = 0;
@@ -289,18 +270,13 @@ namespace microml {
     private:
         vector<vector<vector<uint8_t>>> data;
 
-        // will assign the values from other to this tensor, but if the other tensor is
-        // a view that contains us, then we avoid data corruption by copying to a temporary
-        // tensor first.
-        void assign(const shared_ptr<BaseTensor> &other) {
-            if (other == shared_from_this()) {
-                return; //assignment to self is pointless and expensive
-            }
-            if (contains(other)) {
-                auto temp = make_shared<PixelTensor>(other);
-                data = std::move(temp->data); // steal memory from temp
-            } else {
-                doAssign(other);
+        void allocate(const size_t rows, const size_t columns, const size_t channels) {
+            data.resize(channels);
+            for (size_t channel = 0; channel < channels; channel++) {
+                data.at(channel).resize(rows);
+                for (size_t row = 0; row < rows; row++) {
+                    data.at(channel).at(row).resize(columns);
+                }
             }
         }
 
@@ -332,12 +308,18 @@ namespace microml {
             }
         }
 
-        void doAssign(const shared_ptr<BaseTensor> &other) {
-            if (other->rowCount() != rowCount() && other->channelCount() != channelCount() &&
-                    other->columnCount() != columnCount()) {
-                throw exception(
-                        "A tensor cannot be assigned from another tensor with a different shape");
-            }
+        inline void setVal(size_t row, size_t column, size_t channel, float val) {
+            data.at(channel).at(row).at(column) = (uint8_t) (std::max(0.0f, std::min(val, 1.0f)) * 255);
+        }
+    };
+
+    class QuarterTensor : public BaseAssignableTensor {
+    public:
+        explicit QuarterTensor(const shared_ptr<BaseTensor> &original, const int bias) {
+            this->bias = bias;
+            allocate(original->rowCount(),
+                     original->columnCount(),
+                     original->channelCount());
 
             const size_t columns = columnCount();
             const size_t rows = rowCount();
@@ -347,40 +329,15 @@ namespace microml {
             for (size_t channel = 0; channel < channels; channel++) {
                 for (size_t row = 0; row < rows; row++) {
                     for (size_t col = 0; col < columns; col++) {
-                        setVal(row, col, channel, other->getValue(row, col, channel));
+                        setVal(row, col, channel, original->getValue(row, col, channel));
                     }
                 }
             }
         }
 
-        inline void setVal(size_t row, size_t column, size_t channel, float val) {
-            data.at(channel).at(row).at(column) = (uint8_t) (std::max(0.0f, std::min(val, 1.0f)) * 255);
-        }
-    };
-
-    class QuarterTensor : public BaseAssignableTensor {
-    public:
-        QuarterTensor(const size_t rows, const size_t columns, const size_t channels, const int bias) {
+        QuarterTensor(const vector<float> &values, const int bias) {
             this->bias = bias;
-            data.resize(channels);
-            for (size_t channel = 0; channel < channels; channel++) {
-                data.at(channel).resize(rows);
-                for (size_t row = 0; row < rows; row++) {
-                    data.at(channel).at(row).resize(columns);
-                }
-            }
-        }
-
-        explicit QuarterTensor(const shared_ptr<BaseTensor> &original, const int bias)
-                : QuarterTensor(original->rowCount(),
-                                original->columnCount(),
-                                original->channelCount(),
-                                bias) {
-            doAssign(original);
-        }
-
-        QuarterTensor(const vector<float> &values, const int bias)
-                : QuarterTensor(1, values.size(), 1, bias) {
+            allocate(1, values.size(), 1);
             size_t col = 0;
             for (float const &val: values) {
                 setVal(0, col, 0, val);
@@ -388,8 +345,9 @@ namespace microml {
             }
         }
 
-        QuarterTensor(const vector <vector<float>> &values, const int bias)
-                : QuarterTensor( values.size(), values.at(0).size(), 1, bias) {
+        QuarterTensor(const vector <vector<float>> &values, const int bias) {
+            this->bias = bias;
+            allocate( values.size(), values.at(0).size(), 1);
             for (size_t row = 0; row < values.size(); row++) {
                 for (size_t col = 0; col < values[row].size(); col++) {
                     const float val = values.at(row).at(col);
@@ -451,18 +409,13 @@ namespace microml {
         vector<vector<vector<quarter>>> data;
         int bias;
 
-        // will assign the values from other to this tensor, but if the other tensor is
-        // a view that contains us, then we avoid data corruption by copying to a temporary
-        // tensor first.
-        void assign(const shared_ptr<BaseTensor> &other) {
-            if (other == shared_from_this()) {
-                return; //assignment to self is pointless and expensive
-            }
-            if (contains(other)) {
-                auto temp = make_shared<QuarterTensor>(other, bias);
-                data = std::move(temp->data); // steal memory from temp
-            } else {
-                doAssign(other);
+        void allocate(const size_t rows, const size_t columns, const size_t channels) {
+            data.resize(channels);
+            for (size_t channel = 0; channel < channels; channel++) {
+                data.at(channel).resize(rows);
+                for (size_t row = 0; row < rows; row++) {
+                    data.at(channel).at(row).resize(columns);
+                }
             }
         }
 
@@ -494,27 +447,6 @@ namespace microml {
             }
         }
 
-        void doAssign(const shared_ptr<BaseTensor> &other) {
-            if (other->rowCount() != rowCount() && other->channelCount() != channelCount() &&
-                    other->columnCount() != columnCount()) {
-                throw exception(
-                        "A tensor cannot be assigned from another tensor with a different shape");
-            }
-
-            const size_t columns = columnCount();
-            const size_t rows = rowCount();
-            const size_t channels = channelCount();
-
-            #pragma omp for collapse(3)
-            for (size_t channel = 0; channel < channels; channel++) {
-                for (size_t row = 0; row < rows; row++) {
-                    for (size_t col = 0; col < columns; col++) {
-                        setVal(row, col, channel, other->getValue(row, col, channel));
-                    }
-                }
-            }
-        }
-
         // Don't assign values directly to a tensor. If you have specific values for specific entries,
         // use a view like TensorFromFunction to represent it. Chances are, you don't need to allocate
         // a lot of memory for a full tensor that you will then do other math on. Wait to use memory
@@ -527,25 +459,26 @@ namespace microml {
 
     class HalfTensor : public BaseAssignableTensor {
     public:
-        HalfTensor(const size_t rows, const size_t columns, const size_t channels) {
-            data.resize(channels);
+        explicit HalfTensor(const shared_ptr<BaseTensor> &original) {
+            allocate(original->rowCount(),
+                     original->columnCount(),
+                     original->channelCount());
+
+            const size_t columns = columnCount();
+            const size_t rows = rowCount();
+            const size_t channels = channelCount();
+            #pragma omp for collapse(3)
             for (size_t channel = 0; channel < channels; channel++) {
-                data.at(channel).resize(rows);
                 for (size_t row = 0; row < rows; row++) {
-                    data.at(channel).at(row).resize(columns);
+                    for (size_t col = 0; col < columns; col++) {
+                        setVal(row, col, channel, original->getValue(row, col, channel));
+                    }
                 }
             }
         }
 
-        explicit HalfTensor(const shared_ptr<BaseTensor> &original)
-                : HalfTensor(original->rowCount(),
-                             original->columnCount(),
-                             original->channelCount()) {
-            doAssign(original);
-        }
-
-        explicit HalfTensor(const vector<float> &values)
-                : HalfTensor(1, values.size(), 1) {
+        explicit HalfTensor(const vector<float> &values) {
+            allocate(1, values.size(), 1);
             size_t col = 0;
             for (float const &val: values) {
                 setVal(0, col, 0, val);
@@ -553,8 +486,8 @@ namespace microml {
             }
         }
 
-        explicit HalfTensor(const vector <vector<float>> &values)
-                : HalfTensor( values.size(), values.at(0).size(), 1) {
+        explicit HalfTensor(const vector<vector<float>> &values) {
+            allocate(values.size(), values.at(0).size(), 1);
             for (size_t row = 0; row < values.size(); row++) {
                 for (size_t col = 0; col < values[row].size(); col++) {
                     const float val = values.at(row).at(col);
@@ -608,21 +541,6 @@ namespace microml {
     private:
         vector<vector<vector<half>>> data;
 
-        // will assign the values from other to this tensor, but if the other tensor is
-        // a view that contains us, then we avoid data corruption by copying to a temporary
-        // tensor first.
-        void assign(const shared_ptr<BaseTensor> &other) {
-            if (other == shared_from_this()) {
-                return; //assignment to self is pointless and expensive
-            }
-            if (contains(other)) {
-                auto temp = make_shared<HalfTensor>(other);
-                data = std::move(temp->data); // steal memory from temp
-            } else {
-                doAssign(other);
-            }
-        }
-
         void assignFromStream(ifstream &stream) {
             uint64_t channels;
             uint64_t rows;
@@ -651,22 +569,12 @@ namespace microml {
             }
         }
 
-        void doAssign(const shared_ptr<BaseTensor> &other) {
-            if (other->rowCount() != rowCount() && other->channelCount() != channelCount() &&
-                    other->columnCount() != columnCount()) {
-                throw exception(
-                        "A tensor cannot be assigned from another tensor with a different shape");
-            }
-
-            const size_t columns = columnCount();
-            const size_t rows = rowCount();
-            const size_t channels = channelCount();
-            #pragma omp for collapse(3)
+        void allocate(const size_t rows, const size_t columns, const size_t channels) {
+            data.resize(channels);
             for (size_t channel = 0; channel < channels; channel++) {
+                data.at(channel).resize(rows);
                 for (size_t row = 0; row < rows; row++) {
-                    for (size_t col = 0; col < columns; col++) {
-                        setVal(row, col, channel, other->getValue(row, col, channel));
-                    }
+                    data.at(channel).at(row).resize(columns);
                 }
             }
         }

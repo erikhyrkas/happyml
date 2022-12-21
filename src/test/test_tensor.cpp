@@ -139,12 +139,6 @@ void reshapeTest() {
     ASSERT_TRUE(otherView->getValue(4, 0, 0) == other->getValue(4, 0, 0));
 }
 
-void testCreate() {
-    auto matrix = make_unique<QuarterTensor>(2, 2, 1, 4);
-    ASSERT_TRUE(2 == matrix->rowCount());
-    ASSERT_TRUE(2 == matrix->columnCount());
-}
-
 void testScalarMultiplication() {
     auto matrixFunc = [](size_t row, size_t col, size_t channel) { return (float) row; };
     auto matrix = make_shared<TensorFromFunction>(matrixFunc, 5, 5, 1);
@@ -572,8 +566,6 @@ int main() {
         // TODO: a lot of these tests don't cover the situation where we have many channels
         // they often test the simple case of a single channel.
         EvenMoreSimpleTimer timer;
-        testCreate();
-        timer.printMilliseconds();
         sumTest();
         timer.printMilliseconds();
         productTest();
