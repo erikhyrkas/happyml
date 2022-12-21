@@ -478,11 +478,6 @@ namespace microml {
 // This abstract class lets us build float tensors and bit tensors as well and use them interchangeably.
     class BaseAssignableTensor : public BaseTensor {
     public:
-        // TODO: I don't think this method should be public. I haven't found a situation where
-        //  I needed to use this outside of a constructor, and as I pointed out in earlier design
-        //  thoughts: this thing is dangerous and probably shouldn't be used.
-        virtual void assign(const shared_ptr <BaseTensor> &other) = 0;
-
         bool isMaterialized() override {
             return true;
         }

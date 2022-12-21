@@ -91,21 +91,6 @@ namespace microml {
             assignFromStream(stream);
         }
 
-        // will assign the values from other to this tensor, but if the other tensor is
-        // a view that contains us, then we avoid data corruption by copying to a temporary
-        // tensor first.
-        void assign(const shared_ptr<BaseTensor> &other) override {
-            if (other == shared_from_this()) {
-                return; //assignment to self is pointless and expensive
-            }
-            if (contains(other)) {
-                auto temp = make_shared<FullTensor>(other);
-                data = std::move(temp->data); // steal memory from temp
-            } else {
-                doAssign(other);
-            }
-        }
-
         size_t channelCount() override {
             return data.size();
         }
@@ -133,6 +118,21 @@ namespace microml {
         }
     private:
         vector <vector<vector < float>>> data;
+
+        // will assign the values from other to this tensor, but if the other tensor is
+        // a view that contains us, then we avoid data corruption by copying to a temporary
+        // tensor first.
+        void assign(const shared_ptr<BaseTensor> &other) {
+            if (other == shared_from_this()) {
+                return; //assignment to self is pointless and expensive
+            }
+            if (contains(other)) {
+                auto temp = make_shared<FullTensor>(other);
+                data = std::move(temp->data); // steal memory from temp
+            } else {
+                doAssign(other);
+            }
+        }
 
         void assignFromStream(ifstream &stream) {
             uint64_t channels;
@@ -261,20 +261,6 @@ namespace microml {
             assignFromStream(stream);
         }
 
-        // will assign the values from other to this tensor, but if the other tensor is
-        // a view that contains us, then we avoid data corruption by copying to a temporary
-        // tensor first.
-        void assign(const shared_ptr<BaseTensor> &other) override {
-            if (other == shared_from_this()) {
-                return; //assignment to self is pointless and expensive
-            }
-            if (contains(other)) {
-                auto temp = make_shared<PixelTensor>(other);
-                data = std::move(temp->data); // steal memory from temp
-            } else {
-                doAssign(other);
-            }
-        }
 
         size_t channelCount() override {
             return data.size();
@@ -303,6 +289,20 @@ namespace microml {
     private:
         vector<vector<vector<uint8_t>>> data;
 
+        // will assign the values from other to this tensor, but if the other tensor is
+        // a view that contains us, then we avoid data corruption by copying to a temporary
+        // tensor first.
+        void assign(const shared_ptr<BaseTensor> &other) {
+            if (other == shared_from_this()) {
+                return; //assignment to self is pointless and expensive
+            }
+            if (contains(other)) {
+                auto temp = make_shared<PixelTensor>(other);
+                data = std::move(temp->data); // steal memory from temp
+            } else {
+                doAssign(other);
+            }
+        }
 
         void assignFromStream(ifstream &stream) {
             uint64_t channels;
@@ -398,7 +398,8 @@ namespace microml {
             }
         }
 
-        explicit QuarterTensor(const string &fileName) {
+        explicit QuarterTensor(const string &fileName, const int bias) {
+            this->bias = bias;
             try {
                 ifstream stream;
                 stream.open(fileName,ifstream::in | ios::binary);
@@ -410,7 +411,8 @@ namespace microml {
             }
         }
 
-        explicit QuarterTensor(ifstream &stream) {
+        explicit QuarterTensor(ifstream &stream, const int bias) {
+            this->bias = bias;
             assignFromStream(stream);
         }
 
@@ -441,10 +443,18 @@ namespace microml {
             return bias;
         }
 
+
+        void printMaterializationPlan() override {
+            cout << "QuarterTensor{" << rowCount() << "," << columnCount() << "," << channelCount() << "}";
+        }
+    private:
+        vector<vector<vector<quarter>>> data;
+        int bias;
+
         // will assign the values from other to this tensor, but if the other tensor is
         // a view that contains us, then we avoid data corruption by copying to a temporary
         // tensor first.
-        void assign(const shared_ptr<BaseTensor> &other) override {
+        void assign(const shared_ptr<BaseTensor> &other) {
             if (other == shared_from_this()) {
                 return; //assignment to self is pointless and expensive
             }
@@ -455,14 +465,6 @@ namespace microml {
                 doAssign(other);
             }
         }
-
-        void printMaterializationPlan() override {
-            cout << "QuarterTensor{" << rowCount() << "," << columnCount() << "," << channelCount() << "}";
-        }
-    private:
-        vector<vector<vector<quarter>>> data;
-        int bias;
-
 
         void assignFromStream(ifstream &stream) {
             uint64_t channels;
@@ -599,10 +601,17 @@ namespace microml {
             return halfToFloat(data.at(channel).at(row).at(column));
         }
 
+        void printMaterializationPlan() override {
+            cout << "HalfTensor{" << rowCount() << "," << columnCount() << "," << channelCount() << "}";
+        }
+
+    private:
+        vector<vector<vector<half>>> data;
+
         // will assign the values from other to this tensor, but if the other tensor is
         // a view that contains us, then we avoid data corruption by copying to a temporary
         // tensor first.
-        void assign(const shared_ptr<BaseTensor> &other) override {
+        void assign(const shared_ptr<BaseTensor> &other) {
             if (other == shared_from_this()) {
                 return; //assignment to self is pointless and expensive
             }
@@ -613,14 +622,6 @@ namespace microml {
                 doAssign(other);
             }
         }
-
-        void printMaterializationPlan() override {
-            cout << "HalfTensor{" << rowCount() << "," << columnCount() << "," << channelCount() << "}";
-        }
-
-    private:
-        vector<vector<vector<half>>> data;
-
 
         void assignFromStream(ifstream &stream) {
             uint64_t channels;
