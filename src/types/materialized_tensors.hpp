@@ -24,6 +24,11 @@ using namespace std;
 //  to handle conversion neatly without losing performance. It's probably possible and something I need to learn,
 //  since the below code has SO MUCH DUPLICATION.
 namespace microml {
+    // TODO: create a "solid-state" tensor, where instead of being in memory, use disk and mem-map it as needed.
+    //  My c++ is rusty, so I need to dig into how this is done at some point. I know it is possible, but there
+    //  may be crazy OS-specific requirements or other such nonsense to work through that isn't important to tackle
+    //  at this exact moment.
+
 // The full tensor is backed by a 32-bit float. This exists because our input into our models may
 // require accurate representations, and I don't think they'll ever be too big to fit in memory.
 // There may also be final dense layers that have few enough neurons feeding it that a full tensor
