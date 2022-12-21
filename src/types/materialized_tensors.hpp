@@ -20,6 +20,9 @@ using namespace std;
 // NOTE: There's a lot of duplicate code here. I could likely reduce it through the use of templates,
 //  which I may do. My biggest hesitation right now is the setVal function, which I would like to remain inlined
 //  for performance. getVal and setVal both are responsible for data conversion through function calls of their own.
+//  Because we are dealing with base types that aren't classes, I'm not sure how to use a templated class
+//  to handle conversion neatly without losing performance. It's probably possible and something I need to learn,
+//  since the below code has SO MUCH DUPLICATION.
 namespace microml {
 // The full tensor is backed by a 32-bit float. This exists because our input into our models may
 // require accurate representations, and I don't think they'll ever be too big to fit in memory.
@@ -76,31 +79,7 @@ namespace microml {
             try {
                 ifstream stream;
                 stream.open(fileName,ifstream::in | ios::binary);
-                uint64_t channels;
-                uint64_t rows;
-                uint64_t columns;
-
-                stream.read(reinterpret_cast<char*>(&channels), sizeof(channels));
-                channels = portableBytes(channels);
-                stream.read(reinterpret_cast<char*>(&rows), sizeof(rows));
-                rows = portableBytes(rows);
-                stream.read(reinterpret_cast<char*>(&columns), sizeof(columns));
-                columns = portableBytes(columns);
-
-                data.resize(channels);
-                for (size_t channel = 0; channel < channels; channel++) {
-                    data.at(channel).resize(rows);
-                    for (size_t row = 0; row < rows; row++) {
-                        data.at(channel).at(row).resize(columns);
-                        for(size_t column = 0; column < columns; column++) {
-                            uint32_t val;
-                            stream.read(reinterpret_cast<char*>(&val), sizeof(val));
-                            val = portableBytes(val);
-                            float nextVal = *(float*) &val;
-                            setVal(row, column, channel, nextVal);
-                        }
-                    }
-                }
+                assignFromStream(stream);
                 stream.close();
             } catch(ofstream::failure &e) {
                 cerr << "Failed to load: " << fileName << endl << e.what() << endl;
@@ -108,12 +87,13 @@ namespace microml {
             }
         }
 
+        explicit FullTensor(ifstream &stream) {
+            assignFromStream(stream);
+        }
+
         // will assign the values from other to this tensor, but if the other tensor is
         // a view that contains us, then we avoid data corruption by copying to a temporary
         // tensor first.
-        // this could possibly be optimized by leveraging the newly allocated tensor's
-        // internal values directly, but our current data elements are vectors, not a pointer
-        // to vectors.
         void assign(const shared_ptr<BaseTensor> &other) override {
             if (other == shared_from_this()) {
                 return; //assignment to self is pointless and expensive
@@ -154,6 +134,34 @@ namespace microml {
     private:
         vector <vector<vector < float>>> data;
 
+        void assignFromStream(ifstream &stream) {
+            uint64_t channels;
+            uint64_t rows;
+            uint64_t columns;
+
+            stream.read(reinterpret_cast<char*>(&channels), sizeof(channels));
+            channels = portableBytes(channels);
+            stream.read(reinterpret_cast<char*>(&rows), sizeof(rows));
+            rows = portableBytes(rows);
+            stream.read(reinterpret_cast<char*>(&columns), sizeof(columns));
+            columns = portableBytes(columns);
+
+            data.resize(channels);
+            for (size_t channel = 0; channel < channels; channel++) {
+                data.at(channel).resize(rows);
+                for (size_t row = 0; row < rows; row++) {
+                    data.at(channel).at(row).resize(columns);
+                    for(size_t column = 0; column < columns; column++) {
+                        uint32_t val;
+                        stream.read(reinterpret_cast<char*>(&val), sizeof(val));
+                        val = portableBytes(val);
+                        float nextVal = *(float*) &val;
+                        setVal(row, column, channel, nextVal);
+                    }
+                }
+            }
+        }
+
         void doAssign(const shared_ptr<BaseTensor> &other) {
             if (other->rowCount() != rowCount() && other->channelCount() != channelCount() &&
                     other->columnCount() != columnCount()) {
@@ -169,7 +177,8 @@ namespace microml {
                 for (size_t row = 0; row < rows; row++) {
                     for (size_t col = 0; col < columns; col++) {
                         setVal(row, col, channel, other->getValue(row, col, channel));
-                    }                }
+                    }
+                }
             }
         }
 
@@ -180,7 +189,7 @@ namespace microml {
 
 
 // TODO: Okay, so I clearly need another layer of abstraction or to template the BaseAssignableTensor, but
-// that'll be another day.
+//  that'll be another day.
 // Pixel Tensor holds a value between 0.0f and 1.0f with an even distribution in 256 increments (8-bits.)
 // This is a compact representation useful for images, but also for other data that has an evenly distributed
 // range of values between 0 and 1 with a similar granularity.
@@ -236,12 +245,25 @@ namespace microml {
             }
         }
 
+        explicit PixelTensor(const string &fileName) {
+            try {
+                ifstream stream;
+                stream.open(fileName,ifstream::in | ios::binary);
+                assignFromStream(stream);
+                stream.close();
+            } catch(ofstream::failure &e) {
+                cerr << "Failed to load: " << fileName << endl << e.what() << endl;
+                throw e;
+            }
+        }
+
+        explicit PixelTensor(ifstream &stream) {
+            assignFromStream(stream);
+        }
+
         // will assign the values from other to this tensor, but if the other tensor is
         // a view that contains us, then we avoid data corruption by copying to a temporary
         // tensor first.
-        // this could possibly be optimized by leveraging the newly allocated tensor's
-        // internal values directly, but our current data elements are vectors, not a pointer
-        // to vectors.
         void assign(const shared_ptr<BaseTensor> &other) override {
             if (other == shared_from_this()) {
                 return; //assignment to self is pointless and expensive
@@ -281,6 +303,35 @@ namespace microml {
     private:
         vector<vector<vector<uint8_t>>> data;
 
+
+        void assignFromStream(ifstream &stream) {
+            uint64_t channels;
+            uint64_t rows;
+            uint64_t columns;
+
+            stream.read(reinterpret_cast<char*>(&channels), sizeof(channels));
+            channels = portableBytes(channels);
+            stream.read(reinterpret_cast<char*>(&rows), sizeof(rows));
+            rows = portableBytes(rows);
+            stream.read(reinterpret_cast<char*>(&columns), sizeof(columns));
+            columns = portableBytes(columns);
+
+            data.resize(channels);
+            for (size_t channel = 0; channel < channels; channel++) {
+                data.at(channel).resize(rows);
+                for (size_t row = 0; row < rows; row++) {
+                    data.at(channel).at(row).resize(columns);
+                    for(size_t column = 0; column < columns; column++) {
+                        uint32_t val;
+                        stream.read(reinterpret_cast<char*>(&val), sizeof(val));
+                        val = portableBytes(val);
+                        float nextVal = *(float*) &val;
+                        setVal(row, column, channel, nextVal);
+                    }
+                }
+            }
+        }
+
         void doAssign(const shared_ptr<BaseTensor> &other) {
             if (other->rowCount() != rowCount() && other->channelCount() != channelCount() &&
                     other->columnCount() != columnCount()) {
@@ -297,7 +348,8 @@ namespace microml {
                 for (size_t row = 0; row < rows; row++) {
                     for (size_t col = 0; col < columns; col++) {
                         setVal(row, col, channel, other->getValue(row, col, channel));
-                    }                }
+                    }
+                }
             }
         }
 
@@ -346,6 +398,22 @@ namespace microml {
             }
         }
 
+        explicit QuarterTensor(const string &fileName) {
+            try {
+                ifstream stream;
+                stream.open(fileName,ifstream::in | ios::binary);
+                assignFromStream(stream);
+                stream.close();
+            } catch(ofstream::failure &e) {
+                cerr << "Failed to load: " << fileName << endl << e.what() << endl;
+                throw e;
+            }
+        }
+
+        explicit QuarterTensor(ifstream &stream) {
+            assignFromStream(stream);
+        }
+
         size_t channelCount() override {
             return data.size();
         }
@@ -376,9 +444,6 @@ namespace microml {
         // will assign the values from other to this tensor, but if the other tensor is
         // a view that contains us, then we avoid data corruption by copying to a temporary
         // tensor first.
-        // this could possibly be optimized by leveraging the newly allocated tensor's
-        // internal values directly, but our current data elements are vectors, not a pointer
-        // to vectors.
         void assign(const shared_ptr<BaseTensor> &other) override {
             if (other == shared_from_this()) {
                 return; //assignment to self is pointless and expensive
@@ -398,6 +463,35 @@ namespace microml {
         vector<vector<vector<quarter>>> data;
         int bias;
 
+
+        void assignFromStream(ifstream &stream) {
+            uint64_t channels;
+            uint64_t rows;
+            uint64_t columns;
+
+            stream.read(reinterpret_cast<char*>(&channels), sizeof(channels));
+            channels = portableBytes(channels);
+            stream.read(reinterpret_cast<char*>(&rows), sizeof(rows));
+            rows = portableBytes(rows);
+            stream.read(reinterpret_cast<char*>(&columns), sizeof(columns));
+            columns = portableBytes(columns);
+
+            data.resize(channels);
+            for (size_t channel = 0; channel < channels; channel++) {
+                data.at(channel).resize(rows);
+                for (size_t row = 0; row < rows; row++) {
+                    data.at(channel).at(row).resize(columns);
+                    for(size_t column = 0; column < columns; column++) {
+                        uint32_t val;
+                        stream.read(reinterpret_cast<char*>(&val), sizeof(val));
+                        val = portableBytes(val);
+                        float nextVal = *(float*) &val;
+                        setVal(row, column, channel, nextVal);
+                    }
+                }
+            }
+        }
+
         void doAssign(const shared_ptr<BaseTensor> &other) {
             if (other->rowCount() != rowCount() && other->channelCount() != channelCount() &&
                     other->columnCount() != columnCount()) {
@@ -414,7 +508,8 @@ namespace microml {
                 for (size_t row = 0; row < rows; row++) {
                     for (size_t col = 0; col < columns; col++) {
                         setVal(row, col, channel, other->getValue(row, col, channel));
-                    }                }
+                    }
+                }
             }
         }
 
@@ -423,15 +518,6 @@ namespace microml {
         // a lot of memory for a full tensor that you will then do other math on. Wait to use memory
         // for the final result.
         inline void setVal(size_t row, size_t column, size_t channel, float val) {
-            // used only during a test for a breakpoint
-//            const float qv = quarter_to_float(float_to_quarter(val, bias, offset), bias, offset);
-//            if(std::abs(val-qv) > 0.014 ){
-//                cout  << endl << "major precision loss: " << val << " -> " << qv << endl;
-//                // in 8000 epochs for the xor test, this didn't happen. most error is below 0.01 with the
-//                // rare error between 0.01 and 0.014
-//                // where I think this is problematic is over 96000 individual numbers in that original
-//                // 8000 epochs each being 0.01 off adds up to significant error.
-//            }
             data.at(channel).at(row).at(column) = floatToQuarter(val, bias);
         }
     };
@@ -475,6 +561,22 @@ namespace microml {
             }
         }
 
+        explicit HalfTensor(const string &fileName) {
+            try {
+                ifstream stream;
+                stream.open(fileName,ifstream::in | ios::binary);
+                assignFromStream(stream);
+                stream.close();
+            } catch(ofstream::failure &e) {
+                cerr << "Failed to load: " << fileName << endl << e.what() << endl;
+                throw e;
+            }
+        }
+
+        explicit HalfTensor(ifstream &stream) {
+            assignFromStream(stream);
+        }
+
         size_t channelCount() override {
             return data.size();
         }
@@ -500,9 +602,6 @@ namespace microml {
         // will assign the values from other to this tensor, but if the other tensor is
         // a view that contains us, then we avoid data corruption by copying to a temporary
         // tensor first.
-        // this could possibly be optimized by leveraging the newly allocated tensor's
-        // internal values directly, but our current data elements are vectors, not a pointer
-        // to vectors.
         void assign(const shared_ptr<BaseTensor> &other) override {
             if (other == shared_from_this()) {
                 return; //assignment to self is pointless and expensive
@@ -522,6 +621,35 @@ namespace microml {
     private:
         vector<vector<vector<half>>> data;
 
+
+        void assignFromStream(ifstream &stream) {
+            uint64_t channels;
+            uint64_t rows;
+            uint64_t columns;
+
+            stream.read(reinterpret_cast<char*>(&channels), sizeof(channels));
+            channels = portableBytes(channels);
+            stream.read(reinterpret_cast<char*>(&rows), sizeof(rows));
+            rows = portableBytes(rows);
+            stream.read(reinterpret_cast<char*>(&columns), sizeof(columns));
+            columns = portableBytes(columns);
+
+            data.resize(channels);
+            for (size_t channel = 0; channel < channels; channel++) {
+                data.at(channel).resize(rows);
+                for (size_t row = 0; row < rows; row++) {
+                    data.at(channel).at(row).resize(columns);
+                    for(size_t column = 0; column < columns; column++) {
+                        uint32_t val;
+                        stream.read(reinterpret_cast<char*>(&val), sizeof(val));
+                        val = portableBytes(val);
+                        float nextVal = *(float*) &val;
+                        setVal(row, column, channel, nextVal);
+                    }
+                }
+            }
+        }
+
         void doAssign(const shared_ptr<BaseTensor> &other) {
             if (other->rowCount() != rowCount() && other->channelCount() != channelCount() &&
                     other->columnCount() != columnCount()) {
@@ -537,7 +665,8 @@ namespace microml {
                 for (size_t row = 0; row < rows; row++) {
                     for (size_t col = 0; col < columns; col++) {
                         setVal(row, col, channel, other->getValue(row, col, channel));
-                    }                }
+                    }
+                }
             }
         }
 
@@ -546,15 +675,6 @@ namespace microml {
         // a lot of memory for a full tensor that you will then do other math on. Wait to use memory
         // for the final result.
         inline void setVal(size_t row, size_t column, size_t channel, float val) {
-            // used only during a test for a breakpoint
-//            const float qv = quarter_to_float(float_to_quarter(val, bias, offset), bias, offset);
-//            if(std::abs(val-qv) > 0.014 ){
-//                cout  << endl << "major precision loss: " << val << " -> " << qv << endl;
-//                // in 8000 epochs for the xor test, this didn't happen. most error is below 0.01 with the
-//                // rare error between 0.01 and 0.014
-//                // where I think this is problematic is over 96000 individual numbers in that original
-//                // 8000 epochs each being 0.01 off adds up to significant error.
-//            }
             data.at(channel).at(row).at(column) = floatToHalf(val);
         }
     };
