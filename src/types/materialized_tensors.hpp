@@ -60,6 +60,40 @@ namespace microml {
     //  the original tensor could be overwritten, but I don't think this would be safe or reliable. I think the
     //  explicit instruction to reuse memory is still the best option.
 
+    template<typename T>
+    void allocateTensorVector(vector<vector<vector<T>>> &data, const size_t rows, const size_t columns, const size_t channels) {
+        // I wouldn't expect memory allocation in parallel to be faster than serial allocation, especially on this
+        // scale, since there would be a lot of lock contention. I did a quick experiment and found the timings
+        // weren't better or worse with small sizes. More experiments are needed, but it's not worth much time
+        // at this moment since I'm skeptical it would help.
+        data.resize(channels);
+        for (size_t channel = 0; channel < channels; channel++) {
+            data.at(channel).resize(rows);
+            for (size_t row = 0; row < rows; row++) {
+                data.at(channel).at(row).resize(columns);
+            }
+        }
+    }
+
+    template<typename T>
+    void allocateTensorVector(vector<vector<vector<T>>> &data,
+                              const size_t rows, const size_t columns, const size_t channels,
+                              const shared_ptr<BaseTensor> &original,
+                              function<T(float)> conversionFunction) {
+        allocateTensorVector<T>(data, rows,
+                                    columns,
+                                    channels);
+
+        #pragma omp for collapse(3)
+        for (size_t channel = 0; channel < channels; channel++) {
+            for (size_t row = 0; row < rows; row++) {
+                for (size_t column = 0; column < columns; column++) {
+                    data.at(channel).at(row).at(column) = conversionFunction(original->getValue(row, column, channel));
+                }
+            }
+        }
+    }
+
 // The full tensor is backed by a 32-bit float. This exists because our input into our models may
 // require accurate representations, and I don't think they'll ever be too big to fit in memory.
 // There may also be final dense layers that have few enough neurons feeding it that a full tensor
@@ -67,13 +101,13 @@ namespace microml {
     class FullTensor : public BaseAssignableTensor {
     public:
         explicit FullTensor(const shared_ptr<BaseTensor> &original) {
-            allocate(original->rowCount(),
-                     original->columnCount(),
-                     original->channelCount());
+            const size_t columns = original->columnCount();
+            const size_t rows = original->rowCount();
+            const size_t channels = original->channelCount();
 
-            const size_t columns = columnCount();
-            const size_t rows = rowCount();
-            const size_t channels = channelCount();
+            allocateTensorVector<float>(data, rows,
+                                        columns,
+                                        channels);
 
             #pragma omp for collapse(3)
             for (size_t channel = 0; channel < channels; channel++) {
@@ -86,7 +120,7 @@ namespace microml {
         }
 
         explicit FullTensor(const vector<float> &values) {
-            allocate(1, values.size(), 1);
+            allocateTensorVector<float>(data,1, values.size(), 1);
             size_t col = 0;
             for (float const &val: values) {
                 setVal(0, col, 0, val);
@@ -97,7 +131,7 @@ namespace microml {
         // get a weird warning here that CLion can't resolve constructor. I believe this is a bug with CLion itself:
         // https://youtrack.jetbrains.com/issue/CPP-24510/Bad-detection-of-Constructor-is-not-implemented
         explicit FullTensor(const vector<vector<vector<float>>> &values) {
-            allocate(values[0].size(), values[0][0].size(), values.size());
+            allocateTensorVector<float>(data, values[0].size(), values[0][0].size(), values.size());
             size_t channel_index = 0;
             for (const vector <vector<float>> &next_channel: values) {
                 size_t row_index = 0;
@@ -157,16 +191,6 @@ namespace microml {
     private:
         vector <vector<vector < float>>> data;
 
-        void allocate(const size_t rows, const size_t columns, const size_t channels) {
-            data.resize(channels);
-            for (size_t channel = 0; channel < channels; channel++) {
-                data.at(channel).resize(rows);
-                for (size_t row = 0; row < rows; row++) {
-                    data.at(channel).at(row).resize(columns);
-                }
-            }
-        }
-
         void assignFromStream(ifstream &stream) {
             uint64_t channels;
             uint64_t rows;
@@ -213,13 +237,14 @@ namespace microml {
     public:
 
         explicit PixelTensor(const shared_ptr<BaseTensor> &original) {
-            allocate(original->rowCount(),
-                     original->columnCount(),
-                     original->channelCount());
+            const size_t columns = original->columnCount();
+            const size_t rows = original->rowCount();
+            const size_t channels = original->channelCount();
 
-            const size_t columns = columnCount();
-            const size_t rows = rowCount();
-            const size_t channels = channelCount();
+            allocateTensorVector<::uint8_t>(data, rows,
+                                            columns,
+                                            channels);
+
 
             #pragma omp for collapse(3)
             for (size_t channel = 0; channel < channels; channel++) {
@@ -234,7 +259,7 @@ namespace microml {
         // If you use this constructor, you've already wasted a lot of memory.
         // Maybe you can just use a full tensor?
         explicit PixelTensor(const vector<float> &values) {
-            allocate(1, values.size(), 1);
+            allocateTensorVector<::uint8_t>(data, 1, values.size(), 1);
             size_t col = 0;
             for (float const &val: values) {
                 setVal(0, col, 0, val);
@@ -246,7 +271,7 @@ namespace microml {
         // If you use this constructor, you've already wasted a lot of memory.
         // Maybe you can just use a full tensor?
         explicit PixelTensor(const vector<vector<vector<float>>> &values) {
-            allocate(values[0].size(), values[0][0].size(), values.size());
+            allocateTensorVector<::uint8_t>(data, values[0].size(), values[0][0].size(), values.size());
             size_t channel_index = 0;
             for (const auto &next_channel: values) {
                 size_t row_index = 0;
@@ -306,16 +331,6 @@ namespace microml {
     private:
         vector<vector<vector<uint8_t>>> data;
 
-        void allocate(const size_t rows, const size_t columns, const size_t channels) {
-            data.resize(channels);
-            for (size_t channel = 0; channel < channels; channel++) {
-                data.at(channel).resize(rows);
-                for (size_t row = 0; row < rows; row++) {
-                    data.at(channel).at(row).resize(columns);
-                }
-            }
-        }
-
         void assignFromStream(ifstream &stream) {
             uint64_t channels;
             uint64_t rows;
@@ -353,13 +368,14 @@ namespace microml {
     public:
         explicit QuarterTensor(const shared_ptr<BaseTensor> &original, const int bias) {
             this->bias = bias;
-            allocate(original->rowCount(),
-                     original->columnCount(),
-                     original->channelCount());
+            const size_t columns = original->columnCount();
+            const size_t rows = original->rowCount();
+            const size_t channels = original->channelCount();
 
-            const size_t columns = columnCount();
-            const size_t rows = rowCount();
-            const size_t channels = channelCount();
+            allocateTensorVector<quarter>(data, rows,
+                                        columns,
+                                        channels);
+
 
             #pragma omp for collapse(3)
             for (size_t channel = 0; channel < channels; channel++) {
@@ -373,7 +389,7 @@ namespace microml {
 
         QuarterTensor(const vector<float> &values, const int bias) {
             this->bias = bias;
-            allocate(1, values.size(), 1);
+            allocateTensorVector<quarter>(data, 1, values.size(), 1);
             size_t col = 0;
             for (float const &val: values) {
                 setVal(0, col, 0, val);
@@ -383,7 +399,7 @@ namespace microml {
 
         QuarterTensor(const vector <vector<float>> &values, const int bias) {
             this->bias = bias;
-            allocate( values.size(), values.at(0).size(), 1);
+            allocateTensorVector<quarter>(data, values.size(), values.at(0).size(), 1);
             for (size_t row = 0; row < values.size(); row++) {
                 for (size_t col = 0; col < values[row].size(); col++) {
                     const float val = values.at(row).at(col);
@@ -445,16 +461,6 @@ namespace microml {
         vector<vector<vector<quarter>>> data;
         int bias;
 
-        void allocate(const size_t rows, const size_t columns, const size_t channels) {
-            data.resize(channels);
-            for (size_t channel = 0; channel < channels; channel++) {
-                data.at(channel).resize(rows);
-                for (size_t row = 0; row < rows; row++) {
-                    data.at(channel).at(row).resize(columns);
-                }
-            }
-        }
-
         void assignFromStream(ifstream &stream) {
             uint64_t channels;
             uint64_t rows;
@@ -496,13 +502,14 @@ namespace microml {
     class HalfTensor : public BaseAssignableTensor {
     public:
         explicit HalfTensor(const shared_ptr<BaseTensor> &original) {
-            allocate(original->rowCount(),
-                     original->columnCount(),
-                     original->channelCount());
+            const size_t columns = original->columnCount();
+            const size_t rows = original->rowCount();
+            const size_t channels = original->channelCount();
 
-            const size_t columns = columnCount();
-            const size_t rows = rowCount();
-            const size_t channels = channelCount();
+            allocateTensorVector<uint16_t>(data, rows,
+                                          columns,
+                                          channels);
+
             #pragma omp for collapse(3)
             for (size_t channel = 0; channel < channels; channel++) {
                 for (size_t row = 0; row < rows; row++) {
@@ -514,7 +521,7 @@ namespace microml {
         }
 
         explicit HalfTensor(const vector<float> &values) {
-            allocate(1, values.size(), 1);
+            allocateTensorVector<uint16_t>(data, 1, values.size(), 1);
             size_t col = 0;
             for (float const &val: values) {
                 setVal(0, col, 0, val);
@@ -523,7 +530,7 @@ namespace microml {
         }
 
         explicit HalfTensor(const vector<vector<float>> &values) {
-            allocate(values.size(), values.at(0).size(), 1);
+            allocateTensorVector<uint16_t>(data, values.size(), values.at(0).size(), 1);
             for (size_t row = 0; row < values.size(); row++) {
                 for (size_t col = 0; col < values[row].size(); col++) {
                     const float val = values.at(row).at(col);
@@ -601,16 +608,6 @@ namespace microml {
                         float nextVal = *(float*) &val;
                         setVal(row, column, channel, nextVal);
                     }
-                }
-            }
-        }
-
-        void allocate(const size_t rows, const size_t columns, const size_t channels) {
-            data.resize(channels);
-            for (size_t channel = 0; channel < channels; channel++) {
-                data.at(channel).resize(rows);
-                for (size_t row = 0; row < rows; row++) {
-                    data.at(channel).at(row).resize(columns);
                 }
             }
         }

@@ -27,6 +27,7 @@ void testMnistFull() {
     // making the shape square (28x28) just to test the auto-flattening capabilities of the network.
     //"..\\data\\mnist_test.csv"
     //"..\\data\\mnist_train.csv"
+    cout << "Loading training data..." << endl;
     auto mnistDataSource = make_shared<InMemoryDelimitedValuesTrainingDataSet>("..\\data\\mnist_train.csv", ',',
                                                                              true, false, true,
                                                                              1, 28*28,
@@ -78,6 +79,7 @@ void testMnistFull8bit() {
     // making the shape square (28x28) just to test the auto-flattening capabilities of the network.
     //"..\\data\\mnist_test.csv"
     //"..\\data\\mnist_train.csv"
+    cout << "Loading training data..." << endl;
     auto mnistDataSource = make_shared<InMemoryDelimitedValuesTrainingDataSet>("..\\data\\mnist_train.csv", ',',
                                                                                true, false, true,
                                                                                1, 28*28,
@@ -124,6 +126,7 @@ void testMnistConvolution() {
     auto givenEncoder = make_shared<TextToPixelEncoder>();
     // making the shape square (28x28) just to test the auto-flattening capabilities of the network.
     //"..\\data\\mnist_test.csv"
+    cout << "Loading training data..." << endl;
     auto mnistDataSource = make_shared<InMemoryDelimitedValuesTrainingDataSet>("..\\data\\mnist_train.csv", ',',
                                                                                true, false, true,
                                                                                1, 28*28,
