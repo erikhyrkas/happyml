@@ -67,14 +67,25 @@ namespace microml {
         // weren't better or worse with small sizes. More experiments are needed, but it's not worth much time
         // at this moment since I'm skeptical it would help.
         data.resize(channels);
+        // #pragma omp for
         for (size_t channel = 0; channel < channels; channel++) {
             data.at(channel).resize(rows);
+            // omp for is roughly 5-10% slower here.
+            // #pragma omp for
             for (size_t row = 0; row < rows; row++) {
                 data.at(channel).at(row).resize(columns);
             }
         }
     }
 
+    // This is roughly 10% slower than the copy-and-pasted code. That's a huge hit. I'm leaving
+    // this here, in case I can think of a way to improve on this.
+    // Example usage:
+    //            allocateTensorVector<float>(data, rows,
+    //                                        columns,
+    //                                        channels,
+    //                                        original,
+    //                                        [](float original) {return original;});
     template<typename T>
     void allocateTensorVector(vector<vector<vector<T>>> &data,
                               const size_t rows, const size_t columns, const size_t channels,
