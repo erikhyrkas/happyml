@@ -52,6 +52,9 @@ namespace microml {
     //  We could possibly take in another flag that let the caller specify whether the original tensor needed to be
     //  retained or if it could be updated. This would allow us to reuse GPU-memory in some cases, but it would never
     //  be as efficient as other ML frameworks in the exact same situations. We might get close, though.
+    //  DISCARDED THOUGHT: I considered if there was a way through pointer reference counts to decide if
+    //  the original tensor could be overwritten, but I don't think this would be safe or reliable. I think the
+    //  explicit instruction to reuse memory is still the best option.
 
 // The full tensor is backed by a 32-bit float. This exists because our input into our models may
 // require accurate representations, and I don't think they'll ever be too big to fit in memory.
