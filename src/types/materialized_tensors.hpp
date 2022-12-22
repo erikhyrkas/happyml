@@ -29,6 +29,30 @@ namespace microml {
     //  may be crazy OS-specific requirements or other such nonsense to work through that isn't important to tackle
     //  at this exact moment.
 
+    // TODO: is there a way to create a tensor backed by GPU memory? my whole approach is driven by optimizing for
+    //  CPU and regular memory. I mean, I can think of ways of putting the tensors in GPU memory, but operations
+    //  are currently applied one tensor entry at a time, not the entire tensor, which isn't how GPU operations
+    //  need to work. I think that I'd need to build GPU specific tensors for every view and the 32-bit and 16-bit
+    //  materialized tensors. I'd probably have to wrap the construction of those tensors and views with a function
+    //  that builds the correct version. Sounds like a fair amount of work, but it might be the only way. I'll
+    //  think on this more. This approach would be less GPU memory efficient than other frameworks that don't
+    //  have immutable tensors. They update the original when it makes sense and create new tensors when it makes
+    //  sense. This framework used views for all of the intermediate steps and only persisted if you made one of the
+    //  explicit materialized tensors.
+    //  ADDITIONAL THOUGHT: even if the views had a method for applying a GPU operation equivalent, a
+    //  materialization method would not know if it could update the base tensors and would need to create new
+    //  GPU-based tensors and then apply the views that were GPU specific. The end result being a fair amount of
+    //  GPU memory usage.
+    //  YET ANOTHER THOUGHT: The only way I can see to safely do this is to have all tensors made through factory
+    //  methods and those factory methods would need to have a parameter that states whether GPU memory was required
+    //  and in those cases, it would always return a materialized tensor, so you never had a stack of views for
+    //  a GPU-based model. Every single tensor was materialized when it was made. CPU-based tensors would work as they
+    //  do today where they are a few materialized tensors with a stack of views on top of them, but GPU-based
+    //  would never be a view -- the operation you performed on them would immediate return a new GPU-based tensor.
+    //  We could possibly take in another flag that let the caller specify whether the original tensor needed to be
+    //  retained or if it could be updated. This would allow us to reuse GPU-memory in some cases, but it would never
+    //  be as efficient as other ML frameworks in the exact same situations. We might get close, though.
+
 // The full tensor is backed by a 32-bit float. This exists because our input into our models may
 // require accurate representations, and I don't think they'll ever be too big to fit in memory.
 // There may also be final dense layers that have few enough neurons feeding it that a full tensor
