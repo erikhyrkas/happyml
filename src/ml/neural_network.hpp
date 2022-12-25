@@ -609,7 +609,7 @@ namespace microml {
             }
             printf("\tEpoch: %6zd \tBatch: %4zd/%zd Batch Size: %3d \tLoss: %11f",
                    (epoch + 1), currentRecord, totalRecords, batchSize, loss);
-            if(lowestLoss != INFINITY) {
+            if(epoch > 0) {
                 printf(" \tLowest: %11f (%zd)            ", lowestLoss, (lowestLossEpoch+1));
             }
             if (overwrite) {
