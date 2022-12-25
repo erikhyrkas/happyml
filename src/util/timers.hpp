@@ -18,27 +18,45 @@ namespace microml {
             startTime = chrono::high_resolution_clock::now();
         }
 
-        long long int getMicroseconds() {
+        int64_t getMicroseconds() {
             auto stopTime = chrono::high_resolution_clock::now();
             auto duration = chrono::duration_cast<chrono::microseconds>(stopTime - startTime);
             startTime = chrono::high_resolution_clock::now();
             return duration.count();
         }
 
-        long long int getMilliseconds() {
+        int64_t peekMicroseconds() {
+            auto stopTime = chrono::high_resolution_clock::now();
+            auto duration = chrono::duration_cast<chrono::microseconds>(stopTime - startTime);
+            return duration.count();
+        }
+
+        int64_t getMilliseconds() {
             auto stopTime = chrono::high_resolution_clock::now();
             auto duration = chrono::duration_cast<chrono::milliseconds>(stopTime - startTime);
             startTime = chrono::high_resolution_clock::now();
             return duration.count();
         }
 
-        long long int getSeconds() {
+        int64_t peekMilliseconds() {
+            auto stopTime = chrono::high_resolution_clock::now();
+            auto duration = chrono::duration_cast<chrono::milliseconds>(stopTime - startTime);
+            return duration.count();
+        }
+
+        int64_t getSeconds() {
             auto stopTime = chrono::high_resolution_clock::now();
             auto duration = chrono::duration_cast<chrono::seconds>(stopTime - startTime);
             startTime = chrono::high_resolution_clock::now();
             return duration.count();
         }
 
+        int64_t peekSeconds() {
+            auto stopTime = chrono::high_resolution_clock::now();
+            auto duration = chrono::duration_cast<chrono::seconds>(stopTime - startTime);
+            startTime = chrono::high_resolution_clock::now();
+            return duration.count();
+        }
     private:
         chrono::time_point<chrono::high_resolution_clock> startTime;
     };

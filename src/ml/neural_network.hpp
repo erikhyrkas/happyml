@@ -7,6 +7,7 @@
 
 #include <set>
 #include <vector>
+#include <filesystem>
 #include "loss.hpp"
 #include "activation.hpp"
 #include "neural_network_function.hpp"
@@ -17,10 +18,83 @@
 #include "../util/unit_test.hpp"
 #include "../types/tensor.hpp"
 #include "../training_data/training_dataset.hpp"
+#include "../util/file_writer.hpp"
 
 using namespace std;
 
+#define FIFTEEN_SECONDS_MS  15000
+#define THIRTY_SECONDS_MS   30000
+#define MINUTE_MS           60000
+#define FIVE_MINUTES_MS    300000
+#define FIFTEEN_MINUTES_MS 900000
+#define HALF_HOUR_MS      1800000
+#define HOUR_MS           3600000
+#define EIGHT_HOURS      28800000
+#define DAY_MS           86400000
+#define NINETY_DAYS_MS 7776000000
+
 namespace microml {
+    enum TrainingRetentionPolicy {
+        best, // accurate
+        last  // fast
+    };
+    class ExitStrategy {
+    public:
+        virtual bool isDone(size_t currentEpoch, float loss, int64_t trainingElapsedTimeInMilliseconds) = 0;
+    };
+
+    class DefaultExitStrategy : public ExitStrategy {
+    public:
+        explicit DefaultExitStrategy(const size_t patience,
+                            const int64_t maxElapsedTime,
+                            const size_t maxEpochs,
+                            const float zeroPrecisionTolerance,
+                            const float improvementTolerance,
+                            const size_t minEpochs) {
+            this->patience = patience;
+            this->maxEpochs = maxEpochs;
+            this->maxElapsedTime = maxElapsedTime;
+            // I could have called zeroPrecisionTolerance "epsilon",
+            // but I wanted to use a term that everybody could understand.
+            // We want to stop training when we reach zero, but it's unlikely
+            // that we'd ever hit perfectly zero, so what is close enough?
+            // That "close enough" is zeroPrecisionTolerance.
+            this->zeroPrecisionTolerance = zeroPrecisionTolerance;
+
+            // Could probably also be called "epsilon", this is the minimum amount of
+            // improvement we need to show in an epoch before giving up.
+            this->improvementTolerance = improvementTolerance;
+            this->minEpochs = minEpochs;
+
+            lowestLossEpoch = 0;
+            lowestLoss = INFINITY;
+        }
+
+        bool isDone(size_t currentEpoch, float loss, int64_t trainingElapsedTimeInMilliseconds) override {
+            if(loss+improvementTolerance <= lowestLoss) {
+                lowestLoss = min(loss, lowestLoss);
+                lowestLossEpoch = currentEpoch;
+            }
+
+            const auto elapsedEpochsSinceLowestEpoch = currentEpoch - lowestLossEpoch;
+            const auto done = (currentEpoch >= minEpochs) &&
+                    (currentEpoch >= maxEpochs ||
+                    trainingElapsedTimeInMilliseconds >= maxElapsedTime ||
+                     elapsedEpochsSinceLowestEpoch > patience ||
+                    loss <= zeroPrecisionTolerance);
+            return done;
+        }
+
+    private:
+        size_t patience;
+        size_t maxEpochs;
+        int64_t maxElapsedTime;
+        float zeroPrecisionTolerance;
+        float improvementTolerance;
+        float lowestLoss;
+        size_t lowestLossEpoch;
+        size_t minEpochs;
+    };
 
     // A node is a vertex in a graph
     class NeuralNetworkNode : public enable_shared_from_this<NeuralNetworkNode> {
@@ -203,6 +277,11 @@ namespace microml {
     // we wouldn't need to save if we are never going to use it.
     class NeuralNetwork {
     public:
+        NeuralNetwork(const string &name, const string &repoRootPath, const string &optimizerType) {
+            this->name = name;
+            this->repoRootPath = repoRootPath;
+            this->optimizerType = optimizerType;
+        }
 
         float predictScalar(const shared_ptr<BaseTensor> &givenInputs) {
             return scalar(predict(givenInputs)[0]);
@@ -237,7 +316,7 @@ namespace microml {
             return results;
         }
 
-        void addHead(const shared_ptr<NeuralNetworkNode> &head) {
+        void addHeadNode(const shared_ptr<NeuralNetworkNode> &head) {
             headNodes.push_back(head);
         }
 
@@ -246,15 +325,43 @@ namespace microml {
         }
 
     protected:
+        string name;
+        string repoRootPath;
+        string optimizerType;
         vector<shared_ptr<NeuralNetworkNode>> headNodes;
         vector<shared_ptr<NeuralNetworkOutputNode>> outputNodes;
     };
 
     class NeuralNetworkForTraining : public NeuralNetwork {
     public:
-        NeuralNetworkForTraining(const shared_ptr<LossFunction> &lossFunction, const shared_ptr<Optimizer> &optimizer) {
+        NeuralNetworkForTraining(const string &name, const string &repoRootPath, const string &optimizerType,
+                                 const shared_ptr<LossFunction> &lossFunction, const shared_ptr<Optimizer> &optimizer)
+                                 : NeuralNetwork(name, repoRootPath, optimizerType) {
             this->lossFunction = lossFunction;
             this->optimizer = optimizer;
+            useLowPrecisionExitStrategy();
+        }
+
+        void useLowPrecisionExitStrategy() {
+            setExitStrategy(make_shared<DefaultExitStrategy>(10,
+                                                             NINETY_DAYS_MS,
+                                                             1000000,
+                                                             0.001,
+                                                             0.001,
+                                                             2));
+        }
+
+        void useHighPrecisionExitStrategy() {
+            setExitStrategy(make_shared<DefaultExitStrategy>(10,
+                                                             NINETY_DAYS_MS,
+                                                             1000000,
+                                                             0.00001,
+                                                             0.00001,
+                                                             2));
+        }
+
+        void setExitStrategy(const shared_ptr<ExitStrategy> &updatedExitStrategy) {
+            this->exitStrategy = updatedExitStrategy;
         }
 
         void setLossFunction(const shared_ptr<LossFunction> &f) {
@@ -265,32 +372,91 @@ namespace microml {
             return optimizer;
         }
 
-        // a sample is a single record
+        void save() {
+            string modelPath = repoRootPath + "/" + name;
+            saveAs(modelPath, true);
+        }
+
+        void saveWithoutOverwrite() {
+            string modelPath = repoRootPath + "/" + name;
+            saveAs(modelPath, false);
+        }
+
+        void saveAs(const string &modelFolderPath, bool overwrite) {
+            auto modelPath = modelFolderPath;
+            if( filesystem::is_directory(modelPath) ) {
+                if(!overwrite) {
+                    // I don't want to throw an exception here since training a model can take a long time
+                    // and people would be upset about losing their work, so we'll just save to a new location.
+                    // Part of me thinks that it's better not to do this and just throw the error, and part of me
+                    // thinks about how I have spent days waiting for some models to train and this sort of
+                    // mistake would kill me.
+                    auto canonicalModelPath = filesystem::canonical(modelPath);
+                    cerr << "Model path "<< canonicalModelPath << " already existed, attempting to save to the new location: ";
+                    auto ms = std::to_string(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
+                    canonicalModelPath += "_" + ms;
+                    cerr << canonicalModelPath << endl;
+                    modelPath = canonicalModelPath.generic_string();
+                } else {
+                    filesystem::remove_all(modelPath);
+                }
+            }
+            filesystem::create_directories(modelPath);
+            string modelProperties = modelPath + "/configuration.microml";
+            auto writer = make_unique<DelimitedTextFileWriter>(modelProperties, ':');
+            writer->writeRecord({"name", name});
+            writer->writeRecord({"optimizer", optimizerType});
+            writer->close();
+        }
+
+        float train(const shared_ptr<TrainingDataSet> &trainingDataset,
+                   int batchSize = 1,
+                   TrainingRetentionPolicy trainingRetentionPolicy = best,
+                   bool overwriteOutputLines = true) {
+            auto testDataset = make_shared<EmptyTrainingDataSet>();
+            return train(trainingDataset,
+                  testDataset,
+                  batchSize,
+                  trainingRetentionPolicy,
+                  overwriteOutputLines);
+        }
+            // a sample is a single record
         // a batch is the number of samples (records) to look at before updating weights
         // train/fit
-        void train(const shared_ptr<TrainingDataSet> &source, size_t epochs, int batchSize = 1,
+        float train(const shared_ptr<TrainingDataSet> &trainingDataset,
+                   const shared_ptr<TrainingDataSet> &testDataset,
+                   int batchSize = 1,
+                   TrainingRetentionPolicy trainingRetentionPolicy = best,
                    bool overwriteOutputLines = true) {
-            auto total_records = source->recordCount();
+            bool useTestDataset = testDataset->recordCount() > 0;
+            // TODO: take in a test set and then validate that the records aren't in the training
+            //  set. If they are, give a warning.
+            auto total_records = trainingDataset->recordCount();
             if (batchSize > total_records) {
-                throw exception("Batch Size cannot be larger than source data set.");
+                throw exception("Batch Size cannot be larger than trainingDataset data set.");
             }
             ElapsedTimer totalTimer;
             const size_t outputSize = outputNodes.size();
             cout << endl;
-            logTraining(0, -1, epochs, 0, ceil(total_records / batchSize), batchSize, 0, overwriteOutputLines);
-            for (size_t epoch = 0; epoch < epochs; epoch++) {
-                ElapsedTimer timer;
-                source->shuffle();
-
+            size_t lowestLossEpoch = -1;
+            float lowestLoss = INFINITY;
+            logTraining(0, -1, 0, ceil(total_records / batchSize), batchSize, 0, 0, 0, overwriteOutputLines);
+            size_t epoch = 0;
+            ElapsedTimer epochTimer;
+            float epochTrainingLoss;
+            float epochTestingLoss;
+            do {
+                ElapsedTimer batchTimer;
+                trainingDataset->shuffle();
+                epochTrainingLoss = 0.f;
                 int batchOffset = 0;
-                float epochLoss = 0.f;
                 vector<vector<shared_ptr<BaseTensor>>> batchPredictions;
                 vector<vector<shared_ptr<BaseTensor>>> batchTruths;
                 batchPredictions.resize(outputSize);
                 batchTruths.resize(outputSize);
 
                 size_t current_record = 0;
-                auto nextRecord = source->nextRecord();
+                auto nextRecord = trainingDataset->nextRecord();
                 while (nextRecord != nullptr) {
                     current_record++;
                     auto nextGiven = nextRecord->getGiven();
@@ -304,7 +470,7 @@ namespace microml {
 //                        }
                     }
                     batchOffset++;
-                    nextRecord = source->nextRecord();
+                    nextRecord = trainingDataset->nextRecord();
                     if (batchOffset >= batchSize || nextRecord == nullptr) {
                         size_t currentBatch = ceil(current_record / batchSize);
                         double totalBatchOutputLoss = 0;
@@ -316,7 +482,7 @@ namespace microml {
                                     lossFunction->calculateTotalError(batchTruths[outputIndex],
                                                                       batchPredictions[outputIndex]));
                             auto totalLoss = lossFunction->compute(totalError);
-                            auto batchLoss = totalLoss / (float)batchOffset;
+                            auto batchLoss = totalLoss / (float) batchOffset;
                             totalBatchOutputLoss += batchLoss;
 
                             // batchOffset should be equal to batch_size, unless we are on the last partial batch.
@@ -331,46 +497,120 @@ namespace microml {
                         // for each offset:
                         //   average = average + (val[offset] - average)/(offset+1)
                         // TODO: this loss assumes that all outputs have the same weight, which may not be true:
-                        epochLoss += (float) (((totalBatchOutputLoss/(double)outputSize) - epochLoss) / (double)currentBatch);
-                        auto elapsedTime = timer.getMilliseconds();
-                        logTraining(elapsedTime, epoch, epochs, currentBatch,
-                                    ceil(total_records / batchSize), batchOffset, epochLoss,
+                        epochTrainingLoss += (float) (
+                                ((totalBatchOutputLoss / (double) outputSize) - epochTrainingLoss) /
+                                (double) currentBatch);
+                        auto elapsedTime = batchTimer.peekMilliseconds();
+                        logTraining(elapsedTime, epoch, currentBatch,
+                                    ceil(total_records / batchSize), batchOffset,
+                                    epochTrainingLoss, lowestLoss, lowestLossEpoch,
                                     overwriteOutputLines);
                         batchOffset = 0;
                     }
                 }
-                source->restart();
-            }
-            long long int elapsed = totalTimer.getMilliseconds();
+                if (useTestDataset) {
+                    epochTestingLoss = test(testDataset);
+                } else {
+                    epochTestingLoss = epochTrainingLoss;
+                }
+                if (epochTestingLoss < lowestLoss) {
+                    lowestLoss = epochTestingLoss;
+                    lowestLossEpoch = epoch;
+                }
+                trainingDataset->restart();
+                epoch++;
+                if (overwriteOutputLines) {
+                    cout << endl;
+                }
+            } while(!exitStrategy->isDone(epoch, epochTestingLoss, epochTimer.getMilliseconds()));
+            int64_t elapsed = totalTimer.getMilliseconds();
+            cout << endl << "Finished training in ";
             if (elapsed < 2000) {
-                cout << endl << "Finished training in " << elapsed << " milliseconds." << endl;
+                cout << elapsed << " milliseconds." << endl;
             } else if (elapsed < 120000) {
-                cout << endl << "Finished training in " << (elapsed / 1000) << " seconds." << endl;
+                cout << (elapsed / 1000) << " seconds." << endl;
             } else {
-                cout << endl << "Finished training in " << (elapsed / 60000) << " minutes." << endl;
+                cout << (elapsed / 60000) << " minutes." << endl;
+            }
+            // TODO: this is placeholder code until we actually save and formalize best loss,
+            //  but it simulates the future results.
+            return trainingRetentionPolicy == best ? lowestLoss : epochTestingLoss;
+        }
+
+        float test(const shared_ptr<TrainingDataSet> &testDataset,
+                   bool overwriteOutputLines = true) {
+            printf("\n");
+            testDataset->restart();
+            const size_t outputSize = outputNodes.size();
+            float averageLoss = 0;
+            ElapsedTimer trainingTimer;
+            size_t currentRecord = 0;
+            size_t totalRecords = testDataset->recordCount();
+            auto nextRecord = testDataset->nextRecord();
+            while(nextRecord) {
+                const auto nextGiven = nextRecord->getGiven();
+                auto nextTruth = nextRecord->getExpected();
+                auto nextPrediction = predict(nextGiven, false);
+                float totalLoss = 0;
+                for (size_t outputIndex = 0; outputIndex < outputSize; outputIndex++) {
+                    const auto error = make_shared<FullTensor>(
+                            lossFunction->calculateError(nextTruth[outputIndex],
+                                                              nextPrediction[outputIndex]));
+                    const auto loss = lossFunction->compute(error);
+                    totalLoss += loss;
+                }
+                averageLoss += (float) ((totalLoss / (double)outputSize) - averageLoss);
+                currentRecord++;
+                logTesting(trainingTimer.peekMilliseconds(),
+                           currentRecord, totalRecords,
+                           averageLoss, overwriteOutputLines);
+                nextRecord = testDataset->nextRecord();
+            }
+            return averageLoss;
+        }
+
+        static void logTesting(int64_t elapsedTime,
+                               size_t currentRecord, size_t totalRecords,
+                               float loss, bool overwrite) {
+            // printf is about 6x faster than cout. I'm not sure why, since neither should flush without an end line.
+            // I can only assume it relates to how cout processes numbers to strings.
+            if (elapsedTime > 120000) {
+                const auto min = elapsedTime / 60000;
+                const auto sec = (elapsedTime % 60000) / 1000;
+                printf("%5zd m %zd s ", min, sec);
+            } else if (elapsedTime > 2000) {
+                const auto sec = (elapsedTime / 1000);
+                printf("%5zd s ", sec);
+            } else {
+                printf("%5zd ms ", elapsedTime);
+            }
+            printf("\tTesting: %4zd/%zd \tAverage Loss: %11f", currentRecord, totalRecords, loss);
+            if (overwrite) {
+                printf("\r");
+            } else {
+                printf("\n");
             }
         }
 
-        static void logTraining(long long int elapsedTime, size_t epoch, size_t epochs,
+        static void logTraining(int64_t elapsedTime, size_t epoch,
                                 size_t currentRecord, size_t totalRecords, int batchSize,
-                                float loss, bool overwrite) {
+                                float loss, float lowestLoss, size_t lowestLossEpoch, bool overwrite) {
             // printf is about 6x faster than cout. I'm not sure why, since neither should flush without an end line.
             // I can only assume it relates to how cout processes numbers to strings.
-
             if (elapsedTime > 120000) {
-                auto min = elapsedTime / 60000;
-                auto sec = (elapsedTime % 60000) / 1000;
-                printf("%5zd m %zd s\tEpoch: %6zd/%zd \tBatch: %4zd/%zd Batch Size: %3d \tLoss: %11f      ",
-                       min, sec, (epoch + 1), epochs,
-                       currentRecord, totalRecords, batchSize, loss);
+                const auto min = elapsedTime / 60000;
+                const auto sec = (elapsedTime % 60000) / 1000;
+                printf("%5zd m %zd s ", min, sec);
             } else if (elapsedTime > 2000) {
-                printf("%5zd s\tEpoch: %6zd/%zd \tBatch: %4zd/%zd Batch Size: %3d \tLoss: %11f            ",
-                       (elapsedTime / 1000), (epoch + 1), epochs,
-                       currentRecord, totalRecords, batchSize, loss);
+                const auto sec = (elapsedTime / 1000);
+                printf("%5zd s ", sec);
             } else {
-                printf("%5zd ms\tEpoch: %6zd/%zd \tBatch: %4zd/%zd Batch Size: %3d \tLoss: %11f           ",
-                       elapsedTime, (epoch + 1), epochs,
-                       currentRecord, totalRecords, batchSize, loss);
+                printf("%5zd ms ", elapsedTime);
+            }
+            printf("\tEpoch: %6zd \tBatch: %4zd/%zd Batch Size: %3d \tLoss: %11f",
+                   (epoch + 1), currentRecord, totalRecords, batchSize, loss);
+            if(lowestLoss != INFINITY) {
+                printf(" \tLowest: %11f (%zd)            ", lowestLoss, (lowestLossEpoch+1));
             }
             if (overwrite) {
                 printf("\r");
@@ -404,6 +644,7 @@ namespace microml {
     private:
         shared_ptr<Optimizer> optimizer;
         shared_ptr<LossFunction> lossFunction;
+        shared_ptr<ExitStrategy> exitStrategy;
     };
 
 }

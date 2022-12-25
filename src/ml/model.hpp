@@ -16,8 +16,8 @@ using namespace std;
 
 namespace micromldsl {
 
-    enum ModelType {
-        microbatch
+    enum OptimizerType {
+        microbatch, adam
     };
     enum LossType {
         mse
@@ -29,20 +29,39 @@ namespace micromldsl {
         relu, tanh, sigmoid, leaky, softmax, sigmoid_approx, tanh_approx
     };
 
+    string optimizerTypeToString(OptimizerType optimizerType) {
+        switch(optimizerType) {
+            case microbatch:
+                return "Micro Batch";
+            case adam:
+                return "Adam";
+        }
+        throw exception("Unknown Optimizer Type");
+    }
+
+    OptimizerType stringToOptimizerType(const string &optimizerType) {
+        if(optimizerType == "Micro Batch") {
+            return microbatch;
+        }
+        if(optimizerType == "Adam" ) {
+            return adam;
+        }
+        throw exception("Unknown Optimizer Type");
+    }
+
     class MicromlDSL : public enable_shared_from_this<MicromlDSL> {
     public:
-        explicit MicromlDSL(ModelType modelType, const string &modelName="unnamed", const string &repoRootPath="repo") {
-            this->modelType = modelType;
+        explicit MicromlDSL(OptimizerType optimizerType, const string &modelName="unnamed", const string &repoRootPath="repo") {
+            this->optimizerType = optimizerType;
             this->modelName = modelName;
-            if(!std::all_of(modelName.begin(), modelName.end(), ::isalnum)) {
+            if(!std::all_of(modelName.begin(), modelName.end(),
+                            [](int c) { return std::isalnum(c) || c == '_';})) {
                 throw exception("Model name must contain only alphanumeric characters.");
             }
-            auto ms = std::to_string(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
-            switch (modelType) {
+            switch (optimizerType) {
                 case microbatch:
                     this->learningRate = 0.1;
                     this->biasLearningRate = 0.01;
-                    this->modelPath = modelName+"_microbatch_"+ms;
                     break;
                 default:
                     throw exception("Unsupported model type.");
@@ -56,6 +75,7 @@ namespace micromldsl {
             this->biasLearningRate = biasLearningRateValue;
             return shared_from_this();
         }
+
         shared_ptr<MicromlDSL> setLearningRate(float learningRateValue) {
             this->learningRate = learningRateValue;
             return shared_from_this();
@@ -68,6 +88,15 @@ namespace micromldsl {
 
         shared_ptr<MicromlDSL> setModelName(const string &modelNameValue) {
             this->modelName = modelNameValue;
+            if(!std::all_of(modelName.begin(), modelName.end(),
+                            [](int c) { return std::isalnum(c) || c == '_';})) {
+                throw exception("Model name must contain only alphanumeric characters.");
+            }
+            return shared_from_this();
+        }
+
+        shared_ptr<MicromlDSL> setModelRepo(const string &modelRepoPath) {
+            this->repoRootPath = modelRepoPath;
             return shared_from_this();
         }
 
@@ -81,17 +110,19 @@ namespace micromldsl {
                     lossFunction = make_shared<MeanSquaredErrorLossFunction>();
             }
             shared_ptr<Optimizer> optimizer;
-            switch (modelType) {
-                case ModelType::microbatch:
+            switch (optimizerType) {
+                case OptimizerType::microbatch:
                     optimizer = make_shared<SGDOptimizer>(learningRate, biasLearningRate);
                     break;
                 default:
                     optimizer = make_shared<SGDOptimizer>(learningRate, biasLearningRate);
             }
 
-            auto neuralNetwork = make_shared<NeuralNetworkForTraining>(lossFunction, optimizer);
+            auto neuralNetwork = make_shared<NeuralNetworkForTraining>(this->modelName, repoRootPath,
+                                                                       optimizerTypeToString(optimizerType),
+                                                                       lossFunction, optimizer);
             for (const auto &head: heads) {
-                neuralNetwork->addHead(head->build_node(neuralNetwork));
+                neuralNetwork->addHeadNode(head->build_node(neuralNetwork));
             }
 
             return neuralNetwork;
@@ -399,19 +430,18 @@ namespace micromldsl {
         }
 
     private:
-        ModelType modelType;
+        OptimizerType optimizerType;
         LossType lossType;
         float learningRate;
         float biasLearningRate;
         vector<shared_ptr<NNVertex>> heads;
         string modelName;
-        string modelPath;
         string repoRootPath;
         uint32_t vertexUniqueSequenceCounter;
     };
 
-    shared_ptr<MicromlDSL> neuralNetworkBuilder(ModelType modelType) {
-        auto result = make_shared<MicromlDSL>(modelType);
+    shared_ptr<MicromlDSL> neuralNetworkBuilder(OptimizerType optimizerType) {
+        auto result = make_shared<MicromlDSL>(optimizerType);
         return result;
     }
 

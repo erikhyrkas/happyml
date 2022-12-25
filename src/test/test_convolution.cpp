@@ -21,7 +21,7 @@ void testSimpleConv2DBias() {
                     false)
             ->addOutput(conv2dDataSource->getExpectedShape(), 1, micromldsl::convolution2dValid, tanh_approx)
             ->build();
-    neuralNetwork->train(conv2dDataSource, 1000, 1);
+    float loss = neuralNetwork->train(conv2dDataSource);
 
     conv2dDataSource->restart();
     auto record = conv2dDataSource->nextRecord();
@@ -30,6 +30,8 @@ void testSimpleConv2DBias() {
     result[0]->print();
     cout << "Expected: " << endl;
     record->getFirstExpected()->print();
+    ASSERT_TRUE(loss < 0.01);
+
 }
 
 void testSimpleConv2DNoBias() {
@@ -43,7 +45,7 @@ void testSimpleConv2DNoBias() {
             ->addOutput(conv2dDataSource->getExpectedShape(), 1, micromldsl::convolution2dValid, tanh_approx)->setUseBias(
                     false)
             ->build();
-    neuralNetwork->train(conv2dDataSource, 1000, 1);
+    float loss = neuralNetwork->train(conv2dDataSource);
 
     conv2dDataSource->restart();
     auto record = conv2dDataSource->nextRecord();
@@ -52,6 +54,8 @@ void testSimpleConv2DNoBias() {
     result[0]->print();
     cout << "Expected: " << endl;
     record->getFirstExpected()->print();
+    ASSERT_TRUE(loss < 0.01);
+
 }
 
 
@@ -67,7 +71,7 @@ void testConv2DWithFilterNoBias() {
             ->addOutput(conv2dDataSource->getExpectedShape(), 3, micromldsl::convolution2dValid, tanh_approx)->setUseBias(
                     false)
             ->build();
-    neuralNetwork->train(conv2dDataSource, 1000, 1);
+    float loss = neuralNetwork->train(conv2dDataSource);
 
     conv2dDataSource->restart();
     auto record = conv2dDataSource->nextRecord();
@@ -76,6 +80,8 @@ void testConv2DWithFilterNoBias() {
     result[0]->print();
     cout << "Expected: " << endl;
     record->getFirstExpected()->print();
+    cout << "Loss: " << loss << endl;
+    ASSERT_TRUE(loss < 0.1);
 }
 
 void testConv2DWithFilterBias() {
@@ -89,7 +95,7 @@ void testConv2DWithFilterBias() {
             ->addNode(1, 3, micromldsl::convolution2dValid, tanh_approx)->setUseBias(false)
             ->addOutput(conv2dDataSource->getExpectedShape(), 3, micromldsl::convolution2dValid, tanh_approx)
             ->build();
-    neuralNetwork->train(conv2dDataSource, 1000, 1);
+    float loss = neuralNetwork->train(conv2dDataSource);
 
     conv2dDataSource->restart();
     auto record = conv2dDataSource->nextRecord();
@@ -98,6 +104,8 @@ void testConv2DWithFilterBias() {
     result[0]->print();
     cout << "Expected: " << endl;
     record->getFirstExpected()->print();
+    cout << "Loss: " << loss << endl;
+    ASSERT_TRUE(loss < 0.1);
 }
 
 void testConv2DComplexNoBias() {
@@ -114,7 +122,7 @@ void testConv2DComplexNoBias() {
             ->build();
     // it takes 500,000 epochs to get the results fairly close, which takes awhile,
     // so I'll just demonstrate that it does it close enough. If you want it to go faster, use bias.
-    neuralNetwork->train(conv2dDataSource, 100000, 1);
+    float loss = neuralNetwork->train(conv2dDataSource);
 
     conv2dDataSource->restart();
     auto record = conv2dDataSource->nextRecord();
@@ -123,6 +131,8 @@ void testConv2DComplexNoBias() {
     result[0]->print();
     cout << "Expected: " << endl;
     record->getFirstExpected()->print();
+    cout << "Loss: " << loss << endl;
+    ASSERT_TRUE(loss < 0.1);
 }
 
 
@@ -137,7 +147,7 @@ void testConv2DComplexBias() {
             ->addNode(1, 3, micromldsl::convolution2dValid, relu)->setUseBias(false)
             ->addOutput(conv2dDataSource->getExpectedShape(), 3, micromldsl::convolution2dValid, micromldsl::sigmoid_approx)
             ->build();
-    neuralNetwork->train(conv2dDataSource, 100000, 1);
+    float loss = neuralNetwork->train(conv2dDataSource);
 
     conv2dDataSource->restart();
     auto record = conv2dDataSource->nextRecord();
@@ -146,6 +156,8 @@ void testConv2DComplexBias() {
     result[0]->print();
     cout << "Expected: " << endl;
     record->getFirstExpected()->print();
+    cout << "Loss: " << loss << endl;
+    ASSERT_TRUE(loss < 0.1);
 }
 
 
@@ -160,8 +172,7 @@ void testConv2DComplexTanhBias() {
             ->addNode(1, 3, micromldsl::convolution2dValid, tanh_approx)->setUseBias(false)
             ->addOutput(conv2dDataSource->getExpectedShape(), 3, micromldsl::convolution2dValid, micromldsl::tanh_approx)
             ->build();
-    neuralNetwork->train(conv2dDataSource, 20000, 1);
-
+    float loss = neuralNetwork->train(conv2dDataSource);
     conv2dDataSource->restart();
     auto record = conv2dDataSource->nextRecord();
     auto result = neuralNetwork->predict(record->getFirstGiven());
@@ -169,6 +180,8 @@ void testConv2DComplexTanhBias() {
     result[0]->print();
     cout << "Expected: " << endl;
     record->getFirstExpected()->print();
+    cout << "Loss: " << loss << endl;
+    ASSERT_TRUE(loss < 0.1);
 }
 
 int main() {
