@@ -438,9 +438,9 @@ namespace microml {
             ElapsedTimer totalTimer;
             const size_t outputSize = outputNodes.size();
             cout << endl;
-            size_t lowestLossEpoch = -1;
+            size_t lowestLossEpoch = 0;
             float lowestLoss = INFINITY;
-            logTraining(0, -1, 0, ceil(total_records / batchSize), batchSize, 0, 0, 0, overwriteOutputLines);
+            logTraining(0, 0, 0, ceil(total_records / batchSize), batchSize, 0, 0, 0, overwriteOutputLines);
             size_t epoch = 0;
             ElapsedTimer epochTimer;
             float epochTrainingLoss;
