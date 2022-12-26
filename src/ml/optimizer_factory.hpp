@@ -1,15 +1,15 @@
 //
 // Created by Erik Hyrkas on 12/26/2022.
 //
-#ifndef MICROML_OPTIMIZER_FACTORY_HPP
-#define MICROML_OPTIMIZER_FACTORY_HPP
+#ifndef HAPPYML_OPTIMIZER_FACTORY_HPP
+#define HAPPYML_OPTIMIZER_FACTORY_HPP
 
 #include "enums.hpp"
 #include "mbgd_optimizer.hpp"
 
-using namespace microml;
+using namespace happyml;
 
-namespace microml {
+namespace happyml {
 
     shared_ptr<Optimizer> createOptimizer(const OptimizerType optimizerType,
                                           const float learningRate,
@@ -25,4 +25,4 @@ namespace microml {
         return result;
     }
 }
-#endif // MICROML_OPTIMIZER_FACTORY_HPP
+#endif // HAPPYML_OPTIMIZER_FACTORY_HPP

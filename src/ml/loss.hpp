@@ -2,15 +2,15 @@
 // Created by Erik Hyrkas on 11/5/2022.
 //
 
-#ifndef MICROML_LOSS_HPP
-#define MICROML_LOSS_HPP
+#ifndef HAPPYML_LOSS_HPP
+#define HAPPYML_LOSS_HPP
 
 #include "../types/tensor.hpp"
 #include "../util/basic_profiler.hpp"
 
 using namespace std;
 
-namespace microml {
+namespace happyml {
 
     // also known as the "cost" function
     class LossFunction {
@@ -109,4 +109,4 @@ namespace microml {
         return lossFunction;
     }
 }
-#endif //MICROML_LOSS_HPP
+#endif //HAPPYML_LOSS_HPP

@@ -7,8 +7,8 @@ There should be two files in the archive you download:
 * mnist_test.csv
 
 I moved those files to the data folder:
-* microml\data\mnist_train.csv
-* microml\data\mnist_test.csv
+* happyml\data\mnist_train.csv
+* happyml\data\mnist_test.csv
 
 # About The Data
 The csvs have the header:

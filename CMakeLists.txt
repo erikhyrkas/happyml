@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.23)
-project(microml)
+project(happyml)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(microml src/main.cpp)
+add_executable(happyml src/main.cpp)
 
 add_executable(example_xor_model_tanh src/example/example_xor_model_tanh.cpp)
 

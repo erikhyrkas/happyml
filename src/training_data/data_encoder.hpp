@@ -2,8 +2,8 @@
 // Created by Erik Hyrkas on 11/27/2022.
 //
 
-#ifndef MICROML_DATA_ENCODER_HPP
-#define MICROML_DATA_ENCODER_HPP
+#ifndef HAPPYML_DATA_ENCODER_HPP
+#define HAPPYML_DATA_ENCODER_HPP
 
 #include <string>
 #include <charconv>
@@ -16,7 +16,7 @@
 
 using namespace std;
 
-namespace microml {
+namespace happyml {
 
     string stringTrim(string text) {
         // we intentionally copy the string so we can trim it
@@ -135,4 +135,4 @@ namespace microml {
 
 
 }
-#endif //MICROML_DATA_ENCODER_HPP
+#endif //HAPPYML_DATA_ENCODER_HPP

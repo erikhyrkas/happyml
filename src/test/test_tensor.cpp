@@ -13,7 +13,7 @@
 // Super slow on my machine, but needed to test everything. Probably not useful for day-to-day unit tests.
 //#define FULL_TENSOR_TESTS
 
-using namespace microml;
+using namespace happyml;
 using namespace std;
 
 void productTest() {

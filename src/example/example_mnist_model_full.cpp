@@ -5,8 +5,8 @@
 #include "../ml/model.hpp"
 
 using namespace std;
-using namespace microml;
-using namespace micromldsl;
+using namespace happyml;
+using namespace happymldsl;
 
 int main() {
     try {
@@ -59,7 +59,7 @@ int main() {
         auto nextRecord = testMnistDataSource->nextRecord();
         while(nextRecord && limit > 0) {
             auto prediction = maxIndex(neuralNetwork->predictOne(nextRecord->getFirstGiven()));
-            cout << "mnist truth: " << maxIndex(nextRecord->getFirstExpected()) << " microml prediction: " << prediction << endl;
+            cout << "mnist truth: " << maxIndex(nextRecord->getFirstExpected()) << " happyml prediction: " << prediction << endl;
             nextRecord = testMnistDataSource->nextRecord();
             limit--;
         }

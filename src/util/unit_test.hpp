@@ -2,8 +2,8 @@
 // Created by Erik Hyrkas on 10/25/2022.
 //
 
-#ifndef MICROML_UNIT_TEST_HPP
-#define MICROML_UNIT_TEST_HPP
+#ifndef HAPPYML_UNIT_TEST_HPP
+#define HAPPYML_UNIT_TEST_HPP
 
 #include <iostream>
 
@@ -45,4 +45,4 @@
                           << std::endl
 
 
-#endif //MICROML_UNIT_TEST_HPP
+#endif //HAPPYML_UNIT_TEST_HPP

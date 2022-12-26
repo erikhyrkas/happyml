@@ -8,7 +8,7 @@
 #include "../util/unit_test.hpp"
 
 using namespace std;
-using namespace microml;
+using namespace happyml;
 
 void readUnitTestData() {
     auto lineReader = make_shared<TextLineFileReader>("..\\test_data\\unit_test_1.csv");

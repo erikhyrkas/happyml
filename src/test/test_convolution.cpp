@@ -5,8 +5,8 @@
 #include "../util/unit_test.hpp"
 #include "../ml/model.hpp"
 
-using namespace micromldsl;
-using namespace microml;
+using namespace happymldsl;
+using namespace happyml;
 using namespace std;
 
 

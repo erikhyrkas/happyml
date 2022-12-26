@@ -2,8 +2,8 @@
 // Created by Erik Hyrkas on 11/24/2022.
 //
 
-#ifndef MICROML_MBGD_OPTIMIZER_HPP
-#define MICROML_MBGD_OPTIMIZER_HPP
+#ifndef HAPPYML_MBGD_OPTIMIZER_HPP
+#define HAPPYML_MBGD_OPTIMIZER_HPP
 
 #include "optimizer.hpp"
 #include "../util/tensor_utils.hpp"
@@ -20,7 +20,7 @@ using namespace std;
 // It isn't as popular as Adam, when it comes to optimizers, since it is slow at finding an optimal answer, but
 // I've read that it is better at "generalization", which is finding a solution that works for many inputs.
 //
-// I'm only including it in microml as a starting point to prove everything works, and since it is so simple compared to
+// I'm only including it in happyml as a starting point to prove everything works, and since it is so simple compared to
 // Adam, it lets me test the rest of the code with less fear that I've made a mistake in the optimizer itself.
 //
 // If you wanted to visualize a tensor, you might think of it as a force pushing in a direction.
@@ -31,7 +31,7 @@ using namespace std;
 // Stochastic means random.
 // So, Stochastic Gradient Descent is using training data in a random order to find the best set of weights to make predictions (inferences)
 // given future input data.
-namespace microml {
+namespace happyml {
     struct MBGDLearningState {
         float learningRate;
         float biasLearningRate;
@@ -397,4 +397,4 @@ namespace microml {
         shared_ptr<MBGDLearningState> mbgdLearningState;
     };
 }
-#endif //MICROML_MBGD_OPTIMIZER_HPP
+#endif //HAPPYML_MBGD_OPTIMIZER_HPP

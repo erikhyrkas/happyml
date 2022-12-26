@@ -2,8 +2,8 @@
 // Created by erikh on 12/18/2022.
 //
 
-#ifndef MICROML_FILE_WRITER_HPP
-#define MICROML_FILE_WRITER_HPP
+#ifndef HAPPYML_FILE_WRITER_HPP
+#define HAPPYML_FILE_WRITER_HPP
 
 #include <fstream>
 #include <string>
@@ -12,7 +12,7 @@
 
 using namespace std;
 
-namespace microml {
+namespace happyml {
     class TextLineFileWriter {
     public:
         explicit TextLineFileWriter(const string &path) {
@@ -71,4 +71,4 @@ namespace microml {
         char delimiter;
     };
 }
-#endif //MICROML_FILE_WRITER_HPP
+#endif //HAPPYML_FILE_WRITER_HPP

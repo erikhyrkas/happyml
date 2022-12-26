@@ -2,14 +2,14 @@
 // Created by Erik Hyrkas on 11/26/2022.
 //
 
-#ifndef MICROML_NEURAL_NETWORK_FUNCTION_HPP
-#define MICROML_NEURAL_NETWORK_FUNCTION_HPP
+#ifndef HAPPYML_NEURAL_NETWORK_FUNCTION_HPP
+#define HAPPYML_NEURAL_NETWORK_FUNCTION_HPP
 
 #include "activation.hpp"
 #include "../util/tensor_utils.hpp"
 #include "../util/basic_profiler.hpp"
 
-namespace microml {
+namespace happyml {
     class NeuralNetworkFunction {
     public:
         // TODO: Can we switch the return types to unique pointers? would it matter?
@@ -99,4 +99,4 @@ namespace microml {
         size_t originalCols{};
     };
 }
-#endif //MICROML_NEURAL_NETWORK_FUNCTION_HPP
+#endif //HAPPYML_NEURAL_NETWORK_FUNCTION_HPP

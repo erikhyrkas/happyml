@@ -2,8 +2,8 @@
 // Created by Erik Hyrkas on 12/9/2022.
 //
 
-#ifndef MICROML_TENSOR_UTILS_HPP
-#define MICROML_TENSOR_UTILS_HPP
+#ifndef HAPPYML_TENSOR_UTILS_HPP
+#define HAPPYML_TENSOR_UTILS_HPP
 
 #include "../types/half_float.hpp"
 #include "../types/quarter_float.hpp"
@@ -20,7 +20,7 @@
 
 using namespace std;
 
-namespace microml {
+namespace happyml {
 
     shared_ptr<PixelTensor> pixelTensor(const vector<vector<vector<float>>> &t) {
         return make_shared<PixelTensor>(t);
@@ -115,4 +115,4 @@ namespace microml {
     }
 }
 
-#endif //MICROML_TENSOR_UTILS_HPP
+#endif //HAPPYML_TENSOR_UTILS_HPP

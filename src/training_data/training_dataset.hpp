@@ -2,8 +2,8 @@
 // Created by Erik Hyrkas on 11/2/2022.
 //
 
-#ifndef MICROML_TRAINING_DATASET_HPP
-#define MICROML_TRAINING_DATASET_HPP
+#ifndef HAPPYML_TRAINING_DATASET_HPP
+#define HAPPYML_TRAINING_DATASET_HPP
 
 #include <cstdint>
 #include <iostream>
@@ -16,7 +16,7 @@
 #include "data_encoder.hpp"
 #include "../util/file_reader.hpp"
 
-namespace microml {
+namespace happyml {
 
     class TrainingDataSet {
     public:
@@ -331,4 +331,4 @@ namespace microml {
     };
 }
 
-#endif //MICROML_TRAINING_DATASET_HPP
+#endif //HAPPYML_TRAINING_DATASET_HPP

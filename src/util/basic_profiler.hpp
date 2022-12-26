@@ -2,8 +2,8 @@
 // Created by Erik Hyrkas on 12/2/2022.
 //
 
-#ifndef MICROML_BASIC_PROFILER_HPP
-#define MICROML_BASIC_PROFILER_HPP
+#ifndef HAPPYML_BASIC_PROFILER_HPP
+#define HAPPYML_BASIC_PROFILER_HPP
 #include <chrono>
 #include <iostream>
 #include <map>
@@ -11,7 +11,7 @@
 
 using namespace std;
 
-namespace microml {
+namespace happyml {
     class ProfileBlock {
     public:
         ProfileBlock(const char *file, const string &func, const int line) {
@@ -51,4 +51,4 @@ namespace microml {
 #define PROFILE_BLOCK(x) ((void)0)
 #endif
 }
-#endif //MICROML_BASIC_PROFILER_HPP
+#endif //HAPPYML_BASIC_PROFILER_HPP

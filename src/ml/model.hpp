@@ -2,8 +2,8 @@
 // Created by Erik Hyrkas on 11/2/2022.
 //
 
-#ifndef MICROML_MODEL_HPP
-#define MICROML_MODEL_HPP
+#ifndef HAPPYML_MODEL_HPP
+#define HAPPYML_MODEL_HPP
 
 #include <iostream>
 #include <chrono>
@@ -12,14 +12,14 @@
 #include "neural_network.hpp"
 #include "../training_data/training_dataset.hpp"
 
-using namespace microml;
+using namespace happyml;
 using namespace std;
 
-namespace micromldsl {
+namespace happymldsl {
 
-    class MicromlDSL : public enable_shared_from_this<MicromlDSL> {
+    class HappymlDSL : public enable_shared_from_this<HappymlDSL> {
     public:
-        explicit MicromlDSL(OptimizerType optimizerType, const string &modelName="unnamed", const string &repoRootPath="repo") {
+        explicit HappymlDSL(OptimizerType optimizerType, const string &modelName="unnamed", const string &repoRootPath="repo") {
             this->optimizerType = optimizerType;
             this->modelName = modelName;
             if(!std::all_of(modelName.begin(), modelName.end(),
@@ -39,22 +39,22 @@ namespace micromldsl {
             this->vertexUniqueSequenceCounter = 0;
         }
 
-        shared_ptr<MicromlDSL> setBiasLearningRate(float biasLearningRateValue) {
+        shared_ptr<HappymlDSL> setBiasLearningRate(float biasLearningRateValue) {
             this->biasLearningRate = biasLearningRateValue;
             return shared_from_this();
         }
 
-        shared_ptr<MicromlDSL> setLearningRate(float learningRateValue) {
+        shared_ptr<HappymlDSL> setLearningRate(float learningRateValue) {
             this->learningRate = learningRateValue;
             return shared_from_this();
         }
 
-        shared_ptr<MicromlDSL> setLossFunction(LossType lossTypeValue) {
+        shared_ptr<HappymlDSL> setLossFunction(LossType lossTypeValue) {
             this->lossType = lossTypeValue;
             return shared_from_this();
         }
 
-        shared_ptr<MicromlDSL> setModelName(const string &modelNameValue) {
+        shared_ptr<HappymlDSL> setModelName(const string &modelNameValue) {
             this->modelName = modelNameValue;
             if(!std::all_of(modelName.begin(), modelName.end(),
                             [](int c) { return std::isalnum(c) || c == '_';})) {
@@ -63,7 +63,7 @@ namespace micromldsl {
             return shared_from_this();
         }
 
-        shared_ptr<MicromlDSL> setModelRepo(const string &modelRepoPath) {
+        shared_ptr<HappymlDSL> setModelRepo(const string &modelRepoPath) {
             this->repoRootPath = modelRepoPath;
             return shared_from_this();
         }
@@ -97,7 +97,7 @@ namespace micromldsl {
         class NNVertex : public enable_shared_from_this<NNVertex> {
         public:
             // used for non-convolutional layers
-            NNVertex(const weak_ptr<MicromlDSL> &parent, NodeType nodeType, const vector<size_t> &input_shape,
+            NNVertex(const weak_ptr<HappymlDSL> &parent, NodeType nodeType, const vector<size_t> &input_shape,
                      const vector<size_t> &output_shape, bool for_output,
                      ActivationType activation_type, uint32_t vertexUniqueId) {
                 this->parent = parent;
@@ -116,7 +116,7 @@ namespace micromldsl {
             }
 
             // used for convolutional layers
-            NNVertex(const weak_ptr<MicromlDSL> &parent, NodeType nodeType, const vector<size_t> &input_shape,
+            NNVertex(const weak_ptr<HappymlDSL> &parent, NodeType nodeType, const vector<size_t> &input_shape,
                      const size_t filters, const size_t kernel_size, bool for_output,
                      ActivationType activation_type, uint32_t vertexUniqueId) {
                 this->parent = parent;
@@ -315,7 +315,7 @@ namespace micromldsl {
             }
 
         private:
-            weak_ptr<MicromlDSL> parent;
+            weak_ptr<HappymlDSL> parent;
             vector<shared_ptr<NNEdge>> edges;
             NodeType node_type;
             vector<size_t> input_shape;
@@ -396,22 +396,22 @@ namespace micromldsl {
         uint32_t vertexUniqueSequenceCounter;
     };
 
-    shared_ptr<MicromlDSL> neuralNetworkBuilder(OptimizerType optimizerType) {
-        auto result = make_shared<MicromlDSL>(optimizerType);
+    shared_ptr<HappymlDSL> neuralNetworkBuilder(OptimizerType optimizerType) {
+        auto result = make_shared<HappymlDSL>(optimizerType);
         return result;
     }
 
-    shared_ptr<MicromlDSL> neuralNetworkBuilder() {
+    shared_ptr<HappymlDSL> neuralNetworkBuilder() {
         return neuralNetworkBuilder(microbatch); // TODO: change to adam. just testing microbatch right now.
     }
 
     shared_ptr<NeuralNetworkForTraining> loadNeuralNetworkForTraining(const string &repoRootPath, const string &modelName) {
         string modelPath = repoRootPath + "/" + modelName;
-        string configPath = modelPath + "/configuration.microml";
+        string configPath = modelPath + "/configuration.happyml";
         auto configReader = make_shared<DelimitedTextFileReader>(configPath, ':');
         auto optimizerRecord = configReader->nextRecord();
         if(optimizerRecord[0] != "optimizer") {
-            throw exception("Invalid configuration.microml missing optimizer field.");
+            throw exception("Invalid configuration.happyml missing optimizer field.");
         }
         const string optimizerTypeString = optimizerRecord[1];
         const OptimizerType optimizerType = stringToOptimizerType(optimizerTypeString);
@@ -427,4 +427,4 @@ namespace micromldsl {
     }
 }
 
-#endif //MICROML_MODEL_HPP
+#endif //HAPPYML_MODEL_HPP

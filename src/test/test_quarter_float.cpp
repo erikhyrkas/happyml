@@ -6,7 +6,7 @@
 #include "../types/quarter_float.hpp"
 #include "../util/unit_test.hpp"
 
-using namespace microml;
+using namespace happyml;
 using namespace std;
 
 void printConversion(int bias, float i, bool brief) {

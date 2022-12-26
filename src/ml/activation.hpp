@@ -2,8 +2,8 @@
 // Created by Erik Hyrkas on 10/25/2022.
 //
 
-#ifndef MICROML_ACTIVATION_HPP
-#define MICROML_ACTIVATION_HPP
+#ifndef HAPPYML_ACTIVATION_HPP
+#define HAPPYML_ACTIVATION_HPP
 
 #include <iostream>
 #include "../types/quarter_float.hpp"
@@ -26,7 +26,7 @@
 //   https://towardsdatascience.com/activation-functions-neural-networks-1cbd9f8d91d6
 // * You may also find this useful:
 //   https://en.wikipedia.org/wiki/Activation_function
-namespace microml {
+namespace happyml {
 
     class ActivationFunction {
     public:
@@ -237,4 +237,4 @@ namespace microml {
         }
     };
 }
-#endif //MICROML_ACTIVATION_HPP
+#endif //HAPPYML_ACTIVATION_HPP

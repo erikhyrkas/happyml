@@ -8,7 +8,7 @@
 #include "../util/unit_test.hpp"
 #include "../util/timers.hpp"
 
-using namespace microml;
+using namespace happyml;
 using namespace std;
 
 void testPortableBytes16() {

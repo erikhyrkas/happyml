@@ -2,8 +2,8 @@
 // Created by Erik Hyrkas on 12/19/2022.
 //
 
-#ifndef MICROML_PORTABLE_BYTES_HPP
-#define MICROML_PORTABLE_BYTES_HPP
+#ifndef HAPPYML_PORTABLE_BYTES_HPP
+#define HAPPYML_PORTABLE_BYTES_HPP
 #include <iostream>
 
 // windows uses little endian order, but big endian is more common for other operating systems.
@@ -83,4 +83,4 @@ uint16_t portableBytes(uint16_t bytes) {
 
 #endif
 
-#endif //MICROML_PORTABLE_BYTES_HPP
+#endif //HAPPYML_PORTABLE_BYTES_HPP

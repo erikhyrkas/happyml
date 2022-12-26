@@ -131,8 +131,8 @@
 // at a model level, and we don't need to account for it everywhere. It just makes things more complicated
 // without making them truly better.
 
-#ifndef MICROML_QUARTER_FLOAT_HPP
-#define MICROML_QUARTER_FLOAT_HPP
+#ifndef HAPPYML_QUARTER_FLOAT_HPP
+#define HAPPYML_QUARTER_FLOAT_HPP
 
 //#include <array>
 #include <cstdint>
@@ -154,7 +154,7 @@
 
 using namespace std;
 
-namespace microml {
+namespace happyml {
 
     typedef unsigned char quarter;
 
@@ -303,4 +303,4 @@ namespace microml {
         return (abs_diff <= std::numeric_limits<T>::epsilon() * 1000.0) || (abs_diff < std::numeric_limits<T>::min());
     }
 }
-#endif //MICROML_QUARTER_FLOAT_HPP
+#endif //HAPPYML_QUARTER_FLOAT_HPP

@@ -2,8 +2,8 @@
 // Created by Erik Hyrkas on 10/30/2022.
 //
 
-#ifndef MICROML_TENSOR_STATS_HPP
-#define MICROML_TENSOR_STATS_HPP
+#ifndef HAPPYML_TENSOR_STATS_HPP
+#define HAPPYML_TENSOR_STATS_HPP
 
 #include <execution>
 #include <future>
@@ -13,7 +13,7 @@
 #include <iomanip>
 #include "../types/tensor.hpp"
 
-namespace microml {
+namespace happyml {
 
 #define FIT_BIAS_FOR_100 0
 #define FIT_BIAS_FOR_80 1
@@ -553,4 +553,4 @@ namespace microml {
         }
     };
 }
-#endif //MICROML_TENSOR_STATS_HPP
+#endif //HAPPYML_TENSOR_STATS_HPP

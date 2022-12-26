@@ -7,7 +7,7 @@ Look at the [clion_settings.png](clion_settings.png) for an example on configuri
 I didn't include the idea project settings files, so you'll have to make a project from source, but everything should work
 based on the [CMakeLists.txt](CMakeLists.txt).
 
-# microml
+# happyml
 
 Why did you build this? You shouldn't have. 
 
@@ -27,7 +27,7 @@ Here are the three ways this project aims to democratize the power of ML:
 
 The first goal reduces the expense of building models. Right now, the cutting edge models of the world can only be built on very expensive hardware. There's no chance this framework will ever be as fast as what can be done by throwing money at the problem, but making large models possible for less money, even if they are slower to run is a huge win for democratizing the power of ML. There might come a time where the price of hardware goes down dramatically and this goal will seem ridiculous. I'm counting on the complexity of ML to keep pace with the advancements in hardware.
 
-The second goal is about providing an interface to ML that lets software developers communicate their end goal in a way they are familiar with and then building the model for them. This is similar to how SQL works with databases. You specify what you want, not how you want it retrieved. You leave it to the database to calculate the optimal path to get that data. I think ML needs to get to this point so that it usable by a larger audience who might not be mathematicians and data scientists. There are already tools available and are growing to make ML available through simple web interfaces, but these tools aren't for software engineers, and they aren't free. I see a future where microml may be something directly used by code or deployed as a webservice and accessed through a REST API.
+The second goal is about providing an interface to ML that lets software developers communicate their end goal in a way they are familiar with and then building the model for them. This is similar to how SQL works with databases. You specify what you want, not how you want it retrieved. You leave it to the database to calculate the optimal path to get that data. I think ML needs to get to this point so that it usable by a larger audience who might not be mathematicians and data scientists. There are already tools available and are growing to make ML available through simple web interfaces, but these tools aren't for software engineers, and they aren't free. I see a future where happyml may be something directly used by code or deployed as a webservice and accessed through a REST API.
 
 The last goal is an area that there is already a huge push for, which is creating means for people to learn the math and science of ML. I want to support this goal, but at the same time, this is already the area that is the strongest.
 
@@ -78,11 +78,11 @@ What about SageMaker or Databricks or Dataiku or xyz? If you have the money and 
 
 Why are you still here? The above are clearly the very best options available. Get out of here! Build! Have fun! Learn!
 
-No? You still want to see microml? You are that one mythical person that read this far?
+No? You still want to see happyml? You are that one mythical person that read this far?
 
 I document pretty much everything that I learn as I write the code. There might be gaps where it didn't occur to me to document them, or maybe I was in the flow and didn't take time to explain what I was doing. I'll eventually try to circle back and fix these things.
 
-My goal is for microml to run on commodity hardware for both making predictions and for training. I want it to work for the average person that doesn't own tens of thousands or millions of dollars in hardware, but still wants to experiment with training their own model, or taking what I've built and expanding on it to design their own algorithms. For a lot of people it will be hard to grasp that the goal is to make this possible at all rather than to make it fast. There have been advances in quantization (the process of using less memory to achieve similar results through approximations) for using models to make predictions, but not so much for training new models.
+My goal is for happyml to run on commodity hardware for both making predictions and for training. I want it to work for the average person that doesn't own tens of thousands or millions of dollars in hardware, but still wants to experiment with training their own model, or taking what I've built and expanding on it to design their own algorithms. For a lot of people it will be hard to grasp that the goal is to make this possible at all rather than to make it fast. There have been advances in quantization (the process of using less memory to achieve similar results through approximations) for using models to make predictions, but not so much for training new models.
 
 I'm not delusional. What I've built won't be as flexible or as fast as frameworks made by Google or Meta, and there's a very high chance that I will make mistakes along the way that render this code useless. However, this code is meant to run huge models on very small amounts of hardware. Not necessarily faster, but to possibly do it. And let's be real: I doubt anybody besides me will ever use this code.
 
@@ -172,7 +172,7 @@ Neural Network Node:
 * Trained using a Data Source, which configures the input shape
 * Produces one or more outputs
 
-MicromlDSL:
+HappymlDSL:
 * factory that builds a model with easy-ish to understand syntax.
 * Simple configuration to cover core decision points -- like input and output shape, number of neurons or layers, etc.
 

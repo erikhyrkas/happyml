@@ -2,8 +2,8 @@
 // Created by Erik Hyrkas on 12/9/2022.
 //
 
-#ifndef MICROML_TENSOR_VIEWS_HPP
-#define MICROML_TENSOR_VIEWS_HPP
+#ifndef HAPPYML_TENSOR_VIEWS_HPP
+#define HAPPYML_TENSOR_VIEWS_HPP
 
 #include <execution>
 #include <future>
@@ -16,7 +16,7 @@
 
 using namespace std;
 
-namespace microml {
+namespace happyml {
 
 // Adds a constant to every value of a matrix through a view
     class TensorAddScalarView : public BaseTensorUnaryOperatorView {
@@ -811,4 +811,4 @@ namespace microml {
         }
     };
 }
-#endif //MICROML_TENSOR_VIEWS_HPP
+#endif //HAPPYML_TENSOR_VIEWS_HPP

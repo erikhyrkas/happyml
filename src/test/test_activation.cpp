@@ -5,8 +5,8 @@
 #include <iostream>
 #include "../ml/model.hpp"
 
-using namespace micromldsl;
-using namespace microml;
+using namespace happymldsl;
+using namespace happyml;
 using namespace std;
 
 void testTanh() {

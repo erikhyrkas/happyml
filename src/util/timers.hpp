@@ -2,15 +2,15 @@
 // Created by Erik Hyrkas on 12/9/2022.
 //
 
-#ifndef MICROML_TIMERS_HPP
-#define MICROML_TIMERS_HPP
+#ifndef HAPPYML_TIMERS_HPP
+#define HAPPYML_TIMERS_HPP
 
 #include <iostream>
 #include <chrono>
 
 using namespace std;
 
-namespace microml {
+namespace happyml {
 
     class ElapsedTimer {
     public:
@@ -125,4 +125,4 @@ namespace microml {
     };
 
 }
-#endif //MICROML_TIMERS_HPP
+#endif //HAPPYML_TIMERS_HPP

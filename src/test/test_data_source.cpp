@@ -5,7 +5,7 @@
 #include "../training_data/training_dataset.hpp"
 #include "../training_data/generated_datasets.hpp"
 
-using namespace microml;
+using namespace happyml;
 using namespace std;
 
 void testAdditionSource() {

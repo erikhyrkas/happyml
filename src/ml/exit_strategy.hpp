@@ -1,8 +1,8 @@
 //
 // Created by Erik Hyrkas on 12/26/2022.
 //
-#ifndef MICROML_EXIT_STRATEGY_HPP
-#define MICROML_EXIT_STRATEGY_HPP
+#ifndef HAPPYML_EXIT_STRATEGY_HPP
+#define HAPPYML_EXIT_STRATEGY_HPP
 
 #include <iostream>
 
@@ -19,7 +19,7 @@
 
 using namespace std;
 
-namespace microml {
+namespace happyml {
 
     class ExitStrategy {
     public:
@@ -79,4 +79,4 @@ namespace microml {
         size_t minEpochs;
     };
 }
-#endif // MICROML_EXIT_STRATEGY_HPP
+#endif // HAPPYML_EXIT_STRATEGY_HPP

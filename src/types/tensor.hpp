@@ -2,8 +2,8 @@
 // Created by Erik Hyrkas on 10/25/2022.
 //
 
-#ifndef MICROML_TENSOR_HPP
-#define MICROML_TENSOR_HPP
+#ifndef HAPPYML_TENSOR_HPP
+#define HAPPYML_TENSOR_HPP
 
 #include <execution>
 #include <future>
@@ -103,7 +103,7 @@
  */
 using namespace std;
 
-namespace microml {
+namespace happyml {
 
     class BaseTensor : public enable_shared_from_this<BaseTensor> {
     public:
@@ -761,4 +761,4 @@ namespace microml {
 
 
 }
-#endif //MICROML_TENSOR_HPP
+#endif //HAPPYML_TENSOR_HPP

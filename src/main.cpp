@@ -2,7 +2,7 @@
 #include "types/quarter_float.hpp"
 
 
-using namespace microml;
+using namespace happyml;
 
 int main() {
     // TODO: read from input stream (this can be used to handle API requests or files or whatever later.)

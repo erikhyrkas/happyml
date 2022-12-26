@@ -2,8 +2,8 @@
 // Created by Erik Hyrkas on 11/5/2022.
 //
 
-#ifndef MICROML_OPTIMIZER_HPP
-#define MICROML_OPTIMIZER_HPP
+#ifndef HAPPYML_OPTIMIZER_HPP
+#define HAPPYML_OPTIMIZER_HPP
 
 #include "neural_network_function.hpp"
 
@@ -24,7 +24,7 @@
 // making a prediction to be able to later learn, this can be wasteful if you are never going to use that extra
 // state.
 
-namespace microml {
+namespace happyml {
 
     class Optimizer {
     public:
@@ -37,4 +37,4 @@ namespace microml {
         virtual shared_ptr<NeuralNetworkFunction> createBias(vector<size_t> input_shape, vector<size_t> output_shape, uint8_t bits) = 0;
     };
 }
-#endif //MICROML_OPTIMIZER_HPP
+#endif //HAPPYML_OPTIMIZER_HPP

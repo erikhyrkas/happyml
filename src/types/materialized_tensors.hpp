@@ -2,8 +2,8 @@
 // Created by Erik Hyrkas on 12/9/2022.
 //
 
-#ifndef MICROML_MATERIALIZED_TENSORS_HPP
-#define MICROML_MATERIALIZED_TENSORS_HPP
+#ifndef HAPPYML_MATERIALIZED_TENSORS_HPP
+#define HAPPYML_MATERIALIZED_TENSORS_HPP
 #include <execution>
 #include <future>
 #include <iterator>
@@ -27,7 +27,7 @@ using namespace std;
 //  functions that do operations on the vectors. These functions wouldn't be part of a specific class, instead
 //  they would just be standard functions that multiple classes could use. There would be some amount of repetition
 //  but far less than there is today.
-namespace microml {
+namespace happyml {
     // TODO: create a "solid-state" tensor, where instead of being in memory, use disk and mem-map it as needed.
     //  My c++ is rusty, so I need to dig into how this is done at some point. I know it is possible, but there
     //  may be crazy OS-specific requirements or other such nonsense to work through that isn't important to tackle
@@ -632,4 +632,4 @@ namespace microml {
         }
     };
 }
-#endif //MICROML_MATERIALIZED_TENSORS_HPP
+#endif //HAPPYML_MATERIALIZED_TENSORS_HPP

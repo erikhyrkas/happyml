@@ -2,12 +2,12 @@
 // Created by Erik Hyrkas on 12/1/2022.
 //
 
-#ifndef MICROML_HALF_HPP
-#define MICROML_HALF_HPP
+#ifndef HAPPYML_HALF_HPP
+#define HAPPYML_HALF_HPP
 
 #include <cstdint>
 
-namespace microml {
+namespace happyml {
 
     typedef uint16_t half;
 
@@ -24,4 +24,4 @@ namespace microml {
         return decoded_value;
     }
 }
-#endif //MICROML_HALF_HPP
+#endif //HAPPYML_HALF_HPP

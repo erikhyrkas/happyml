@@ -6,8 +6,8 @@
 #include "../ml/model.hpp"
 
 using namespace std;
-using namespace microml;
-using namespace micromldsl;
+using namespace happyml;
+using namespace happymldsl;
 
 int main() {
     try {

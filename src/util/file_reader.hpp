@@ -2,8 +2,8 @@
 // Created by Erik Hyrkas on 11/27/2022.
 //
 
-#ifndef MICROML_FILE_READER_HPP
-#define MICROML_FILE_READER_HPP
+#ifndef HAPPYML_FILE_READER_HPP
+#define HAPPYML_FILE_READER_HPP
 
 #include <fstream>
 #include <string>
@@ -12,7 +12,7 @@
 
 using namespace std;
 
-namespace microml {
+namespace happyml {
     class TextLineFileReader {
     public:
         explicit TextLineFileReader(const string &path) {
@@ -100,4 +100,4 @@ namespace microml {
         char delimiter;
     };
 }
-#endif //MICROML_FILE_READER_HPP
+#endif //HAPPYML_FILE_READER_HPP

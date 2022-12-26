@@ -1,14 +1,14 @@
 //
 // Created by Erik Hyrkas on 12/26/2022.
 //
-#ifndef MICROML_ENUMS_HPP
-#define MICROML_ENUMS_HPP
+#ifndef HAPPYML_ENUMS_HPP
+#define HAPPYML_ENUMS_HPP
 
 #include <iostream>
 
 using namespace std;
 
-namespace microml {
+namespace happyml {
 
     enum OptimizerType { microbatch, adam };
 
@@ -70,4 +70,4 @@ namespace microml {
     }
 }
 
-#endif // MICROML_ENUMS_HPP
+#endif // HAPPYML_ENUMS_HPP

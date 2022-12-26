@@ -2,8 +2,8 @@
 // Created by Erik Hyrkas on 11/23/2022.
 //
 
-#ifndef MICROML_NEURAL_NETWORK_HPP
-#define MICROML_NEURAL_NETWORK_HPP
+#ifndef HAPPYML_NEURAL_NETWORK_HPP
+#define HAPPYML_NEURAL_NETWORK_HPP
 
 #include <set>
 #include <vector>
@@ -23,9 +23,9 @@
 #include "../training_data/training_dataset.hpp"
 
 using namespace std;
-using namespace microml;
+using namespace happyml;
 
-namespace microml {
+namespace happyml {
 
     // A node is a vertex in a graph
     class NeuralNetworkNode : public enable_shared_from_this<NeuralNetworkNode> {
@@ -338,7 +338,7 @@ namespace microml {
                 }
             }
             filesystem::create_directories(modelPath);
-            string modelProperties = modelPath + "/configuration.microml";
+            string modelProperties = modelPath + "/configuration.happyml";
             auto writer = make_unique<DelimitedTextFileWriter>(modelProperties, ':');
             writer->writeRecord({"optimizer", optimizerTypeToString(optimizerType)});
             stringstream learningRateString;
@@ -595,4 +595,4 @@ namespace microml {
     };
 
 }
-#endif //MICROML_NEURAL_NETWORK_HPP
+#endif //HAPPYML_NEURAL_NETWORK_HPP

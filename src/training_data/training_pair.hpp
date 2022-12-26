@@ -2,15 +2,15 @@
 // Created by Erik Hyrkas on 11/5/2022.
 //
 
-#ifndef MICROML_TRAINING_PAIR_HPP
-#define MICROML_TRAINING_PAIR_HPP
+#ifndef HAPPYML_TRAINING_PAIR_HPP
+#define HAPPYML_TRAINING_PAIR_HPP
 
 #include "../types/tensor.hpp"
 #include "../util/tensor_utils.hpp"
 
 using namespace std;
 
-namespace microml {
+namespace happyml {
 
 // Training data has at least two parts:
 // 1. The input that you are giving the model
@@ -77,4 +77,4 @@ namespace microml {
         vector<shared_ptr<BaseTensor>> expected;
     };
 }
-#endif //MICROML_TRAINING_PAIR_HPP
+#endif //HAPPYML_TRAINING_PAIR_HPP

@@ -2,14 +2,14 @@
 // Created by Erik Hyrkas on 12/9/2022.
 //
 
-#ifndef MICROML_GENERATED_DATASETS_HPP
-#define MICROML_GENERATED_DATASETS_HPP
+#ifndef HAPPYML_GENERATED_DATASETS_HPP
+#define HAPPYML_GENERATED_DATASETS_HPP
 
 #include "../training_data/training_dataset.hpp"
 
 using namespace std;
 
-namespace microml {
+namespace happyml {
 
     class TestAdditionGeneratedDataSource : public TrainingDataSet {
     public:
@@ -93,4 +93,4 @@ namespace microml {
         size_t currentOffset;
     };
 }
-#endif //MICROML_GENERATED_DATASETS_HPP
+#endif //HAPPYML_GENERATED_DATASETS_HPP
