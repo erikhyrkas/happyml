@@ -18,10 +18,10 @@ int main() {
         xorDataSource->addTrainingData(columnVector({1.f, 0.f}), 1.f);
         xorDataSource->addTrainingData(columnVector({1.f, 1.f}), 0.f);
 
-        cout << "Test with relu" << endl;
+        cout << "Test with reluActivation" << endl;
         auto neuralNetwork = neuralNetworkBuilder()
                 ->addInput(xorDataSource->getGivenShape(), 5, NodeType::full, ActivationType::relu)->setBits(8)
-                ->addOutput(xorDataSource->getExpectedShape(), ActivationType::tanh)
+                ->addOutput(xorDataSource->getExpectedShape(), ActivationType::tanhDefault)
                 ->build();
         float loss = neuralNetwork->train(xorDataSource);
 

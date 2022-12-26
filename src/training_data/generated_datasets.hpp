@@ -52,7 +52,7 @@ namespace microml {
             currentOffset = 0;
         }
 
-        // populate a batch vector of vectors, reusing the structure. This is to save the time we'd otherwise use
+        // populate a batch vector of vectors, reusing the structure. This is to saveWithOverwrite the time we'd otherwise use
         // to allocate.
         vector<shared_ptr<TrainingPair>> nextBatch(size_t batch_size) override {
             vector<shared_ptr<TrainingPair>> result;

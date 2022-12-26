@@ -20,7 +20,7 @@ int main() {
 
         cout << "Test with sigmoid" << endl;
         auto neuralNetwork = neuralNetworkBuilder()
-                ->addInput(xorDataSource->getGivenShape(), 5, NodeType::full, ActivationType::tanh)
+                ->addInput(xorDataSource->getGivenShape(), 5, NodeType::full, ActivationType::tanhDefault)
                 ->addOutput(xorDataSource->getExpectedShape(), ActivationType::sigmoid)
                 ->build();
 

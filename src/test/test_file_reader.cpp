@@ -2,10 +2,10 @@
 // Created by Erik Hyrkas on 11/28/2022.
 //
 
+#include <iostream>
 #include "../util/file_reader.hpp"
 #include "../util/file_writer.hpp"
 #include "../util/unit_test.hpp"
-#include <iostream>
 
 using namespace std;
 using namespace microml;

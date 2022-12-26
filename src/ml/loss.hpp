@@ -95,5 +95,18 @@ namespace microml {
 //    };
 //
 ////categorical_crossentropy
+
+
+    shared_ptr<LossFunction> createLoss(LossType lossType) {
+        shared_ptr<LossFunction> lossFunction;
+        switch (lossType) {
+            case LossType::mse:
+                lossFunction = make_shared<MeanSquaredErrorLossFunction>();
+                break;
+            default:
+                lossFunction = make_shared<MeanSquaredErrorLossFunction>();
+        }
+        return lossFunction;
+    }
 }
 #endif //MICROML_LOSS_HPP

@@ -3,9 +3,7 @@
 //
 
 #include <iostream>
-#include "../util/unit_test.hpp"
 #include "../ml/model.hpp"
-#include "../util/tensor_utils.hpp"
 
 using namespace micromldsl;
 using namespace microml;

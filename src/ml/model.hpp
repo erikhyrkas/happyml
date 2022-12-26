@@ -6,48 +6,16 @@
 #define MICROML_MODEL_HPP
 
 #include <iostream>
-#include "../training_data/training_dataset.hpp"
-#include "optimizer.hpp"
-#include "mbgd_optimizer.hpp"
 #include <chrono>
+#include "enums.hpp"
+#include "optimizer_factory.hpp"
+#include "neural_network.hpp"
+#include "../training_data/training_dataset.hpp"
 
 using namespace microml;
 using namespace std;
 
 namespace micromldsl {
-
-    enum OptimizerType {
-        microbatch, adam
-    };
-    enum LossType {
-        mse
-    };
-    enum NodeType {
-        full, convolution2dValid
-    };
-    enum ActivationType {
-        relu, tanh, sigmoid, leaky, softmax, sigmoid_approx, tanh_approx
-    };
-
-    string optimizerTypeToString(OptimizerType optimizerType) {
-        switch(optimizerType) {
-            case microbatch:
-                return "Micro Batch";
-            case adam:
-                return "Adam";
-        }
-        throw exception("Unknown Optimizer Type");
-    }
-
-    OptimizerType stringToOptimizerType(const string &optimizerType) {
-        if(optimizerType == "Micro Batch") {
-            return microbatch;
-        }
-        if(optimizerType == "Adam" ) {
-            return adam;
-        }
-        throw exception("Unknown Optimizer Type");
-    }
 
     class MicromlDSL : public enable_shared_from_this<MicromlDSL> {
     public:
@@ -101,26 +69,14 @@ namespace micromldsl {
         }
 
         shared_ptr<NeuralNetworkForTraining> build() {
-            shared_ptr<LossFunction> lossFunction;
-            switch (lossType) {
-                case LossType::mse:
-                    lossFunction = make_shared<MeanSquaredErrorLossFunction>();
-                    break;
-                default:
-                    lossFunction = make_shared<MeanSquaredErrorLossFunction>();
-            }
-            shared_ptr<Optimizer> optimizer;
-            switch (optimizerType) {
-                case OptimizerType::microbatch:
-                    optimizer = make_shared<SGDOptimizer>(learningRate, biasLearningRate);
-                    break;
-                default:
-                    optimizer = make_shared<SGDOptimizer>(learningRate, biasLearningRate);
-            }
 
-            auto neuralNetwork = make_shared<NeuralNetworkForTraining>(this->modelName, repoRootPath,
-                                                                       optimizerTypeToString(optimizerType),
-                                                                       lossFunction, optimizer);
+
+            auto neuralNetwork = make_shared<NeuralNetworkForTraining>(this->modelName,
+                                                                       repoRootPath,
+                                                                       optimizerType,
+                                                                       learningRate,
+                                                                       biasLearningRate,
+                                                                       lossType);
             for (const auto &head: heads) {
                 neuralNetwork->addHeadNode(head->build_node(neuralNetwork));
             }
@@ -323,7 +279,7 @@ namespace micromldsl {
             shared_ptr<ActivationFunction> createActivationFunction() const {
                 shared_ptr<ActivationFunction> activationFunction;
                 switch (activation_type) {
-                    case tanh:
+                    case tanhDefault:
                         activationFunction = make_shared<TanhActivationFunction>();
                         break;
                     case relu:
@@ -332,10 +288,10 @@ namespace micromldsl {
                     case sigmoid:
                         activationFunction = make_shared<SigmoidActivationFunction>();
                         break;
-                    case sigmoid_approx:
+                    case sigmoidApprox:
                         activationFunction = make_shared<SigmoidApproximationActivationFunction>();
                         break;
-                    case tanh_approx:
+                    case tanhApprox:
                         activationFunction = make_shared<TanhApproximationActivationFunction>();
                         break;
                     case softmax:
@@ -447,6 +403,27 @@ namespace micromldsl {
 
     shared_ptr<MicromlDSL> neuralNetworkBuilder() {
         return neuralNetworkBuilder(microbatch); // TODO: change to adam. just testing microbatch right now.
+    }
+
+    shared_ptr<NeuralNetworkForTraining> loadNeuralNetworkForTraining(const string &repoRootPath, const string &modelName) {
+        string modelPath = repoRootPath + "/" + modelName;
+        string configPath = modelPath + "/configuration.microml";
+        auto configReader = make_shared<DelimitedTextFileReader>(configPath, ':');
+        auto optimizerRecord = configReader->nextRecord();
+        if(optimizerRecord[0] != "optimizer") {
+            throw exception("Invalid configuration.microml missing optimizer field.");
+        }
+        const string optimizerTypeString = optimizerRecord[1];
+        const OptimizerType optimizerType = stringToOptimizerType(optimizerTypeString);
+
+        auto dsl = neuralNetworkBuilder(optimizerType)
+                ->setModelRepo(repoRootPath)
+                ->setModelName(modelName);
+//                ->setLearningRate();
+
+//                ->addInput(xorDataSource->getGivenShape(), 3, NodeType::full, ActivationType::tanhApprox)
+//                ->addOutput(xorDataSource->getExpectedShape(), ActivationType::tanhApprox);
+        return dsl->build();
     }
 }
 

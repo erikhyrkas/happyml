@@ -5,14 +5,13 @@
 #ifndef MICROML_MBGD_OPTIMIZER_HPP
 #define MICROML_MBGD_OPTIMIZER_HPP
 
-#include "neural_network.hpp"
 #include "optimizer.hpp"
 #include "../util/tensor_utils.hpp"
 
 using namespace std;
 
 
-// With gradient descent, a single batch is called Stocastich Gradient Descent.
+// With gradient descent, a single batch is called Stochastic Gradient Descent.
 // A batch with all records is called Batch Gradient Descent. And a batch anywhere
 // in between is called Mini-Batch Gradient Descent. Mini-Batch is fastest, handles
 // large datasets, and most commonly used of this optimization approach.
@@ -51,7 +50,7 @@ namespace microml {
             this->outputShape = {inputShape[0] - kernelSize + 1, inputShape[1] - kernelSize + 1, filters};
             this->bits = bits;
             this->weights = {};
-            for(size_t next_weight_layer = 0; next_weight_layer<filters; next_weight_layer++) {
+            for(size_t next_weight_layer = 0; next_weight_layer < filters; next_weight_layer++) {
                 this->weights.push_back(make_shared<TensorFromRandom>(kernelSize, kernelSize, inputShape[2], -0.5f, 0.5f, 42));
             }
             this->learningState = learningState;
@@ -365,37 +364,37 @@ namespace microml {
         shared_ptr<MBGDLearningState> learningState;
     };
 
-    class SGDOptimizer : public Optimizer {
+    class MBGDOptimizer : public Optimizer {
     public:
-        explicit SGDOptimizer(float learning_rate) {
-            this->sgdLearningState = make_shared<MBGDLearningState>();
-            this->sgdLearningState->learningRate = learning_rate;
-            this->sgdLearningState->biasLearningRate = learning_rate * 0.1f;
+        explicit MBGDOptimizer(float learning_rate) {
+            this->mbgdLearningState = make_shared<MBGDLearningState>();
+            this->mbgdLearningState->learningRate = learning_rate;
+            this->mbgdLearningState->biasLearningRate = learning_rate * 0.1f;
         }
-        explicit SGDOptimizer(float learning_rate, float bias_learning_rate) {
-            this->sgdLearningState = make_shared<MBGDLearningState>();
-            this->sgdLearningState->learningRate = learning_rate;
-            this->sgdLearningState->biasLearningRate = bias_learning_rate;
+        explicit MBGDOptimizer(float learning_rate, float bias_learning_rate) {
+            this->mbgdLearningState = make_shared<MBGDLearningState>();
+            this->mbgdLearningState->learningRate = learning_rate;
+            this->mbgdLearningState->biasLearningRate = bias_learning_rate;
         }
 
         shared_ptr<NeuralNetworkFunction> createFullyConnectedNeurons(size_t input_size,
                                                                       size_t output_size,
                                                                       uint8_t bits) override {
-            return make_shared<MBGDFullyConnectedNeurons>(input_size, output_size, bits, sgdLearningState);
+            return make_shared<MBGDFullyConnectedNeurons>(input_size, output_size, bits, mbgdLearningState);
         }
 
         shared_ptr<NeuralNetworkFunction> createBias(vector<size_t> input_shape,
                                                      vector<size_t> output_shape, uint8_t bits) override {
-            return make_shared<MBGDBias>(input_shape, output_shape, bits, sgdLearningState);
+            return make_shared<MBGDBias>(input_shape, output_shape, bits, mbgdLearningState);
         }
         shared_ptr<NeuralNetworkFunction> createConvolutional2d(vector<size_t> input_shape,
                                                                 size_t filters, size_t kernel_size,
                                                                 uint8_t bits) override {
-            return make_shared<MBGDConvolution2dValidFunction>(input_shape, filters, kernel_size, bits, sgdLearningState);
+            return make_shared<MBGDConvolution2dValidFunction>(input_shape, filters, kernel_size, bits, mbgdLearningState);
         }
 
     private:
-        shared_ptr<MBGDLearningState> sgdLearningState;
+        shared_ptr<MBGDLearningState> mbgdLearningState;
     };
 }
 #endif //MICROML_MBGD_OPTIMIZER_HPP

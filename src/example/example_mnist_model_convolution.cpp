@@ -42,7 +42,7 @@ int main() {
         auto neuralNetwork = neuralNetworkBuilder()
                 ->addInput(mnistDataSource->getGivenShape(), 1, 3, convolution2dValid, ActivationType::relu)->setUseBias(false)
                 ->addNode(100, full, ActivationType::relu)->setUseBias(false)
-                ->addOutput(mnistDataSource->getExpectedShape(), micromldsl::sigmoid_approx)
+                ->addOutput(mnistDataSource->getExpectedShape(), sigmoidApprox)
                 ->build();
         neuralNetwork->useHighPrecisionExitStrategy();
         float loss = neuralNetwork->train(mnistDataSource, testMnistDataSource, 4);

@@ -35,7 +35,7 @@ The last goal is an area that there is already a huge push for, which is creatin
 This project isn't even in a complete alpha stage, yet.
 
 Must-haves for alpha:
-* Need to be able to save and restore state, even if in a simple format.
+* Need to be able to saveWithOverwrite and restore state, even if in a simple format.
 
 Nice-to-haves for alpha:
 * A test() function that could take a test data set and return a loss. This could be used for early stopping, but also for tests.

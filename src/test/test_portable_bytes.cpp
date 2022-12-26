@@ -1,5 +1,5 @@
 //
-// Created by erikh on 12/19/2022.
+// Created by Erik Hyrkas on 12/19/2022.
 //
 
 #include <iostream>

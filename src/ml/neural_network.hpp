@@ -9,92 +9,23 @@
 #include <vector>
 #include <filesystem>
 #include "loss.hpp"
-#include "activation.hpp"
-#include "neural_network_function.hpp"
 #include "optimizer.hpp"
-#include "../util/timers.hpp"
+#include "enums.hpp"
+#include "exit_strategy.hpp"
+#include "optimizer_factory.hpp"
+#include "neural_network_function.hpp"
 #include "../util/basic_profiler.hpp"
 #include "../util/tensor_utils.hpp"
+#include "../util/timers.hpp"
 #include "../util/unit_test.hpp"
+#include "../util/file_writer.hpp"
 #include "../types/tensor.hpp"
 #include "../training_data/training_dataset.hpp"
-#include "../util/file_writer.hpp"
 
 using namespace std;
-
-#define FIFTEEN_SECONDS_MS  15000
-#define THIRTY_SECONDS_MS   30000
-#define MINUTE_MS           60000
-#define FIVE_MINUTES_MS    300000
-#define FIFTEEN_MINUTES_MS 900000
-#define HALF_HOUR_MS      1800000
-#define HOUR_MS           3600000
-#define EIGHT_HOURS      28800000
-#define DAY_MS           86400000
-#define NINETY_DAYS_MS 7776000000
+using namespace microml;
 
 namespace microml {
-    enum TrainingRetentionPolicy {
-        best, // accurate
-        last  // fast
-    };
-    class ExitStrategy {
-    public:
-        virtual bool isDone(size_t currentEpoch, float loss, int64_t trainingElapsedTimeInMilliseconds) = 0;
-    };
-
-    class DefaultExitStrategy : public ExitStrategy {
-    public:
-        explicit DefaultExitStrategy(const size_t patience,
-                            const int64_t maxElapsedTime,
-                            const size_t maxEpochs,
-                            const float zeroPrecisionTolerance,
-                            const float improvementTolerance,
-                            const size_t minEpochs) {
-            this->patience = patience;
-            this->maxEpochs = maxEpochs;
-            this->maxElapsedTime = maxElapsedTime;
-            // I could have called zeroPrecisionTolerance "epsilon",
-            // but I wanted to use a term that everybody could understand.
-            // We want to stop training when we reach zero, but it's unlikely
-            // that we'd ever hit perfectly zero, so what is close enough?
-            // That "close enough" is zeroPrecisionTolerance.
-            this->zeroPrecisionTolerance = zeroPrecisionTolerance;
-
-            // Could probably also be called "epsilon", this is the minimum amount of
-            // improvement we need to show in an epoch before giving up.
-            this->improvementTolerance = improvementTolerance;
-            this->minEpochs = minEpochs;
-
-            lowestLossEpoch = 0;
-            lowestLoss = INFINITY;
-        }
-
-        bool isDone(size_t currentEpoch, float loss, int64_t trainingElapsedTimeInMilliseconds) override {
-            if(loss+improvementTolerance <= lowestLoss) {
-                lowestLoss = min(loss, lowestLoss);
-                lowestLossEpoch = currentEpoch;
-            }
-
-            const auto elapsedEpochsSinceLowestEpoch = currentEpoch - lowestLossEpoch;
-            const auto done = (currentEpoch >= minEpochs) &&
-                    (currentEpoch >= maxEpochs ||
-                    trainingElapsedTimeInMilliseconds >= maxElapsedTime ||
-                     elapsedEpochsSinceLowestEpoch > patience ||
-                    loss <= zeroPrecisionTolerance);
-            return done;
-        }
-
-    private:
-        size_t patience;
-        size_t maxEpochs;
-        int64_t maxElapsedTime;
-        float zeroPrecisionTolerance;
-        float improvementTolerance;
-        float lowestLoss;
-        size_t lowestLossEpoch;
-        size_t minEpochs;
-    };
 
     // A node is a vertex in a graph
     class NeuralNetworkNode : public enable_shared_from_this<NeuralNetworkNode> {
@@ -173,7 +104,7 @@ namespace microml {
                     from->backward(priorError);
                 } else {
                     PROFILE_BLOCK(backwardBlock);
-                    // We'll save the error we calculated, because we need to sum the errors from all outputs
+                    // We'll saveWithOverwrite the error we calculated, because we need to sum the errors from all outputs
                     // and not all outputs may be ready yet.
                     conn->priorError = priorError;
                     bool ready = true;
@@ -274,13 +205,12 @@ namespace microml {
     //
     // You don't need an optimizer for predictions if you already have weights and you aren't going
     // to change those weights. Optimizers save extra state while doing predictions that
-    // we wouldn't need to save if we are never going to use it.
+    // we wouldn't need to saveWithOverwrite if we are never going to use it.
     class NeuralNetwork {
     public:
-        NeuralNetwork(const string &name, const string &repoRootPath, const string &optimizerType) {
+        NeuralNetwork(const string &name, const string &repoRootPath) {
             this->name = name;
             this->repoRootPath = repoRootPath;
-            this->optimizerType = optimizerType;
         }
 
         float predictScalar(const shared_ptr<BaseTensor> &givenInputs) {
@@ -327,18 +257,24 @@ namespace microml {
     protected:
         string name;
         string repoRootPath;
-        string optimizerType;
         vector<shared_ptr<NeuralNetworkNode>> headNodes;
         vector<shared_ptr<NeuralNetworkOutputNode>> outputNodes;
     };
 
     class NeuralNetworkForTraining : public NeuralNetwork {
     public:
-        NeuralNetworkForTraining(const string &name, const string &repoRootPath, const string &optimizerType,
-                                 const shared_ptr<LossFunction> &lossFunction, const shared_ptr<Optimizer> &optimizer)
-                                 : NeuralNetwork(name, repoRootPath, optimizerType) {
+        NeuralNetworkForTraining(const string &name, const string &repoRootPath, const OptimizerType optimizerType,
+                                 const float learningRate, const float biasLearningRate,
+                                 const LossType lossType)
+                                 : NeuralNetwork(name, repoRootPath) {
             this->lossFunction = lossFunction;
-            this->optimizer = optimizer;
+            this->optimizerType = optimizerType;
+            this->lossType = lossType;
+            this->learningRate = learningRate;
+            this->biasLearningRate = biasLearningRate;
+            this->optimizer = createOptimizer(optimizerType, learningRate, biasLearningRate);
+            this->lossFunction = createLoss(lossType);
+
             useLowPrecisionExitStrategy();
         }
 
@@ -372,7 +308,7 @@ namespace microml {
             return optimizer;
         }
 
-        void save() {
+        void saveWithOverwrite() {
             string modelPath = repoRootPath + "/" + name;
             saveAs(modelPath, true);
         }
@@ -387,12 +323,12 @@ namespace microml {
             if( filesystem::is_directory(modelPath) ) {
                 if(!overwrite) {
                     // I don't want to throw an exception here since training a model can take a long time
-                    // and people would be upset about losing their work, so we'll just save to a new location.
+                    // and people would be upset about losing their work, so we'll just saveWithOverwrite to a new location.
                     // Part of me thinks that it's better not to do this and just throw the error, and part of me
                     // thinks about how I have spent days waiting for some models to train and this sort of
                     // mistake would kill me.
                     auto canonicalModelPath = filesystem::canonical(modelPath);
-                    cerr << "Model path "<< canonicalModelPath << " already existed, attempting to save to the new location: ";
+                    cerr << "Model path "<< canonicalModelPath << " already existed, attempting to saveWithOverwrite to the new location: ";
                     auto ms = std::to_string(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
                     canonicalModelPath += "_" + ms;
                     cerr << canonicalModelPath << endl;
@@ -404,8 +340,15 @@ namespace microml {
             filesystem::create_directories(modelPath);
             string modelProperties = modelPath + "/configuration.microml";
             auto writer = make_unique<DelimitedTextFileWriter>(modelProperties, ':');
-            writer->writeRecord({"name", name});
-            writer->writeRecord({"optimizer", optimizerType});
+            writer->writeRecord({"optimizer", optimizerTypeToString(optimizerType)});
+            stringstream learningRateString;
+            learningRateString << fixed << setprecision(16) << learningRate;
+            writer->writeRecord({"learningRate", learningRateString.str()});
+            stringstream biasLearningRateString;
+            biasLearningRateString << fixed << setprecision(16) << biasLearningRate;
+            writer->writeRecord({"biasLearningRate", biasLearningRateString.str()});
+            writer->writeRecord({"loss", lossTypeToString(lossType)});
+
             writer->close();
         }
 
@@ -532,7 +475,7 @@ namespace microml {
             } else {
                 cout << (elapsed / 60000) << " minutes." << endl;
             }
-            // TODO: this is placeholder code until we actually save and formalize best loss,
+            // TODO: this is placeholder code until we actually saveWithOverwrite and formalize best loss,
             //  but it simulates the future results.
             return trainingRetentionPolicy == best ? lowestLoss : epochTestingLoss;
         }
@@ -642,6 +585,10 @@ namespace microml {
 //            return previous->add(networkNode);
 //        }
     private:
+        float learningRate;
+        float biasLearningRate;
+        OptimizerType optimizerType;
+        LossType lossType;
         shared_ptr<Optimizer> optimizer;
         shared_ptr<LossFunction> lossFunction;
         shared_ptr<ExitStrategy> exitStrategy;

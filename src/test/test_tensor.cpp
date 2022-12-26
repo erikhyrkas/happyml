@@ -2,7 +2,6 @@
 // Created by Erik Hyrkas on 10/25/2022.
 //
 
-
 #include <iostream>
 #include <string>
 #include "../types/tensor.hpp"

@@ -5,8 +5,8 @@
 #ifndef MICROML_NEURAL_NETWORK_FUNCTION_HPP
 #define MICROML_NEURAL_NETWORK_FUNCTION_HPP
 
-#include "../types/tensor.hpp"
 #include "activation.hpp"
+#include "../util/tensor_utils.hpp"
 #include "../util/basic_profiler.hpp"
 
 namespace microml {
@@ -18,6 +18,7 @@ namespace microml {
         // I read an article here that I thought was interesting:
         // https://medium.com/@erikhallstrm/backpropagation-from-the-beginning-77356edf427d
         virtual shared_ptr<BaseTensor> backward(const shared_ptr<BaseTensor> &output_error) = 0;
+
     };
 
     class NeuralNetworkActivationFunction : public NeuralNetworkFunction {
@@ -59,7 +60,7 @@ namespace microml {
             //auto activation_derivative = activationFunction->derivative(average_last_inputs);
             // this really threw me for a loop. I thought that this was supposed to be dot product, rather than
             // an element-wise-multiplication.
-            auto baseOutputError = make_shared<TensorMultiplyTensorView>(averageActivationDerivative, outputError);
+            const auto baseOutputError = make_shared<TensorMultiplyTensorView>(averageActivationDerivative, outputError);
             return baseOutputError;
         }
 
@@ -93,7 +94,6 @@ namespace microml {
             }
             return make_shared<TensorReshapeView>(output_error, originalRows, originalCols);
         }
-
     private:
         size_t originalRows{};
         size_t originalCols{};

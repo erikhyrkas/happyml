@@ -1,3 +1,6 @@
+//
+// Created by Erik Hyrkas on 10/23/2022.
+//
 #include <iostream>
 #include <iomanip>
 #include "../types/quarter_float.hpp"

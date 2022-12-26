@@ -8,6 +8,8 @@
 #include <iostream>
 #include "../types/quarter_float.hpp"
 #include "../types/tensor.hpp"
+#include "../types/tensor_views.hpp"
+#include "../util/basic_profiler.hpp"
 
 // To me, it feels like activation functions are the heart and soul of modern ml.
 // Unfortunately, they can be a little hard to understand without some math background.
@@ -178,14 +180,14 @@ namespace microml {
         }
     };
 
-    // approximate tanh
+    // approximate tanhActivation
     // I read about this here: https://www.ipol.im/pub/art/2015/137/article_lr.pdf
     class TanhApproximationActivationFunction : public ActivationFunction {
     public:
         shared_ptr<BaseTensor> activate(const shared_ptr<BaseTensor> &input) override {
             PROFILE_BLOCK(profileBlock);
             auto transformFunction = [](float original) {
-                // tanh(x) = 2 * sigmoid(2x) - 1
+                // tanhActivation(x) = 2 * sigmoid(2x) - 1
                 const float twoX = (2 * original);
                 auto sigmoid = 1.0f / (1.0f + std::exp(-1.0f * twoX));
 //                auto sigmoid = 0.5f * ((original / (1.0f + std::abs(original))) + 1); //super approx
@@ -199,7 +201,7 @@ namespace microml {
             // result = sigmoid(x) * (1.0 - sigmoid(x))
             auto transformFunction = [](float original) {
                 // todo: validate math.
-                // 1 - tanh^2{x}
+                // 1 - tanhActivation^2{x}
                 const float two_x = (2 * original);
                 auto sigmoid = 1.0f / (1.0f + std::exp(-1.0f * two_x));
 //                auto sigmoid = 0.5f * ((original / (1.0f + std::abs(original))) + 1); //super approx
@@ -216,19 +218,19 @@ namespace microml {
         shared_ptr<BaseTensor> activate(const shared_ptr<BaseTensor> &input) override {
             auto transformFunction = [](float original) {
                 // optimization or waste of energy?
-                // tanh(x) = 2 * sigmoid(2x) - 1
+                // tanhActivation(x) = 2 * sigmoid(2x) - 1
 //            const float two_x = (2 * original);
 //            const float sigmoid = 1.0f / (1.0f + std::expf(-1.0f * two_x));
 //            return (2 * sigmoid) - 1;
-                return tanh(original);
+                return std::tanh(original);
             };
             return make_shared<TensorValueTransformView>(input, transformFunction);
         }
 
         shared_ptr<BaseTensor> derivative(const shared_ptr<BaseTensor> &input) override {
             auto transformFunction = [](float original) {
-                // 1 - tanh^2{x}
-                const float th = tanh(original);
+                // 1 - tanhActivation^2{x}
+                const float th = std::tanh(original);
                 return 1 - (th * th);
             };
             return make_shared<TensorValueTransformView>(input, transformFunction);
