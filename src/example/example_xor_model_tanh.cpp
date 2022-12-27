@@ -20,8 +20,8 @@ int main() {
 
         cout << "Test with tanhActivation" << endl;
         auto neuralNetwork = neuralNetworkBuilder()
-                ->setModelRepo("../repo/")
                 ->setModelName("xor_example")
+                ->setModelRepo("../repo/")
                 ->addInput(xorDataSource->getGivenShape(), 3, NodeType::full, ActivationType::tanhApprox)
                 ->addOutput(xorDataSource->getExpectedShape(), ActivationType::tanhApprox)
                 ->build();
@@ -30,12 +30,17 @@ int main() {
         // For 8-bit: 2000 epochs seems good enough
         float loss = neuralNetwork->train(xorDataSource);
 
-        // TODO: saveWithOverwrite is a work in progress.
-        neuralNetwork->saveWithOverwrite();
-
-
+//        // TODO: saveWithOverwrite and loadNeuralNetworkForTraining is a work in progress.
+//        neuralNetwork->saveWithOverwrite();
+//
+//        auto loadedNeuralNetwork = loadNeuralNetworkForTraining("xor_example",
+//                                                                "../repo/");
+//
+//        xorDataSource->restart();
+//        auto loss2 = loadedNeuralNetwork->train(xorDataSource);
 
         cout << fixed << setprecision(2);
+//        cout << "Result loss2: " << loss2 << endl;
         cout << "Result loss: " << loss << endl;
         cout << "0 xor 0 = 0 Prediction: " << neuralNetwork->predictScalar(columnVector({0.f, 0.f})) << endl;
         cout << "0 xor 1 = 1 Prediction: " << neuralNetwork->predictScalar(columnVector({0.f, 1.f})) << endl;

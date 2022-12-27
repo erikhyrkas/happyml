@@ -27,12 +27,78 @@ namespace happyml {
         leaky,
         softmax,
         sigmoidApprox,
-        tanhApprox };
+        tanhApprox
+    };
 
     enum TrainingRetentionPolicy {
         best, // accurate
         last  // fast
     };
+
+    string activationTypeToString(ActivationType activationType) {
+        switch (activationType) {
+            case relu:
+                return "relu";
+            case tanhDefault:
+                return "tanh";
+            case sigmoid:
+                return "sigmoid";
+            case leaky:
+                return "leaky";
+            case softmax:
+                return "softmax";
+            case sigmoidApprox:
+                return "sigmoidApprox";
+            case tanhApprox:
+                return "tanhApprox";
+        }
+        throw exception("Unknown Activation Type");
+    }
+
+    ActivationType stringToActivationType(const string &activationType) {
+        if (activationType == "relu") {
+            return relu;
+        }
+        if (activationType == "tanh") {
+            return tanhDefault;
+        }
+        if (activationType == "sigmoid") {
+            return sigmoid;
+        }
+        if (activationType == "leaky") {
+            return leaky;
+        }
+        if (activationType == "softmax") {
+            return softmax;
+        }
+        if (activationType == "sigmoidApprox") {
+            return sigmoidApprox;
+        }
+        if (activationType == "tanhApprox") {
+            return tanhApprox;
+        }
+        throw exception("Unknown Activation Type");
+    }
+
+    string nodeTypeToString(NodeType nodeType) {
+        switch (nodeType) {
+            case full:
+                return "full";
+            case convolution2dValid:
+                return "convolution2dValid";
+        }
+        throw exception("Unknown Node Type");
+    }
+
+    NodeType stringToNodeType(const string &nodeType) {
+        if (nodeType == "full") {
+            return full;
+        }
+        if (nodeType == "convolution2dValid") {
+            return convolution2dValid;
+        }
+        throw exception("Unknown Node Type");
+    }
 
     string lossTypeToString(LossType lossType) {
         switch (lossType) {

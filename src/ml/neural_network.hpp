@@ -267,7 +267,6 @@ namespace happyml {
                                  const float learningRate, const float biasLearningRate,
                                  const LossType lossType)
                                  : NeuralNetwork(name, repoRootPath) {
-            this->lossFunction = lossFunction;
             this->optimizerType = optimizerType;
             this->lossType = lossType;
             this->learningRate = learningRate;
@@ -340,15 +339,9 @@ namespace happyml {
             filesystem::create_directories(modelPath);
             string modelProperties = modelPath + "/configuration.happyml";
             auto writer = make_unique<DelimitedTextFileWriter>(modelProperties, ':');
-            writer->writeRecord({"optimizer", optimizerTypeToString(optimizerType)});
-            stringstream learningRateString;
-            learningRateString << fixed << setprecision(16) << learningRate;
-            writer->writeRecord({"learningRate", learningRateString.str()});
-            stringstream biasLearningRateString;
-            biasLearningRateString << fixed << setprecision(16) << biasLearningRate;
-            writer->writeRecord({"biasLearningRate", biasLearningRateString.str()});
-            writer->writeRecord({"loss", lossTypeToString(lossType)});
-
+            for(const auto record : networkMetadata) {
+                writer->writeRecord(record);
+            }
             writer->close();
         }
 
@@ -564,7 +557,7 @@ namespace happyml {
 
 //        bool hasCycle() {
 //            set<NeuralNetworkNode *> visited;
-//            for (shared_ptr<NeuralNetworkNode> node: heads) {
+//            for (shared_ptr<NeuralNetworkNode> node: inputReceptors) {
 //                if (node->hasCycle(visited)) {
 //                    return true;
 //                }
@@ -584,6 +577,9 @@ namespace happyml {
 //            output_nodes.push_back(output);
 //            return previous->add(networkNode);
 //        }
+        void setNetworkMetadata(const vector<vector<string>> &newNetworkMetadata) {
+            networkMetadata = newNetworkMetadata;
+        }
     private:
         float learningRate;
         float biasLearningRate;
@@ -592,6 +588,7 @@ namespace happyml {
         shared_ptr<Optimizer> optimizer;
         shared_ptr<LossFunction> lossFunction;
         shared_ptr<ExitStrategy> exitStrategy;
+        vector<vector<string>> networkMetadata;
     };
 
 }

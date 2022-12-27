@@ -5,6 +5,7 @@
 #ifndef HAPPYML_PORTABLE_BYTES_HPP
 #define HAPPYML_PORTABLE_BYTES_HPP
 #include <iostream>
+#include <sstream>
 
 // windows uses little endian order, but big endian is more common for other operating systems.
 // I decided to implement my own byte swap for now because I didn't want to bring in
@@ -40,6 +41,44 @@ void printBits(const uint64_t x) {
         if ((i%8) == 0) cout << " ";
     }
     cout << endl;
+}
+
+string asString(int32_t i) {
+    stringstream ss;
+    ss << i;
+    return ss.str();
+}
+
+string asString(int64_t i) {
+    stringstream ss;
+    ss << i;
+    return ss.str();
+}
+
+string asString(uint32_t i) {
+    stringstream ss;
+    ss << i;
+    return ss.str();
+}
+
+string asString(uint64_t i) {
+    stringstream ss;
+    ss << i;
+    return ss.str();
+}
+
+string asString(double d) {
+    stringstream ss;
+    ss << fixed << setprecision(15) << d;
+    return ss.str();
+}
+
+string asString(bool b) {
+    return b ? "true" : "false";
+}
+
+bool asBool(string b) {
+    return b == "true";
 }
 
 #if SWAP_BYTES == 1
