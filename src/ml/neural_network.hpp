@@ -444,6 +444,9 @@ namespace happyml {
                         batchOffset = 0;
                     }
                 }
+                if (overwriteOutputLines) {
+                    cout << endl;
+                }
                 if (useTestDataset) {
                     epochTestingLoss = test(testDataset);
                 } else {
@@ -455,9 +458,6 @@ namespace happyml {
                 }
                 trainingDataset->restart();
                 epoch++;
-                if (overwriteOutputLines) {
-                    cout << endl;
-                }
             } while(!exitStrategy->isDone(epoch, epochTestingLoss, epochTimer.getMilliseconds()));
             int64_t elapsed = totalTimer.getMilliseconds();
             cout << endl << "Finished training in ";
@@ -475,7 +475,6 @@ namespace happyml {
 
         float test(const shared_ptr<TrainingDataSet> &testDataset,
                    bool overwriteOutputLines = true) {
-            printf("\n");
             testDataset->restart();
             const size_t outputSize = outputNodes.size();
             float averageLoss = 0;
@@ -495,12 +494,15 @@ namespace happyml {
                     const auto loss = lossFunction->compute(error);
                     totalLoss += loss;
                 }
-                averageLoss += (float) ((totalLoss / (double)outputSize) - averageLoss);
                 currentRecord++;
+                averageLoss += (float) (((totalLoss / (double)outputSize) - averageLoss)/(double)currentRecord);
                 logTesting(trainingTimer.peekMilliseconds(),
                            currentRecord, totalRecords,
                            averageLoss, overwriteOutputLines);
                 nextRecord = testDataset->nextRecord();
+            }
+            if(overwriteOutputLines) {
+                printf("\n");
             }
             return averageLoss;
         }
