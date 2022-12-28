@@ -50,7 +50,7 @@ Nice-to-haves for alpha:
 Back-of-the-mind considerations:
 * _I think I've updated most of the formatting at this point._ ~~Need to format the code to C++ standards, since I've been doing so many languages that I have clearly forgotten what is standard.~~
 * _Convolutional Layers are training slow._ ~~Need to fix convolutional layers.~~
-* _The save format could be more efficient and compact._ ~~Need to be able to saveWithOverwrite and restore state, even if in a simple format.~~
+* _The save format could be more efficient and compact._ ~~Need to be able to save and restore state, even if in a simple format.~~
 * There is a bug with multiple-inputs where the input shuffles aren't synchronized. This can be addressed, but I need to create an example that uses multiple inputs. Maybe I can get an image and label data set. I'm thinking I'll create a new type of data set that combined multiple other sources to keep them in sync when shuffling and offer "channels" to split those input into different neurons at the start of training. This will also be a chance to implement and test Convolutional 2d Same layers.
 
 Stretch goals for alpha:

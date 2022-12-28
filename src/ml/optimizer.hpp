@@ -20,7 +20,7 @@
 // To me, this made the resulting code seem more logical and didn't require weird or difficult to understand
 // code.
 // You'll notice that not all neural network functions are optimizer specific. Technically, you only need an
-// optimizer to train a model. You don't need one to make predictions. Because optimizers saveWithOverwrite state while
+// optimizer to train a model. You don't need one to make predictions. Because optimizers save state while
 // making a prediction to be able to later learn, this can be wasteful if you are never going to use that extra
 // state.
 

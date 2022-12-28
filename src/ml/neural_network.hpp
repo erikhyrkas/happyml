@@ -135,7 +135,7 @@ namespace happyml {
                     from->backward(priorError);
                 } else {
                     PROFILE_BLOCK(backwardBlock);
-                    // We'll saveWithOverwrite the error we calculated, because we need to sum the errors from all outputs
+                    // We'll save the error we calculated, because we need to sum the errors from all outputs
                     // and not all outputs may be ready yet.
                     conn->priorError = priorError;
                     bool ready = true;
@@ -239,7 +239,7 @@ namespace happyml {
     //
     // You don't need an optimizer for predictions if you already have weights and you aren't going
     // to change those weights. Optimizers save extra state while doing predictions that
-    // we wouldn't need to saveWithOverwrite if we are never going to use it.
+    // we wouldn't need to save if we are never going to use it.
     class NeuralNetwork {
     public:
         NeuralNetwork(const string &name, const string &repoRootPath) {
@@ -356,7 +356,7 @@ namespace happyml {
             if( filesystem::is_directory(modelPath) ) {
                 if(!overwrite) {
                     // I don't want to throw an exception here since training a model can take a long time
-                    // and people would be upset about losing their work, so we'll just saveWithOverwrite to a new location.
+                    // and people would be upset about losing their work, so we'll just save to a new location.
                     // Part of me thinks that it's better not to do this and just throw the error, and part of me
                     // thinks about how I have spent days waiting for some models to train and this sort of
                     // mistake would kill me.
@@ -550,7 +550,7 @@ namespace happyml {
             } else {
                 cout << (elapsed / 60000) << " minutes." << endl;
             }
-            // TODO: this is placeholder code until we actually saveWithOverwrite and formalize best loss,
+            // TODO: this is placeholder code until we actually save and formalize best loss,
             //  but it simulates the future results.
             return trainingRetentionPolicy == best ? lowestLoss : epochTestingLoss;
         }

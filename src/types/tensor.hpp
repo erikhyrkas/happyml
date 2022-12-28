@@ -46,7 +46,7 @@
 //     You might argue that this need to store a full extra copy of the results in memory rather than modify the original
 //     must be wasteful and defeat the purpose of a design that wants to minimize memory footprint. However, you have to
 //     remember that in the standard flow of math in some steps, we'd need 2 copies of the matrix in memory
-//     if we didn't use views... what's more we lose accuracy every time we do a math step and saveWithOverwrite to 8-bit. By accumulating
+//     if we didn't use views... what's more we lose accuracy every time we do a math step and save to 8-bit. By accumulating
 //     all changes so we can do them in 32-bit, and then saving only after all steps are applied, we eliminate a significant
 //     amount of rounding. Where exactly would these copies be? 1. Calculating the loss function can result in an extra matrix.
 //     2. Not all activation functions can safely write back to the input without an extra intermediate copy or two.
@@ -150,7 +150,7 @@ namespace happyml {
             } catch(ofstream::failure &e) {
                 // I was torn about catching an exception and returning true/false
                 // this is inconsistent with the load method.
-                cerr << "Failed to saveWithOverwrite: " << fileName << endl << e.what() << endl;
+                cerr << "Failed to save: " << fileName << endl << e.what() << endl;
                 return false;
             }
         }
@@ -540,7 +540,7 @@ namespace happyml {
 // what weights we start with (my intuition is that it would be inefficient to start with the same value for every
 // weight -- but I can't recall if this is a strict requirement.)
 //
-// A standard random function might give more random results, except that it would require we saveWithOverwrite the values in memory
+// A standard random function might give more random results, except that it would require we save the values in memory
 // in order to preserve it across multiple requests, and we'd have to generate those random numbers in a single
 // threaded (or other special means) to have repeatable. This is very hard to do without putting special restrictions
 // on how the code is used or how it is run, because we'd need to reset the state at precise times and that makes
