@@ -40,6 +40,8 @@ int main() {
                                                                                        expectedEncoder, givenEncoder);
         cout << "Loaded test data." << endl;
         auto neuralNetwork = neuralNetworkBuilder()
+                ->setModelName("mnist_conv2d_example")
+                ->setModelRepo("../repo/")
                 ->addInput(mnistDataSource->getGivenShape(), 1, 3, convolution2dValid, ActivationType::relu)->setUseBias(false)
                 ->addNode(100, full, ActivationType::relu)->setUseBias(false)
                 ->addOutput(mnistDataSource->getExpectedShape(), sigmoidApprox)
