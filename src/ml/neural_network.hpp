@@ -628,7 +628,7 @@ namespace happyml {
             } else {
                 printf("%5zd ms ", elapsedTime);
             }
-            printf("\tTesting: %4zd/%zd \tAverage Loss: %11f", currentRecord, totalRecords, loss);
+            printf("\tTesting: %4zd/%zd \tAverage Loss: %11f         ", currentRecord, totalRecords, loss);
             if (overwrite) {
                 printf("\r");
             } else {
