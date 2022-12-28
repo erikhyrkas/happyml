@@ -1,3 +1,15 @@
+# MIT License
+
+See the [LICENSE](LICENSE) file for details.
+
+# Using
+
+There are options as to how you use happyml. 
+
+1. You could use the code directly, like in the examples.
+2. You could compile it to a library. I didn't provide an example of this, yet, but I can add that to my todo list.
+3. And, eventually, you'll be able to use it through the happyml scripting language, which is still a work in progress.
+
 # Compiling
 I use CLion with Visual Studio 2022 community for the C++ runtime libraries.
 * https://visualstudio.microsoft.com/downloads/
@@ -7,9 +19,30 @@ Look at the [clion_settings.png](clion_settings.png) for an example on configuri
 I didn't include the idea project settings files, so you'll have to make a project from source, but everything should work
 based on the [CMakeLists.txt](CMakeLists.txt).
 
-# MIT License
+# Current State
+This project isn't even in a complete alpha stage, yet.
 
-See the [LICENSE](LICENSE) file for details.
+Nice-to-haves for alpha:
+* A test() function that could take a test data set and return a loss. This could be used for early stopping, but also for tests.
+* Need to fix and check-in Adam optimizer. I'm not even going to check it in until it seems plausibly right and I need to refactor the model object's training to support it correctly. I built the mini-batch gradient decent optimizer first because it was easier to make (even though I still had issues building it correctly -- that is part of the learning process), and it let me test all the other code.
+* Need to finish the half float and test. It currently doesn't handle any edge conditions and could produce incorrect results in some situations.
+* Would like to create a lexer-parser to handle interfacing with happyml through a dsl.
+
+Back-of-the-mind considerations:
+* _I think I've updated most of the formatting at this point._ ~~Need to format the code to C++ standards, since I've been doing so many languages that I have clearly forgotten what is standard.~~
+* _Convolutional Layers are training slow._ ~~Need to fix convolutional layers.~~
+* _The save format could be more efficient and compact._ ~~Need to be able to save and restore state, even if in a simple format.~~
+* There is a bug with multiple-inputs where the input shuffles aren't synchronized. This can be addressed, but I need to create an example that uses multiple inputs. Maybe I can get an image and label data set. I'm thinking I'll create a new type of data set that combined multiple other sources to keep them in sync when shuffling and offer "channels" to split those input into different neurons at the start of training. This will also be a chance to implement and test Convolutional 2d Same layers.
+
+Stretch goals for alpha:
+* ~~Early stopping policy~~
+* Lexer/parser to take in an input stream and create, train, load, and use models through a standard input stream
+
+
+At that point, the code will be in an alpha state, but I still won't have even tackled encoder-decoder and decoder-only requirements. For beta, I'd like to see at least decoder-only support. There's also Reinforcement Learning from Human Feedback (RLHF) that I'll ponder, but I doubt I can work that into the beta let along the alpha. That journey will continue.
+
+This project is still a long way off from democratizing the power of ml. Right now, it's mostly focused on making large models run on commodity hardware. Next steps will be to make the interface to using it easier for people without a data science background. And finally, I hope that everything I build is educational.
+
 
 # happyml
 
@@ -34,31 +67,6 @@ The first goal reduces the expense of building models. Right now, the cutting ed
 The second goal is about providing an interface to ML that lets software developers communicate their end goal in a way they are familiar with and then building the model for them. This is similar to how SQL works with databases. You specify what you want, not how you want it retrieved. You leave it to the database to calculate the optimal path to get that data. I think ML needs to get to this point so that it usable by a larger audience who might not be mathematicians and data scientists. There are already tools available and are growing to make ML available through simple web interfaces, but these tools aren't for software engineers, and they aren't free. I see a future where happyml may be something directly used by code or deployed as a webservice and accessed through a REST API.
 
 The last goal is an area that there is already a huge push for, which is creating means for people to learn the math and science of ML. I want to support this goal, but at the same time, this is already the area that is the strongest.
-
-# Current State
-This project isn't even in a complete alpha stage, yet.
-
-Nice-to-haves for alpha:
-* A test() function that could take a test data set and return a loss. This could be used for early stopping, but also for tests.
-* Need to fix and check-in Adam optimizer. I'm not even going to check it in until it seems plausibly right and I need to refactor the model object's training to support it correctly. I built the mini-batch gradient decent optimizer first because it was easier to make (even though I still had issues building it correctly -- that is part of the learning process), and it let me test all the other code.
-* Need to finish the half float and test. It currently doesn't handle any edge conditions and could produce incorrect results in some situations.
-* Would like to create a lexer-parser to handle interfacing with happyml through a dsl. 
-
-Back-of-the-mind considerations:
-* _I think I've updated most of the formatting at this point._ ~~Need to format the code to C++ standards, since I've been doing so many languages that I have clearly forgotten what is standard.~~
-* _Convolutional Layers are training slow._ ~~Need to fix convolutional layers.~~
-* _The save format could be more efficient and compact._ ~~Need to be able to save and restore state, even if in a simple format.~~
-* There is a bug with multiple-inputs where the input shuffles aren't synchronized. This can be addressed, but I need to create an example that uses multiple inputs. Maybe I can get an image and label data set. I'm thinking I'll create a new type of data set that combined multiple other sources to keep them in sync when shuffling and offer "channels" to split those input into different neurons at the start of training. This will also be a chance to implement and test Convolutional 2d Same layers.
-
-Stretch goals for alpha:
-* ~~Early stopping policy~~
-* Lexer/parser to take in an input stream and create, train, load, and use models through a standard input stream
- 
-
-At that point, the code will be in an alpha state, but I still won't have even tackled encoder-decoder and decoder-only requirements. For beta, I'd like to see at least decoder-only support. There's also Reinforcement Learning from Human Feedback (RLHF) that I'll ponder, but I doubt I can work that into the beta let along the alpha. That journey will continue.
-
-This project is still a long way off from democratizing the power of ml. Right now, it's mostly focused on making large models run on commodity hardware. Next steps will be to make the interface to using it easier for people without a data science background. And finally, I hope that everything I build is educational.
-
 
 # Learning more
 If you want to use the latest and coolest algorithms, you can use them relatively cheaply if you have some rudimentary programming skills to build some amazing things:
@@ -184,7 +192,7 @@ HappymlDSL:
 
 There's a difference between data science and machine learning. Data Science is a very technical discipline that requires a deep understanding of math. Machine learning is the fruits of their labor and a powerful tool that everybody can use. I want to make machine learning more accessible.
 
-There is a lot of gate keeping in machine learning.
+There is a lot of gate keeping in machine learning. I'm not blaming data scientists for this. It's a combination of the expense of hardware and people to do data science, the amount of knowledge required to use existing technologies, and risk of failure that leads companies minimizing the amount of machine learning they use and maximizing their chances of success with the people they choose to use machine learning. What's more, there's a huge risk for companies that make important decisions on the results of machine learning and they want to minimize the risk of the outputs being wrong.
 
 Data scientists study for years, working hard to obtain the knowledge necessary to create new algorithms -- machine learning models. It requires huge amounts of effort to gain that understanding, and even more effort to apply it in real life situations.
 

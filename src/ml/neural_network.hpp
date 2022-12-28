@@ -415,6 +415,16 @@ namespace happyml {
             }
         }
 
+        void removeKnowledge(const string &knowledgeLabel) {
+            string modelPath = repoRootPath + "/" + name;
+            removeKnowledge(modelPath, knowledgeLabel);
+        }
+
+        void removeKnowledge(const string &modelFolderPath, const string &knowledgeLabel) {
+            string fullKnowledgePath = modelFolderPath + "/" + knowledgeLabel;
+            filesystem::remove_all(fullKnowledgePath);
+        }
+
         void loadKnowledge(const string &knowledgeLabel) {
             string modelPath = repoRootPath + "/" + name;
             loadKnowledge(modelPath, knowledgeLabel);
@@ -447,6 +457,7 @@ namespace happyml {
                    int batchSize = 1,
                    TrainingRetentionPolicy trainingRetentionPolicy = best,
                    bool overwriteOutputLines = true) {
+            string knowledgeCheckpointLabel = "checkpoint_"+std::to_string(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
             bool useTestDataset = testDataset->recordCount() > 0;
             // TODO: take in a test set and then validate that the records aren't in the training
             //  set. If they are, give a warning.
@@ -538,6 +549,13 @@ namespace happyml {
                 if (epochTestingLoss < lowestLoss) {
                     lowestLoss = epochTestingLoss;
                     lowestLossEpoch = epoch;
+                    if( trainingRetentionPolicy == best) {
+                        saveKnowledge(knowledgeCheckpointLabel, true);
+                    }
+                    logTraining(batchTimer.peekMilliseconds(), epoch, batchSize,
+                                ceil(total_records / batchSize), batchSize,
+                                epochTrainingLoss, lowestLoss, lowestLossEpoch,
+                                overwriteOutputLines);
                 }
                 trainingDataset->restart();
                 epoch++;
@@ -553,7 +571,12 @@ namespace happyml {
             }
             // TODO: this is placeholder code until we actually save and formalize best loss,
             //  but it simulates the future results.
-            return trainingRetentionPolicy == best ? lowestLoss : epochTestingLoss;
+            if(  trainingRetentionPolicy == best) {
+                loadKnowledge(knowledgeCheckpointLabel);
+                removeKnowledge(knowledgeCheckpointLabel);
+                return lowestLoss;
+            }
+            return epochTestingLoss;
         }
 
         float test(const shared_ptr<TrainingDataSet> &testDataset,
