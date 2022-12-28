@@ -1,5 +1,6 @@
 //
 // Created by Erik Hyrkas on 11/28/2022.
+// Copyright 2022. Usable under MIT license.
 //
 #include <memory>
 #include "../ml/model.hpp"

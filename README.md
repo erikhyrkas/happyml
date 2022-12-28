@@ -7,20 +7,17 @@ Look at the [clion_settings.png](clion_settings.png) for an example on configuri
 I didn't include the idea project settings files, so you'll have to make a project from source, but everything should work
 based on the [CMakeLists.txt](CMakeLists.txt).
 
-# Should I use this project?
+# MIT License
 
-This is an "AS-IS" situation. It might work, it might not. I could change everything about how it works and release a new version that
-is no longer compatible with an old version. Use at your own risk. I would love for people to learn from it and use it,
-but I am certainly not offering any warranties on the quality, consistency, or stability of it. Check out the license file
-and then look at the section of this document that describes the current state of the project.
+See the [LICENSE](LICENSE) file for details.
 
 # happyml
 
 Why did you build this? You shouldn't have. 
 
-Seriously, why did you do this?
+Seriously, you shouldn't have. 
 
-Three reasons:
+Three reasons I built happyml:
 1. LEARNING: I want to understand every aspect of what goes into the science and algorithms fueling the future, and share what I learn along the way. The next generation can pick up this torch and build their own dreams.
 2. DEMOCRATIZING POWER: The most powerful machine learning done today is done on millions of dollars of hardware by a relatively few people. While I may not invent a way of democratizing the power of machine learning, I hope this is a small step toward inspiring somebody smarter than me to bring it about. See the section on democratizing power.
 3. STUBBORNNESS: There are a million reasons not to build this, which is enough to harden my resolve to build it.

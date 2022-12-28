@@ -1,5 +1,6 @@
 //
 // Created by Erik Hyrkas on 12/2/2022.
+// Copyright 2022. Usable under MIT license.
 //
 
 #ifndef HAPPYML_BASIC_PROFILER_HPP

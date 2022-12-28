@@ -1,5 +1,6 @@
 //
 // Created by Erik Hyrkas on 10/23/2022.
+// Copyright 2022. Usable under MIT license.
 //
 
 // A 32-bit float has the general structure of: sign bit + 8 exponent bits + 23 mantissa bits

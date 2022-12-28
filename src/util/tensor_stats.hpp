@@ -1,5 +1,6 @@
 //
 // Created by Erik Hyrkas on 10/30/2022.
+// Copyright 2022. Usable under MIT license.
 //
 
 #ifndef HAPPYML_TENSOR_STATS_HPP

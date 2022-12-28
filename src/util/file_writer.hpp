@@ -1,5 +1,6 @@
 //
-// Created by erikh on 12/18/2022.
+// Created by Erik Hyrkas on 12/18/2022.
+// Copyright 2022. Usable under MIT license.
 //
 
 #ifndef HAPPYML_FILE_WRITER_HPP
