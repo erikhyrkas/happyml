@@ -30,22 +30,19 @@ int main() {
         // For 8-bit: 2000 epochs seems good enough
         float loss = neuralNetwork->train(xorDataSource);
 
-//        // TODO: saveWithOverwrite and loadNeuralNetworkForTraining is a work in progress.
-//        neuralNetwork->saveWithOverwrite();
-//
-//        auto loadedNeuralNetwork = loadNeuralNetworkForTraining("xor_example",
-//                                                                "../repo/");
-//
-//        xorDataSource->restart();
-//        auto loss2 = loadedNeuralNetwork->train(xorDataSource);
-
         cout << fixed << setprecision(2);
-//        cout << "Result loss2: " << loss2 << endl;
         cout << "Result loss: " << loss << endl;
         cout << "0 xor 0 = 0 Prediction: " << neuralNetwork->predictScalar(columnVector({0.f, 0.f})) << endl;
         cout << "0 xor 1 = 1 Prediction: " << neuralNetwork->predictScalar(columnVector({0.f, 1.f})) << endl;
         cout << "1 xor 0 = 1 Prediction: " << neuralNetwork->predictScalar(columnVector({1.f, 0.f})) << endl;
         cout << "1 xor 1 = 0 Prediction: " << neuralNetwork->predictScalar(columnVector({1.f, 1.f})) << endl;
+
+        // testing save logic:
+//        neuralNetwork->saveWithOverwrite();
+//        auto loadedNeuralNetwork = loadNeuralNetworkForTraining("xor_example",
+//                                                                "../repo/");
+//        float testLoss = loadedNeuralNetwork->test(xorDataSource);
+//        cout << fixed << setprecision(2) << "Result testLoss: " << testLoss << endl;
     } catch (const exception &e) {
         cout << e.what() << endl;
     }

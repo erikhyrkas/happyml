@@ -286,10 +286,12 @@ namespace happymldsl {
                         auto flatten_node = make_shared<NeuralNetworkNode>(make_shared<NeuralNetworkFlattenFunction>());
                         last_node = appendNode(last_node, flatten_node);
                     }
+                    string fullNodeLabel = asString(vertexUniqueId)+"_full";
                     next_node = make_shared<NeuralNetworkNode>(
-                            optimizer->createFullyConnectedNeurons(inputShape[0] * inputShape[1] * inputShape[2], outputShape[0] * outputShape[1] * outputShape[2], bits));
+                            optimizer->createFullyConnectedNeurons(fullNodeLabel, inputShape[0] * inputShape[1] * inputShape[2], outputShape[0] * outputShape[1] * outputShape[2], bits));
                 } else if(node_type == NodeType::convolution2dValid) {
-                    next_node = make_shared<NeuralNetworkNode>(optimizer->createConvolutional2d(inputShape, filters,
+                    string c2dvLabel = asString(vertexUniqueId)+"_c2dv";
+                    next_node = make_shared<NeuralNetworkNode>(optimizer->createConvolutional2d(c2dvLabel, inputShape, filters,
                                                                                                 kernel_size, bits));
                 } else {
                     throw exception("Unimplemented NodeType");
@@ -298,7 +300,8 @@ namespace happymldsl {
                 last_node = appendNode(last_node, next_node);
 
                 if (use_bias) {
-                    auto bias_node = make_shared<NeuralNetworkNode>(optimizer->createBias(outputShape, outputShape, bits));
+                    string biasLabel = asString(vertexUniqueId)+"_bias";
+                    auto bias_node = make_shared<NeuralNetworkNode>(optimizer->createBias(biasLabel, outputShape, outputShape, bits));
                     last_node = appendNode(last_node, bias_node);
                 }
 
@@ -672,7 +675,9 @@ namespace happymldsl {
 //        map<string, shared_ptr<NNVertex>> existingNodes;
 //                ->addInput(xorDataSource->getGivenShape(), 3, NodeType::full, ActivationType::tanhApprox)
 //                ->addOutput(xorDataSource->getExpectedShape(), ActivationType::tanhApprox);
-        return dsl->build();
+        auto resultNeuralNetwork = dsl->build();
+        resultNeuralNetwork->loadKnowledge("default");
+        return resultNeuralNetwork;
     }
 
 }

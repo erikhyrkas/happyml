@@ -90,6 +90,26 @@ namespace happyml {
         return make_shared<FullTensor>(t);
     }
 
+    shared_ptr<BaseTensor> loadTensor(const string &path, uint8_t bits) {
+        if(bits == 16) {
+            return make_shared<HalfTensor>(path);
+        } else if(bits == 8) {
+            // TODO:
+            //  we don't know what bias to use, so we load up the tensor in 16-bit then size to fit.
+            //  This is an imperfect solution, and temporary.
+            //  Option 1: we could update the quarter tensor load logic to scan the file to
+            //  figure out the min and max values, or
+            //  Option 2: we could persist bias in the neural network function and then pass it here.
+            //  Option 2, saving the bias, sounds tempting, but would take some finagling, since the
+            //  actual bias used isn't readily available -- but it would be an efficient option.
+            //  We'd probably have to track it every time it changed in back propagation, and it
+            //  would be 0 for tensors that were not 8-bit. My preference is option 2, but it isn't
+            //  critical to solve for alpha.
+            return materializeTensor(make_shared<HalfTensor>(path), 8);
+        }
+        return make_shared<FullTensor>(path);
+    }
+
     void assertEqual(const shared_ptr<BaseTensor> &t1, const shared_ptr<BaseTensor> &t2) {
         if(t1->channelCount() != t2->channelCount()) {
             throw exception("Tensors don't have the same number of channels.");

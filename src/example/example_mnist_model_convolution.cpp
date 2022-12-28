@@ -44,7 +44,7 @@ int main() {
                 ->addNode(100, full, ActivationType::relu)->setUseBias(false)
                 ->addOutput(mnistDataSource->getExpectedShape(), sigmoidApprox)
                 ->build();
-        neuralNetwork->useHighPrecisionExitStrategy();
+//        neuralNetwork->useHighPrecisionExitStrategy();
         float loss = neuralNetwork->train(mnistDataSource, testMnistDataSource, 4);
         // Trained 20 epochs using a batch size of 4 in 52 minutes with a loss of 0.009784.
 
@@ -59,6 +59,14 @@ int main() {
             limit--;
         }
         cout << fixed << setprecision(4) << "Loss: " << loss;
+
+
+        // testing save logic:
+//        neuralNetwork->saveWithOverwrite();
+//        auto loadedNeuralNetwork = loadNeuralNetworkForTraining("mnist_conv2d_example",
+//                                                                "../repo/");
+//        float testLoss = loadedNeuralNetwork->test(testMnistDataSource);
+//        cout << fixed << setprecision(2) << "Result testLoss: " << testLoss << endl;
     } catch (const exception &e) {
         cout << e.what() << endl;
     }

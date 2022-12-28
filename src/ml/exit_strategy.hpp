@@ -63,7 +63,7 @@ namespace happyml {
             const auto done = (currentEpoch >= minEpochs) &&
                               (currentEpoch >= maxEpochs ||
                                trainingElapsedTimeInMilliseconds >= maxElapsedTime ||
-                               elapsedEpochsSinceLowestEpoch > patience ||
+                               elapsedEpochsSinceLowestEpoch >= patience ||
                                loss <= zeroPrecisionTolerance);
             return done;
         }

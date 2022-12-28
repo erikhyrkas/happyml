@@ -34,6 +34,7 @@ namespace happyml {
                 const shared_ptr<NeuralNetworkFunction> &neuralNetworkFunction) {
             this->neuralNetworkFunction = neuralNetworkFunction;
             this->materialized = true;
+            this->saved = true;
         }
 
         virtual void sendOutput(shared_ptr<BaseTensor> &output) {
@@ -41,6 +42,36 @@ namespace happyml {
 
         void setMaterialized(bool m) {
             materialized = m;
+        }
+
+        void markUnsaved() {
+            if(saved) {
+                saved = false;
+                for (const auto &outputConnection: connectionOutputs) {
+                    outputConnection->to->markUnsaved();
+                }
+            }
+        }
+
+        void saveKnowledge(const string &fullKnowledgePath) {
+            if (saved) {
+                return;
+            }
+            neuralNetworkFunction->saveKnowledge(fullKnowledgePath);
+            for (const auto &outputConnection: connectionOutputs) {
+                outputConnection->to->saveKnowledge(fullKnowledgePath);
+            }
+        }
+
+        void loadKnowledge(const string &fullKnowledgePath) {
+            if(saved) {
+                return;
+            }
+            saved = true;
+            neuralNetworkFunction->loadKnowledge(fullKnowledgePath);
+            for (const auto &outputConnection: connectionOutputs) {
+                outputConnection->to->loadKnowledge(fullKnowledgePath);
+            }
         }
 
         // todo: right now, i'm assuming this is a directed acyclic graph, this may not work for everything.
@@ -128,9 +159,11 @@ namespace happyml {
                     from->backward(average_error);
                     for (const auto &output_conn: from->connectionOutputs) {
                         output_conn->priorError = nullptr;
+
                     }
                 }
             }
+            saved = false;
         }
 
 //        bool hasCycle(set<NeuralNetworkNode *> &visited) {
@@ -174,6 +207,7 @@ namespace happyml {
         vector<shared_ptr<NeuralNetworkConnection>> connectionOutputs;
         shared_ptr<NeuralNetworkFunction> neuralNetworkFunction;
         bool materialized;
+        bool saved;
     };
 
     class NeuralNetworkOutputNode : public NeuralNetworkNode {
@@ -327,7 +361,7 @@ namespace happyml {
                     // thinks about how I have spent days waiting for some models to train and this sort of
                     // mistake would kill me.
                     auto canonicalModelPath = filesystem::canonical(modelPath);
-                    cerr << "Model path "<< canonicalModelPath << " already existed, attempting to saveWithOverwrite to the new location: ";
+                    cerr << "Model path "<< canonicalModelPath << " already existed, attempting to save to the new location: ";
                     auto ms = std::to_string(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
                     canonicalModelPath += "_" + ms;
                     cerr << canonicalModelPath << endl;
@@ -343,6 +377,54 @@ namespace happyml {
                 writer->writeRecord(record);
             }
             writer->close();
+            saveKnowledge(modelFolderPath, "default", overwrite);
+        }
+
+        void saveKnowledgeWithOverwrite(const string &knowledgeLabel) {
+            saveKnowledge(knowledgeLabel, true);
+        }
+
+        void saveKnowledgeWithoutOverwrite(const string &knowledgeLabel) {
+            saveKnowledge(knowledgeLabel, false);
+        }
+
+        void saveKnowledge(const string &knowledgeLabel, bool overwrite) {
+            string modelPath = repoRootPath + "/" + name;
+            saveKnowledge(modelPath, knowledgeLabel, overwrite);
+        }
+
+        void saveKnowledge(const string &modelFolderPath, const string &knowledgeLabel, bool overwrite) {
+            string fullKnowledgePath = modelFolderPath + "/" + knowledgeLabel;
+            if( filesystem::is_directory(fullKnowledgePath) ) {
+                if (!overwrite) {
+                    auto canonicalFullKnowledgePath = filesystem::canonical(fullKnowledgePath);
+                    cerr << "Knowledge path "<< canonicalFullKnowledgePath << " already existed, attempting to save to the new location: ";
+                    auto ms = std::to_string(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
+                    canonicalFullKnowledgePath += "_" + ms;
+                    cerr << canonicalFullKnowledgePath << endl;
+                    fullKnowledgePath = canonicalFullKnowledgePath.generic_string();
+                } else {
+                    filesystem::remove_all(fullKnowledgePath);
+                }
+            }
+            filesystem::create_directories(fullKnowledgePath);
+            for (size_t i = 0; i < headNodes.size(); i++) {
+                headNodes[i]->markUnsaved();
+                headNodes[i]->saveKnowledge(fullKnowledgePath);
+            }
+        }
+
+        void loadKnowledge(const string &knowledgeLabel) {
+            string modelPath = repoRootPath + "/" + name;
+            loadKnowledge(modelPath, knowledgeLabel);
+        }
+
+        void loadKnowledge(const string &modelFolderPath, const string &knowledgeLabel) {
+            string fullKnowledgePath = modelFolderPath + "/" + knowledgeLabel;
+            for (size_t i = 0; i < headNodes.size(); i++) {
+                headNodes[i]->markUnsaved();
+                headNodes[i]->loadKnowledge(fullKnowledgePath);
+            }
         }
 
         float train(const shared_ptr<TrainingDataSet> &trainingDataset,

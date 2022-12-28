@@ -43,8 +43,10 @@ namespace happyml {
     // https://medium.com/@2017csm1006/forward-and-backpropagation-in-convolutional-neural-network-4dfa96d7b37e
     class MBGDConvolution2dValidFunction : public NeuralNetworkFunction {
     public:
-        MBGDConvolution2dValidFunction(vector<size_t> inputShape, size_t filters, size_t kernelSize, uint8_t bits,
+        MBGDConvolution2dValidFunction(const string &label,
+                                       vector<size_t> inputShape, size_t filters, size_t kernelSize, uint8_t bits,
                                        const shared_ptr<MBGDLearningState> &learningState) {
+            this->label = label;
             this->inputShape = inputShape;
             this->kernelSize = kernelSize;
             this->outputShape = {inputShape[0] - kernelSize + 1, inputShape[1] - kernelSize + 1, filters};
@@ -63,6 +65,25 @@ namespace happyml {
             }
 
         }
+
+        void saveKnowledge(const string &fullKnowledgePath) override {
+            auto filters = outputShape[2];
+            for(size_t next_weight_layer = 0; next_weight_layer < filters; next_weight_layer++) {
+                string path = fullKnowledgePath + "/"+label+"_"+ asString(next_weight_layer)+".tensor";
+                weights[next_weight_layer]->save(path);
+            }
+        }
+
+        void loadKnowledge(const string &fullKnowledgePath) override {
+            this->weights = {};
+            auto filters = outputShape[2];
+            for(size_t next_weight_layer = 0; next_weight_layer < filters; next_weight_layer++) {
+                string path = fullKnowledgePath + "/"+label+"_"+ asString(next_weight_layer)+".tensor";
+                auto matrix = make_shared<FullTensor>(path);
+                this->weights.push_back(matrix);
+            }
+        }
+
         shared_ptr<BaseTensor> forward(const vector<shared_ptr<BaseTensor>> &input, bool forTraining) override {
             PROFILE_BLOCK(profileBlock);
             if( input.size() > 1) {
@@ -169,12 +190,14 @@ namespace happyml {
         vector<size_t> outputShape;
         size_t kernelSize;
         shared_ptr<MBGDLearningState> learningState;
+        string label;
     };
 
     class MBGDFullyConnectedNeurons : public NeuralNetworkFunction {
     public:
-        MBGDFullyConnectedNeurons(size_t inputSize, size_t outputSize, uint8_t bits,
+        MBGDFullyConnectedNeurons(const string &label, size_t inputSize, size_t outputSize, uint8_t bits,
                                   const shared_ptr<MBGDLearningState> &learningState) {
+            this->label = label;
             this->inputShapes = vector < vector < size_t >> {{1, inputSize, 1}};
             this->outputShape = vector < size_t > {1, outputSize, 1};
             this->weights = make_shared<TensorFromRandom>(inputSize, outputSize, 1, -0.5f, 0.5f, 42);
@@ -195,6 +218,16 @@ namespace happyml {
 
         vector<size_t> getOutputShape() {
             return outputShape;
+        }
+
+        void saveKnowledge(const string &fullKnowledgePath) override {
+            string path = fullKnowledgePath + "/"+label+".tensor";
+            weights->save(path);
+        }
+
+        void loadKnowledge(const string &fullKnowledgePath) override {
+            string path = fullKnowledgePath + "/"+label+".tensor";
+            this->weights = make_shared<FullTensor>(path);
         }
 
         // predicting
@@ -231,7 +264,6 @@ namespace happyml {
                 average_last_inputs = materializeTensor(make_shared<TensorMultiplyByScalarView>(average_last_inputs, 1.f/(float)lastInputsSize));
             }
 
-
             // find the error
             auto weights_transposed = make_shared<TensorTransposeView>(weights);
             // TODO: we greatly improve performance by materializing the tensor into a FullTensor here, but sometimes this will use
@@ -250,8 +282,6 @@ namespace happyml {
             return input_error;
         }
 
-
-
     private:
         shared_ptr<BaseTensor> weights;
         queue<shared_ptr<BaseTensor>> lastInputs;
@@ -260,12 +290,14 @@ namespace happyml {
         vector<vector<size_t>> inputShapes;
         vector<size_t> outputShape;
         shared_ptr<MBGDLearningState> learningState;
+        string label;
     };
 
     class MBGDBias : public NeuralNetworkFunction {
     public:
-        MBGDBias(const vector<size_t> &inputShape, const vector<size_t> &outputShape, uint8_t bits,
+        MBGDBias(const string &label, const vector<size_t> &inputShape, const vector<size_t> &outputShape, uint8_t bits,
                  const shared_ptr<MBGDLearningState> &learningState) {
+            this->label = label;
             this->inputShapes = vector < vector < size_t >> {inputShape};
             this->outputShape = outputShape;
             // In my experiments, at least for the model I was testing, we found the correct results faster by starting at 0 bias.
@@ -326,6 +358,16 @@ namespace happyml {
             return outputShape;
         }
 
+        void saveKnowledge(const string &fullKnowledgePath) override {
+            string path = fullKnowledgePath + "/"+label+".tensor";
+            bias->save(path);
+        }
+
+        void loadKnowledge(const string &fullKnowledgePath) override {
+            string path = fullKnowledgePath + "/"+label+".tensor";
+            this->bias = make_shared<FullTensor>(path);
+        }
+
         // predicting
         shared_ptr<BaseTensor> forward(const vector<shared_ptr<BaseTensor>> &input, bool forTraining) override {
             PROFILE_BLOCK(profileBlock);
@@ -362,6 +404,7 @@ namespace happyml {
         vector<vector<size_t>> inputShapes;
         vector<size_t> outputShape;
         shared_ptr<MBGDLearningState> learningState;
+        string label;
     };
 
     class MBGDOptimizer : public Optimizer {
@@ -377,20 +420,21 @@ namespace happyml {
             this->mbgdLearningState->biasLearningRate = bias_learning_rate;
         }
 
-        shared_ptr<NeuralNetworkFunction> createFullyConnectedNeurons(size_t input_size,
+        shared_ptr<NeuralNetworkFunction> createFullyConnectedNeurons(const string &label, size_t input_size,
                                                                       size_t output_size,
                                                                       uint8_t bits) override {
-            return make_shared<MBGDFullyConnectedNeurons>(input_size, output_size, bits, mbgdLearningState);
+            return make_shared<MBGDFullyConnectedNeurons>(label, input_size,
+                                                          output_size, bits, mbgdLearningState);
         }
 
-        shared_ptr<NeuralNetworkFunction> createBias(vector<size_t> input_shape,
+        shared_ptr<NeuralNetworkFunction> createBias(const string &label, vector<size_t> input_shape,
                                                      vector<size_t> output_shape, uint8_t bits) override {
-            return make_shared<MBGDBias>(input_shape, output_shape, bits, mbgdLearningState);
+            return make_shared<MBGDBias>(label, input_shape, output_shape, bits, mbgdLearningState);
         }
-        shared_ptr<NeuralNetworkFunction> createConvolutional2d(vector<size_t> input_shape,
+        shared_ptr<NeuralNetworkFunction> createConvolutional2d(const string &label, vector<size_t> input_shape,
                                                                 size_t filters, size_t kernel_size,
                                                                 uint8_t bits) override {
-            return make_shared<MBGDConvolution2dValidFunction>(input_shape, filters, kernel_size, bits, mbgdLearningState);
+            return make_shared<MBGDConvolution2dValidFunction>(label, input_shape, filters, kernel_size, bits, mbgdLearningState);
         }
 
     private:

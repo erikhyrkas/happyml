@@ -19,6 +19,13 @@ namespace happyml {
         // https://medium.com/@erikhallstrm/backpropagation-from-the-beginning-77356edf427d
         virtual shared_ptr<BaseTensor> backward(const shared_ptr<BaseTensor> &output_error) = 0;
 
+        virtual void saveKnowledge(const string &fullKnowledgePath) {
+
+        }
+
+        virtual void loadKnowledge(const string &fullKnowledgePath) {
+
+        }
     };
 
     class NeuralNetworkActivationFunction : public NeuralNetworkFunction {
