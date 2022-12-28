@@ -7,7 +7,7 @@ using namespace happyml;
 int main() {
     // TODO: read from input stream (this can be used to handle API requests or files or whatever later.)
     // I'll need to make a lexer/parser and think through the details more.
-    // I want to make this similar to sql, in that the underlying details of how
+    // I want to make this similar to sql, in that the underlying details of "how"
     // are abstracted away, but I'll try to find ways to give hints to allow people control
 
     // syntax might be something like:

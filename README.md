@@ -41,7 +41,6 @@ The last goal is an area that there is already a huge push for, which is creatin
 # Current State
 This project isn't even in a complete alpha stage, yet.
 
-
 Nice-to-haves for alpha:
 * A test() function that could take a test data set and return a loss. This could be used for early stopping, but also for tests.
 * Need to fix and check-in Adam optimizer. I'm not even going to check it in until it seems plausibly right and I need to refactor the model object's training to support it correctly. I built the mini-batch gradient decent optimizer first because it was easier to make (even though I still had issues building it correctly -- that is part of the learning process), and it let me test all the other code.
@@ -52,9 +51,10 @@ Back-of-the-mind considerations:
 * _I think I've updated most of the formatting at this point._ ~~Need to format the code to C++ standards, since I've been doing so many languages that I have clearly forgotten what is standard.~~
 * _Convolutional Layers are training slow._ ~~Need to fix convolutional layers.~~
 * _The save format could be more efficient and compact._ ~~Need to be able to saveWithOverwrite and restore state, even if in a simple format.~~
+* There is a bug with multiple-inputs where the input shuffles aren't synchronized. This can be addressed, but I need to create an example that uses multiple inputs. Maybe I can get an image and label data set. I'm thinking I'll create a new type of data set that combined multiple other sources to keep them in sync when shuffling and offer "channels" to split those input into different neurons at the start of training. This will also be a chance to implement and test Convolutional 2d Same layers.
 
 Stretch goals for alpha:
-* Early stopping policy
+* ~~Early stopping policy~~
 * Lexer/parser to take in an input stream and create, train, load, and use models through a standard input stream
  
 
