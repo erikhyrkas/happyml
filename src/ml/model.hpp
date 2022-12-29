@@ -20,11 +20,12 @@ namespace happymldsl {
 
     class HappymlDSL : public enable_shared_from_this<HappymlDSL> {
     public:
-        explicit HappymlDSL(OptimizerType optimizerType, const string &modelName="unnamed", const string &repoRootPath="repo") {
+        explicit HappymlDSL(OptimizerType optimizerType, const string &modelName = "unnamed",
+                            const string &repoRootPath = "repo") {
             this->optimizerType = optimizerType;
             this->modelName = modelName;
-            if(!std::all_of(modelName.begin(), modelName.end(),
-                            [](int c) { return std::isalnum(c) || c == '_';})) {
+            if (!std::all_of(modelName.begin(), modelName.end(),
+                             [](int c) { return std::isalnum(c) || c == '_'; })) {
                 throw exception("Model name must contain only alphanumeric characters.");
             }
             switch (optimizerType) {
@@ -57,8 +58,8 @@ namespace happymldsl {
 
         shared_ptr<HappymlDSL> setModelName(const string &modelNameValue) {
             this->modelName = modelNameValue;
-            if(!std::all_of(modelName.begin(), modelName.end(),
-                            [](int c) { return std::isalnum(c) || c == '_';})) {
+            if (!std::all_of(modelName.begin(), modelName.end(),
+                             [](int c) { return std::isalnum(c) || c == '_'; })) {
                 throw exception("Model name must contain only alphanumeric characters.");
             }
             return shared_from_this();
@@ -183,15 +184,15 @@ namespace happymldsl {
             shared_ptr<NNVertex> addOutput(const vector<size_t> &nodeOutputShape, const size_t outputKernelSize,
                                            NodeType nodeType, ActivationType activationType) {
                 // todo: support other types of convolution nodes here
-                if(nodeType != NodeType::convolution2dValid) {
+                if (nodeType != NodeType::convolution2dValid) {
                     throw exception("Only convolutional nodes have a kernel size.");
                 }
                 auto result = addNode(nodeOutputShape[2], outputKernelSize,
                                       nodeType, true,
                                       activationType);
-                if(result->outputShape[0] != nodeOutputShape[0] ||
-                   result->outputShape[1] != nodeOutputShape[1] ||
-                   result->outputShape[2] != nodeOutputShape[2]) {
+                if (result->outputShape[0] != nodeOutputShape[0] ||
+                    result->outputShape[1] != nodeOutputShape[1] ||
+                    result->outputShape[2] != nodeOutputShape[2]) {
                     stringstream ss;
                     ss << "The calculated output shape of the node ("
                        << result->outputShape[0] << ", " << result->outputShape[1] << ", " << result->outputShape[2]
@@ -204,7 +205,8 @@ namespace happymldsl {
                 return result;
             }
 
-            shared_ptr<NNVertex> addNode(const size_t nodeOutputShape, NodeType nodeType, ActivationType activationType) {
+            shared_ptr<NNVertex> addNode(const size_t nodeOutputShape,
+                                         NodeType nodeType, ActivationType activationType) {
                 return addNode({1, nodeOutputShape, 1}, nodeType, activationType);
             }
 
@@ -269,31 +271,35 @@ namespace happymldsl {
                                            activationTypeToString(getActivationType()),
                                            asString(isMaterialized()),
                                            asString(isUseBias()),
-                                           asString( getBits()),
-                                           asString( inputShape[0]),
-                                           asString( inputShape[1]),
-                                           asString( inputShape[2]),
-                                           asString( outputShape[0]),
-                                           asString( outputShape[1]),
-                                           asString( outputShape[2]),
+                                           asString(getBits()),
+                                           asString(inputShape[0]),
+                                           asString(inputShape[1]),
+                                           asString(inputShape[2]),
+                                           asString(outputShape[0]),
+                                           asString(outputShape[1]),
+                                           asString(outputShape[2]),
                                            asString(getFilters()),
-                                           asString( getKernelSize())
+                                           asString(getKernelSize())
                                           });
                 shared_ptr<Optimizer> optimizer = nn->getOptimizer();
                 shared_ptr<NeuralNetworkNode> next_node;
                 shared_ptr<NeuralNetworkNode> last_node = nullptr;
                 if (node_type == NodeType::full) {
-                    if(inputShape[0] > 1) {
+                    if (inputShape[0] > 1) {
                         auto flatten_node = make_shared<NeuralNetworkNode>(make_shared<NeuralNetworkFlattenFunction>());
                         last_node = appendNode(last_node, flatten_node);
                     }
-                    string fullNodeLabel = asString(vertexUniqueId)+"_full";
+                    string fullNodeLabel = asString(vertexUniqueId) + "_full";
                     next_node = make_shared<NeuralNetworkNode>(
-                            optimizer->createFullyConnectedNeurons(fullNodeLabel, inputShape[0] * inputShape[1] * inputShape[2], outputShape[0] * outputShape[1] * outputShape[2], bits));
-                } else if(node_type == NodeType::convolution2dValid) {
-                    string c2dvLabel = asString(vertexUniqueId)+"_c2dv";
-                    next_node = make_shared<NeuralNetworkNode>(optimizer->createConvolutional2d(c2dvLabel, inputShape, filters,
-                                                                                                kernel_size, bits));
+                            optimizer->createFullyConnectedNeurons(fullNodeLabel,
+                                                                   inputShape[0] * inputShape[1] * inputShape[2],
+                                                                   outputShape[0] * outputShape[1] * outputShape[2],
+                                                                   bits));
+                } else if (node_type == NodeType::convolution2dValid) {
+                    string c2dvLabel = asString(vertexUniqueId) + "_c2dv";
+                    next_node = make_shared<NeuralNetworkNode>(
+                            optimizer->createConvolutional2d(c2dvLabel, inputShape, filters,
+                                                             kernel_size, bits));
                 } else {
                     throw exception("Unimplemented NodeType");
                 }
@@ -301,8 +307,9 @@ namespace happymldsl {
                 last_node = appendNode(last_node, next_node);
 
                 if (use_bias) {
-                    string biasLabel = asString(vertexUniqueId)+"_bias";
-                    auto bias_node = make_shared<NeuralNetworkNode>(optimizer->createBias(biasLabel, outputShape, outputShape, bits));
+                    string biasLabel = asString(vertexUniqueId) + "_bias";
+                    auto bias_node = make_shared<NeuralNetworkNode>(
+                            optimizer->createBias(biasLabel, outputShape, outputShape, bits));
                     last_node = appendNode(last_node, bias_node);
                 }
 
@@ -322,7 +329,7 @@ namespace happymldsl {
                     auto childNode = edge->to->buildNode(nn, networkMetadata);
                     last_node->add(childNode);
                 }
-                if( edgeMetadata.size() > 2) {
+                if (edgeMetadata.size() > 2) {
                     networkMetadata.push_back(edgeMetadata);
                 }
                 return first_node;
@@ -358,15 +365,16 @@ namespace happymldsl {
                 return activationFunction;
             }
 
-            shared_ptr<NeuralNetworkNode> appendNode(const shared_ptr<NeuralNetworkNode> &last_node, const shared_ptr<NeuralNetworkNode> &node) {
-                if(!first_node) {
+            shared_ptr<NeuralNetworkNode> appendNode(const shared_ptr<NeuralNetworkNode> &last_node,
+                                                     const shared_ptr<NeuralNetworkNode> &node) {
+                if (!first_node) {
                     first_node = node;
                     return node;
                 }
                 return last_node->add(node);
             }
 
-             bool doesAcceptInput() const {
+            bool doesAcceptInput() const {
                 return acceptsInput;
             }
 
@@ -413,6 +421,7 @@ namespace happymldsl {
             size_t getKernelSize() const {
                 return kernel_size;
             }
+
         private:
             weak_ptr<HappymlDSL> parent;
             vector<shared_ptr<NNEdge>> edges;
@@ -447,8 +456,8 @@ namespace happymldsl {
         }
 
         shared_ptr<NNVertex> addInputOutput(const vector<size_t> &input_shape,
-                                      const vector<size_t> &output_shape, NodeType nodeType,
-                                      ActivationType activationType) {
+                                            const vector<size_t> &output_shape, NodeType nodeType,
+                                            ActivationType activationType) {
             auto nnv = make_shared<NNVertex>(shared_from_this(), nodeType, input_shape,
                                              output_shape, true, true,
                                              activationType, nextVertexId());
@@ -461,7 +470,7 @@ namespace happymldsl {
         shared_ptr<NNVertex> addInput(const vector<size_t> &input_shape,
                                       const size_t filters, const size_t kernel_size,
                                       NodeType nodeType,
-                 ActivationType activationType) {
+                                      ActivationType activationType) {
             auto nnv = make_shared<NNVertex>(shared_from_this(), nodeType, input_shape,
                                              filters, kernel_size, false, true,
                                              activationType, nextVertexId());
@@ -500,7 +509,8 @@ namespace happymldsl {
         uint32_t vertexUniqueSequenceCounter;
     };
 
-    shared_ptr<HappymlDSL> neuralNetworkBuilder(OptimizerType optimizerType, const string &modelName="unnamed", const string &repoRootPath="repo") {
+    shared_ptr<HappymlDSL> neuralNetworkBuilder(OptimizerType optimizerType, const string &modelName = "unnamed",
+                                                const string &repoRootPath = "repo") {
         auto result = make_shared<HappymlDSL>(optimizerType, modelName, repoRootPath);
         return result;
     }
@@ -513,13 +523,13 @@ namespace happymldsl {
     void createVertexFromMetadata(const shared_ptr<HappymlDSL> &dsl,
                                   const vector<string> &vertexMetadata,
                                   shared_ptr<HappymlDSL::NNVertex> parent,
-                                  map<uint32_t,shared_ptr<HappymlDSL::NNVertex>> &createdVertexes,
+                                  map<uint32_t, shared_ptr<HappymlDSL::NNVertex>> &createdVertexes,
                                   map<uint32_t, vector<string>> &vertexes,
                                   map<uint32_t, vector<uint32_t>> &edgeFromTo) {
         // "vertex", id, is input, is output, node type, activation type, materialized, uses bias, bits,
         // input rows, input columns, input channels, output rows, output columns, output channels, filters, kernels
         const uint32_t vertexId = stoul(vertexMetadata[1]);
-        if(createdVertexes.count(vertexId) > 0) {
+        if (createdVertexes.count(vertexId) > 0) {
             // todo: need to add node combine functionality, so it is possible to concatenate,
             //  add, multiply, etc. inputs. When we make that functionality, this code will then need to
             //  be updated to support it. At the point I typed this, model dsl only supports a very linear
@@ -536,15 +546,15 @@ namespace happymldsl {
         const bool isMaterialized = asBool(vertexMetadata[6]);
         const bool useBias = asBool(vertexMetadata[7]);
         const uint8_t bits = stoul(vertexMetadata[8]);
-        const vector<size_t> inputShape = { stoull(vertexMetadata[9]),
-                                            stoull(vertexMetadata[10]),
-                                            stoull(vertexMetadata[11]) };
-        const vector<size_t> outputShape = { stoull(vertexMetadata[12]),
-                                             stoull(vertexMetadata[13]),
-                                             stoull(vertexMetadata[14]) };
+        const vector<size_t> inputShape = {stoull(vertexMetadata[9]),
+                                           stoull(vertexMetadata[10]),
+                                           stoull(vertexMetadata[11])};
+        const vector<size_t> outputShape = {stoull(vertexMetadata[12]),
+                                            stoull(vertexMetadata[13]),
+                                            stoull(vertexMetadata[14])};
         size_t filters = stoull(vertexMetadata[15]);
         size_t kernels = stoull(vertexMetadata[16]);
-        if(acceptsInput) {
+        if (acceptsInput) {
             if (producesOutput) {
                 if (filters > 0) {
                     createdVertexes[vertexId] = dsl->addInputOutput(inputShape, filters, kernels, nodeType,
@@ -563,35 +573,35 @@ namespace happymldsl {
                 }
             }
         } else {
-            if(!parent) {
+            if (!parent) {
                 throw exception("missing parent");
             }
 
             if (filters > 0) {
                 createdVertexes[vertexId] = parent->addNode(filters,
-                                                              kernels,
-                                                              nodeType,
+                                                            kernels,
+                                                            nodeType,
                                                             producesOutput,
-                                                              activationType);
+                                                            activationType);
             } else {
-                if(nodeType != full) {
+                if (nodeType != full) {
                     throw exception("output node type wasn't full");
                 }
                 createdVertexes[vertexId] = parent->addNode(inputShape,
                                                             outputShape,
-                                                              nodeType,
-                                                              producesOutput,
-                                                              activationType);
+                                                            nodeType,
+                                                            producesOutput,
+                                                            activationType);
             }
         }
         createdVertexes[vertexId]->setMaterialized(isMaterialized);
         createdVertexes[vertexId]->setUseBias(useBias);
         createdVertexes[vertexId]->setBits(bits);
 
-        if( edgeFromTo.count(vertexId) > 0) {
+        if (edgeFromTo.count(vertexId) > 0) {
             auto edges = edgeFromTo[vertexId];
-            for(auto nextEdge : edges) {
-                if(vertexes.count(nextEdge) < 1) {
+            for (auto nextEdge: edges) {
+                if (vertexes.count(nextEdge) < 1) {
                     throw exception("Bad model definition. Edge not found!");
                 }
                 auto nextVertexMetadata = vertexes[nextEdge];
@@ -605,31 +615,32 @@ namespace happymldsl {
         }
     }
 
-    shared_ptr<NeuralNetworkForTraining> loadNeuralNetworkForTraining(const string &modelName, const string &repoRootPath="repo") {
+    shared_ptr<NeuralNetworkForTraining> loadNeuralNetworkForTraining(const string &modelName,
+                                                                      const string &repoRootPath = "repo") {
         string modelPath = repoRootPath + "/" + modelName;
         string configPath = modelPath + "/configuration.happyml";
         auto configReader = make_shared<DelimitedTextFileReader>(configPath, ':');
 
         auto optimizerRecord = configReader->nextRecord();
-        if(optimizerRecord[0] != "optimizer") {
+        if (optimizerRecord[0] != "optimizer") {
             throw exception("Invalid configuration.happyml missing optimizer field.");
         }
         const OptimizerType optimizerType = stringToOptimizerType(optimizerRecord[1]);
 
         auto learningRateRecord = configReader->nextRecord();
-        if(learningRateRecord[0] != "learningRate") {
+        if (learningRateRecord[0] != "learningRate") {
             throw exception("Invalid configuration.happyml missing learningRate field.");
         }
         float learningRate = stof(learningRateRecord[1]);
 
         auto biasLearningRateRecord = configReader->nextRecord();
-        if(biasLearningRateRecord[0] != "biasLearningRate") {
+        if (biasLearningRateRecord[0] != "biasLearningRate") {
             throw exception("Invalid configuration.happyml missing biasLearningRate field.");
         }
         float biasLearningRate = stof(biasLearningRateRecord[1]);
 
         auto lossRecord = configReader->nextRecord();
-        if(lossRecord[0] != "loss") {
+        if (lossRecord[0] != "loss") {
             throw exception("Invalid configuration.happyml missing loss field.");
         }
         const LossType lossType = stringToLossType(lossRecord[1]);
@@ -642,27 +653,27 @@ namespace happymldsl {
         set<uint32_t> headVertexes;
         map<uint32_t, vector<string>> vertexes;
         map<uint32_t, vector<uint32_t>> edgeFromTo;
-        while(configReader->hasNext()) {
+        while (configReader->hasNext()) {
             auto nextRecord = configReader->nextRecord();
-            if(nextRecord[0] == "vertex") {
+            if (nextRecord[0] == "vertex") {
                 uint32_t vertexId = stoul(nextRecord[1]);
                 vertexes[vertexId] = nextRecord;
                 const auto acceptsInput = asBool(nextRecord[2]);
-                if(acceptsInput) {
+                if (acceptsInput) {
                     headVertexes.insert(vertexId);
                 }
             } else {
                 uint32_t fromLabel = stoul(nextRecord[1]);
                 vector<uint32_t> toLabels;
-                for(size_t index = 2; index < nextRecord.size(); index++) {
+                for (size_t index = 2; index < nextRecord.size(); index++) {
                     uint32_t toLabel = stoul(nextRecord[index]);
                     toLabels.push_back(toLabel);
                 }
                 edgeFromTo[fromLabel] = toLabels;
             }
         }
-        map<uint32_t,shared_ptr<HappymlDSL::NNVertex>> createdVertexes;
-        for(auto headVertexId : headVertexes) {
+        map<uint32_t, shared_ptr<HappymlDSL::NNVertex>> createdVertexes;
+        for (auto headVertexId: headVertexes) {
             auto vertexMetadata = vertexes[headVertexId];
             createVertexFromMetadata(dsl,
                                      vertexMetadata,
@@ -672,10 +683,6 @@ namespace happymldsl {
                                      edgeFromTo);
         }
 
-//        dsl->addInput()
-//        map<string, shared_ptr<NNVertex>> existingNodes;
-//                ->addInput(xorDataSource->getGivenShape(), 3, NodeType::full, ActivationType::tanhApprox)
-//                ->addOutput(xorDataSource->getExpectedShape(), ActivationType::tanhApprox);
         auto resultNeuralNetwork = dsl->build();
         resultNeuralNetwork->loadKnowledge("default");
         return resultNeuralNetwork;

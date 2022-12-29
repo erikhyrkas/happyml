@@ -46,7 +46,7 @@ namespace happyml {
         }
 
         void markUnsaved() {
-            if(saved) {
+            if (saved) {
                 saved = false;
                 for (const auto &outputConnection: connectionOutputs) {
                     outputConnection->to->markUnsaved();
@@ -65,7 +65,7 @@ namespace happyml {
         }
 
         void loadKnowledge(const string &fullKnowledgePath) {
-            if(saved) {
+            if (saved) {
                 return;
             }
             saved = true;
@@ -263,6 +263,7 @@ namespace happyml {
         vector<shared_ptr<BaseTensor>> predict(const vector<shared_ptr<BaseTensor>> &givenInputs) {
             return predict(givenInputs, false);
         }
+
         // predict/infer
         // I chose the word "predict" because it is more familiar than the word "infer"
         // and the meaning is more or less the same.
@@ -301,7 +302,7 @@ namespace happyml {
         NeuralNetworkForTraining(const string &name, const string &repoRootPath, const OptimizerType optimizerType,
                                  const float learningRate, const float biasLearningRate,
                                  const LossType lossType)
-                                 : NeuralNetwork(name, repoRootPath) {
+                : NeuralNetwork(name, repoRootPath) {
             this->optimizerType = optimizerType;
             this->lossType = lossType;
             this->learningRate = learningRate;
@@ -354,16 +355,18 @@ namespace happyml {
 
         void saveAs(const string &modelFolderPath, bool overwrite) {
             auto modelPath = modelFolderPath;
-            if( filesystem::is_directory(modelPath) ) {
-                if(!overwrite) {
+            if (filesystem::is_directory(modelPath)) {
+                if (!overwrite) {
                     // I don't want to throw an exception here since training a model can take a long time
                     // and people would be upset about losing their work, so we'll just save to a new location.
                     // Part of me thinks that it's better not to do this and just throw the error, and part of me
                     // thinks about how I have spent days waiting for some models to train and this sort of
                     // mistake would kill me.
                     auto canonicalModelPath = filesystem::canonical(modelPath);
-                    cerr << "Model path "<< canonicalModelPath << " already existed, attempting to save to the new location: ";
-                    auto ms = std::to_string(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
+                    cerr << "Model path " << canonicalModelPath
+                         << " already existed, attempting to save to the new location: ";
+                    auto ms = std::to_string(chrono::duration_cast<chrono::milliseconds>(
+                            chrono::system_clock::now().time_since_epoch()).count());
                     canonicalModelPath += "_" + ms;
                     cerr << canonicalModelPath << endl;
                     modelPath = canonicalModelPath.generic_string();
@@ -374,7 +377,7 @@ namespace happyml {
             filesystem::create_directories(modelPath);
             string modelProperties = modelPath + "/configuration.happyml";
             auto writer = make_unique<DelimitedTextFileWriter>(modelProperties, ':');
-            for(const auto record : networkMetadata) {
+            for (const auto record: networkMetadata) {
                 writer->writeRecord(record);
             }
             writer->close();
@@ -396,11 +399,13 @@ namespace happyml {
 
         void saveKnowledge(const string &modelFolderPath, const string &knowledgeLabel, bool overwrite) {
             string fullKnowledgePath = modelFolderPath + "/" + knowledgeLabel;
-            if( filesystem::is_directory(fullKnowledgePath) ) {
+            if (filesystem::is_directory(fullKnowledgePath)) {
                 if (!overwrite) {
                     auto canonicalFullKnowledgePath = filesystem::canonical(fullKnowledgePath);
-                    cerr << "Knowledge path "<< canonicalFullKnowledgePath << " already existed, attempting to save to the new location: ";
-                    auto ms = std::to_string(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
+                    cerr << "Knowledge path " << canonicalFullKnowledgePath
+                         << " already existed, attempting to save to the new location: ";
+                    auto ms = std::to_string(chrono::duration_cast<chrono::milliseconds>(
+                            chrono::system_clock::now().time_since_epoch()).count());
                     canonicalFullKnowledgePath += "_" + ms;
                     cerr << canonicalFullKnowledgePath << endl;
                     fullKnowledgePath = canonicalFullKnowledgePath.generic_string();
@@ -439,25 +444,28 @@ namespace happyml {
         }
 
         float train(const shared_ptr<TrainingDataSet> &trainingDataset,
-                   int batchSize = 1,
-                   TrainingRetentionPolicy trainingRetentionPolicy = best,
-                   bool overwriteOutputLines = true) {
+                    int batchSize = 1,
+                    TrainingRetentionPolicy trainingRetentionPolicy = best,
+                    bool overwriteOutputLines = true) {
             auto testDataset = make_shared<EmptyTrainingDataSet>();
             return train(trainingDataset,
-                  testDataset,
-                  batchSize,
-                  trainingRetentionPolicy,
-                  overwriteOutputLines);
+                         testDataset,
+                         batchSize,
+                         trainingRetentionPolicy,
+                         overwriteOutputLines);
         }
-            // a sample is a single record
+
+        // a sample is a single record
         // a batch is the number of samples (records) to look at before updating weights
         // train/fit
         float train(const shared_ptr<TrainingDataSet> &trainingDataset,
-                   const shared_ptr<TrainingDataSet> &testDataset,
-                   int batchSize = 1,
-                   TrainingRetentionPolicy trainingRetentionPolicy = best,
-                   bool overwriteOutputLines = true) {
-            string knowledgeCheckpointLabel = "checkpoint_"+std::to_string(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
+                    const shared_ptr<TrainingDataSet> &testDataset,
+                    int batchSize = 1,
+                    TrainingRetentionPolicy trainingRetentionPolicy = best,
+                    bool overwriteOutputLines = true) {
+            string knowledgeCheckpointLabel = "checkpoint_" + std::to_string(
+                    chrono::duration_cast<chrono::milliseconds>(
+                            chrono::system_clock::now().time_since_epoch()).count());
             bool useTestDataset = testDataset->recordCount() > 0;
             // TODO: take in a test set and then validate that the records aren't in the training
             //  set. If they are, give a warning.
@@ -549,7 +557,7 @@ namespace happyml {
                 if (epochTestingLoss < lowestLoss) {
                     lowestLoss = epochTestingLoss;
                     lowestLossEpoch = epoch;
-                    if( trainingRetentionPolicy == best) {
+                    if (trainingRetentionPolicy == best) {
                         saveKnowledge(knowledgeCheckpointLabel, true);
                     }
                     logTraining(batchTimer.peekMilliseconds(), epoch, batchSize,
@@ -559,7 +567,7 @@ namespace happyml {
                 }
                 trainingDataset->restart();
                 epoch++;
-            } while(!exitStrategy->isDone(epoch, epochTestingLoss, epochTimer.getMilliseconds()));
+            } while (!exitStrategy->isDone(epoch, epochTestingLoss, epochTimer.getMilliseconds()));
             int64_t elapsed = totalTimer.getMilliseconds();
             cout << endl << "Finished training in ";
             if (elapsed < 2000) {
@@ -571,7 +579,7 @@ namespace happyml {
             }
             // TODO: this is placeholder code until we actually save and formalize best loss,
             //  but it simulates the future results.
-            if(  trainingRetentionPolicy == best) {
+            if (trainingRetentionPolicy == best) {
                 loadKnowledge(knowledgeCheckpointLabel);
                 removeKnowledge(knowledgeCheckpointLabel);
                 return lowestLoss;
@@ -588,7 +596,7 @@ namespace happyml {
             size_t currentRecord = 0;
             size_t totalRecords = testDataset->recordCount();
             auto nextRecord = testDataset->nextRecord();
-            while(nextRecord) {
+            while (nextRecord) {
                 const auto nextGiven = nextRecord->getGiven();
                 auto nextTruth = nextRecord->getExpected();
                 auto nextPrediction = predict(nextGiven, false);
@@ -596,18 +604,18 @@ namespace happyml {
                 for (size_t outputIndex = 0; outputIndex < outputSize; outputIndex++) {
                     const auto error = make_shared<FullTensor>(
                             lossFunction->calculateError(nextTruth[outputIndex],
-                                                              nextPrediction[outputIndex]));
+                                                         nextPrediction[outputIndex]));
                     const auto loss = lossFunction->compute(error);
                     totalLoss += loss;
                 }
                 currentRecord++;
-                averageLoss += (float) (((totalLoss / (double)outputSize) - averageLoss)/(double)currentRecord);
+                averageLoss += (float) (((totalLoss / (double) outputSize) - averageLoss) / (double) currentRecord);
                 logTesting(trainingTimer.peekMilliseconds(),
                            currentRecord, totalRecords,
                            averageLoss, overwriteOutputLines);
                 nextRecord = testDataset->nextRecord();
             }
-            if(overwriteOutputLines) {
+            if (overwriteOutputLines) {
                 printf("\n");
             }
             return averageLoss;
@@ -653,8 +661,8 @@ namespace happyml {
             }
             printf("\tEpoch: %6zd \tBatch: %4zd/%zd Batch Size: %3d \tLoss: %11f",
                    (epoch + 1), currentRecord, totalRecords, batchSize, loss);
-            if(epoch > 0) {
-                printf(" \tLowest: %11f (%zd)            ", lowestLoss, (lowestLossEpoch+1));
+            if (epoch > 0) {
+                printf(" \tLowest: %11f (%zd)            ", lowestLoss, (lowestLossEpoch + 1));
             }
             if (overwrite) {
                 printf("\r");
@@ -688,6 +696,7 @@ namespace happyml {
         void setNetworkMetadata(const vector<vector<string>> &newNetworkMetadata) {
             networkMetadata = newNetworkMetadata;
         }
+
     private:
         float learningRate;
         float biasLearningRate;

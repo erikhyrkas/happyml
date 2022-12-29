@@ -48,7 +48,7 @@ namespace happyml {
         shared_ptr<BaseTensor> derivative(const shared_ptr<BaseTensor> &input) override {
             // sent all 1s to output in the same shape as input
             return make_shared<UniformTensor>(input->rowCount(), input->columnCount(), input->channelCount(),
-                                                   1.0f);
+                                              1.0f);
         }
 
     };
@@ -87,7 +87,7 @@ namespace happyml {
         shared_ptr<BaseTensor> derivative(const shared_ptr<BaseTensor> &input) override {
             auto transformFunction = [](float original) {
                 // derivative original == 0 is undefined.
-                if(original > 0.f) {
+                if (original > 0.f) {
                     return 1.0f;
                 }
                 return 0.f;
@@ -126,10 +126,10 @@ namespace happyml {
             shared_ptr<BaseTensor> softmaxOut = activate(input);
             auto negative = make_shared<TensorMultiplyByScalarView>(softmaxOut, -1.0f);
             auto reshape = make_shared<TensorReshapeView>(softmaxOut, softmaxOut->columnCount(),
-                                                               softmaxOut->rowCount());
+                                                          softmaxOut->rowCount());
             auto dot_product_view = make_shared<TensorDotTensorView>(negative, reshape);
             auto diag = make_shared<TensorDiagonalView>(softmaxOut);
-            cout << "softmax: work in progress... fix me." <<endl;
+            cout << "softmax: work in progress... fix me." << endl;
             softmaxOut->print();
             diag->print();
             dot_product_view->print();
@@ -159,6 +159,7 @@ namespace happyml {
             return make_shared<TensorValueTransformView>(input, transformFunction);
         }
     };
+
 // I found this article useful in verifying the formula: https://towardsdatascience.com/derivative-of-the-sigmoid-function-536880cf918e
 // I also checked this understanding here: https://medium.com/@DannyDenenberg/derivative-of-the-sigmoid-function-774446dfa462
 // 0 to 1
@@ -212,6 +213,7 @@ namespace happyml {
             return make_shared<TensorValueTransformView>(input, transformFunction);
         }
     };
+
     // Generally used for classification
     // -1 to 1
     class TanhActivationFunction : public ActivationFunction {

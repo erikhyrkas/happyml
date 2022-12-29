@@ -11,11 +11,17 @@ using namespace std;
 
 namespace happyml {
 
-    enum OptimizerType { microbatch, adam };
+    enum OptimizerType {
+        microbatch, adam
+    };
 
-    enum LossType { mse };
+    enum LossType {
+        mse
+    };
 
-    enum NodeType { full, convolution2dValid };
+    enum NodeType {
+        full, convolution2dValid
+    };
 
     // Added the word "Default" after tanh because
     // the compiler was picking up tanh as the function tanh().

@@ -47,13 +47,14 @@ namespace happyml {
 // Multiply each element of the tensor by a constant.
     class TensorMultiplyByScalarView : public BaseTensorUnaryOperatorView {
     public:
-        TensorMultiplyByScalarView(const shared_ptr <BaseTensor> &tensor, float scale) : BaseTensorUnaryOperatorView(
+        TensorMultiplyByScalarView(const shared_ptr<BaseTensor> &tensor, float scale) : BaseTensorUnaryOperatorView(
                 tensor) {
             this->scale = scale;
         }
 
         void printMaterializationPlan() override {
-            cout << "TensorMultiplyByScalarView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
+            cout << "TensorMultiplyByScalarView{" << rowCount() << "," << columnCount() << "," << channelCount()
+                 << "}->";
             child->printMaterializationPlan();
         }
 
@@ -71,7 +72,7 @@ namespace happyml {
 
     class TensorValueTransformView : public BaseTensorUnaryOperatorView {
     public:
-        TensorValueTransformView(const shared_ptr <BaseTensor> &tensor, function<float(float)> transformFunction)
+        TensorValueTransformView(const shared_ptr<BaseTensor> &tensor, function<float(float)> transformFunction)
                 : BaseTensorUnaryOperatorView(
                 tensor) {
             this->transformFunction = std::move(transformFunction);
@@ -92,7 +93,7 @@ namespace happyml {
 
     class TensorValueTransform2View : public BaseTensorUnaryOperatorView {
     public:
-        TensorValueTransform2View(const shared_ptr <BaseTensor> &tensor,
+        TensorValueTransform2View(const shared_ptr<BaseTensor> &tensor,
                                   function<float(float, vector<double>)> transformFunction,
                                   vector<double> constants) : BaseTensorUnaryOperatorView(
                 tensor) {
@@ -101,7 +102,8 @@ namespace happyml {
         }
 
         void printMaterializationPlan() override {
-            cout << "TensorValueTransform2View{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
+            cout << "TensorValueTransform2View{" << rowCount() << "," << columnCount() << "," << channelCount()
+                 << "}->";
             child->printMaterializationPlan();
         }
 
@@ -118,7 +120,7 @@ namespace happyml {
 // You cannot change the number of channels in the current implementation.
     class TensorReshapeView : public BaseTensorUnaryOperatorView {
     public:
-        TensorReshapeView(const shared_ptr <BaseTensor> &tensor, const size_t rows,
+        TensorReshapeView(const shared_ptr<BaseTensor> &tensor, const size_t rows,
                           const size_t columns) : BaseTensorUnaryOperatorView(tensor) {
             this->rows = rows;
             this->columns = columns;
@@ -159,7 +161,7 @@ namespace happyml {
 // Converts a 3d tensor into a row vector
     class TensorFlattenToRowView : public BaseTensorUnaryOperatorView {
     public:
-        explicit TensorFlattenToRowView(const shared_ptr <BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
+        explicit TensorFlattenToRowView(const shared_ptr<BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
             this->columns = tensor->size();
         }
 
@@ -199,13 +201,14 @@ namespace happyml {
 // Converts a 3d tensor into a column vector
     class TensorFlattenToColumnView : public BaseTensorUnaryOperatorView {
     public:
-        explicit TensorFlattenToColumnView(const shared_ptr <BaseTensor> &tensor) : BaseTensorUnaryOperatorView(
+        explicit TensorFlattenToColumnView(const shared_ptr<BaseTensor> &tensor) : BaseTensorUnaryOperatorView(
                 tensor) {
             this->rows = tensor->size();
         }
 
         void printMaterializationPlan() override {
-            cout << "TensorFlattenToColumnView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
+            cout << "TensorFlattenToColumnView{" << rowCount() << "," << columnCount() << "," << channelCount()
+                 << "}->";
             child->printMaterializationPlan();
         }
 
@@ -239,7 +242,7 @@ namespace happyml {
 
     class TensorTransposeView : public BaseTensorUnaryOperatorView {
     public:
-        explicit TensorTransposeView(const shared_ptr <BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
+        explicit TensorTransposeView(const shared_ptr<BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
         }
 
         void printMaterializationPlan() override {
@@ -291,11 +294,11 @@ namespace happyml {
 // and specifically: https://www.youtube.com/watch?v=WTLl03D4TNA
     class TensorDiagonalView : public BaseTensorUnaryOperatorView {
     public:
-        TensorDiagonalView(const shared_ptr <BaseTensor> &tensor, size_t row_offset) : BaseTensorUnaryOperatorView(
+        TensorDiagonalView(const shared_ptr<BaseTensor> &tensor, size_t row_offset) : BaseTensorUnaryOperatorView(
                 tensor) {
             this->row_offset = row_offset;
             this->is_1d = tensor->rowCount() == 1;
-            if(!is_1d) {
+            if (!is_1d) {
                 // we only have as many columns as there were rows
                 this->columns = tensor->rowCount() - row_offset;
                 // we either have 0 or 1 result row
@@ -312,7 +315,7 @@ namespace happyml {
             child->printMaterializationPlan();
         }
 
-        explicit TensorDiagonalView(const shared_ptr <BaseTensor> &tensor)
+        explicit TensorDiagonalView(const shared_ptr<BaseTensor> &tensor)
                 : TensorDiagonalView(tensor, 0) {
         }
 
@@ -329,8 +332,8 @@ namespace happyml {
         }
 
         float getValue(size_t row, size_t column, size_t channel) override {
-            if( is_1d) {
-                if( row + row_offset == column) {
+            if (is_1d) {
+                if (row + row_offset == column) {
                     child->getValue(0, column, channel);
                 }
                 return 0.f;
@@ -349,7 +352,7 @@ namespace happyml {
 
     class TensorNoOpView : public BaseTensorUnaryOperatorView {
     public:
-        explicit TensorNoOpView(const shared_ptr <BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {}
+        explicit TensorNoOpView(const shared_ptr<BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {}
 
         float getValue(size_t row, size_t column, size_t channel) override {
             return child->getValue(row, column, channel);
@@ -365,11 +368,13 @@ namespace happyml {
 
     class TensorDotTensorView : public BaseTensorBinaryOperatorView {
     public:
-        TensorDotTensorView(const shared_ptr <BaseTensor> &tensor1,
-                            const shared_ptr <BaseTensor> &tensor2) : BaseTensorBinaryOperatorView(tensor1, tensor2) {
+        TensorDotTensorView(const shared_ptr<BaseTensor> &tensor1,
+                            const shared_ptr<BaseTensor> &tensor2) : BaseTensorBinaryOperatorView(tensor1, tensor2) {
             if (tensor1->columnCount() != tensor2->rowCount()) {
-                cout << "[" << tensor1->rowCount() << ", " << tensor1->columnCount() << ", " << tensor1->channelCount() << "] dot [";
-                cout << tensor2->rowCount() << ", " << tensor2->columnCount() << ", " << tensor2->channelCount() << "]" << endl;
+                cout << "[" << tensor1->rowCount() << ", " << tensor1->columnCount() << ", " << tensor1->channelCount()
+                     << "] dot [";
+                cout << tensor2->rowCount() << ", " << tensor2->columnCount() << ", " << tensor2->channelCount() << "]"
+                     << endl;
                 throw exception("Dot product tensor1.cols must match tensor2.rows in length");
             }
             if (tensor1->channelCount() != tensor2->channelCount()) {
@@ -396,8 +401,8 @@ namespace happyml {
         float getValue(size_t row, size_t column, size_t channel) override {
             float val = 0;
             const auto childColumnCount = child1->columnCount();
-            #pragma omp for
-            for (size_t t1_col = 0; t1_col <childColumnCount; t1_col++) {
+#pragma omp for
+            for (size_t t1_col = 0; t1_col < childColumnCount; t1_col++) {
                 val += child1->getValue(row, t1_col, channel) * child2->getValue(t1_col, column, channel);
             }
             return val;
@@ -406,26 +411,31 @@ namespace happyml {
 
     class TensorMultiplyTensorView : public BaseTensorBinaryOperatorView {
     public:
-        TensorMultiplyTensorView(const shared_ptr <BaseTensor> &tensor1,
-                                 const shared_ptr <BaseTensor> &tensor2) : BaseTensorBinaryOperatorView(tensor1,
-                                                                                                        tensor2) {
+        TensorMultiplyTensorView(const shared_ptr<BaseTensor> &tensor1,
+                                 const shared_ptr<BaseTensor> &tensor2) : BaseTensorBinaryOperatorView(tensor1,
+                                                                                                       tensor2) {
             if (tensor1->columnCount() != tensor2->columnCount() || tensor1->rowCount() != tensor2->rowCount()) {
                 stringstream ss;
-                ss << "Multiply cols and rows much match in length. Attempted: " << "[" << tensor1->rowCount() << ", " << tensor1->columnCount() << ", " << tensor1->channelCount() << "] * [";
-                ss << tensor2->rowCount() << ", " << tensor2->columnCount() << ", " << tensor2->channelCount() << "]" << endl;
+                ss << "Multiply cols and rows much match in length. Attempted: " << "[" << tensor1->rowCount() << ", "
+                   << tensor1->columnCount() << ", " << tensor1->channelCount() << "] * [";
+                ss << tensor2->rowCount() << ", " << tensor2->columnCount() << ", " << tensor2->channelCount() << "]"
+                   << endl;
                 throw exception(ss.str().c_str());
             }
             if (tensor1->channelCount() != tensor2->channelCount()) {
                 stringstream ss;
-                ss << "Multiply product channels must match in length. Attempted: " << "[" << tensor1->rowCount() << ", " << tensor1->columnCount() << ", " << tensor1->channelCount() << "] * [";
-                ss << tensor2->rowCount() << ", " << tensor2->columnCount() << ", " << tensor2->channelCount() << "]" << endl;
+                ss << "Multiply product channels must match in length. Attempted: " << "[" << tensor1->rowCount()
+                   << ", " << tensor1->columnCount() << ", " << tensor1->channelCount() << "] * [";
+                ss << tensor2->rowCount() << ", " << tensor2->columnCount() << ", " << tensor2->channelCount() << "]"
+                   << endl;
                 throw exception(ss.str().c_str());
 
             }
         }
 
         void printMaterializationPlan() override {
-            cout << "TensorMultiplyTensorView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->(";
+            cout << "TensorMultiplyTensorView{" << rowCount() << "," << columnCount() << "," << channelCount()
+                 << "}->(";
             child1->printMaterializationPlan();
             cout << ") + (";
             child2->printMaterializationPlan();
@@ -448,12 +458,14 @@ namespace happyml {
 
     class TensorAddTensorView : public BaseTensorBinaryOperatorView {
     public:
-        TensorAddTensorView(const shared_ptr <BaseTensor> &tensor1,
-                            const shared_ptr <BaseTensor> &tensor2) : BaseTensorBinaryOperatorView(tensor1, tensor2) {
+        TensorAddTensorView(const shared_ptr<BaseTensor> &tensor1,
+                            const shared_ptr<BaseTensor> &tensor2) : BaseTensorBinaryOperatorView(tensor1, tensor2) {
             if (tensor1->channelCount() != tensor2->channelCount() || tensor1->rowCount() != tensor2->rowCount() ||
-                    tensor1->columnCount() != tensor2->columnCount()) {
-                cout << "[" << tensor1->rowCount() << ", " << tensor1->columnCount() << ", " << tensor1->channelCount() << "] + [";
-                cout << tensor2->rowCount() << ", " << tensor2->columnCount() << ", " << tensor2->channelCount() << "]" << endl;
+                tensor1->columnCount() != tensor2->columnCount()) {
+                cout << "[" << tensor1->rowCount() << ", " << tensor1->columnCount() << ", " << tensor1->channelCount()
+                     << "] + [";
+                cout << tensor2->rowCount() << ", " << tensor2->columnCount() << ", " << tensor2->channelCount() << "]"
+                     << endl;
                 throw exception("You can only add two tensors of the same dimensions together.");
             }
         }
@@ -481,12 +493,14 @@ namespace happyml {
 
     class TensorMinusTensorView : public BaseTensorBinaryOperatorView {
     public:
-        TensorMinusTensorView(const shared_ptr <BaseTensor> &tensor1,
-                              const shared_ptr <BaseTensor> &tensor2) : BaseTensorBinaryOperatorView(tensor1, tensor2) {
+        TensorMinusTensorView(const shared_ptr<BaseTensor> &tensor1,
+                              const shared_ptr<BaseTensor> &tensor2) : BaseTensorBinaryOperatorView(tensor1, tensor2) {
             if (tensor1->channelCount() != tensor2->channelCount() || tensor1->rowCount() != tensor2->rowCount() ||
-                    tensor1->columnCount() != tensor2->columnCount()) {
-                cout << "[" << tensor1->rowCount() << ", " << tensor1->columnCount() << ", " << tensor1->channelCount() << "] - [";
-                cout << tensor2->rowCount() << ", " << tensor2->columnCount() << ", " << tensor2->channelCount() << "]" << endl;
+                tensor1->columnCount() != tensor2->columnCount()) {
+                cout << "[" << tensor1->rowCount() << ", " << tensor1->columnCount() << ", " << tensor1->channelCount()
+                     << "] - [";
+                cout << tensor2->rowCount() << ", " << tensor2->columnCount() << ", " << tensor2->channelCount() << "]"
+                     << endl;
                 throw exception("You can only subtract two tensors of the same dimensions together.");
             }
         }
@@ -514,7 +528,7 @@ namespace happyml {
 
     class TensorPowerView : public BaseTensorUnaryOperatorView {
     public:
-        TensorPowerView(const shared_ptr <BaseTensor> &tensor, const float power) : BaseTensorUnaryOperatorView(
+        TensorPowerView(const shared_ptr<BaseTensor> &tensor, const float power) : BaseTensorUnaryOperatorView(
                 tensor) {
             this->power = power;
         }
@@ -528,18 +542,21 @@ namespace happyml {
             cout << "TensorMinusTensorView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
             child->printMaterializationPlan();
         }
+
     private:
         float power;
     };
 
     class TensorLogView : public BaseTensorUnaryOperatorView {
     public:
-        explicit TensorLogView(const shared_ptr <BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
+        explicit TensorLogView(const shared_ptr<BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
         }
+
         void printMaterializationPlan() override {
             cout << "TensorLogView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
             child->printMaterializationPlan();
         }
+
         float getValue(size_t row, size_t column, size_t channel) override {
             const float val = child->getValue(row, column, channel);
             return log(val);
@@ -550,12 +567,14 @@ namespace happyml {
 
     class TensorLog2View : public BaseTensorUnaryOperatorView {
     public:
-        explicit TensorLog2View(const shared_ptr <BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
+        explicit TensorLog2View(const shared_ptr<BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
         }
+
         void printMaterializationPlan() override {
             cout << "TensorLog2View{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
             child->printMaterializationPlan();
         }
+
         float getValue(size_t row, size_t column, size_t channel) override {
             const float val = child->getValue(row, column, channel);
             return log2(val);
@@ -570,14 +589,17 @@ namespace happyml {
             row_base_value = child->rowCount() - 1;
             column_base_value = child->columnCount() - 1;
         }
+
         void printMaterializationPlan() override {
             cout << "TensorRotate180View{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
             child->printMaterializationPlan();
         }
+
         float getValue(size_t row, size_t column, size_t channel) override {
             const float val = child->getValue(row_base_value - row, column_base_value - column, channel);
             return val;
         }
+
     private:
         size_t row_base_value;
         size_t column_base_value;
@@ -587,10 +609,12 @@ namespace happyml {
     public:
         explicit TensorRoundedView(const shared_ptr<BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
         }
+
         void printMaterializationPlan() override {
             cout << "TensorRoundedView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
             child->printMaterializationPlan();
         }
+
         float getValue(size_t row, size_t column, size_t channel) override {
             const float val = child->getValue(row, column, channel);
             return round(val);
@@ -604,10 +628,12 @@ namespace happyml {
     // but combine the resulting tensor with other tensors.
     class TensorSumToChannelView : public BaseTensorUnaryOperatorView {
     public:
-        TensorSumToChannelView(const shared_ptr<BaseTensor> &tensor, size_t data_channel_index, size_t number_of_channels) : BaseTensorUnaryOperatorView(tensor) {
+        TensorSumToChannelView(const shared_ptr<BaseTensor> &tensor, size_t data_channel_index,
+                               size_t number_of_channels) : BaseTensorUnaryOperatorView(tensor) {
             this->data_channel_index = data_channel_index;
             this->number_of_channels = number_of_channels;
         }
+
         void printMaterializationPlan() override {
             cout << "TensorSumToChannelView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
             child->printMaterializationPlan();
@@ -618,17 +644,18 @@ namespace happyml {
         }
 
         float getValue(size_t row, size_t column, size_t channel) override {
-            if(channel != data_channel_index) {
+            if (channel != data_channel_index) {
                 return 0.f;
             }
             float result = 0.f;
             const size_t channels = child->channelCount();
-            #pragma omp for
-            for( size_t next_channel = 0; next_channel < channels; next_channel++) {
+#pragma omp for
+            for (size_t next_channel = 0; next_channel < channels; next_channel++) {
                 result += child->getValue(row, column, next_channel);
             }
             return result;
         }
+
     private:
         size_t data_channel_index;
         size_t number_of_channels;
@@ -638,6 +665,7 @@ namespace happyml {
     public:
         explicit TensorSumChannelsView(const shared_ptr<BaseTensor> &tensor) : TensorSumToChannelView(tensor, 0, 1) {
         }
+
         void printMaterializationPlan() override {
             cout << "TensorSumChannelsView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
             child->printMaterializationPlan();
@@ -648,9 +676,11 @@ namespace happyml {
     // all data is at channel 0, and channel count is 1.
     class TensorChannelToTensorView : public BaseTensorUnaryOperatorView {
     public:
-        explicit TensorChannelToTensorView(const shared_ptr<BaseTensor> &tensor, size_t channel_offset) : BaseTensorUnaryOperatorView(tensor) {
+        explicit TensorChannelToTensorView(const shared_ptr<BaseTensor> &tensor, size_t channel_offset)
+                : BaseTensorUnaryOperatorView(tensor) {
             this->channel_offset = channel_offset;
         }
+
         void printMaterializationPlan() override {
             cout << "TensorChannelToChannel{" << rowCount() << "," << columnCount() << ",1}->";
             child->printMaterializationPlan();
@@ -661,13 +691,14 @@ namespace happyml {
         }
 
         float getValue(size_t row, size_t column, size_t channel) override {
-            if(channel != 0) {
+            if (channel != 0) {
                 return 0.f;
             }
 
             const float val = child->getValue(row, column, channel + channel_offset);
             return val;
         }
+
     private:
         size_t channel_offset;
     };
@@ -694,8 +725,8 @@ namespace happyml {
             const auto adjusted_row = row - topPadding;
             const auto adjusted_col = column - leftPadding;
             // todo: for performance, we can potentially store rowcount as a constant when we make this object.
-            if(row < topPadding || adjusted_row >= child->rowCount() ||
-               column < leftPadding || adjusted_col >= child->columnCount()) {
+            if (row < topPadding || adjusted_row >= child->rowCount() ||
+                column < leftPadding || adjusted_col >= child->columnCount()) {
                 return 0.f;
             }
             const float val = child->getValue(adjusted_row, adjusted_col, channel);
@@ -711,6 +742,7 @@ namespace happyml {
             const size_t padding = rightPadding + leftPadding;
             return child->columnCount() + padding;
         }
+
     private:
         size_t topPadding;
         size_t bottomPadding;
@@ -727,7 +759,8 @@ namespace happyml {
         }
 
         void printMaterializationPlan() override {
-            cout << "TensorValidCrossCorrelation2dView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->(";
+            cout << "TensorValidCrossCorrelation2dView{" << rowCount() << "," << columnCount() << "," << channelCount()
+                 << "}->(";
             child1->printMaterializationPlan();
             cout << ") + (";
             child2->printMaterializationPlan();
@@ -738,10 +771,11 @@ namespace happyml {
             const auto kernel_rows = child2->rowCount();
             const auto kernel_cols = child2->columnCount();
             float result = 0.f;
-            #pragma omp for collapse(2)
-            for(size_t kernel_row = 0; kernel_row < kernel_rows; kernel_row++) {
-                for(size_t kernel_col = 0; kernel_col < kernel_cols; kernel_col++) {
-                    const auto kernel_val = child2->getValue(kernel_row, kernel_col, channel); // channel 0 is applied to all channels of tensor
+#pragma omp for collapse(2)
+            for (size_t kernel_row = 0; kernel_row < kernel_rows; kernel_row++) {
+                for (size_t kernel_col = 0; kernel_col < kernel_cols; kernel_col++) {
+                    const auto kernel_val = child2->getValue(kernel_row, kernel_col,
+                                                             channel); // channel 0 is applied to all channels of tensor
                     const auto tensor_val = child1->getValue(row + kernel_row, column + kernel_col, channel);
                     result += kernel_val * tensor_val;
                 }
@@ -760,6 +794,7 @@ namespace happyml {
         size_t channelCount() override {
             return child1->channelCount();
         }
+
     private:
         size_t rows;
         size_t cols;
@@ -777,20 +812,26 @@ namespace happyml {
         TensorFullCrossCorrelation2dView(const shared_ptr<BaseTensor> &tensor, const shared_ptr<BaseTensor> &kernel)
                 : TensorValidCrossCorrelation2dView(
                 make_shared<TensorZeroPaddedView>(tensor,
-                                                  (kernel->rowCount() > 1)*(size_t)round(((double) kernel->rowCount()) / 2.0),
-                                                  (kernel->rowCount() > 1)*(size_t)round(((double) kernel->rowCount()) / 2.0),
-                                                  (kernel->columnCount() > 1)*(size_t)round(((double) kernel->columnCount()) / 2.0),
-                                                  (kernel->columnCount() > 1)*(size_t)round(((double) kernel->columnCount()) / 2.0)),
+                                                  (kernel->rowCount() > 1) *
+                                                  (size_t) round(((double) kernel->rowCount()) / 2.0),
+                                                  (kernel->rowCount() > 1) *
+                                                  (size_t) round(((double) kernel->rowCount()) / 2.0),
+                                                  (kernel->columnCount() > 1) *
+                                                  (size_t) round(((double) kernel->columnCount()) / 2.0),
+                                                  (kernel->columnCount() > 1) *
+                                                  (size_t) round(((double) kernel->columnCount()) / 2.0)),
                 kernel) {
         }
 
         void printMaterializationPlan() override {
-            cout << "TensorFullCrossCorrelation2dView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->(";
+            cout << "TensorFullCrossCorrelation2dView{" << rowCount() << "," << columnCount() << "," << channelCount()
+                 << "}->(";
             child1->printMaterializationPlan();
             cout << ") + (";
             child2->printMaterializationPlan();
             cout << ")";
         }
+
     private:
     };
 
@@ -804,7 +845,8 @@ namespace happyml {
         }
 
         void printMaterializationPlan() override {
-            cout << "TensorFullConvolve2dView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->(";
+            cout << "TensorFullConvolve2dView{" << rowCount() << "," << columnCount() << "," << channelCount()
+                 << "}->(";
             child1->printMaterializationPlan();
             cout << ") + (";
             child2->printMaterializationPlan();

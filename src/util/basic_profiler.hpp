@@ -5,6 +5,7 @@
 
 #ifndef HAPPYML_BASIC_PROFILER_HPP
 #define HAPPYML_BASIC_PROFILER_HPP
+
 #include <chrono>
 #include <iostream>
 #include <map>
@@ -17,10 +18,11 @@ namespace happyml {
     public:
         ProfileBlock(const char *file, const string &func, const int line) {
             stringstream ss;
-            ss << file  << ":" << func << ":" << line;
+            ss << file << ":" << func << ":" << line;
             this->label = ss.str();
             blockEntered();
         }
+
         ~ProfileBlock() {
             blockLeft();
         }
@@ -31,11 +33,12 @@ namespace happyml {
         }
 
         void blockLeft() {
-            thread_local map<string,chrono::microseconds> duration{};
+            thread_local map<string, chrono::microseconds> duration{};
             auto stopTime = chrono::high_resolution_clock::now();
             auto elapsed = chrono::duration_cast<chrono::microseconds>(stopTime - startTime);
             duration[label] += elapsed;
-            cout << "||end " << label << " " << elapsed.count() << " ms (" << duration[label].count() << " ms)||" << endl;
+            cout << "||end " << label << " " << elapsed.count() << " ms (" << duration[label].count() << " ms)||"
+                 << endl;
         }
 
     private:

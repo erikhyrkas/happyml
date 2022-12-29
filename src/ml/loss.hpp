@@ -20,14 +20,15 @@ namespace happyml {
             return make_shared<TensorMinusTensorView>(prediction, truth);
         }
 
-        shared_ptr<BaseTensor> calculateTotalError(vector<shared_ptr<BaseTensor>> &truths, vector<shared_ptr<BaseTensor>> &predictions) {
+        shared_ptr<BaseTensor> calculateTotalError(vector<shared_ptr<BaseTensor>> &truths,
+                                                   vector<shared_ptr<BaseTensor>> &predictions) {
             PROFILE_BLOCK(profileBlock);
             size_t count = truths.size();
-            if( count == 1) {
+            if (count == 1) {
                 return calculateError(truths[0], predictions[0]);
             }
             shared_ptr<BaseTensor> total_error = calculateError(truths[0], predictions[0]);
-            for(size_t i = 1; i < count; i++) {
+            for (size_t i = 1; i < count; i++) {
                 auto next_error = calculateError(truths[i], predictions[i]);
                 total_error = make_shared<TensorAddTensorView>(total_error, next_error);
             }
@@ -53,7 +54,7 @@ namespace happyml {
         shared_ptr<BaseTensor> partialDerivative(shared_ptr<BaseTensor> total_error, float batch_size) override {
             // derivative of mean squared error = 2 * (prediction - truth);
             //const auto error = make_shared<TensorMinusTensorView>(prediction, truth);
-            return make_shared<TensorMultiplyByScalarView>(total_error, 2.0f/batch_size);
+            return make_shared<TensorMultiplyByScalarView>(total_error, 2.0f / batch_size);
         }
     };
 

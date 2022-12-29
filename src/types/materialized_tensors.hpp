@@ -5,6 +5,7 @@
 
 #ifndef HAPPYML_MATERIALIZED_TENSORS_HPP
 #define HAPPYML_MATERIALIZED_TENSORS_HPP
+
 #include <execution>
 #include <future>
 #include <iterator>
@@ -62,7 +63,8 @@ namespace happyml {
     //  explicit instruction to reuse memory is still the best option.
 
     template<typename T>
-    void allocateTensorVector(vector<vector<vector<T>>> &data, const size_t rows, const size_t columns, const size_t channels) {
+    void allocateTensorVector(vector<vector<vector<T>>> &data, const size_t rows, const size_t columns,
+                              const size_t channels) {
         // I wouldn't expect memory allocation in parallel to be faster than serial allocation, especially on this
         // scale, since there would be a lot of lock contention. I did a quick experiment and found the timings
         // weren't better or worse with small sizes. More experiments are needed, but it's not worth much time
@@ -93,10 +95,10 @@ namespace happyml {
                               const shared_ptr<BaseTensor> &original,
                               function<T(float)> conversionFunction) {
         allocateTensorVector<T>(data, rows,
-                                    columns,
-                                    channels);
+                                columns,
+                                channels);
 
-        #pragma omp for collapse(3)
+#pragma omp for collapse(3)
         for (size_t channel = 0; channel < channels; channel++) {
             for (size_t row = 0; row < rows; row++) {
                 for (size_t column = 0; column < columns; column++) {
@@ -121,7 +123,7 @@ namespace happyml {
                                         columns,
                                         channels);
 
-            #pragma omp for collapse(3)
+#pragma omp for collapse(3)
             for (size_t channel = 0; channel < channels; channel++) {
                 for (size_t row = 0; row < rows; row++) {
                     for (size_t col = 0; col < columns; col++) {
@@ -132,7 +134,7 @@ namespace happyml {
         }
 
         explicit FullTensor(const vector<float> &values) {
-            allocateTensorVector<float>(data,1, values.size(), 1);
+            allocateTensorVector<float>(data, 1, values.size(), 1);
             size_t col = 0;
             for (float const &val: values) {
                 setVal(0, col, 0, val);
@@ -144,8 +146,9 @@ namespace happyml {
         // https://youtrack.jetbrains.com/issue/CPP-24510/Bad-detection-of-Constructor-is-not-implemented
         explicit FullTensor(const vector<vector<vector<float>>> &values) {
             allocateTensorVector<float>(data, values[0].size(), values[0][0].size(), values.size());
+            // TODO: this could be made parallel, but we'd have to index rather than use iterator
             size_t channel_index = 0;
-            for (const vector <vector<float>> &next_channel: values) {
+            for (const vector<vector<float>> &next_channel: values) {
                 size_t row_index = 0;
                 for (const vector<float> &next_row: next_channel) {
                     size_t col_index = 0;
@@ -162,10 +165,10 @@ namespace happyml {
         explicit FullTensor(const string &fileName) {
             try {
                 ifstream stream;
-                stream.open(fileName,ifstream::in | ios::binary);
+                stream.open(fileName, ifstream::in | ios::binary);
                 assignFromStream(stream);
                 stream.close();
-            } catch(ofstream::failure &e) {
+            } catch (ofstream::failure &e) {
                 cerr << "Failed to load: " << fileName << endl << e.what() << endl;
                 throw e;
             }
@@ -200,19 +203,20 @@ namespace happyml {
         void printMaterializationPlan() override {
             cout << "FullTensor{" << rowCount() << "," << columnCount() << "," << channelCount() << "}";
         }
+
     private:
-        vector <vector<vector < float>>> data;
+        vector<vector<vector<float>>> data;
 
         void assignFromStream(ifstream &stream) {
             uint64_t channels;
             uint64_t rows;
             uint64_t columns;
 
-            stream.read(reinterpret_cast<char*>(&channels), sizeof(channels));
+            stream.read(reinterpret_cast<char *>(&channels), sizeof(channels));
             channels = portableBytes(channels);
-            stream.read(reinterpret_cast<char*>(&rows), sizeof(rows));
+            stream.read(reinterpret_cast<char *>(&rows), sizeof(rows));
             rows = portableBytes(rows);
-            stream.read(reinterpret_cast<char*>(&columns), sizeof(columns));
+            stream.read(reinterpret_cast<char *>(&columns), sizeof(columns));
             columns = portableBytes(columns);
 
             data.resize(channels);
@@ -220,11 +224,11 @@ namespace happyml {
                 data.at(channel).resize(rows);
                 for (size_t row = 0; row < rows; row++) {
                     data.at(channel).at(row).resize(columns);
-                    for(size_t column = 0; column < columns; column++) {
+                    for (size_t column = 0; column < columns; column++) {
                         uint32_t val;
-                        stream.read(reinterpret_cast<char*>(&val), sizeof(val));
+                        stream.read(reinterpret_cast<char *>(&val), sizeof(val));
                         val = portableBytes(val);
-                        float nextVal = *(float*) &val;
+                        float nextVal = *(float *) &val;
                         setVal(row, column, channel, nextVal);
                     }
                 }
@@ -258,7 +262,7 @@ namespace happyml {
                                             channels);
 
 
-            #pragma omp for collapse(3)
+#pragma omp for collapse(3)
             for (size_t channel = 0; channel < channels; channel++) {
                 for (size_t row = 0; row < rows; row++) {
                     for (size_t col = 0; col < columns; col++) {
@@ -302,10 +306,10 @@ namespace happyml {
         explicit PixelTensor(const string &fileName) {
             try {
                 ifstream stream;
-                stream.open(fileName,ifstream::in | ios::binary);
+                stream.open(fileName, ifstream::in | ios::binary);
                 assignFromStream(stream);
                 stream.close();
-            } catch(ofstream::failure &e) {
+            } catch (ofstream::failure &e) {
                 cerr << "Failed to load: " << fileName << endl << e.what() << endl;
                 throw e;
             }
@@ -314,7 +318,6 @@ namespace happyml {
         explicit PixelTensor(ifstream &stream) {
             assignFromStream(stream);
         }
-
 
         size_t channelCount() override {
             return data.size();
@@ -337,9 +340,11 @@ namespace happyml {
         float getValue(size_t row, size_t column, size_t channel) override {
             return ((float) data.at(channel).at(row).at(column)) / 255.f;
         }
+
         void printMaterializationPlan() override {
             cout << "PixelTensor{" << rowCount() << "," << columnCount() << "," << channelCount() << "}";
         }
+
     private:
         vector<vector<vector<uint8_t>>> data;
 
@@ -348,11 +353,11 @@ namespace happyml {
             uint64_t rows;
             uint64_t columns;
 
-            stream.read(reinterpret_cast<char*>(&channels), sizeof(channels));
+            stream.read(reinterpret_cast<char *>(&channels), sizeof(channels));
             channels = portableBytes(channels);
-            stream.read(reinterpret_cast<char*>(&rows), sizeof(rows));
+            stream.read(reinterpret_cast<char *>(&rows), sizeof(rows));
             rows = portableBytes(rows);
-            stream.read(reinterpret_cast<char*>(&columns), sizeof(columns));
+            stream.read(reinterpret_cast<char *>(&columns), sizeof(columns));
             columns = portableBytes(columns);
 
             data.resize(channels);
@@ -360,11 +365,11 @@ namespace happyml {
                 data.at(channel).resize(rows);
                 for (size_t row = 0; row < rows; row++) {
                     data.at(channel).at(row).resize(columns);
-                    for(size_t column = 0; column < columns; column++) {
+                    for (size_t column = 0; column < columns; column++) {
                         uint32_t val;
-                        stream.read(reinterpret_cast<char*>(&val), sizeof(val));
+                        stream.read(reinterpret_cast<char *>(&val), sizeof(val));
                         val = portableBytes(val);
-                        float nextVal = *(float*) &val;
+                        float nextVal = *(float *) &val;
                         setVal(row, column, channel, nextVal);
                     }
                 }
@@ -385,11 +390,10 @@ namespace happyml {
             const size_t channels = original->channelCount();
 
             allocateTensorVector<quarter>(data, rows,
-                                        columns,
-                                        channels);
+                                          columns,
+                                          channels);
 
-
-            #pragma omp for collapse(3)
+#pragma omp for collapse(3)
             for (size_t channel = 0; channel < channels; channel++) {
                 for (size_t row = 0; row < rows; row++) {
                     for (size_t col = 0; col < columns; col++) {
@@ -409,7 +413,7 @@ namespace happyml {
             }
         }
 
-        QuarterTensor(const vector <vector<float>> &values, const int bias) {
+        QuarterTensor(const vector<vector<float>> &values, const int bias) {
             this->bias = bias;
             allocateTensorVector<quarter>(data, values.size(), values.at(0).size(), 1);
             for (size_t row = 0; row < values.size(); row++) {
@@ -424,10 +428,10 @@ namespace happyml {
             this->bias = bias;
             try {
                 ifstream stream;
-                stream.open(fileName,ifstream::in | ios::binary);
+                stream.open(fileName, ifstream::in | ios::binary);
                 assignFromStream(stream);
                 stream.close();
-            } catch(ofstream::failure &e) {
+            } catch (ofstream::failure &e) {
                 cerr << "Failed to load: " << fileName << endl << e.what() << endl;
                 throw e;
             }
@@ -460,7 +464,6 @@ namespace happyml {
             return quarterToFloat(data.at(channel).at(row).at(column), bias);
         }
 
-
         [[nodiscard]] int get_bias() const {
             return bias;
         }
@@ -469,6 +472,7 @@ namespace happyml {
         void printMaterializationPlan() override {
             cout << "QuarterTensor{" << rowCount() << "," << columnCount() << "," << channelCount() << "}";
         }
+
     private:
         vector<vector<vector<quarter>>> data;
         int bias;
@@ -478,11 +482,11 @@ namespace happyml {
             uint64_t rows;
             uint64_t columns;
 
-            stream.read(reinterpret_cast<char*>(&channels), sizeof(channels));
+            stream.read(reinterpret_cast<char *>(&channels), sizeof(channels));
             channels = portableBytes(channels);
-            stream.read(reinterpret_cast<char*>(&rows), sizeof(rows));
+            stream.read(reinterpret_cast<char *>(&rows), sizeof(rows));
             rows = portableBytes(rows);
-            stream.read(reinterpret_cast<char*>(&columns), sizeof(columns));
+            stream.read(reinterpret_cast<char *>(&columns), sizeof(columns));
             columns = portableBytes(columns);
 
             data.resize(channels);
@@ -490,11 +494,11 @@ namespace happyml {
                 data.at(channel).resize(rows);
                 for (size_t row = 0; row < rows; row++) {
                     data.at(channel).at(row).resize(columns);
-                    for(size_t column = 0; column < columns; column++) {
+                    for (size_t column = 0; column < columns; column++) {
                         uint32_t val;
-                        stream.read(reinterpret_cast<char*>(&val), sizeof(val));
+                        stream.read(reinterpret_cast<char *>(&val), sizeof(val));
                         val = portableBytes(val);
-                        float nextVal = *(float*) &val;
+                        float nextVal = *(float *) &val;
                         setVal(row, column, channel, nextVal);
                     }
                 }
@@ -510,7 +514,6 @@ namespace happyml {
         }
     };
 
-
     class HalfTensor : public BaseAssignableTensor {
     public:
         explicit HalfTensor(const shared_ptr<BaseTensor> &original) {
@@ -519,10 +522,10 @@ namespace happyml {
             const size_t channels = original->channelCount();
 
             allocateTensorVector<uint16_t>(data, rows,
-                                          columns,
-                                          channels);
+                                           columns,
+                                           channels);
 
-            #pragma omp for collapse(3)
+#pragma omp for collapse(3)
             for (size_t channel = 0; channel < channels; channel++) {
                 for (size_t row = 0; row < rows; row++) {
                     for (size_t col = 0; col < columns; col++) {
@@ -554,10 +557,10 @@ namespace happyml {
         explicit HalfTensor(const string &fileName) {
             try {
                 ifstream stream;
-                stream.open(fileName,ifstream::in | ios::binary);
+                stream.open(fileName, ifstream::in | ios::binary);
                 assignFromStream(stream);
                 stream.close();
-            } catch(ofstream::failure &e) {
+            } catch (ofstream::failure &e) {
                 cerr << "Failed to load: " << fileName << endl << e.what() << endl;
                 throw e;
             }
@@ -601,11 +604,11 @@ namespace happyml {
             uint64_t rows;
             uint64_t columns;
 
-            stream.read(reinterpret_cast<char*>(&channels), sizeof(channels));
+            stream.read(reinterpret_cast<char *>(&channels), sizeof(channels));
             channels = portableBytes(channels);
-            stream.read(reinterpret_cast<char*>(&rows), sizeof(rows));
+            stream.read(reinterpret_cast<char *>(&rows), sizeof(rows));
             rows = portableBytes(rows);
-            stream.read(reinterpret_cast<char*>(&columns), sizeof(columns));
+            stream.read(reinterpret_cast<char *>(&columns), sizeof(columns));
             columns = portableBytes(columns);
 
             data.resize(channels);
@@ -613,11 +616,11 @@ namespace happyml {
                 data.at(channel).resize(rows);
                 for (size_t row = 0; row < rows; row++) {
                     data.at(channel).at(row).resize(columns);
-                    for(size_t column = 0; column < columns; column++) {
+                    for (size_t column = 0; column < columns; column++) {
                         uint32_t val;
-                        stream.read(reinterpret_cast<char*>(&val), sizeof(val));
+                        stream.read(reinterpret_cast<char *>(&val), sizeof(val));
                         val = portableBytes(val);
-                        float nextVal = *(float*) &val;
+                        float nextVal = *(float *) &val;
                         setVal(row, column, channel, nextVal);
                     }
                 }

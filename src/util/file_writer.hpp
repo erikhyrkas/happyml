@@ -60,7 +60,7 @@ namespace happyml {
         void writeRecord(const vector<string> &record) {
             string currentDelimiter = "";
             stringstream combinedRecord;
-            for( string column : record) {
+            for (string column: record) {
                 combinedRecord << currentDelimiter << column;
                 currentDelimiter = delimiter;
             }

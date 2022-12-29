@@ -92,9 +92,9 @@ namespace happyml {
     }
 
     shared_ptr<BaseTensor> loadTensor(const string &path, uint8_t bits) {
-        if(bits == 16) {
+        if (bits == 16) {
             return make_shared<HalfTensor>(path);
-        } else if(bits == 8) {
+        } else if (bits == 8) {
             // TODO:
             //  we don't know what bias to use, so we load up the tensor in 16-bit then size to fit.
             //  This is an imperfect solution, and temporary.
@@ -112,19 +112,19 @@ namespace happyml {
     }
 
     void assertEqual(const shared_ptr<BaseTensor> &t1, const shared_ptr<BaseTensor> &t2) {
-        if(t1->channelCount() != t2->channelCount()) {
+        if (t1->channelCount() != t2->channelCount()) {
             throw exception("Tensors don't have the same number of channels.");
         }
-        if(t1->rowCount() != t2->rowCount()) {
+        if (t1->rowCount() != t2->rowCount()) {
             throw exception("Tensors don't have the same number of rows.");
         }
-        if(t1->columnCount() != t2->columnCount()) {
+        if (t1->columnCount() != t2->columnCount()) {
             throw exception("Tensors don't have the same number of columns.");
         }
-        for(size_t channel = 0; channel < t1->channelCount(); channel++) {
-            for( size_t row = 0; row < t1->rowCount(); row++) {
-                for(size_t col = 0; col < t1->columnCount(); col++) {
-                    if(!roughlyEqual(t1->getValue(row, col, channel), t2->getValue(row, col, channel))) {
+        for (size_t channel = 0; channel < t1->channelCount(); channel++) {
+            for (size_t row = 0; row < t1->rowCount(); row++) {
+                for (size_t col = 0; col < t1->columnCount(); col++) {
+                    if (!roughlyEqual(t1->getValue(row, col, channel), t2->getValue(row, col, channel))) {
                         ostringstream message;
                         message << "Value " << t1->getValue(row, col, channel) << " does not equal "
                                 << t2->getValue(row, col, channel) << " at " << row << ", " << col << ", " << channel;

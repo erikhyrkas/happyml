@@ -30,20 +30,24 @@ int main() {
         cout << "Loading training data..." << endl;
         auto mnistDataSource = make_shared<InMemoryDelimitedValuesTrainingDataSet>("..\\data\\mnist_train.csv", ',',
                                                                                    true, false, true,
-                                                                                   1, 28*28,
-                                                                                   vector<size_t>{1,10,1},vector<size_t>{28, 28,1},
+                                                                                   1, 28 * 28,
+                                                                                   vector<size_t>{1, 10, 1},
+                                                                                   vector<size_t>{28, 28, 1},
                                                                                    expectedEncoder, givenEncoder);
         cout << "Loaded training data." << endl;
         cout << "Loading test data..." << endl;
         auto testMnistDataSource = make_shared<InMemoryDelimitedValuesTrainingDataSet>("..\\data\\mnist_test.csv", ',',
                                                                                        true, false, true,
-                                                                                       1, 28*28,
-                                                                                       vector<size_t>{1,10,1},vector<size_t>{28, 28,1},//vector<size_t>{28,28,1},,vector<size_t>{28,28,1},
+                                                                                       1, 28 * 28,
+                                                                                       vector<size_t>{1, 10, 1},
+                                                                                       vector<size_t>{28, 28, 1},
                                                                                        expectedEncoder, givenEncoder);
         cout << "Loaded test data." << endl;
         auto neuralNetwork = neuralNetworkBuilder()
-                ->addInput(mnistDataSource->getGivenShape(), 100, NodeType::full, ActivationType::relu)->setUseBias(false)->setBits(8)->setMaterialized(false)
-                ->addNode(50, NodeType::full, ActivationType::relu)->setUseBias(false)->setBits(8)->setMaterialized(false)
+                ->addInput(mnistDataSource->getGivenShape(), 100, NodeType::full, ActivationType::relu)->setUseBias(
+                        false)->setBits(8)->setMaterialized(false)
+                ->addNode(50, NodeType::full, ActivationType::relu)->setUseBias(false)->setBits(8)->setMaterialized(
+                        false)
                 ->addOutput(mnistDataSource->getExpectedShape(), ActivationType::sigmoidApprox)
                 ->build();
         neuralNetwork->useHighPrecisionExitStrategy();
@@ -52,9 +56,10 @@ int main() {
         testMnistDataSource->restart();
         size_t limit = 50;
         auto nextRecord = testMnistDataSource->nextRecord();
-        while(nextRecord && limit > 0) {
+        while (nextRecord && limit > 0) {
             auto prediction = maxIndex(neuralNetwork->predictOne(nextRecord->getFirstGiven()));
-            cout << "mnist truth: " << maxIndex(nextRecord->getFirstExpected()) << " happyml prediction: " << prediction << endl;
+            cout << "mnist truth: " << maxIndex(nextRecord->getFirstExpected()) << " happyml prediction: " << prediction
+                 << endl;
             nextRecord = testMnistDataSource->nextRecord();
             limit--;
         }

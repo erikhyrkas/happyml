@@ -5,6 +5,7 @@
 
 #ifndef HAPPYML_PORTABLE_BYTES_HPP
 #define HAPPYML_PORTABLE_BYTES_HPP
+
 #include <iostream>
 #include <sstream>
 
@@ -39,7 +40,7 @@
 void printBits(const uint64_t x) {
     for (int i = 63; i >= 0; i--) {
         cout << ((x >> i) & 1);
-        if ((i%8) == 0) cout << " ";
+        if ((i % 8) == 0) cout << " ";
     }
     cout << endl;
 }
@@ -83,6 +84,7 @@ bool asBool(string b) {
 }
 
 #if SWAP_BYTES == 1
+
 uint64_t portableBytes(uint64_t bytes) {
     uint64_t a = (bytes & 0x00000000000000ff) << 56;
     uint64_t b = (bytes & 0x000000000000ff00) << 40;
@@ -100,12 +102,13 @@ uint32_t portableBytes(uint32_t bytes) {
     uint32_t b = (bytes & 0x0000ff00) << 8;
     uint32_t c = (bytes & 0x00ff0000) >> 8;
     uint32_t d = (bytes & 0xff000000) >> 24;
-    return  a | b | c | d;
+    return a | b | c | d;
 }
 
 uint16_t portableBytes(uint16_t bytes) {
     return (bytes << 8) | (bytes >> 8);
 }
+
 #else
 // we're all ready big endian, so just pass through. Nothing to see here.
 

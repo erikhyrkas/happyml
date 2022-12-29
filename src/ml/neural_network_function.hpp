@@ -38,8 +38,8 @@ namespace happyml {
         shared_ptr<BaseTensor> forward(const vector<shared_ptr<BaseTensor>> &input, bool forTraining) override {
             // todo: throw error on wrong size input?
             PROFILE_BLOCK(profileBlock);
-            const auto& lastInput = input[0];
-            if(forTraining) {
+            const auto &lastInput = input[0];
+            if (forTraining) {
                 lastInputs.push(lastInput);
             }
             return activationFunction->activate(lastInput);
@@ -48,27 +48,31 @@ namespace happyml {
         shared_ptr<BaseTensor> backward(const shared_ptr<BaseTensor> &outputError) override {
             PROFILE_BLOCK(profileBlock);
             size_t lastInputsSize = lastInputs.size();
-            if(lastInputsSize < 1) {
+            if (lastInputsSize < 1) {
                 throw exception("MBGDFullyConnectedNeurons.backward() called without previous inputs.");
             }
             // TODO: it's really inefficient to calculate the derivative of every previous batch input and average it
             //  but doing an average first and then a derivative isn't right.
             //  I think I'm doing the back propagation incorrectly for mini-batch here.
-            shared_ptr<BaseTensor> averageActivationDerivative= activationFunction->derivative(lastInputs.front());
+            shared_ptr<BaseTensor> averageActivationDerivative = activationFunction->derivative(lastInputs.front());
             lastInputs.pop();
-            while(!lastInputs.empty()) {
+            while (!lastInputs.empty()) {
                 auto nextLastInput = activationFunction->derivative(lastInputs.front());
                 lastInputs.pop();
-                averageActivationDerivative = make_shared<TensorAddTensorView>(averageActivationDerivative, nextLastInput);
+                averageActivationDerivative = make_shared<TensorAddTensorView>(averageActivationDerivative,
+                                                                               nextLastInput);
             }
-            if(lastInputsSize > 1) {
-                averageActivationDerivative = materializeTensor(make_shared<TensorMultiplyByScalarView>(averageActivationDerivative, 1.f / (float)lastInputsSize));
+            if (lastInputsSize > 1) {
+                averageActivationDerivative = materializeTensor(
+                        make_shared<TensorMultiplyByScalarView>(averageActivationDerivative,
+                                                                1.f / (float) lastInputsSize));
             }
 
             //auto activation_derivative = activationFunction->derivative(average_last_inputs);
             // this really threw me for a loop. I thought that this was supposed to be dot product, rather than
             // an element-wise-multiplication.
-            const auto baseOutputError = make_shared<TensorMultiplyTensorView>(averageActivationDerivative, outputError);
+            const auto baseOutputError = make_shared<TensorMultiplyTensorView>(averageActivationDerivative,
+                                                                               outputError);
             return baseOutputError;
         }
 
@@ -84,7 +88,7 @@ namespace happyml {
             if (input.size() != 1) {
                 throw exception("Cannot flatten multiple inputs at the same time. Please merge.");
             }
-            const auto& nextInput = input[0];
+            const auto &nextInput = input[0];
             originalCols = nextInput->columnCount();
             originalRows = nextInput->rowCount();
             if (originalRows == 1) {
@@ -102,6 +106,7 @@ namespace happyml {
             }
             return make_shared<TensorReshapeView>(output_error, originalRows, originalCols);
         }
+
     private:
         size_t originalRows{};
         size_t originalCols{};

@@ -41,15 +41,15 @@ namespace happyml {
 
     class TrainingDataInputEncoder {
     public:
-        virtual shared_ptr <BaseTensor>  encode(const vector<string> &words,
-                                                size_t rows, size_t columns, size_t channels, bool trim) = 0;
+        virtual shared_ptr<BaseTensor> encode(const vector<string> &words,
+                                              size_t rows, size_t columns, size_t channels, bool trim) = 0;
     };
 
 
     class TextToPixelEncoder : public TrainingDataInputEncoder {
     public:
-        shared_ptr <BaseTensor> encode(const vector<string> &words,
-               size_t rows, size_t columns, size_t channels, bool trim) override {
+        shared_ptr<BaseTensor> encode(const vector<string> &words,
+                                      size_t rows, size_t columns, size_t channels, bool trim) override {
             // it is wasteful to allocate a huge vector only to copy it into a tensor
             // however, I wanted tensors to be immutable.
             // TODO: I think I could make a FullTensor constructor that steals the memory we are allocating here.
@@ -76,8 +76,8 @@ namespace happyml {
 
     class TextToScalarEncoder : public TrainingDataInputEncoder {
     public:
-        shared_ptr <BaseTensor> encode(const vector<string> &words,
-                                       size_t rows, size_t columns, size_t channels, bool trim) override {
+        shared_ptr<BaseTensor> encode(const vector<string> &words,
+                                      size_t rows, size_t columns, size_t channels, bool trim) override {
             vector<vector<vector<float>>> result;
             result.resize(channels);
             size_t offset = 0;
@@ -98,14 +98,15 @@ namespace happyml {
 
     class TextToCategoryEncoder : public TrainingDataInputEncoder {
     public:
-        explicit TextToCategoryEncoder(const map<string,size_t> &categoryMapping) {
+        explicit TextToCategoryEncoder(const map<string, size_t> &categoryMapping) {
             this->categoryMapping = categoryMapping;
         }
 
-        shared_ptr <BaseTensor> encode(const vector<string> &words,
-                                       size_t rows, size_t columns, size_t channels, bool trim) override {
-            if( words.size() != channels) {
-                throw exception("The result tensor must have exactly the same number of channels as there are words to encode.");
+        shared_ptr<BaseTensor> encode(const vector<string> &words,
+                                      size_t rows, size_t columns, size_t channels, bool trim) override {
+            if (words.size() != channels) {
+                throw exception(
+                        "The result tensor must have exactly the same number of channels as there are words to encode.");
             }
             vector<vector<vector<float>>> result;
             result.resize(channels);
@@ -117,9 +118,9 @@ namespace happyml {
             }
 
             size_t channel_offset = 0;
-            for(const auto& word : words) {
+            for (const auto &word: words) {
                 size_t column_offset;
-                if( trim ) {
+                if (trim) {
                     column_offset = categoryMapping.at(stringTrim(word));
                 } else {
                     column_offset = categoryMapping.at(word);
@@ -130,8 +131,9 @@ namespace happyml {
 
             return tensor(result);
         }
+
     private:
-        map<string,size_t> categoryMapping;
+        map<string, size_t> categoryMapping;
     };
 
 

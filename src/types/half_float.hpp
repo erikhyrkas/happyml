@@ -14,7 +14,7 @@ namespace happyml {
 
     half floatToHalf(float original) {
         // TODO: handle infinity and NAN
-        const uint32_t encoded_value = (*(uint32_t *) &original) ;
+        const uint32_t encoded_value = (*(uint32_t *) &original);
         return (half) (encoded_value >> 16);
     }
 

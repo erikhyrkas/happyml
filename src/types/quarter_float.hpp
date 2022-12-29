@@ -233,9 +233,11 @@ namespace happyml {
         const uint32_t result_bits = (special_case_tiny) * 0b10000000 +
                                      (!special_case_tiny) * prepped_bits;
 
-        return (encoded_value == FLOAT_NAN || encoded_value == FLOAT_NAN2) * QUARTER_NAN + (encoded_value == FLOAT_INF) * QUARTER_POS_INFINITY
+        return (encoded_value == FLOAT_NAN || encoded_value == FLOAT_NAN2) * QUARTER_NAN +
+               (encoded_value == FLOAT_INF) * QUARTER_POS_INFINITY
                + (encoded_value == FLOAT_NEG_INF) * QUARTER_NEG_INFINITY +
-               ((encoded_value != FLOAT_NAN && encoded_value != FLOAT_NAN2) && (encoded_value != FLOAT_INF) && (encoded_value != FLOAT_NEG_INF)) *
+               ((encoded_value != FLOAT_NAN && encoded_value != FLOAT_NAN2) && (encoded_value != FLOAT_INF) &&
+                (encoded_value != FLOAT_NEG_INF)) *
                result_bits;
     }
 

@@ -58,6 +58,7 @@ namespace happyml {
             startTime = chrono::high_resolution_clock::now();
             return duration.count();
         }
+
     private:
         chrono::time_point<chrono::high_resolution_clock> startTime;
     };

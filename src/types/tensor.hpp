@@ -124,18 +124,18 @@ namespace happyml {
             uint64_t columns = columnCount();
 
             auto portableChannels = portableBytes(channels);
-            stream.write(reinterpret_cast<const char*>(&portableChannels), sizeof(portableChannels));
+            stream.write(reinterpret_cast<const char *>(&portableChannels), sizeof(portableChannels));
             auto portableRows = portableBytes(rows);
-            stream.write(reinterpret_cast<const char*>(&portableRows), sizeof(portableRows));
+            stream.write(reinterpret_cast<const char *>(&portableRows), sizeof(portableRows));
             auto portableColumns = portableBytes(columns);
-            stream.write(reinterpret_cast<const char*>(&portableColumns), sizeof(portableColumns));
+            stream.write(reinterpret_cast<const char *>(&portableColumns), sizeof(portableColumns));
 
-            for(size_t channel = 0; channel < channels; channel++) {
-                for(size_t row = 0; row < rows; row++) {
-                    for(size_t column = 0; column < columns; column++) {
+            for (size_t channel = 0; channel < channels; channel++) {
+                for (size_t row = 0; row < rows; row++) {
+                    for (size_t column = 0; column < columns; column++) {
                         float floatVal = getValue(row, column, channel);
-                        uint32_t portableVal = portableBytes(*(uint32_t*) &floatVal);
-                        stream.write(reinterpret_cast<const char*>(&portableVal), sizeof(portableVal));
+                        uint32_t portableVal = portableBytes(*(uint32_t *) &floatVal);
+                        stream.write(reinterpret_cast<const char *>(&portableVal), sizeof(portableVal));
                     }
                 }
             }
@@ -144,11 +144,11 @@ namespace happyml {
         bool save(const string &fileName) {
             try {
                 ofstream stream;
-                stream.open(fileName,std::ofstream::out | ios::binary | ios::trunc);
+                stream.open(fileName, std::ofstream::out | ios::binary | ios::trunc);
                 save(stream);
                 stream.close();
                 return true;
-            } catch(ofstream::failure &e) {
+            } catch (ofstream::failure &e) {
                 // I was torn about catching an exception and returning true/false
                 // this is inconsistent with the load method.
                 cerr << "Failed to save: " << fileName << endl << e.what() << endl;
@@ -169,7 +169,7 @@ namespace happyml {
             return (rowCount() > 1);
         }
 
-        virtual bool contains(const shared_ptr <BaseTensor> &other) {
+        virtual bool contains(const shared_ptr<BaseTensor> &other) {
             return other == shared_from_this();
         }
 
@@ -183,7 +183,7 @@ namespace happyml {
 
         virtual float getValue(size_t row, size_t column, size_t channel) = 0;
 
-        virtual vector<size_t> getShape() {
+        virtual vector <size_t> getShape() {
             return {rowCount(), columnCount(), channelCount()};
         }
 
@@ -303,7 +303,7 @@ namespace happyml {
             return result;
         }
 
-        vector<size_t> maxIndices(size_t channel, size_t row) {
+        vector <size_t> maxIndices(size_t channel, size_t row) {
             vector<size_t> result;
             float current_max = -INFINITY;
             const size_t maxCols = columnCount();
@@ -320,7 +320,7 @@ namespace happyml {
             return result;
         }
 
-        vector<size_t> minIndices(size_t channel, size_t row) {
+        vector <size_t> minIndices(size_t channel, size_t row) {
             vector<size_t> result;
             float currentMin = INFINITY;
             const size_t maxCols = columnCount();
@@ -364,7 +364,7 @@ namespace happyml {
                 }
             }
 
-            return (float)average;
+            return (float) average;
         }
 
         float geometricMean() {
@@ -440,7 +440,7 @@ namespace happyml {
                 }
             }
             sum /= index;
-            return (float)exp(sum);
+            return (float) exp(sum);
         }
 
         void print() {
@@ -505,7 +505,7 @@ namespace happyml {
             cout << "TensorFromFunction{" << rowCount() << "," << columnCount() << "," << channelCount() << "}";
         }
 
-        bool contains(const shared_ptr <BaseTensor> &other) override {
+        bool contains(const shared_ptr<BaseTensor> &other) override {
             return other == shared_from_this();
         }
 
@@ -580,7 +580,7 @@ namespace happyml {
             cout << "TensorFromRandom{" << rowCount() << "," << columnCount() << "," << channelCount() << "}";
         }
 
-        bool contains(const shared_ptr <BaseTensor> &other) override {
+        bool contains(const shared_ptr<BaseTensor> &other) override {
             return other == shared_from_this();
         }
 
@@ -643,7 +643,7 @@ namespace happyml {
             cout << "UniformTensor{" << rowCount() << "," << columnCount() << "," << channelCount() << "}";
         }
 
-        bool contains(const shared_ptr <BaseTensor> &other) override {
+        bool contains(const shared_ptr<BaseTensor> &other) override {
             return other == shared_from_this();
         }
 
@@ -682,7 +682,7 @@ namespace happyml {
             cout << "IdentityTensor{" << rowCount() << "," << columnCount() << "," << channelCount() << "}";
         }
 
-        bool contains(const shared_ptr <BaseTensor> &other) override {
+        bool contains(const shared_ptr<BaseTensor> &other) override {
             return other == shared_from_this();
         }
 
@@ -710,11 +710,11 @@ namespace happyml {
 
     class BaseTensorUnaryOperatorView : public BaseTensor {
     public:
-        explicit BaseTensorUnaryOperatorView(const shared_ptr <BaseTensor> &tensor) {
+        explicit BaseTensorUnaryOperatorView(const shared_ptr<BaseTensor> &tensor) {
             this->child = tensor;
         }
 
-        bool contains(const shared_ptr <BaseTensor> &other) override {
+        bool contains(const shared_ptr<BaseTensor> &other) override {
             return other == shared_from_this() || child->contains(other);
         }
 
@@ -735,19 +735,19 @@ namespace happyml {
         }
 
     protected:
-        shared_ptr <BaseTensor> child;
+        shared_ptr<BaseTensor> child;
     };
 
 
     class BaseTensorBinaryOperatorView : public BaseTensor {
     public:
-        explicit BaseTensorBinaryOperatorView(const shared_ptr <BaseTensor> &tensor1,
-                                              const shared_ptr <BaseTensor> &tensor2) {
+        explicit BaseTensorBinaryOperatorView(const shared_ptr<BaseTensor> &tensor1,
+                                              const shared_ptr<BaseTensor> &tensor2) {
             this->child1 = tensor1;
             this->child2 = tensor2;
         }
 
-        bool contains(const shared_ptr <BaseTensor> &other) override {
+        bool contains(const shared_ptr<BaseTensor> &other) override {
             return other == shared_from_this() || child1->contains(other) || child2->contains(other);
         }
 
@@ -756,8 +756,8 @@ namespace happyml {
         }
 
     protected:
-        shared_ptr <BaseTensor> child1;
-        shared_ptr <BaseTensor> child2;
+        shared_ptr<BaseTensor> child1;
+        shared_ptr<BaseTensor> child2;
     };
 
 

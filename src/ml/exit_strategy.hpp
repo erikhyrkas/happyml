@@ -55,7 +55,7 @@ namespace happyml {
         }
 
         bool isDone(size_t currentEpoch, float loss, int64_t trainingElapsedTimeInMilliseconds) override {
-            if(loss+improvementTolerance <= lowestLoss) {
+            if (loss + improvementTolerance <= lowestLoss) {
                 lowestLoss = min(loss, lowestLoss);
                 lowestLossEpoch = currentEpoch;
             }

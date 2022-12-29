@@ -217,7 +217,7 @@ namespace happyml {
             }
             cout << endl << "recommended bias: " << recommendedBias << endl;
             cout << "recommended offset: " << std::fixed << std::setprecision(15) << recommendedOffset
-                      << endl;
+                 << endl;
             cout << "min: " << std::fixed << minValue << endl;
             cout << "max: " << std::fixed << maxValue << endl;
             cout << "range: " << std::fixed << (maxValue - minValue) << endl;
