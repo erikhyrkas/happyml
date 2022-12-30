@@ -35,11 +35,13 @@ We're doing the same thing in base 2.
 Say we have a three bit mantissa, which we will.
 
 You might think that you know how to read a binary number:
+```
 110 = 2^2 + 2^1 + 0   = 4+2+0 = 6
 100 = 2^2 +   0 + 0   = 4+0+0 = 4
 010 =   0 + 2^1 + 0   = 0+2+0 = 2
 001 =   0 +   0 + 2^0 = 0+0+1 = 1
 111 = 2^2 + 2^1 + 2^0 = 4+2+1 = 7
+```
 
 THIS IS WRONG! Unfortunately, the mantissa bits represent one plus the faction of a number.
 
@@ -55,12 +57,14 @@ How about 001? We write in our constant leading number, so we have 1.001, then w
 1 + 0 + 0 + 2^-3 = 1 + 0.125 = 1.125.
 
 Let's do some more for practice:
+```
 bits: base 2 conversion:       decimal addition:        result:
 100 = 1 + 2^-1 +    0 +    0 = 1 + 0.5                = 1.5
 010 = 1 +    0 + 2^-2 +    0 = 1       + 0.25         = 1.25
 001 = 1 +    0 +    0 + 2^-3 = 1              + 0.125 = 1.125
 110 = 1 + 2^-1 + 2^-2 +    0 = 1 + 0.5 + 0.25         = 1.75
 111 = 1 + 2^-1 + 2^-2 + 2^-3 = 1 + 0.5 + 0.25 + 0.125 = 1.875
+```
 
 Now that we have the mantissa, we can use it in a formula to build an actual number:
 (-1^sign) * (2^exponent) * (mantissa)
@@ -69,6 +73,7 @@ My examples will focus on an 8-bit float, since that's easier to show the work f
 what we are building. A 32-bit float works the same, with just a bigger bias and more
 bits.
 
+```
 Bits:        Math:                                         Show work:       Result:
 1 1111 111 = special case                                                     =  NAN
 0 1111 000 = special case                                                     =  Positive Infinity
@@ -81,7 +86,7 @@ For a bias of 0:
 0 0000 001 = (-1^0) * (2^0)  * (1 + 2^-3)                =  1 * 1 * 1.125     =   1.125
 0 0000 000 = (-1^0) * (2^0)  * 0                         =  1 * 1 * 0         =   0
 1 1110 111 = (-1^1) * (2^14) * (1 + 2^-1 + 2^-2 + 2^-3)  = -1 * 16384 * 1.875 =  -30720
-
+```
 Super special note on 10000000.
 When we try to represent numbers less than our bias can handle, something
 interesting happens: For bias 0, let's take the floating point 1.0 and convert it. 1.0f

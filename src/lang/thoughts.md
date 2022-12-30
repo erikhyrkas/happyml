@@ -1,49 +1,58 @@
 # Rough thoughts on the protocol
 
 syntax might be something like:
-set output <human/machine>
 
-create <data set type> dataset <name> from <location> [with <format>]
+`set output <human/machine>`
+
+```create <data set type> dataset <name> from <location> [with <format>]
 add rows to dataset <name> using delimited data:
 1, 2, 3, 4
-<empty line to denote end of data>
 
+```
+(empty line to denote end of data)
+
+```
 create [<adjective>*] <model type> model <model name> [<knowledge label>] using <data set name>
 tune <model name> [<knowledge label>] [as [<model name>] [<knowledge label>]] using <data set name>
 retrain <model name> [<knowledge label>] [as [<model name>] [<knowledge label>]] using <data set name>
 copy <model name> [<knowledge label>] [as [<model name>] [<knowledge label>]]
+```
+`predict using <model name> [<model version>] given <input>`
 
-predict using <model name> [<model version] given <input>
-              or
-infer using <model name> [<model version] given <input>
+or
+
+`infer using <model name> [<model version>] given <input>`
 
 ### Maybe for monte carlo search? See [Tasks] below.
 
 queue input/predictions to be marked as success or failure:
-tracking start <model name> [<knowledge label>]
 
-mark the recorded input/predictions as success or failure and set them aside, clearing the prediction queue: 
-tracking set [success|failure] to <model name> [<knowledge label>]
+`tracking start <model name> [<knowledge label>]`
 
-using the success/failure rates of our input/predictions we build a tensor that represents what we learned and back propagate: 
-tracking apply <model name> [<knowledge label>]
+mark the recorded input/predictions as success or failure and set them aside, clearing the prediction queue:
 
+`tracking set [success|failure] to <model name> [<knowledge label>]`
+
+using the success/failure rates of our input/predictions we build a tensor that represents what we learned and back
+propagate:
+
+`tracking apply <model name> [<knowledge label>]`
 
 # Tasks
 
-TLDR; I want a way for programs to manage weights using the monte carlo tree search pattern. I think 
-that I can potentially embed some of the most common aspects of that search tree into happyml, but 
-the adapter programs would be responsible for the interaction with other programs (whether that be 
-running those programs or screen scraping or whatever.) 
+TLDR; I want a way for programs to manage weights using the monte carlo tree search pattern. I think
+that I can potentially embed some of the most common aspects of that search tree into happyml, but
+the adapter programs would be responsible for the interaction with other programs (whether that be
+running those programs or screen scraping or whatever.)
 
 Full stream of consciousness:
 Somehow, I want to support the same sort of monte carlo tree search pattern used in the alpha go engine,
 but I want to do it in a way that lets happyml interact with other programs.
 
-This would give it a way of learning to do tasks like play tic-tac-toe, chess, go, poker, or 
-really any game. This functionality could extend to doing other activities that aren't games 
-but still have positive and negative outcomes we can analyze. For example, watching a web 
-page for a change in status and then playing an alert sound or sending a text message, 
+This would give it a way of learning to do tasks like play tic-tac-toe, chess, go, poker, or
+really any game. This functionality could extend to doing other activities that aren't games
+but still have positive and negative outcomes we can analyze. For example, watching a web
+page for a change in status and then playing an alert sound or sending a text message,
 "Favorite Pop Singer Tickets are now available!"
 
 I'd also like an observe-only training mode where it watched you do the task to try to
