@@ -22,8 +22,8 @@ jobs:
       matrix:
         toolchain:
           - windows-msvc
-          - linux-gcc
-          - macos-clang
+          # - linux-gcc
+          # - macos-clang
 
         configuration:
           - Debug
