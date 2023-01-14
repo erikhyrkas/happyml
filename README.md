@@ -8,7 +8,7 @@ There are options as to how you use happyml.
 
 1. You could use the code directly, like in the examples.
 2. You could compile it to a library. I didn't provide an example of this, yet, but I can add that to my todo list.
-3. And, eventually, you'll be able to use it through the happyml scripting language, which is still a work in progress. See [my proposed language specification](src\lang\spec.md). This is something that I'm working on. 
+3. And, eventually, you'll be able to use it through the happyml scripting language, which is still a work in progress. See [my proposed language specification](src/lang/spec.md). This is something that I'm working on. 
 
 # Compiling
 I use CLion with Visual Studio 2022 community for the C++ runtime libraries.
