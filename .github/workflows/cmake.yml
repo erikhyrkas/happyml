@@ -22,7 +22,7 @@ jobs:
       matrix:
         toolchain:
           - windows-msvc
-          # - linux-gcc
+          - linux-gcc
           # - macos-clang
 
         configuration:
@@ -33,9 +33,9 @@ jobs:
             os: windows-latest
             compiler: msvc
             
-          # - toolchain: linux-gcc
-          #   os: ubuntu-latest
-          #   compiler: gcc
+          - toolchain: linux-gcc
+            os: ubuntu-latest
+            compiler: gcc
 
           # - toolchain: macos-clang
           #   os: macos-latest
