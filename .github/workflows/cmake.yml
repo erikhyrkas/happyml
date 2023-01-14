@@ -21,9 +21,9 @@ jobs:
     strategy:
       matrix:
         toolchain:
+          - windows-msvc
           - linux-gcc
           - macos-clang
-          - windows-msvc
 
         configuration:
           - Debug
