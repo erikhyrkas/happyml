@@ -35,7 +35,8 @@ jobs:
 
           - toolchain: macos-clang
             os: macos-latest
-            compiler: clang
+            compiler: clang++
+            ccompiler: clang
 
     #          - toolchain: linux-gcc
     #            os: ubuntu-latest
