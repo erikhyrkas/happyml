@@ -69,12 +69,29 @@ code, I use the word "neural network", but I may want to support non-neural netw
 ```
 train [<adjective>*] <model type> model <model name> [<knowledge label>] using <data set name>
 ```
+| model type     | support  | notes                                                                                                                                                       |
+|----------------|----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| identification | minimal  | Find a label for this data                                                                                                                                  |
+| generation     | future   | Generates text, numbers, audio, or image based on dataset                                                                                                   |
+| translation    | future   | Converts text, numbers, audio, or image to new text, numbers, audio, or image based on dataset                                                              |
+| discovery      | future   | Fill in the blank. Find the missing words in a paragraph or missing note in a song. Different than generation in that we are masking random parts of input. | 
 
-| adjective | immediate plan                                                                                                                                                          | future plan                                 | eventual plan                                                                              |
-|-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------|--------------------------------------------------------------------------------------------|
-| fast      | Goal of good enough results. Materialize when possible to avoid duplicate operations. Always 32-bit. Only use bias on final output. Minimum necessary model complexity. | Leverage vectorization on cpu memory.       | Use GPU when possible and support quantization (16/8 bit) when available.                  |
-| small     | Goal of good enough results. Materialize only when necessary. Use 8-bit or 16-bit when possible. Only use bias on final output. Minimum necessary model complexity.     | Page large tensors to disk when not in use. | Distributed execution? Maybe there's a way to have different layers on different machines. |
-| accurate  | Goal of great results. Materialize only when necessary. Always 32-bit. Use bias on more layers when it increases accuracy. Maximum model complexity.                    |                                             |                                                                                            |
+I'm lumping all forms of ML into 4 buckets for now, which is a bold (and probably inadvisable) move. Either you want to identify what something is (aka classify),
+you want to generate something new from something else (text or image generation are very popular right now), translate something (you have something in english and you want to change it 
+to latin, or maybe you have an image in one style and what to change it to a different style), or you want to discover the missing information (fill-in-the-blank answers or maybe unmasking 
+a portion of an image.)
+
+There are many techniques in use today and my hope is that I can figure out which one to apply based on the dataset I'm given.
+
+For example, if you have a time series and want it completed, I'm lumping that into generation, since it follows the pattern of: Given some numbers, give me the numbers that follow. Will
+I be clever enough to pick the right algorithm based on the dataset? We'll see.
+
+
+| adjective | immediate plan                                                                                                                                                          | future plan                                                                                   | eventual plan                                                                              |
+|-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|
+| fast      | Goal of good enough results. Materialize when possible to avoid duplicate operations. Always 32-bit. Only use bias on final output. Minimum necessary model complexity. | Leverage vectorization on cpu memory.                                                         | Use GPU when possible and support quantization (16/8 bit) when available.                  |
+| small     | Goal of good enough results. Materialize only when necessary. Use 8-bit or 16-bit when possible. Only use bias on final output. Minimum necessary model complexity.     | Page large tensors to disk when not in use. Use Sparse Tensors for inputs if it saves memory. | Distributed execution? Maybe there's a way to have different layers on different machines. |
+| accurate  | Goal of great results. Materialize only when necessary. Always 32-bit. Use bias on more layers when it increases accuracy. Maximum model complexity.                    | Use Sparse Tensors for inputs if it saves memory.                                             | Distributed execution? Maybe there's a way to have different layers on different machines. |
 
 Accurate will be the default. 
 
