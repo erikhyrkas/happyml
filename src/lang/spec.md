@@ -36,6 +36,7 @@ I don't want to spend enormous amounts of time and energy trying to get it right
 | set      | action    | future           | set session parameters                                                     |
 | let      | action    | future           | set script-local variables                                                 |
 | copy     | action    | future           | copy a model or dataset                                                    |
+| log      | action    | future           | write text to log file                                                     |
 | with     | criteria  | initial          | used to specify statement option                                           |
 | at       | criteria  | initial          | used to specify column offset                                              |
 | through  | criteria  | initial          | used to specify range                                                      |
