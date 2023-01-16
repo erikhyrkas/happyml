@@ -19,6 +19,9 @@ add_executable(example_mnist_model_8bit src/example/example_mnist_model_8bit.cpp
 
 add_executable(example_mnist_model_full src/example/example_mnist_model_full.cpp)
 
+# Need to learn how to use CTest and convert the tests to use it.
+# https://cmake.org/cmake/help/book/mastering-cmake/chapter/Testing%20With%20CMake%20and%20CTest.html
+# What you see below is me doing what I knew would work for local testing.
 add_executable(test_quarter_float src/test/test_quarter_float.cpp)
 
 add_executable(test_tensor src/test/test_tensor.cpp)
