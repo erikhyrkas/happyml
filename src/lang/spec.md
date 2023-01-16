@@ -86,6 +86,11 @@ There are many techniques in use today and my hope is that I can figure out whic
 For example, if you have a time series and want it completed, I'm lumping that into generation, since it follows the pattern of: Given some numbers, give me the numbers that follow. Will
 I be clever enough to pick the right algorithm based on the dataset? We'll see.
 
+Discovery might not be a needed type if there's a better way to specify how to do masking in generation. Translation is similar
+to generation as well, but the techniques are different when we use the dataset. Could I detect the right technique to use without 
+this hint? Maybe.
+
+
 
 | adjective | immediate plan                                                                                                                                                          | future plan                                                                                   | eventual plan                                                                              |
 |-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|
