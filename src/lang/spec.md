@@ -80,9 +80,20 @@ Accurate will be the default.
 
 A model is only useful if the results are usually right. How usually? Well, it depends on the model and how it is used, but a model that is wrong most of the time is not useful in nearly all cases. So, no matter which option you pick, I would strive to achieve a fairly high accuracy. Accuracy defined the percentage of time that we get the right result. I think an accuracy of 70% if a fairly realistic goal in most real-world situations. An accuracy of 90% is very good.
 
-I'm debating whether to include the adverb "very", which might give an extra lever to push further toward a goal extreme and would impact the model's complexity -- by either making it more or less complex. So, "very accurate" would increase complexity of the model, but "very fast" or "very small" would decrease the complexity of the model with an impact on the quality of the result.
+I'm going to start off by having the model guess defaults based on my experience, but eventually support having the training do experiments to find a configuration that meets your goals.
+
+Rambling thoughts:
+My first inclination is to make the training do experiments to find the best complexity to get good accuracy that still meets your goals, but that might be slow. It might have to do 10 experiments to pick settings that meet the goals and still gives at least 70% accuracy. The time it takes to do an experiment might depend on the nature of the model and might even take days. I might make it so that experimentation only continues until we find something that gives us the minimum best results, so we don't always have to wait for X experiments.
+
+The alternative is to include a "best" keyword that signals to do the experimentation or otherwise just uses default settings and hope they are good enough. So, "best fast" would do experiments to find the fastest model that still gave 70% accurate results. Where "best accurate" might do experiments to find the configuration that gave the highest accuracy. But, if you said "fast", it would just take a guess at configuration, do that training, and you'd have to hope that it was accurate enough.
+
+The argument against the "best" keyword is that people don't have a way to do fine-grained controls of a model through the happyml language and there's a big difference between each goal. People who don't specify best would often get bad results. The argument for the "best" keyword is that it gives you a way to disable the experiments and go with a close-enough configuration. 
+
+I may also have the adverb "very", which would give an extra lever to push further toward a goal extreme and would impact the model's complexity -- by either making it more or less complex. So, "very accurate" would increase complexity of the model, but "very fast" or "very small" would decrease the complexity of the model with an impact on the quality of the result.
 
 If I did include "very", then I would make the default complexity closer to the "middle of the road", so that there was more room to push boundaries.
+
+Then we get into "best very accurate", where our starting settings in an experiment are equivalent to "very accurate", but we continue to experiment if we don't meet our goal of 90% accuracy.
 
 People might also want a "sort of" adverb, like "sort of fast" or "sort of small", but I don't think I'll go that far.
 
