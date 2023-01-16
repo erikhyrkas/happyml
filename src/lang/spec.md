@@ -82,7 +82,8 @@ A model is only useful if the results are usually right. How usually? Well, it d
 
 I'm going to start off by having the model guess defaults based on my experience, but eventually support having the training do experiments to find a configuration that meets your goals.
 
-Rambling thoughts:
+#### Rambling thoughts
+
 My first inclination is to make the training do experiments to find the best complexity to get good accuracy that still meets your goals, but that might be slow. It might have to do 10 experiments to pick settings that meet the goals and still gives at least 70% accuracy. The time it takes to do an experiment might depend on the nature of the model and might even take days. I might make it so that experimentation only continues until we find something that gives us the minimum best results, so we don't always have to wait for X experiments.
 
 The alternative is to include a "best" keyword that signals to do the experimentation or otherwise just uses default settings and hope they are good enough. So, "best fast" would do experiments to find the fastest model that still gave 70% accurate results. Where "best accurate" might do experiments to find the configuration that gave the highest accuracy. But, if you said "fast", it would just take a guess at configuration, do that training, and you'd have to hope that it was accurate enough.
