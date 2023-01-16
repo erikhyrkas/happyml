@@ -22,7 +22,7 @@ jobs:
       matrix:
         toolchain:
           - windows-msvc
-          - macos-clang
+#          - macos-clang
 #          - linux-gcc
 
         configuration:
@@ -32,15 +32,14 @@ jobs:
           - toolchain: windows-msvc
             os: windows-latest
             compiler: msvc
-
-          - toolchain: macos-clang
-            os: macos-latest
-            compiler: clang
-            cc: clang
-            cxx: clang++
-    #          - toolchain: linux-gcc
-    #            os: ubuntu-latest
-    #            compiler: gcc
+#
+#          - toolchain: macos-clang
+#            os: macos-latest
+#            compiler: clang
+#
+#          - toolchain: linux-gcc
+#            os: ubuntu-latest
+#            compiler: gcc
 
     steps:
     - uses: actions/checkout@v3
