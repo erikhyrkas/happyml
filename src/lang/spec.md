@@ -18,34 +18,36 @@ I don't want to spend enormous amounts of time and energy trying to get it right
 
 # Current key word plans
 
-| keyword  | type      | support priority | notes                                                                      |
-|----------|-----------|------------------|----------------------------------------------------------------------------|
-| model    | object    | initial          | type of object                                                             |
-| dataset  | object    | initial          | type of object                                                             |
-| row      | object    | future           | type of object                                                             |
-| rows     | object    | initial          | type of object                                                             |
-| column   | object    | future           | type of object                                                             |
-| columns  | object    | future           | type of object                                                             |
-| create   | action    | initial          | make a dataset                                                             |
-| train    | action    | initial          | make a model based on a dataset                                            |
-| retrain  | action    | future           | create a model shaped like another model but with a new or updated dataset |
-| tune     | action    | future           | append to existing training using a different dataset                      |
-| predict  | action    | initial          | use model                                                                  |
-| infer    | action    | future           | synonym for predict                                                        |
-| validate | action    | future           | check loss against a dataset                                               |
-| set      | action    | future           | set session parameters                                                     |
-| let      | action    | future           | set script-local variables                                                 |
-| copy     | action    | future           | copy a model or dataset                                                    |
-| log      | action    | future           | write text to log file                                                     |
-| with     | criteria  | initial          | used to specify statement option                                           |
-| at       | criteria  | initial          | used to specify column offset                                              |
-| through  | criteria  | initial          | used to specify range                                                      |
-| add      | criteria  | initial          | used to append values to a dataset                                         | 
-| using    | criteria  | initial          | used to specify object relationship                                        |
-| given    | criteria  | initial          | pass input to action                                                       |
-| fast     | adjective | future           | Value performance over memory and accuracy                                 |
-| small    | adjective | future           | Value small memory footprint over performance and accuracy                 |
-| accurate | adjective | future           | Value quality results over memory and speed                                |
+| keyword  | type      | support priority | notes                                                                                             |
+|----------|-----------|------------------|---------------------------------------------------------------------------------------------------|
+| model    | object    | initial          | type of object                                                                                    |
+| dataset  | object    | initial          | type of object                                                                                    |
+| row      | object    | future           | type of object                                                                                    |
+| rows     | object    | initial          | type of object                                                                                    |
+| column   | object    | future           | type of object                                                                                    |
+| columns  | object    | future           | type of object                                                                                    |
+| create   | action    | initial          | make a dataset                                                                                    |
+| train    | action    | initial          | make a model based on a dataset                                                                   |
+| retrain  | action    | future           | create a model shaped like another model but with a new or updated dataset                        |
+| tune     | action    | future           | append to existing training using a different dataset                                             |
+| predict  | action    | initial          | use model                                                                                         |
+| infer    | action    | future           | synonym for predict                                                                               |
+| validate | action    | future           | check loss against a dataset                                                                      |
+| set      | action    | future           | set session parameters                                                                            |
+| let      | action    | future           | set script-local variables                                                                        |
+| copy     | action    | future           | copy a model or dataset                                                                           |
+| log      | action    | future           | write text to log file                                                                            |
+| with     | criteria  | initial          | used to specify statement option                                                                  |
+| at       | criteria  | initial          | used to specify column offset                                                                     |
+| through  | criteria  | initial          | used to specify range                                                                             |
+| add      | criteria  | initial          | used to append values to a dataset                                                                | 
+| using    | criteria  | initial          | used to specify object relationship                                                               |
+| given    | criteria  | initial          | pass input to action                                                                              |
+| fast     | adjective | future           | Probably doesn't need to be a keyword. Value performance over memory and accuracy                 |
+| small    | adjective | future           | Probably doesn't need to be a keyword. Value small memory footprint over performance and accuracy |
+| accurate | adjective | future           | Probably doesn't need to be a keyword. Value quality results over memory and speed                |
+| comma    | adjective | future           | Probably doesn't need to be a keyword. adjective for delimiter                                    |
+| tab      | adjective | future           | Probably doesn't need to be a keyword. adjective for delimiter                                    |
 
 
 ## Create Dataset
@@ -67,6 +69,23 @@ code, I use the word "neural network", but I may want to support non-neural netw
 ```
 train [<adjective>*] <model type> model <model name> [<knowledge label>] using <data set name>
 ```
+
+| adjective | immediate plan                                                                                                                                                          | future plan                                 | eventual plan                                                                              |
+|-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------|--------------------------------------------------------------------------------------------|
+| fast      | Goal of good enough results. Materialize when possible to avoid duplicate operations. Always 32-bit. Only use bias on final output. Minimum necessary model complexity. | Leverage vectorization on cpu memory.       | Use GPU when possible and support quantization (16/8 bit) when available.                  |
+| small     | Goal of good enough results. Materialize only when necessary. Use 8-bit or 16-bit when possible. Only use bias on final output. Minimum necessary model complexity.     | Page large tensors to disk when not in use. | Distributed execution? Maybe there's a way to have different layers on different machines. |
+| accurate  | Goal of great results. Materialize only when necessary. Always 32-bit. Use bias on more layers when it increases accuracy. Maximum model complexity.                    |                                             |                                                                                            |
+
+Accurate will be the default. 
+
+A model is only useful if the results are usually right. How usually? Well, it depends on the model and how it is used, but a model that is wrong most of the time is not useful in nearly all cases. So, no matter which option you pick, I would strive to achieve a fairly high accuracy. Accuracy defined the percentage of time that we get the right result. I think an accuracy of 70% if a fairly realistic goal in most real-world situations. An accuracy of 90% is very good.
+
+I'm debating whether to include the adverb "very", which might give an extra lever to push further toward a goal extreme and would impact the model's complexity -- by either making it more or less complex. So, "very accurate" would increase complexity of the model, but "very fast" or "very small" would decrease the complexity of the model with an impact on the quality of the result.
+
+If I did include "very", then I would make the default complexity closer to the "middle of the road", so that there was more room to push boundaries.
+
+People might also want a "sort of" adverb, like "sort of fast" or "sort of small", but I don't think I'll go that far.
+
 
 ## Predict
 
