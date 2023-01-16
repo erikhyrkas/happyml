@@ -32,6 +32,7 @@ I don't want to spend enormous amounts of time and energy trying to get it right
 | tune     | action    | future           | append to existing training using a different dataset                      |
 | predict  | action    | initial          | use model                                                                  |
 | infer    | action    | future           | synonym for predict                                                        |
+| validate | action    | future           | check loss against a dataset                                               |
 | set      | action    | future           | set session parameters                                                     |
 | let      | action    | future           | set script-local variables                                                 |
 | copy     | action    | future           | copy a model or dataset                                                    |
@@ -73,6 +74,17 @@ train [<adjective>*] <model type> model <model name> [<knowledge label>] using <
 or
 
 `infer using <model name> [<model version>] given <input>`
+
+## Validate
+
+I originally was only going to do validate as part of training, but I think there are use cases where
+revalidating a model might be handy. For example, you could validate against last month's data to see 
+how well your model is performing and whether you should retrain it. This is only different than `predict`
+in that you aren't interested in each individual prediction, but the loss across a full set of predictions.
+
+```
+validate model <model name> [<knowledge label>] using <data set name>
+```
 
 ## Add
 
