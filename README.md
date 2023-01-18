@@ -68,6 +68,18 @@ The second goal is about providing an interface to ML that lets software develop
 
 The last goal is an area that there is already a huge push for, which is creating means for people to learn the math and science of ML. I want to support this goal, but at the same time, this is already the area that is the strongest.
 
+# Model Risk Management
+
+Whether you use happyml or another framework, I've decided that it's important to take a moment to mention model risk management.
+
+With the explosion of popular ml models, like ChatGPT, I've seen examples of tremendously poor model risk management, and want to remind people that ML Models aren't infallible. I believe that I read somewhere that a good model is 70% accurate, and that an accuracy of 90% was the best you could hope for.
+
+People are using ML models without any thought to the risk that the output might be wrong. Models are great and with the proper processes around using them can be more accurate than humans, but they are still wrong often enough that it is important to insulate yourself from those risks. Don't blindly use model outputs as if they must be right. Use the model outputs along with your own knowledge and other information to make the best decisions you can.
+
+Using a model to generate text and then treating that text like fact is a terrible plan. A tool like ChatGPT can help you with a draft, but it is a tool that the user uses to make a draft. It is on the user to then take that draft and make a finished result. 
+
+Models are only as good as the data and processes used to make them, and nobody has perfect data or perfect processes. Be careful out there.
+
 # Learning more
 If you want to use the latest and coolest algorithms, you can use them relatively cheaply if you have some rudimentary programming skills to build some amazing things:
 * https://openai.com/api/
