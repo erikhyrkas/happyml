@@ -8,4 +8,80 @@
 #ifndef HAPPYML_LEXER_HPP
 #define HAPPYML_LEXER_HPP
 
+#include "pattern.hpp"
+
+using namespace std;
+
+// NOTE: the lexer currently doesn't do look behind or look ahead. This keeps
+// the logic simple, but requires careful consideration when writing rules.
+// It's also worth noting that the lexer attempts the shortest possible valid
+// match rather than greedily trying to match the maximum length of a pattern.
+namespace happyml {
+
+    class LexerResult {
+    public:
+        LexerResult(const shared_ptr<MatchStream> &matchStream, const string &message) {
+            this->matchStream = matchStream;
+            this->message = message;
+        }
+
+        shared_ptr<MatchStream> getMatchStream() {
+            return matchStream;
+        }
+
+        string getMessage() {
+            return message;
+        }
+
+    private:
+        shared_ptr<MatchStream> matchStream;
+        string message;
+    };
+
+    class Lexer {
+    public:
+        explicit Lexer(const vector<shared_ptr<Pattern>> &patterns) {
+            this->patterns = patterns;
+        }
+
+        shared_ptr<LexerResult> lex(const string &text, const string &source = "unknown") {
+            vector<shared_ptr<Match>> matches;
+            size_t scanLimit = text.length();
+            size_t offset = 0;
+            while (offset < scanLimit) {
+                auto longestMatch = findLongestMatch(text, offset, source);
+                if (!longestMatch) {
+                    // TODO: we have more information we can share, just needs to be added.
+                    // This is bare bones, but enough for the moment.
+                    size_t remaining = text.length() - offset;
+                    string sub = text.substr(offset, std::min(remaining, (size_t) 10));
+                    stringstream message;
+                    message << "Syntax error at: " << source << "(" << offset << ") [" << sub << "]" << endl;
+                    return make_shared<LexerResult>(nullptr, message.str());
+                }
+                if (!longestMatch->isSkip()) {
+                    matches.push_back(longestMatch);
+                }
+                offset += longestMatch->getLength();
+            }
+
+            return make_shared<LexerResult>(make_shared<MatchStream>(matches), "success");
+        }
+
+    private:
+        vector<shared_ptr<Pattern>> patterns;
+
+        shared_ptr<Match> findLongestMatch(const string &text, size_t offset, const string &source = "unknown") {
+            shared_ptr<Match> longestMatch;
+            for (const auto &pattern: patterns) {
+                auto nextMatch = pattern->match(text, offset, source);
+                if (nextMatch && (!longestMatch || nextMatch->getLength() > longestMatch->getLength())) {
+                    longestMatch = nextMatch;
+                }
+            }
+            return longestMatch;
+        }
+    };
+
+}
 #endif //HAPPYML_LEXER_HPP

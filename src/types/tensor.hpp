@@ -13,9 +13,11 @@
 #include <vector>
 #include <iomanip>
 #include <fstream>
+#include <set>
 #include "quarter_float.hpp"
 #include "half_float.hpp"
 #include "../util/portable_bytes.hpp"
+#include "../util/index_value.hpp"
 
 // TODO:
 // * create bit matrix since there are many inputs that are strictly 1s and 0s
@@ -273,6 +275,27 @@ namespace happyml {
                 }
             }
             return {minResult, maxResult};
+        }
+
+        vector <IndexValue> topIndices(size_t numberOfResults, size_t channel, size_t row) {
+            vector<IndexValue> result;
+            if (numberOfResults > 0) {
+                multiset<IndexValue> sortedValues;
+                const size_t maxCols = columnCount();
+                for (size_t col = 0; col < maxCols; col++) {
+                    float nextVal = getValue(row, col, channel);
+                    sortedValues.insert(IndexValue(col, nextVal));
+                }
+                multiset<IndexValue>::reverse_iterator reverseIterator;
+                for (reverseIterator = sortedValues.rbegin();
+                     reverseIterator != sortedValues.rend(); reverseIterator++) {
+                    result.push_back(*reverseIterator);
+                    if (result.size() == numberOfResults) {
+                        break;
+                    }
+                }
+            }
+            return result;
         }
 
         size_t maxIndex(size_t channel, size_t row) {

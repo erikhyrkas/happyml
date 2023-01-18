@@ -142,7 +142,8 @@ namespace happyml {
         size_t currentOffset;
     };
 
-
+    // TODO: create a method to return the distinct values of a column, useful for
+    //  finding labels.
     class InMemoryTrainingDataSet : public TrainingDataSet {
     public:
         InMemoryTrainingDataSet() {
@@ -240,15 +241,15 @@ namespace happyml {
         size_t current_offset;
     };
 
-    // This is fine for small datasets, but
+    // This is fine for small datasets, but won't work at scale because not all datasets will fit in memory
     class InMemoryDelimitedValuesTrainingDataSet : public InMemoryTrainingDataSet {
     public:
         InMemoryDelimitedValuesTrainingDataSet(const string &path, char delimiter,
                                                bool header_row, bool trim_strings, bool expected_first,
                                                size_t expected_columns, size_t given_columns,
                                                const vector<size_t> &expected_shape, const vector<size_t> &given_shape,
-                                               const shared_ptr<TrainingDataInputEncoder> &expected_encoder,
-                                               const shared_ptr<TrainingDataInputEncoder> &given_encoder)
+                                               const shared_ptr<DataEncoder> &expected_encoder,
+                                               const shared_ptr<DataEncoder> &given_encoder)
                 : InMemoryTrainingDataSet() {
             this->path = path;
             this->delimiter = delimiter;
@@ -283,8 +284,8 @@ namespace happyml {
         size_t givenColumns;
         vector<size_t> expectedShape;
         vector<size_t> givenShape;
-        shared_ptr<TrainingDataInputEncoder> expectedEncoder;
-        shared_ptr<TrainingDataInputEncoder> givenEncoder;
+        shared_ptr<DataEncoder> expectedEncoder;
+        shared_ptr<DataEncoder> givenEncoder;
 
         void load() {
             DelimitedTextFileReader delimitedTextFileReader(path, delimiter);
@@ -295,8 +296,8 @@ namespace happyml {
             size_t first_size;
             vector<size_t> first_shape;
             vector<size_t> second_shape;
-            shared_ptr<TrainingDataInputEncoder> firstEncoder;
-            shared_ptr<TrainingDataInputEncoder> secondEncoder;
+            shared_ptr<DataEncoder> firstEncoder;
+            shared_ptr<DataEncoder> secondEncoder;
             if (expectedFirst) {
                 first_size = expectedColumns;
                 first_shape = expectedShape;

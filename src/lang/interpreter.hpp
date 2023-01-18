@@ -8,64 +8,63 @@
 
 #include <fstream>
 #include <sstream>
-#include "parser.hpp"
+#include "happml_script_init.hpp"
 
-// syntax might be something like:
-// set output <human/machine>
+using namespace std;
 
-// create <data set type> dataset <name> from <location> [with <format>]
-// add rows to dataset <name> using delimited data:
-// 1, 2, 3, 4
-// <empty line to denote end of data>
-
-// create [<adjective>*] <model type> model <model name> [<model version>] using <data set name>
-// tune <model name> [<model version>] [as [<model name>] [<model version>]] using <data set name>
-// retrain <model name> [<model version>] [as [<model name>] [<model version>]] using <data set name>
-
-// predict using <model name> [<model version] given <input>
-//               or
-// infer using <model name> [<model version] given <input>
-
-class InterpreterSession {
-public:
-    bool interpretCommands(const string &text) {
-        bool done = false;
-        cout << "interpreting [" << text << "]..." << endl;
-        // temporary exit check
-        if (text == "!exit") {
-            done = true;
-        } else {
-
+namespace happyml {
+    class InterpreterSession {
+    public:
+        InterpreterSession(const shared_ptr<Parser> &parser) {
+            this->parser = parser;
+            sessionState = make_shared<SessionState>();
         }
-        return done;
-    }
 
-    bool interpretFile(const string &filePath) {
-        bool done;
-        try {
-            ifstream stream;
-            stream.open(filePath, ifstream::in);
-            stringstream fullText;
-            fullText << stream.rdbuf();
-            done = interpretCommands(fullText.str());
-            stream.close();
-        } catch (ofstream::failure &e) {
-            cerr << "Failed to load: " << filePath << endl << e.what() << endl;
-            throw e;
+        bool interpretCommands(const string &text) {
+            cout << "interpreting [" << text << "]..." << endl;
+            // todo: can cache the compiled executable scripts, since they are stateless.
+            auto executable = parser->parse(text);
+            // in terms of caching the output execution, that would rely
+            // on the internal workings of what is being executed to decide
+            // if there is an opportunity to optimize. For example, if a
+            // model wants to cache a prediction, it is welcome to do so,
+            // but we won't do it here because we don't know if the session
+            // state would impact how it made its prediction.
+            return executable->execute(sessionState);
         }
-        return done;
-    }
 
-    void interactiveInterpret() {
-        // interpret commandline until done
-        std::string nextLine;
-        while (std::getline(std::cin, nextLine)) {
-            bool done = interpretCommands(nextLine);
-            if (done) {
-                break;
+        bool interpretFile(const string &filePath) {
+            bool done;
+            try {
+                ifstream stream;
+                stream.open(filePath, ifstream::in);
+                stringstream fullText;
+                fullText << stream.rdbuf();
+                done = interpretCommands(fullText.str());
+                stream.close();
+            } catch (ofstream::failure &e) {
+                cerr << "Failed to load: " << filePath << endl << e.what() << endl;
+                throw e;
+            }
+            return done;
+        }
+
+        void interactiveInterpret() {
+            // interpret commandline until done
+            std::string nextLine;
+            while (std::getline(std::cin, nextLine)) {
+                const bool done = interpretCommands(nextLine);
+                if (done) {
+                    break;
+                }
             }
         }
-    }
-};
+
+    private:
+        shared_ptr<SessionState> sessionState;
+        shared_ptr<Parser> parser;
+    };
+}
+
 
 #endif //HAPPYML_INTERPRETER_HPP

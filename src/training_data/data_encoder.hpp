@@ -39,14 +39,14 @@ namespace happyml {
         return value;
     }
 
-    class TrainingDataInputEncoder {
+    class DataEncoder {
     public:
         virtual shared_ptr<BaseTensor> encode(const vector<string> &words,
                                               size_t rows, size_t columns, size_t channels, bool trim) = 0;
     };
 
 
-    class TextToPixelEncoder : public TrainingDataInputEncoder {
+    class TextToPixelEncoder : public DataEncoder {
     public:
         shared_ptr<BaseTensor> encode(const vector<string> &words,
                                       size_t rows, size_t columns, size_t channels, bool trim) override {
@@ -74,7 +74,7 @@ namespace happyml {
         }
     };
 
-    class TextToScalarEncoder : public TrainingDataInputEncoder {
+    class TextToScalarEncoder : public DataEncoder {
     public:
         shared_ptr<BaseTensor> encode(const vector<string> &words,
                                       size_t rows, size_t columns, size_t channels, bool trim) override {
@@ -96,9 +96,17 @@ namespace happyml {
         }
     };
 
-    class TextToCategoryEncoder : public TrainingDataInputEncoder {
+    // TODO: we should be able to calculate category labels from a column
+    class TextToUniqueCategoryEncoder : public DataEncoder {
     public:
-        explicit TextToCategoryEncoder(const map<string, size_t> &categoryMapping) {
+        explicit TextToUniqueCategoryEncoder(const vector<string> &categoryLabels) {
+            for (size_t index = 0; index < categoryLabels.size(); index++) {
+                categoryMapping[categoryLabels[index]] = index;
+            }
+
+        }
+
+        explicit TextToUniqueCategoryEncoder(const map<string, size_t> &categoryMapping) {
             this->categoryMapping = categoryMapping;
         }
 

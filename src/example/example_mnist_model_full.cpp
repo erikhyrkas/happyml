@@ -4,6 +4,7 @@
 //
 #include <memory>
 #include "../ml/model.hpp"
+#include "../training_data/data_decoder.hpp"
 
 using namespace std;
 using namespace happyml;
@@ -11,18 +12,8 @@ using namespace happymldsl;
 
 int main() {
     try {
-        map<string, size_t> categories;
-        categories["0"] = 0;
-        categories["1"] = 1;
-        categories["2"] = 2;
-        categories["3"] = 3;
-        categories["4"] = 4;
-        categories["5"] = 5;
-        categories["6"] = 6;
-        categories["7"] = 7;
-        categories["8"] = 8;
-        categories["9"] = 9;
-        auto expectedEncoder = make_shared<TextToCategoryEncoder>(categories);
+        vector<string> categoryLabels{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
+        auto expectedEncoder = make_shared<TextToUniqueCategoryEncoder>(categoryLabels);
         auto givenEncoder = make_shared<TextToPixelEncoder>();
         // making the shape square (28x28) just to test the auto-flattening capabilities of the network.
         //"..\\data\\mnist_test.csv"
@@ -58,11 +49,13 @@ int main() {
         // Trained 20 epochs using a batch size of 256 in 42 minutes with a loss of 0.094601.
         cout << fixed << setprecision(2);
         testMnistDataSource->restart();
+        auto decoder = make_shared<BestTextCategoryDecoder>(categoryLabels);
         size_t limit = 50;
         auto nextRecord = testMnistDataSource->nextRecord();
         while (nextRecord && limit > 0) {
-            auto prediction = maxIndex(neuralNetwork->predictOne(nextRecord->getFirstGiven()));
-            cout << "mnist truth: " << maxIndex(nextRecord->getFirstExpected()) << " happyml prediction: " << prediction
+            auto prediction = decoder->decode(neuralNetwork->predictOne(nextRecord->getFirstGiven()));
+            cout << "mnist truth: " << decoder->decode(nextRecord->getFirstExpected()) << " happyml prediction: "
+                 << prediction
                  << endl;
             nextRecord = testMnistDataSource->nextRecord();
             limit--;

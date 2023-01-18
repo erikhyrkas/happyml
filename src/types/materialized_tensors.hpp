@@ -62,6 +62,12 @@ namespace happyml {
     //  the original tensor could be overwritten, but I don't think this would be safe or reliable. I think the
     //  explicit instruction to reuse memory is still the best option.
 
+
+    // TODO: create a "sparse tensor". There are cases where inputs are mostly 0s (or some other value.) There's no need
+    //  to use a large amount of memory to hold the same value. Have a default value the tensor returns for a row/column
+    //  and only return a different value if it is specified. This would be slower than a FullTensor, but useful
+    //  when we want to be memory efficient.
+
     template<typename T>
     void allocateTensorVector(vector<vector<vector<T>>> &data, const size_t rows, const size_t columns,
                               const size_t channels) {
