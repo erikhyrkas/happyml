@@ -7,6 +7,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_executable(happyml src/main.cpp)
 
+# examples of using happyml directly without using the scripting language:
 add_executable(example_xor_model_tanh src/example/example_xor_model_tanh.cpp)
 
 add_executable(example_xor_model_relu src/example/example_xor_model_relu.cpp)
