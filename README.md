@@ -1,3 +1,29 @@
+# What is happyml?
+
+happyml is a small machine learning library. It is currently in a functional state, but there's more features to add to make it more robust.
+
+### What can it do?
+
+Right now, the aspect that I've tested most is classifying data. I provide the classic example of identifying handwritten numbers.
+
+See the [MNIST example](src/example/example_mnist_model_convolution.cpp).
+
+While image classification like that is a useful use case, you could create and train a model to make many types of predictions.
+
+I am working on adding a scripting language to interface with it, so that people who do not have C++ experience can easily integrate it into other applications with little effort.
+
+### What makes it special?
+
+Two things:
+1. I've made an effort to document what I've learned throughout, so that you can learn from it as well.
+2. It supports 8-bit quantization for training, not just inference.
+
+So, I used a fancy term "quantization", which more or less is another way of saying that I let you use less memory by using approximate values. You are trading accuracy for lower memory consumption.
+
+What I've found is that, if you are careful about which layers of the model are quantized, there is very little impact on the quality of the end results. That said, supporting models like this means that the performance is worse because of the techniques I used to reduce the amount of estimation.
+
+For a small model, you don't have to use 8-bit or 16-bit features and can use 32-bit features, but for models that wouldn't fit on commodity hardware? This makes it possible to train models that would otherwise require a considerable amount of expensive, specialized hardware.
+
 # MIT License
 
 See the [LICENSE](LICENSE) file for details.
@@ -23,30 +49,22 @@ based on the [CMakeLists.txt](CMakeLists.txt).
 This project isn't even in a complete alpha stage, yet.
 
 Nice-to-haves for alpha:
-* A test() function that could take a test data set and return a loss. This could be used for early stopping, but also for tests.
 * Need to fix and check-in Adam optimizer. I'm not even going to check it in until it seems plausibly right and I need to refactor the model object's training to support it correctly. I built the mini-batch gradient decent optimizer first because it was easier to make (even though I still had issues building it correctly -- that is part of the learning process), and it let me test all the other code.
 * Need to finish the half float and test. It currently doesn't handle any edge conditions and could produce incorrect results in some situations.
-* Would like to create a lexer-parser to handle interfacing with happyml through a dsl.
+* Finish lexer-parser to handle interfacing with happyml through a dsl.
 
 Back-of-the-mind considerations:
-* _I think I've updated most of the formatting at this point._ ~~Need to format the code to C++ standards, since I've been doing so many languages that I have clearly forgotten what is standard.~~
-* _Convolutional Layers are training slow._ ~~Need to fix convolutional layers.~~
-* _The save format could be more efficient and compact._ ~~Need to be able to save and restore state, even if in a simple format.~~
+* The save format could be more efficient and compact.
 * There is a bug with multiple-inputs where the input shuffles aren't synchronized. This can be addressed, but I need to create an example that uses multiple inputs. Maybe I can get an image and label data set. I'm thinking I'll create a new type of data set that combined multiple other sources to keep them in sync when shuffling and offer "channels" to split those input into different neurons at the start of training. This will also be a chance to implement and test Convolutional 2d Same layers.
-
-Stretch goals for alpha:
-* ~~Early stopping policy~~
-* Lexer/parser to take in an input stream and create, train, load, and use models through a standard input stream
-
 
 At that point, the code will be in an alpha state, but I still won't have even tackled encoder-decoder and decoder-only requirements. For beta, I'd like to see at least decoder-only support. There's also Reinforcement Learning from Human Feedback (RLHF) that I'll ponder, but I doubt I can work that into the beta let along the alpha. That journey will continue.
 
 This project is still a long way off from democratizing the power of ml. Right now, it's mostly focused on making large models run on commodity hardware. Next steps will be to make the interface to using it easier for people without a data science background. And finally, I hope that everything I build is educational.
 
 
-# happyml
+# Why did you build this?
 
-Why did you build this? You shouldn't have. 
+You shouldn't have. 
 
 Seriously, you shouldn't have. 
 
