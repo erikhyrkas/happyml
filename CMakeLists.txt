@@ -38,3 +38,5 @@ add_executable(test_activation src/test/test_activation.cpp)
 add_executable(test_portable_bytes src/test/test_portable_bytes.cpp)
 
 add_executable(test_lexer src/test/test_lexer.cpp)
+
+add_executable(test_interpreter src/test/test_interpreter.cpp)
