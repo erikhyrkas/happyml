@@ -73,6 +73,10 @@ namespace happyml {
         return lexer;
     }
 
+    shared_ptr<Rule> initRules() {
+        return {}; // TODO
+    }
+
     shared_ptr<Parser> initializeHappymlParser() {
         // load lexer and parser rules
         auto lexer = initializeHappymlLexer();
@@ -80,10 +84,14 @@ namespace happyml {
         // We may want to build other types of parsers that are configurable
         // for example to parse certain document formats, so we pass in rules
         // and the lexer.
+        shared_ptr<Rule> baseRule = initRules();
+//        auto rootScriptMatcher = make_shared<RootScriptMatcher>(baseRule);
 
-
-        auto parser = make_shared<Parser>(lexer);
+//        auto parser = make_shared<Parser>(lexer, rootScriptMatcher);
+        shared_ptr<Parser> parser;
         return parser;
     }
+
+
 }
 #endif //HAPPYML_HAPPML_SCRIPT_INIT_HPP

@@ -20,17 +20,23 @@ namespace happyml {
             sessionState = make_shared<SessionState>();
         }
 
-        bool interpretCommands(const string &text) {
+        bool interpretCommands(const string &text, const string &source="unknown") {
             cout << "interpreting [" << text << "]..." << endl;
             // todo: can cache the compiled executable scripts, since they are stateless.
-            auto executable = parser->parse(text);
+            auto executable = parser->parse(text, source);
             // in terms of caching the output execution, that would rely
             // on the internal workings of what is being executed to decide
             // if there is an opportunity to optimize. For example, if a
             // model wants to cache a prediction, it is welcome to do so,
             // but we won't do it here because we don't know if the session
             // state would impact how it made its prediction.
-            return executable->execute(sessionState);
+            auto result= executable->execute(sessionState);
+            // TODO: handle errors
+            if( !result->isSuccessful()) {
+                // print error
+                cerr << result->getMessage() << endl;
+            }
+            return result->exitRequested();
         }
 
         bool interpretFile(const string &filePath) {
@@ -40,7 +46,7 @@ namespace happyml {
                 stream.open(filePath, ifstream::in);
                 stringstream fullText;
                 fullText << stream.rdbuf();
-                done = interpretCommands(fullText.str());
+                done = interpretCommands(fullText.str(), filePath);
                 stream.close();
             } catch (ofstream::failure &e) {
                 cerr << "Failed to load: " << filePath << endl << e.what() << endl;
@@ -53,7 +59,7 @@ namespace happyml {
             // interpret commandline until done
             std::string nextLine;
             while (std::getline(std::cin, nextLine)) {
-                const bool done = interpretCommands(nextLine);
+                const bool done = interpretCommands(nextLine, "cli");
                 if (done) {
                     break;
                 }

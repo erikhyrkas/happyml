@@ -296,6 +296,7 @@ void testNumber() {
 
 void textLexer1() {
     auto lexer = initializeHappymlLexer();
+
     auto result = lexer->lex(
             "# This is a lexer test\nlet x = 0.5 # other comment\ntrain fast model mymodel using mydataset");
     ASSERT_TRUE(result);
@@ -303,6 +304,15 @@ void textLexer1() {
     auto matchStream = result->getMatchStream();
     ASSERT_TRUE(matchStream);
     ASSERT_TRUE(12 == matchStream->size());
+
+    while(matchStream->hasNext()) {
+        auto next = matchStream->next();
+        cout << next->render() << endl;
+    }
+
+    result = lexer->lex("*");
+    ASSERT_TRUE(result);
+    ASSERT_FALSE(result->getMatchStream());
 }
 
 int main() {

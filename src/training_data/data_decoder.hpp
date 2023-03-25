@@ -59,23 +59,23 @@ namespace happyml {
     // TODO: test.
     class TopTextCategoryDecoder {
     public:
-        TopTextCategoryDecoder(const vector<string> &categoryLabels, size_t numberOfResults) {
-            this->categoryLabels = categoryLabels;
-            this->numberOfResults = numberOfResults;
+        explicit TopTextCategoryDecoder(const vector<string> &categoryLabels, const size_t numberOfResults)
+            : categoryLabels(categoryLabels), numberOfResults(numberOfResults) {
         }
 
         vector<string> decode(shared_ptr<BaseTensor> tensor) {
             const auto categoryIndex = tensor->topIndices(numberOfResults, 0, 0);
             vector<string> result;
-            for (auto iterator = categoryIndex.begin(); iterator != categoryIndex.end(); iterator++) {
-                result.push_back(categoryLabels[iterator->getIndex()]);
+            result.reserve(categoryIndex.size());
+            for (const auto &index : categoryIndex) {
+                result.push_back(categoryLabels[index.getIndex()]);
             }
             return result;
         }
 
     private:
-        vector<string> categoryLabels;
-        size_t numberOfResults;
+        const vector<string> categoryLabels;
+        const size_t numberOfResults;
     };
 }
 

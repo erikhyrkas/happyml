@@ -49,6 +49,22 @@ namespace happyml {
             return source;
         }
 
+        string render() {
+            stringstream result;
+            string val = getValue();
+            if (val == "\n") {
+                val = "<\\n>";
+            } else if (val == "\r") {
+                val = "<\\r>";
+            } else if (val == "\t") {
+                val = "<\\t>";
+            } else if (val == " ") {
+                val = "<space>";
+            }
+            result << "[" << val << " (" << getSource() << ":" << getOffset() << ":" << getLabel() << ")]";
+            return result.str();
+        }
+
     private:
         size_t length;
         string label;
@@ -59,37 +75,50 @@ namespace happyml {
         string source;
     };
 
-    // There is likely a more C++ focused approach around iterators
-    // but my C++ is rusty, so I'll do what I know I can make work,
-    // though this probably can be refined later.
     class MatchStream {
     public:
-        MatchStream(const vector<shared_ptr<Match>> &matches) {
+        explicit MatchStream(const vector<shared_ptr<Match>> &matches) {
             this->matches = matches;
+            this->offset = 0;
         }
 
-        bool hasNext() {
-            if (matches.empty() || offset >= matches.size()) {
-                return false;
+        [[nodiscard]] bool hasNext(size_t count=1) const {
+            size_t next_offset = offset + count - 1;
+            return next_offset < matches.size();
+        }
+
+        [[nodiscard]] shared_ptr<Match> peek(size_t count=1) const {
+            if (!hasNext(count)) {
+                throw std::out_of_range("Offset is out of range.");
             }
-            size_t start = fresh ? 0 : offset + 1;
+            size_t next_offset = offset + count - 1;
+            return matches[next_offset];
+        }
+
+        shared_ptr<Match> previous() {
+            if(offset == 0 ) {
+                return nullptr;
+            }
+            return matches[offset-1];
+        }
+
+        shared_ptr<Match> next() {
+            auto result = peek();
+            consume();
+            return result;
+        }
+
+        void consume(size_t count=1) {
+            if (!hasNext(count)) {
+                throw std::out_of_range("Offset is out of range.");
+            }
+            offset += count;
         }
 
         string render() {
             stringstream result;
             for (const auto match: matches) {
-                string val = match->getValue();
-                if (val == "\n") {
-                    val = "<\\n>";
-                } else if (val == "\r") {
-                    val = "<\\r>";
-                } else if (val == "\t") {
-                    val = "<\\t>";
-                } else if (val == " ") {
-                    val = "<space>";
-                }
-                result << val << "\t[" << match->getSource() << ":" << match->getOffset() << ":" << match->getLabel()
-                       << "]" << endl;
+                result << match->render() << endl;
             }
             return result.str();
         }
@@ -101,9 +130,6 @@ namespace happyml {
     private:
         vector<shared_ptr<Match>> matches;
         size_t offset;
-        bool fresh;
-        size_t lastConsumedOffset;
-
     };
 
 }

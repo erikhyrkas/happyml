@@ -62,7 +62,15 @@ namespace happyml {
                 if (!longestMatch->isSkip()) {
                     matches.push_back(longestMatch);
                 }
-                offset += longestMatch->getLength();
+                const size_t len = longestMatch->getLength();
+                if( len == 0) {
+                    size_t remaining = text.length() - offset;
+                    string sub = text.substr(offset, std::min(remaining, (size_t) 10));
+                    stringstream message;
+                    message << "Syntax error at: " << source << "(" << offset << ") [" << sub << "]" << endl;
+                    return make_shared<LexerResult>(nullptr, message.str());
+                }
+                offset += len;
             }
 
             return make_shared<LexerResult>(make_shared<MatchStream>(matches), "success");
