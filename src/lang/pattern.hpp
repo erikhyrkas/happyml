@@ -145,12 +145,12 @@ namespace happyml {
             this->patternMatcher = patternMatcher;
         }
 
-        shared_ptr<Match> match(const string &text, size_t offset, const string &source = "unknown") {
-            shared_ptr<Match> result = nullptr;
+        shared_ptr<Token> match(const string &text, size_t offset, const string &source = "unknown") {
+            shared_ptr<Token> result = nullptr;
             if (offset < text.length()) {
                 auto matchSize = patternMatcher->match(text, offset, text.length());
                 if (matchSize) {
-                    result = make_shared<Match>(matchSize->getMatchLength(),
+                    result = make_shared<Token>(matchSize->getMatchLength(),
                                                 getLabel(),
                                                 text.substr(offset, matchSize->getMatchLength()),
                                                 isSkip(),

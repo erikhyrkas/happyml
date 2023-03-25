@@ -99,7 +99,7 @@ void testMatchTextSequence2() {
 
 void testComment() {
     auto commentPattern = createCommentPattern();
-    shared_ptr<Match> match;
+    shared_ptr<Token> match;
     string line;
 
     line = "# test";
@@ -132,7 +132,7 @@ void testComment() {
 
 void testDoubleQuoteString() {
     auto doubleQuoteStringPattern = createStringPattern();
-    shared_ptr<Match> match;
+    shared_ptr<Token> match;
     string line;
 
     line = "\"test string\"";
@@ -175,7 +175,7 @@ void testDoubleQuoteString() {
 
 void testSingleQuoteString() {
     auto singleQuoteStringPattern = createStringPattern();
-    shared_ptr<Match> match;
+    shared_ptr<Token> match;
     string line;
 
     line = "'test string'";
@@ -218,7 +218,7 @@ void testSingleQuoteString() {
 
 void testWord() {
     auto wordPattern = createWordPattern();
-    shared_ptr<Match> match;
+    shared_ptr<Token> match;
     string line;
 
     line = "test string";
@@ -254,7 +254,7 @@ void testWord() {
 
 void testNumber() {
     auto numberPattern = createNumberPattern();
-    shared_ptr<Match> match;
+    shared_ptr<Token> match;
     string line;
 
     line = ".5";

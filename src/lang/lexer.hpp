@@ -20,12 +20,12 @@ namespace happyml {
 
     class LexerResult {
     public:
-        LexerResult(const shared_ptr<MatchStream> &matchStream, const string &message) {
+        LexerResult(const shared_ptr<TokenStream> &matchStream, const string &message) {
             this->matchStream = matchStream;
             this->message = message;
         }
 
-        shared_ptr<MatchStream> getMatchStream() {
+        shared_ptr<TokenStream> getMatchStream() {
             return matchStream;
         }
 
@@ -34,7 +34,7 @@ namespace happyml {
         }
 
     private:
-        shared_ptr<MatchStream> matchStream;
+        shared_ptr<TokenStream> matchStream;
         string message;
     };
 
@@ -45,7 +45,7 @@ namespace happyml {
         }
 
         shared_ptr<LexerResult> lex(const string &text, const string &source = "unknown") {
-            vector<shared_ptr<Match>> matches;
+            vector<shared_ptr<Token>> matches;
             size_t scanLimit = text.length();
             size_t offset = 0;
             while (offset < scanLimit) {
@@ -73,14 +73,14 @@ namespace happyml {
                 offset += len;
             }
 
-            return make_shared<LexerResult>(make_shared<MatchStream>(matches), "success");
+            return make_shared<LexerResult>(make_shared<TokenStream>(matches), "success");
         }
 
     private:
         vector<shared_ptr<Pattern>> patterns;
 
-        shared_ptr<Match> findLongestMatch(const string &text, size_t offset, const string &source = "unknown") {
-            shared_ptr<Match> longestMatch;
+        shared_ptr<Token> findLongestMatch(const string &text, size_t offset, const string &source = "unknown") {
+            shared_ptr<Token> longestMatch;
             for (const auto &pattern: patterns) {
                 auto nextMatch = pattern->match(text, offset, source);
                 if (nextMatch && (!longestMatch || nextMatch->getLength() > longestMatch->getLength())) {

@@ -15,7 +15,7 @@ using namespace std;
 namespace happyml {
     class InterpreterSession {
     public:
-        InterpreterSession(const shared_ptr<Parser> &parser) {
+        explicit InterpreterSession(const shared_ptr<Parser> &parser) {
             this->parser = parser;
             sessionState = make_shared<ExecutionContext>();
         }

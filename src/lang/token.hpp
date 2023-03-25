@@ -13,9 +13,9 @@ using namespace std;
 
 namespace happyml {
 
-    class Match {
+    class Token {
     public:
-        Match(size_t length, const string &label, const string &value, bool skip,
+        Token(size_t length, const string &label, const string &value, bool skip,
               size_t offset, const string &source) {
             this->length = length;
             this->label = label;
@@ -23,10 +23,10 @@ namespace happyml {
             this->skip = skip;
             this->offset = offset;
             this->source = source;
-            this->lineIndex = 0;
+            this->lineIndex = 0; // right now, the lexer isn't counting lines. It should but that'll be for another day.
         }
 
-        size_t getLength() {
+        [[nodiscard]] size_t getLength() const {
             return length;
         }
 
@@ -38,16 +38,20 @@ namespace happyml {
             return value;
         }
 
-        bool isSkip() {
+        [[nodiscard]] bool isSkip() const {
             return skip;
         }
 
-        size_t getOffset() {
+        [[nodiscard]] size_t getOffset() const {
             return offset;
         }
 
         string getSource() {
             return source;
+        }
+
+        [[nodiscard]] size_t getLineIndex() const {
+            return lineIndex;
         }
 
         string render() {
@@ -76,9 +80,9 @@ namespace happyml {
         string source;
     };
 
-    class MatchStream {
+    class TokenStream {
     public:
-        explicit MatchStream(const vector<shared_ptr<Match>> &matches) {
+        explicit TokenStream(const vector<shared_ptr<Token>> &matches) {
             this->matches = matches;
             this->offset = 0;
         }
@@ -88,7 +92,7 @@ namespace happyml {
             return next_offset < matches.size();
         }
 
-        [[nodiscard]] shared_ptr<Match> peek(size_t count=1) const {
+        [[nodiscard]] shared_ptr<Token> peek(size_t count=1) const {
             if (!hasNext(count)) {
                 throw std::out_of_range("Offset is out of range.");
             }
@@ -96,14 +100,14 @@ namespace happyml {
             return matches[next_offset];
         }
 
-        shared_ptr<Match> previous() {
+        shared_ptr<Token> previous() {
             if(offset == 0 ) {
                 return nullptr;
             }
             return matches[offset-1];
         }
 
-        shared_ptr<Match> next() {
+        shared_ptr<Token> next() {
             auto result = peek();
             consume();
             return result;
@@ -118,7 +122,7 @@ namespace happyml {
 
         string render() {
             stringstream result;
-            for (const auto match: matches) {
+            for (const auto& match: matches) {
                 result << match->render() << endl;
             }
             return result.str();
@@ -129,7 +133,7 @@ namespace happyml {
         }
 
     private:
-        vector<shared_ptr<Match>> matches;
+        vector<shared_ptr<Token>> matches;
         size_t offset;
     };
 

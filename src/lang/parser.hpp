@@ -40,12 +40,17 @@ namespace happyml {
     };
 
     class ExecutionContext {
+        // TODO: we'll eventually store state here.
+        // Examples might include:
+        // * external configuration
+        // * session variables
+        // * debugging/troubleshooting information
 
     };
 
     class ExecutableAstNode {
     public:
-        virtual shared_ptr <ExecutionResult> execute(const shared_ptr <ExecutionContext> &context) = 0;
+        virtual shared_ptr<ExecutionResult> execute(const shared_ptr<ExecutionContext> &context) = 0;
     };
 
     class ParseResult {
@@ -55,7 +60,7 @@ namespace happyml {
             this->message = message;
         }
 
-        explicit ParseResult(const shared_ptr <ExecutableAstNode> &node, const string &message = "Success",
+        explicit ParseResult(const shared_ptr<ExecutableAstNode> &node, const string &message = "Success",
                              bool success = true) {
             this->success = success;
             this->message = message;
@@ -70,28 +75,29 @@ namespace happyml {
             return message;
         }
 
-        shared_ptr <ExecutableAstNode> getExecutable() {
+        shared_ptr<ExecutableAstNode> getExecutable() {
             return node;
         }
 
     private:
         bool success;
         string message;
-        shared_ptr <ExecutableAstNode> node;
+        shared_ptr<ExecutableAstNode> node;
     };
 
     class ExistStatement : public ExecutableAstNode {
     public:
-        shared_ptr <ExecutionResult> execute(const shared_ptr <ExecutionContext> &context) override {
+        shared_ptr<ExecutionResult> execute(const shared_ptr<ExecutionContext> &context) override {
             cout << "Exiting..." << endl;
             return make_shared<ExecutionResult>(true);
         }
     };
-    class CreateDataset : public ExecutableAstNode {
+
+    class CreateDatasetStatement : public ExecutableAstNode {
     public:
-        CreateDataset(string name, string location, string fileFormat,
-                      string expectedType, size_t expectedTo, size_t expectedFrom,
-                      string givenType, size_t givenTo, size_t givenFrom) :
+        CreateDatasetStatement(string name, string location, string fileFormat,
+                               string expectedType, size_t expectedTo, size_t expectedFrom,
+                               string givenType, size_t givenTo, size_t givenFrom) :
                 name(std::move(name)),
                 location(std::move(location)),
                 fileFormat(std::move(fileFormat)),
@@ -103,9 +109,9 @@ namespace happyml {
                 givenTo(givenTo) {
         }
 
-        shared_ptr <ExecutionResult> execute(const shared_ptr <ExecutionContext> &context) override {
+        shared_ptr<ExecutionResult> execute(const shared_ptr<ExecutionContext> &context) override {
             // default to success if there are no children.
-            shared_ptr < ExecutionResult > lastResult = make_shared<ExecutionResult>();
+            shared_ptr<ExecutionResult> lastResult = make_shared<ExecutionResult>();
             // TODO: create dataset
             cout << "create dataset " << name << " from " << location
                  << " with format " << fileFormat
@@ -131,9 +137,9 @@ namespace happyml {
 
     class CodeBlock : public ExecutableAstNode {
     public:
-        shared_ptr <ExecutionResult> execute(const shared_ptr <ExecutionContext> &context) override {
+        shared_ptr<ExecutionResult> execute(const shared_ptr<ExecutionContext> &context) override {
             // default to success if there are no children.
-            shared_ptr < ExecutionResult > lastResult = make_shared<ExecutionResult>();
+            shared_ptr<ExecutionResult> lastResult = make_shared<ExecutionResult>();
             for (const auto &child: children) {
                 lastResult = child->execute(context);
                 // We are discarding all results but the last one. This is fine for handling errors, but
@@ -145,20 +151,20 @@ namespace happyml {
             return lastResult;
         }
 
-        void addChild(const shared_ptr <ExecutableAstNode> &child) {
+        void addChild(const shared_ptr<ExecutableAstNode> &child) {
             children.push_back(child);
         }
 
     private:
-        vector<shared_ptr < ExecutableAstNode>> children;
+        vector<shared_ptr<ExecutableAstNode>> children;
     };
 
     class Parser {
     public:
-        explicit Parser(const shared_ptr <Lexer> &lexer) : lexer(lexer) {
+        explicit Parser(const shared_ptr<Lexer> &lexer) : lexer(lexer) {
         }
 
-        shared_ptr <ParseResult> parse(const string &text, const string &source = "unknown") {
+        shared_ptr<ParseResult> parse(const string &text, const string &source = "unknown") {
             auto lexResult = lexer->lex(text, source);
             if (!lexResult->getMatchStream()) {
                 return make_shared<ParseResult>(lexResult->getMessage(), false);
@@ -170,15 +176,15 @@ namespace happyml {
         }
 
     private:
-        shared_ptr <Lexer> lexer;
+        shared_ptr<Lexer> lexer;
 
-        static shared_ptr <ParseResult> generateError(const string &message, const shared_ptr <Match> &token) {
+        static shared_ptr<ParseResult> generateError(const string &message, const shared_ptr<Token> &token) {
             stringstream error_message;
             error_message << message << token->render();
             return make_shared<ParseResult>(error_message.str(), false);
         }
 
-        static int parseColumnValue(const shared_ptr <MatchStream> &stream) {
+        static int parseColumnValue(const shared_ptr<TokenStream> &stream) {
             try {
                 return stoi(stream->next()->getValue());
             } catch (invalid_argument const &ex) {
@@ -188,7 +194,7 @@ namespace happyml {
             }
         }
 
-        static int tryParseThroughRange(const shared_ptr <MatchStream> &stream) {
+        static int tryParseThroughRange(const shared_ptr<TokenStream> &stream) {
             if (!stream->hasNext() || "_through" != stream->peek()->getLabel()) {
                 // we default to -1 if there was no value.
                 return -1;
@@ -200,7 +206,7 @@ namespace happyml {
             return parseColumnValue(stream);
         }
 
-        static string parseLocation(const shared_ptr <MatchStream> &stream) {
+        static string parseLocation(const shared_ptr<TokenStream> &stream) {
             auto scheme = stream->next();
             if (!stream->hasNext(3)) {
                 throw runtime_error("Malformed url at: " + scheme->render());
@@ -212,7 +218,7 @@ namespace happyml {
             while ("_word" == nextLabel || "_slash" == nextLabel || "_backslash" == nextLabel
                    || "_dot" == nextLabel || "_colon" == nextLabel) {
                 url << stream->next()->getValue();
-                if(!stream->hasNext()) {
+                if (!stream->hasNext()) {
                     break;
                 }
                 nextLabel = stream->peek()->getLabel();
@@ -221,8 +227,8 @@ namespace happyml {
             return url.str();
         }
 
-        static shared_ptr <ParseResult> parseCreateDataset(const shared_ptr <MatchStream> &stream,
-                                                           shared_ptr <Match> &next) {
+        static shared_ptr<ParseResult> parseCreateDataset(const shared_ptr<TokenStream> &stream,
+                                                          shared_ptr<Token> &next) {
             try {
                 //create dataset <name> from <local file|local folder|url>
                 //[with format <delimited|image>]
@@ -272,16 +278,16 @@ namespace happyml {
                         return generateError("with statement is malformed ", stream->previous());
                     }
                 }
-                auto createDataset = make_shared<CreateDataset>(name, location, fileFormat,
-                                                                expectedType, expectedTo, expectedFrom,
-                                                                givenType, givenTo, givenFrom);
+                auto createDataset = make_shared<CreateDatasetStatement>(name, location, fileFormat,
+                                                                         expectedType, expectedTo, expectedFrom,
+                                                                         givenType, givenTo, givenFrom);
                 return make_shared<ParseResult>(createDataset);
             } catch (runtime_error &e) {
                 return generateError(e.what(), stream->previous());
             }
         }
 
-        static shared_ptr <ParseResult> parseCreateStatement(const shared_ptr <MatchStream> &stream) {
+        static shared_ptr<ParseResult> parseCreateStatement(const shared_ptr<TokenStream> &stream) {
             if (!stream->hasNext()) {
                 return generateError("Incomplete statement at: ", stream->previous());
             }
@@ -293,9 +299,9 @@ namespace happyml {
             return generateError("Unsupported object for create: ", next);
         }
 
-        static shared_ptr <ParseResult> parseCodeBlock(const shared_ptr <MatchStream> &stream) {
+        static shared_ptr<ParseResult> parseCodeBlock(const shared_ptr<TokenStream> &stream) {
             auto codeBlock = make_shared<CodeBlock>();
-            shared_ptr < ParseResult > result = make_shared<ParseResult>(codeBlock);
+            shared_ptr<ParseResult> result = make_shared<ParseResult>(codeBlock);
             while (stream->hasNext()) {
                 auto next = stream->next();
                 string label = next->getLabel();
@@ -305,7 +311,7 @@ namespace happyml {
                         return createStatementResult;
                     }
                     codeBlock->addChild(createStatementResult->getExecutable());
-                } else if( "_exit" == label) {
+                } else if ("_exit" == label) {
                     codeBlock->addChild(make_shared<ExistStatement>());
                 } else {
                     return generateError("Unexpected token: ", next);
