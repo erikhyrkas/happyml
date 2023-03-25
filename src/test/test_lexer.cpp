@@ -305,7 +305,7 @@ void textLexer1() {
     ASSERT_TRUE(matchStream);
     ASSERT_TRUE(12 == matchStream->size());
 
-    while(matchStream->hasNext()) {
+    while (matchStream->hasNext()) {
         auto next = matchStream->next();
         cout << next->render() << endl;
     }

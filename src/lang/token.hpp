@@ -87,12 +87,12 @@ namespace happyml {
             this->offset = 0;
         }
 
-        [[nodiscard]] bool hasNext(size_t count=1) const {
+        [[nodiscard]] bool hasNext(size_t count = 1) const {
             size_t next_offset = offset + count - 1;
             return next_offset < matches.size();
         }
 
-        [[nodiscard]] shared_ptr<Token> peek(size_t count=1) const {
+        [[nodiscard]] shared_ptr<Token> peek(size_t count = 1) const {
             if (!hasNext(count)) {
                 throw std::out_of_range("Offset is out of range.");
             }
@@ -101,10 +101,10 @@ namespace happyml {
         }
 
         shared_ptr<Token> previous() {
-            if(offset == 0 ) {
+            if (offset == 0) {
                 return nullptr;
             }
-            return matches[offset-1];
+            return matches[offset - 1];
         }
 
         shared_ptr<Token> next() {
@@ -113,7 +113,7 @@ namespace happyml {
             return result;
         }
 
-        void consume(size_t count=1) {
+        void consume(size_t count = 1) {
             if (!hasNext(count)) {
                 throw std::out_of_range("Offset is out of range.");
             }
@@ -122,7 +122,7 @@ namespace happyml {
 
         string render() {
             stringstream result;
-            for (const auto& match: matches) {
+            for (const auto &match: matches) {
                 result << match->render() << endl;
             }
             return result.str();

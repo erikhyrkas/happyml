@@ -15,11 +15,11 @@ public:
         return value < indexValue.value;
     }
 
-    size_t getIndex() const {
+    [[nodiscard]] size_t getIndex() const {
         return index;
     }
 
-    float getValue() const {
+    [[nodiscard]] float getValue() const {
         return value;
     }
 

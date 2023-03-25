@@ -79,7 +79,7 @@ string asString(bool b) {
     return b ? "true" : "false";
 }
 
-bool asBool(string b) {
+bool asBool(const string& b) {
     return b == "true";
 }
 

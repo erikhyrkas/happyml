@@ -63,7 +63,7 @@ namespace happyml {
                     matches.push_back(longestMatch);
                 }
                 const size_t len = longestMatch->getLength();
-                if( len == 0) {
+                if (len == 0) {
                     size_t remaining = text.length() - offset;
                     string sub = text.substr(offset, std::min(remaining, (size_t) 10));
                     stringstream message;

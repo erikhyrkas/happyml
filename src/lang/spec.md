@@ -2,19 +2,20 @@
 
 "Dude, it feels like you just slapped together a language and didn't think this through at all."
 
-I sort of did. I have iterated on it some and plan to iterate on it more as I go. My goal isn't to start with the 
+I sort of did. I have iterated on it some and plan to iterate on it more as I go. My goal isn't to start with the
 perfect syntax, but rather to end with it. This is, more or less, my starting point and I'll improve on it.
 
 If you iterate, won't you break everybody's code that uses it? Yeah, I will. That's unfortunate, but I don't have the
 time or energy to devote years to finding the perfect way express a language like this and I expect things to break.
 
-That said, since happyml is so lightweight, if you are happy with the version that works for you, keep using it. You 
-could always move to a different version when you are ready. You could theoretically have multiple versions of it running
+That said, since happyml is so lightweight, if you are happy with the version that works for you, keep using it. You
+could always move to a different version when you are ready. You could theoretically have multiple versions of it
+running
 alongside your code and the impact should be low.
 
-I don't want to be trapped into bad early decisions and not evolve as needed, just because somebody might be using it. And, 
+I don't want to be trapped into bad early decisions and not evolve as needed, just because somebody might be using it.
+And,
 I don't want to spend enormous amounts of time and energy trying to get it right in the first try.
-
 
 # Current key word plans
 
@@ -49,9 +50,9 @@ I don't want to spend enormous amounts of time and energy trying to get it right
 | comma    | adjective | future           | Probably doesn't need to be a keyword. adjective for delimiter                                    |
 | tab      | adjective | future           | Probably doesn't need to be a keyword. adjective for delimiter                                    |
 
-
 ## Create Dataset
-Allows us to create a dataset. This will inform models what input and output should look like and 
+
+Allows us to create a dataset. This will inform models what input and output should look like and
 what the valid range of output is.
 
 ```
@@ -69,28 +70,34 @@ code, I use the word "neural network", but I may want to support non-neural netw
 ```
 train [<adjective>*] <model type> model <model name> [<knowledge label>] using <data set name>
 ```
-| model type     | support  | notes                                                                                                                                                       |
-|----------------|----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| identification | minimal  | Find a label for this data                                                                                                                                  |
-| generation     | future   | Generates text, numbers, audio, or image based on dataset                                                                                                   |
-| translation    | future   | Converts text, numbers, audio, or image to new text, numbers, audio, or image based on dataset                                                              |
-| discovery      | future   | Fill in the blank. Find the missing words in a paragraph or missing note in a song. Different than generation in that we are masking random parts of input. | 
 
-I'm lumping all forms of ML into 4 buckets for now, which is a bold (and probably inadvisable) move. Either you want to identify what something is (aka classify),
-you want to generate something new from something else (text or image generation are very popular right now), translate something (you have something in english and you want to change it 
-to latin, or maybe you have an image in one style and what to change it to a different style), or you want to discover the missing information (fill-in-the-blank answers or maybe unmasking 
+| model type     | support | notes                                                                                                                                                       |
+|----------------|---------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| identification | minimal | Find a label for this data                                                                                                                                  |
+| generation     | future  | Generates text, numbers, audio, or image based on dataset                                                                                                   |
+| translation    | future  | Converts text, numbers, audio, or image to new text, numbers, audio, or image based on dataset                                                              |
+| discovery      | future  | Fill in the blank. Find the missing words in a paragraph or missing note in a song. Different than generation in that we are masking random parts of input. | 
+
+I'm lumping all forms of ML into 4 buckets for now, which is a bold (and probably inadvisable) move. Either you want to
+identify what something is (aka classify),
+you want to generate something new from something else (text or image generation are very popular right now), translate
+something (you have something in english and you want to change it
+to latin, or maybe you have an image in one style and what to change it to a different style), or you want to discover
+the missing information (fill-in-the-blank answers or maybe unmasking
 a portion of an image.)
 
-There are many techniques in use today and my hope is that I can figure out which one to apply based on the dataset I'm given.
+There are many techniques in use today and my hope is that I can figure out which one to apply based on the dataset I'm
+given.
 
-For example, if you have a time series and want it completed, I'm lumping that into generation, since it follows the pattern of: Given some numbers, give me the numbers that follow. Will
+For example, if you have a time series and want it completed, I'm lumping that into generation, since it follows the
+pattern of: Given some numbers, give me the numbers that follow. Will
 I be clever enough to pick the right algorithm based on the dataset? We'll see.
 
-Discovery might not be a needed type if there's a better way to specify how to do masking in generation. Translation is similar
-to generation as well, but the techniques are different when we use the dataset. Could I detect the right technique to use without 
+Discovery might not be a needed type if there's a better way to specify how to do masking in generation. Translation is
+similar
+to generation as well, but the techniques are different when we use the dataset. Could I detect the right technique to
+use without
 this hint? Maybe.
-
-
 
 | adjective | immediate plan                                                                                                                                                          | future plan                                                                                   | eventual plan                                                                              |
 |-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|
@@ -98,28 +105,47 @@ this hint? Maybe.
 | small     | Goal of good enough results. Materialize only when necessary. Use 8-bit or 16-bit when possible. Only use bias on final output. Minimum necessary model complexity.     | Page large tensors to disk when not in use. Use Sparse Tensors for inputs if it saves memory. | Distributed execution? Maybe there's a way to have different layers on different machines. |
 | accurate  | Goal of great results. Materialize only when necessary. Always 32-bit. Use bias on more layers when it increases accuracy. Maximum model complexity.                    | Use Sparse Tensors for inputs if it saves memory.                                             | Distributed execution? Maybe there's a way to have different layers on different machines. |
 
-Accurate will be the default. 
+Accurate will be the default.
 
-A model is only useful if the results are usually right. How usually? Well, it depends on the model and how it is used, but a model that is wrong most of the time is not useful in nearly all cases. So, no matter which option you pick, I would strive to achieve a fairly high accuracy. Accuracy defined the percentage of time that we get the right result. I think an accuracy of 70% if a fairly realistic goal in most real-world situations. An accuracy of 90% is very good.
+A model is only useful if the results are usually right. How usually? Well, it depends on the model and how it is used,
+but a model that is wrong most of the time is not useful in nearly all cases. So, no matter which option you pick, I
+would strive to achieve a fairly high accuracy. Accuracy defined the percentage of time that we get the right result. I
+think an accuracy of 70% if a fairly realistic goal in most real-world situations. An accuracy of 90% is very good.
 
-I'm going to start off by having the model guess defaults based on my experience, but eventually support having the training do experiments to find a configuration that meets your goals.
+I'm going to start off by having the model guess defaults based on my experience, but eventually support having the
+training do experiments to find a configuration that meets your goals.
 
 #### Rambling thoughts
 
-My first inclination is to make the training do experiments to find the best complexity to get good accuracy that still meets your goals, but that might be slow. It might have to do 10 experiments to pick settings that meet the goals and still gives at least 70% accuracy. The time it takes to do an experiment might depend on the nature of the model and might even take days. I might make it so that experimentation only continues until we find something that gives us the minimum best results, so we don't always have to wait for X experiments.
+My first inclination is to make the training do experiments to find the best complexity to get good accuracy that still
+meets your goals, but that might be slow. It might have to do 10 experiments to pick settings that meet the goals and
+still gives at least 70% accuracy. The time it takes to do an experiment might depend on the nature of the model and
+might even take days. I might make it so that experimentation only continues until we find something that gives us the
+minimum best results, so we don't always have to wait for X experiments.
 
-The alternative is to include a "best" keyword that signals to do the experimentation or otherwise just uses default settings and hope they are good enough. So, "best fast" would do experiments to find the fastest model that still gave 70% accurate results. Where "best accurate" might do experiments to find the configuration that gave the highest accuracy. But, if you said "fast", it would just take a guess at configuration, do that training, and you'd have to hope that it was accurate enough.
+The alternative is to include a "best" keyword that signals to do the experimentation or otherwise just uses default
+settings and hope they are good enough. So, "best fast" would do experiments to find the fastest model that still gave
+70% accurate results. Where "best accurate" might do experiments to find the configuration that gave the highest
+accuracy. But, if you said "fast", it would just take a guess at configuration, do that training, and you'd have to hope
+that it was accurate enough.
 
-The argument against the "best" keyword is that people don't have a way to do fine-grained controls of a model through the happyml language and there's a big difference between each goal. People who don't specify best would often get bad results. The argument for the "best" keyword is that it gives you a way to disable the experiments and go with a close-enough configuration. 
+The argument against the "best" keyword is that people don't have a way to do fine-grained controls of a model through
+the happyml language and there's a big difference between each goal. People who don't specify best would often get bad
+results. The argument for the "best" keyword is that it gives you a way to disable the experiments and go with a
+close-enough configuration.
 
-I may also have the adverb "very", which would give an extra lever to push further toward a goal extreme and would impact the model's complexity -- by either making it more or less complex. So, "very accurate" would increase complexity of the model, but "very fast" or "very small" would decrease the complexity of the model with an impact on the quality of the result.
+I may also have the adverb "very", which would give an extra lever to push further toward a goal extreme and would
+impact the model's complexity -- by either making it more or less complex. So, "very accurate" would increase complexity
+of the model, but "very fast" or "very small" would decrease the complexity of the model with an impact on the quality
+of the result.
 
-If I did include "very", then I would make the default complexity closer to the "middle of the road", so that there was more room to push boundaries.
+If I did include "very", then I would make the default complexity closer to the "middle of the road", so that there was
+more room to push boundaries.
 
-Then we get into "best very accurate", where our starting settings in an experiment are equivalent to "very accurate", but we continue to experiment if we don't meet our goal of 90% accuracy.
+Then we get into "best very accurate", where our starting settings in an experiment are equivalent to "very accurate",
+but we continue to experiment if we don't meet our goal of 90% accuracy.
 
 People might also want a "sort of" adverb, like "sort of fast" or "sort of small", but I don't think I'll go that far.
-
 
 ## Predict
 
@@ -132,7 +158,7 @@ or
 ## Validate
 
 I originally was only going to do validate as part of training, but I think there are use cases where
-revalidating a model might be handy. For example, you could validate against last month's data to see 
+revalidating a model might be handy. For example, you could validate against last month's data to see
 how well your model is performing and whether you should retrain it. This is only different than `predict`
 in that you aren't interested in each individual prediction, but the loss across a full set of predictions.
 
@@ -149,28 +175,32 @@ add rows to dataset <name> using delimited data:
 ```
 
 ## Set
+
 Set's a session-scoped parameter.
 
 `set <parameter> <value>`
 
-| Parameter | Valid Values   | Default Value  | Comments                                                      |
-|-----------|----------------|----------------|---------------------------------------------------------------|
-| output    | human, machine | human          | Used to make machine parsable output or friendly human output |
+| Parameter | Valid Values   | Default Value | Comments                                                      |
+|-----------|----------------|---------------|---------------------------------------------------------------|
+| output    | human, machine | human         | Used to make machine parsable output or friendly human output |
 
 Example:
+
 ```
 set output machine
 ```
 
 ## Let
-Assigns a value to a script-local variable. Maybe eventually support other scopes. Exists at this stage of the language 
-development largely with the goal of making it easier to generate configurable and reusable scripts. My thought being 
+
+Assigns a value to a script-local variable. Maybe eventually support other scopes. Exists at this stage of the language
+development largely with the goal of making it easier to generate configurable and reusable scripts. My thought being
 that programs sending a script may have cleaner code if they can reuse the body, but just send some configuration
 before running the script that leverages the variables.
 
 `let <variable> = <value>`
 
 Example:
+
 ```
 let dataset_file = "/myfiles/mydataset.csv"
 ```
@@ -192,6 +222,7 @@ tune <model name> [<knowledge label>] [as [<model name>] [<knowledge label>]] us
 ```
 retrain <model name> [<knowledge label>] [as [<model name>] [<knowledge label>]] using <data set name>
 ```
+
 # Rough thoughts on the protocol
 
 syntax might be something like:
@@ -208,8 +239,6 @@ add rows to dataset <name> using delimited data:
 1, 2, 3, 4
 (empty line to denote end of data)
 ```
-
-
 
 ```
 create [<adjective>*] <model type> model <model name> [<knowledge label>] using <data set name>

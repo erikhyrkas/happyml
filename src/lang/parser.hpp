@@ -9,155 +9,12 @@
 #include <utility>
 #include <vector>
 #include "token.hpp"
+#include "statements.hpp"
 
 using namespace std;
 
 namespace happyml {
-    class ExecutionResult {
-    public:
-        explicit ExecutionResult(bool exit = false, bool success = true, const string &message = "") {
-            this->success = success;
-            this->message = message;
-            this->exit = exit;
-        }
 
-        [[nodiscard]] bool exitRequested() const {
-            return exit;
-        }
-
-        [[nodiscard]] bool isSuccessful() const {
-            return success;
-        }
-
-        string getMessage() {
-            return message;
-        }
-
-    private:
-        bool success;
-        bool exit;
-        string message;
-    };
-
-    class ExecutionContext {
-        // TODO: we'll eventually store state here.
-        // Examples might include:
-        // * external configuration
-        // * session variables
-        // * debugging/troubleshooting information
-
-    };
-
-    class ExecutableAstNode {
-    public:
-        virtual shared_ptr<ExecutionResult> execute(const shared_ptr<ExecutionContext> &context) = 0;
-    };
-
-    class ParseResult {
-    public:
-        explicit ParseResult(const string &message = "Failure", bool success = false) {
-            this->success = success;
-            this->message = message;
-        }
-
-        explicit ParseResult(const shared_ptr<ExecutableAstNode> &node, const string &message = "Success",
-                             bool success = true) {
-            this->success = success;
-            this->message = message;
-            this->node = node;
-        }
-
-        [[nodiscard]] bool isSuccessful() const {
-            return success;
-        }
-
-        string getMessage() {
-            return message;
-        }
-
-        shared_ptr<ExecutableAstNode> getExecutable() {
-            return node;
-        }
-
-    private:
-        bool success;
-        string message;
-        shared_ptr<ExecutableAstNode> node;
-    };
-
-    class ExistStatement : public ExecutableAstNode {
-    public:
-        shared_ptr<ExecutionResult> execute(const shared_ptr<ExecutionContext> &context) override {
-            cout << "Exiting..." << endl;
-            return make_shared<ExecutionResult>(true);
-        }
-    };
-
-    class CreateDatasetStatement : public ExecutableAstNode {
-    public:
-        CreateDatasetStatement(string name, string location, string fileFormat,
-                               string expectedType, size_t expectedTo, size_t expectedFrom,
-                               string givenType, size_t givenTo, size_t givenFrom) :
-                name(std::move(name)),
-                location(std::move(location)),
-                fileFormat(std::move(fileFormat)),
-                expectedType(std::move(expectedType)),
-                expectedFrom(expectedFrom),
-                expectedTo(expectedTo),
-                givenType(std::move(givenType)),
-                givenFrom(givenFrom),
-                givenTo(givenTo) {
-        }
-
-        shared_ptr<ExecutionResult> execute(const shared_ptr<ExecutionContext> &context) override {
-            // default to success if there are no children.
-            shared_ptr<ExecutionResult> lastResult = make_shared<ExecutionResult>();
-            // TODO: create dataset
-            cout << "create dataset " << name << " from " << location
-                 << " with format " << fileFormat
-                 << " with expected " << expectedType << " at " << expectedTo << " through "
-                 << expectedFrom
-                 << " with given " << givenType << " at " << givenTo << " through "
-                 << givenFrom
-                 << endl;
-            return lastResult;
-        }
-
-    private:
-        string name;
-        string location;
-        string fileFormat;
-        string expectedType;
-        size_t expectedFrom;
-        size_t expectedTo;
-        string givenType;
-        size_t givenFrom;
-        size_t givenTo;
-    };
-
-    class CodeBlock : public ExecutableAstNode {
-    public:
-        shared_ptr<ExecutionResult> execute(const shared_ptr<ExecutionContext> &context) override {
-            // default to success if there are no children.
-            shared_ptr<ExecutionResult> lastResult = make_shared<ExecutionResult>();
-            for (const auto &child: children) {
-                lastResult = child->execute(context);
-                // We are discarding all results but the last one. This is fine for handling errors, but
-                // I'm not sure if we should use them for anything. I don't need them now, so this is fine.
-                if (!lastResult->isSuccessful()) {
-                    break;
-                }
-            }
-            return lastResult;
-        }
-
-        void addChild(const shared_ptr<ExecutableAstNode> &child) {
-            children.push_back(child);
-        }
-
-    private:
-        vector<shared_ptr<ExecutableAstNode>> children;
-    };
 
     class Parser {
     public:
@@ -312,7 +169,7 @@ namespace happyml {
                     }
                     codeBlock->addChild(createStatementResult->getExecutable());
                 } else if ("_exit" == label) {
-                    codeBlock->addChild(make_shared<ExistStatement>());
+                    codeBlock->addChild(make_shared<ExitStatement>());
                 } else {
                     return generateError("Unexpected token: ", next);
                 }

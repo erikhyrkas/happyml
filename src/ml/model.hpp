@@ -235,11 +235,11 @@ namespace happymldsl {
                 return nnv;
             }
 
-            shared_ptr<NNVertex> addNode(const vector<size_t> &inputShape,
+            shared_ptr<NNVertex> addNode(const vector<size_t> &nodeInputShape,
                                          const vector<size_t> &nodeOutputShape, NodeType nodeType,
                                          bool next_for_output, ActivationType activationType) {
                 auto parentObject = parent.lock();
-                auto nnv = make_shared<NNVertex>(parentObject, nodeType, inputShape, nodeOutputShape,
+                auto nnv = make_shared<NNVertex>(parentObject, nodeType, nodeInputShape, nodeOutputShape,
                                                  next_for_output, false,
                                                  activationType, parentObject->nextVertexId());
                 auto nne = make_shared<NNEdge>();
@@ -522,7 +522,7 @@ namespace happymldsl {
 
     void createVertexFromMetadata(const shared_ptr<HappymlDSL> &dsl,
                                   const vector<string> &vertexMetadata,
-                                  shared_ptr<HappymlDSL::NNVertex> parent,
+                                  const shared_ptr<HappymlDSL::NNVertex>& parent,
                                   map<uint32_t, shared_ptr<HappymlDSL::NNVertex>> &createdVertexes,
                                   map<uint32_t, vector<string>> &vertexes,
                                   map<uint32_t, vector<uint32_t>> &edgeFromTo) {

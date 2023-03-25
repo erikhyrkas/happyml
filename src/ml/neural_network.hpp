@@ -377,7 +377,7 @@ namespace happyml {
             filesystem::create_directories(modelPath);
             string modelProperties = modelPath + "/configuration.happyml";
             auto writer = make_unique<DelimitedTextFileWriter>(modelProperties, ':');
-            for (const auto record: networkMetadata) {
+            for (const auto& record: networkMetadata) {
                 writer->writeRecord(record);
             }
             writer->close();
@@ -414,9 +414,9 @@ namespace happyml {
                 }
             }
             filesystem::create_directories(fullKnowledgePath);
-            for (size_t i = 0; i < headNodes.size(); i++) {
-                headNodes[i]->markUnsaved();
-                headNodes[i]->saveKnowledge(fullKnowledgePath);
+            for (const auto & headNode : headNodes) {
+                headNode->markUnsaved();
+                headNode->saveKnowledge(fullKnowledgePath);
             }
         }
 
@@ -425,7 +425,7 @@ namespace happyml {
             removeKnowledge(modelPath, knowledgeLabel);
         }
 
-        void removeKnowledge(const string &modelFolderPath, const string &knowledgeLabel) {
+        static void removeKnowledge(const string &modelFolderPath, const string &knowledgeLabel) {
             string fullKnowledgePath = modelFolderPath + "/" + knowledgeLabel;
             filesystem::remove_all(fullKnowledgePath);
         }
@@ -437,9 +437,9 @@ namespace happyml {
 
         void loadKnowledge(const string &modelFolderPath, const string &knowledgeLabel) {
             string fullKnowledgePath = modelFolderPath + "/" + knowledgeLabel;
-            for (size_t i = 0; i < headNodes.size(); i++) {
-                headNodes[i]->markUnsaved();
-                headNodes[i]->loadKnowledge(fullKnowledgePath);
+            for (const auto & headNode : headNodes) {
+                headNode->markUnsaved();
+                headNode->loadKnowledge(fullKnowledgePath);
             }
         }
 

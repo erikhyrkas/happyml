@@ -9,6 +9,7 @@
 #include <fstream>
 #include <sstream>
 #include "happyml_script_init.hpp"
+#include "execution_context.hpp"
 
 using namespace std;
 
@@ -17,7 +18,7 @@ namespace happyml {
     public:
         explicit InterpreterSession(const shared_ptr<Parser> &parser) {
             this->parser = parser;
-            sessionState = make_shared<ExecutionContext>();
+            executionContext = make_shared<ExecutionContext>();
         }
 
         bool interpretCommands(const string &text, const string &source = "unknown") {
@@ -35,7 +36,7 @@ namespace happyml {
             // but we won't do it here because we don't know if the session
             // state would impact how it made its prediction.
             auto executable = parseResult->getExecutable();
-            auto result = executable->execute(sessionState);
+            auto result = executable->execute(executionContext);
             // TODO: handle errors
             if (!result->isSuccessful()) {
                 // print error
@@ -74,7 +75,7 @@ namespace happyml {
         }
 
     private:
-        shared_ptr<ExecutionContext> sessionState;
+        shared_ptr<ExecutionContext> executionContext;
         shared_ptr<Parser> parser;
     };
 }

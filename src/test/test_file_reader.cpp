@@ -42,7 +42,7 @@ void writeReadTest() {
 
 int main() {
     try {
-//        readUnitTestData();
+        readUnitTestData();
         writeReadTest();
     } catch (const exception &e) {
         cout << e.what() << endl;

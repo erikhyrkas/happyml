@@ -60,7 +60,7 @@ namespace happyml {
         }
 
     private:
-        chrono::time_point<chrono::high_resolution_clock> startTime;
+        chrono::time_point <chrono::high_resolution_clock> startTime;
     };
 
     class SimpleTimer {
@@ -91,8 +91,8 @@ namespace happyml {
         }
 
     private:
-        chrono::time_point<chrono::high_resolution_clock> startTime;
-        chrono::time_point<chrono::high_resolution_clock> stopTime;
+        chrono::time_point <chrono::high_resolution_clock> startTime;
+        chrono::time_point <chrono::high_resolution_clock> stopTime;
     };
 
     class EvenMoreSimpleTimer {
@@ -123,7 +123,7 @@ namespace happyml {
         }
 
     private:
-        chrono::time_point<chrono::high_resolution_clock> startTime;
+        chrono::time_point <chrono::high_resolution_clock> startTime;
     };
 
 }

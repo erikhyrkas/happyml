@@ -60,14 +60,14 @@ namespace happyml {
     class TopTextCategoryDecoder {
     public:
         explicit TopTextCategoryDecoder(const vector<string> &categoryLabels, const size_t numberOfResults)
-            : categoryLabels(categoryLabels), numberOfResults(numberOfResults) {
+                : categoryLabels(categoryLabels), numberOfResults(numberOfResults) {
         }
 
         vector<string> decode(shared_ptr<BaseTensor> tensor) {
             const auto categoryIndex = tensor->topIndices(numberOfResults, 0, 0);
             vector<string> result;
             result.reserve(categoryIndex.size());
-            for (const auto &index : categoryIndex) {
+            for (const auto &index: categoryIndex) {
                 result.push_back(categoryLabels[index.getIndex()]);
             }
             return result;

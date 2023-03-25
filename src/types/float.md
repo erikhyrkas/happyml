@@ -1,4 +1,3 @@
-
 A 32-bit float has the general structure of: sign bit + 8 exponent bits + 23 mantissa bits
 
 There is an extra hidden constant called bias that is 127, which we'll cover below.
@@ -35,6 +34,7 @@ We're doing the same thing in base 2.
 Say we have a three bit mantissa, which we will.
 
 You might think that you know how to read a binary number:
+
 ```
 110 = 2^2 + 2^1 + 0   = 4+2+0 = 6
 100 = 2^2 +   0 + 0   = 4+0+0 = 4
@@ -57,6 +57,7 @@ How about 001? We write in our constant leading number, so we have 1.001, then w
 1 + 0 + 0 + 2^-3 = 1 + 0.125 = 1.125.
 
 Let's do some more for practice:
+
 ```
 bits: base 2 conversion:       decimal addition:        result:
 100 = 1 + 2^-1 +    0 +    0 = 1 + 0.5                = 1.5
@@ -87,6 +88,7 @@ For a bias of 0:
 0 0000 000 = (-1^0) * (2^0)  * 0                         =  1 * 1 * 0         =   0
 1 1110 111 = (-1^1) * (2^14) * (1 + 2^-1 + 2^-2 + 2^-3)  = -1 * 16384 * 1.875 =  -30720
 ```
+
 Super special note on 10000000.
 When we try to represent numbers less than our bias can handle, something
 interesting happens: For bias 0, let's take the floating point 1.0 and convert it. 1.0f
@@ -112,7 +114,6 @@ THIRD NOTE: I've observed that representing the space between the smallest repre
 larger than other gaps and is problematic. For bias other than 0, I'm going to use 10000000 to represent half
 of the current smallest value of that bias.
 
-
 Offset
 Let's talk for a moment about offset, which is my way of shifting the range of numbers that the 8-bit float will
 represent. Bias impacts our granularity at the cost of it's maximum range. If we want to represent big-ish numbers
@@ -127,7 +128,6 @@ hone in on the area that we want to actually look at.
 Clearly, this solution doesn't let us have our cake and eat it too. A high bias means a small range. We can
 never have a large range and great granularity with this solution. My hope instinct is that this should be
 fine for ML even if it isn't great for general computing.
-
 
 UPDATE: I've decided to remove offset. For ML, the bias within the last layer already deals with offset
 at a model level, and we don't need to account for it everywhere. It just makes things more complicated
