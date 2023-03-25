@@ -3,50 +3,59 @@
 //
 
 #include <iostream>
-#include "../lang/simple_interpreter.hpp"
 #include "../util/unit_test.hpp"
 #include "../util/timers.hpp"
+#include "../lang/happyml_script_init.hpp"
 
 using namespace std;
 using namespace happyml;
 
-
-void testInterpreter() {
-    string val = "create dataset test from blah with format x with expected image at 0 with given float at 1 through 21";
-    ASSERT_TRUE(simple_interpret(val));
+void testParser1() {
+    auto parser = initializeHappymlParser();
+    string val = "create dataset test from file://blah with format x with expected image at 0 with given float at 1 through 21";
+    auto result = parser->parse(val);
+    ASSERT_TRUE(result->isSuccessful());
 }
 
-void testInterpreter2() {
+void testParser2() {
+    auto parser = initializeHappymlParser();
     string val = "create dataset";
-    ASSERT_TRUE(simple_interpret(val)); // TODO: this should fail, more error handling needed.
+    auto result = parser->parse(val);
+    ASSERT_FALSE(result->isSuccessful());
 }
 
-void testInterpreter3() {
+void testParser3() {
+    auto parser = initializeHappymlParser();
     string val = "create model";
-    ASSERT_FALSE(simple_interpret(val));
+    auto result = parser->parse(val);
+    ASSERT_FALSE(result->isSuccessful());
 }
 
-void testInterpreter4() {
+void testParser4() {
+    auto parser = initializeHappymlParser();
     string val = "create dataset x";
-    ASSERT_TRUE(simple_interpret(val)); // TODO: this should fail, more error handling needed.
+    ASSERT_TRUE(parser->parse(val)); // TODO: this should fail, more error handling needed.
 }
 
-void testInterpreter5() {
-    string val = "create dataset x from path/parts";
-    ASSERT_TRUE(simple_interpret(val));
+void testParser5() {
+    auto parser = initializeHappymlParser();
+    string val = "create dataset x from file://path/parts";
+    auto result = parser->parse(val);
+    ASSERT_TRUE(result->isSuccessful());
 }
+
 int main() {
     try {
         EvenMoreSimpleTimer timer;
-        testInterpreter();
+        testParser1();
         timer.printMilliseconds();
-        testInterpreter2();
+        testParser2();
         timer.printMilliseconds();
-        testInterpreter3();
+        testParser3();
         timer.printMilliseconds();
-        testInterpreter4();
+        testParser4();
         timer.printMilliseconds();
-        testInterpreter5();
+        testParser5();
         timer.printMilliseconds();
     } catch (const exception &e) {
         cout << e.what() << endl;

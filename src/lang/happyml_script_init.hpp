@@ -3,12 +3,14 @@
 // Copyright 2023. Usable under MIT license.
 //
 
-#ifndef HAPPYML_HAPPML_SCRIPT_INIT_HPP
-#define HAPPYML_HAPPML_SCRIPT_INIT_HPP
+#ifndef HAPPYML_HAPPYML_SCRIPT_INIT_HPP
+#define HAPPYML_HAPPYML_SCRIPT_INIT_HPP
 
+#include "lexer.hpp"
 #include "parser.hpp"
 
 using namespace std;
+using namespace happyml;
 
 namespace happyml {
     shared_ptr<Lexer> initializeHappymlLexer() {
@@ -24,6 +26,7 @@ namespace happyml {
         patterns.push_back(createKeywordToken("column"));
         patterns.push_back(createKeywordToken("columns"));
         // actions
+        patterns.push_back(createKeywordToken("exit"));
         patterns.push_back(createKeywordToken("create"));
         patterns.push_back(createKeywordToken("train"));
         patterns.push_back(createKeywordToken("retrain"));
@@ -38,6 +41,7 @@ namespace happyml {
         // criteria
         patterns.push_back(createKeywordToken("with"));
         patterns.push_back(createKeywordToken("at"));
+        patterns.push_back(createKeywordToken("from"));
         patterns.push_back(createKeywordToken("through"));
         patterns.push_back(createKeywordToken("add"));
         patterns.push_back(createKeywordToken("using"));
@@ -61,6 +65,9 @@ namespace happyml {
         patterns.push_back(createToken("_close_parenthesis", ")"));
         patterns.push_back(createToken("_equal", "="));
         patterns.push_back(createToken("_colon", ":"));
+        patterns.push_back(createToken("_slash", "/"));
+        patterns.push_back(createToken("_dot", "."));
+        patterns.push_back(createToken("_backslash", "\\"));
         patterns.push_back(createToken("_double_quote", "\""));
         patterns.push_back(createToken("_single_quote", "\'"));
         patterns.push_back(createToken("_comma", ","));
@@ -73,25 +80,13 @@ namespace happyml {
         return lexer;
     }
 
-    shared_ptr<Rule> initRules() {
-        return {}; // TODO
-    }
-
     shared_ptr<Parser> initializeHappymlParser() {
         // load lexer and parser rules
         auto lexer = initializeHappymlLexer();
-
-        // We may want to build other types of parsers that are configurable
-        // for example to parse certain document formats, so we pass in rules
-        // and the lexer.
-        shared_ptr<Rule> baseRule = initRules();
-//        auto rootScriptMatcher = make_shared<RootScriptMatcher>(baseRule);
-
-//        auto parser = make_shared<Parser>(lexer, rootScriptMatcher);
-        shared_ptr<Parser> parser;
+        auto parser = make_shared<Parser>(lexer);
         return parser;
     }
 
 
 }
-#endif //HAPPYML_HAPPML_SCRIPT_INIT_HPP
+#endif //HAPPYML_HAPPYML_SCRIPT_INIT_HPP

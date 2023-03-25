@@ -4,7 +4,7 @@
 //
 
 #include <iostream>
-#include "../lang/happml_script_init.hpp"
+#include "../lang/happyml_script_init.hpp"
 #include "../util/unit_test.hpp"
 #include "../util/timers.hpp"
 

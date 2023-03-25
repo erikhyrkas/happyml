@@ -23,6 +23,7 @@ namespace happyml {
             this->skip = skip;
             this->offset = offset;
             this->source = source;
+            this->lineIndex = 0;
         }
 
         size_t getLength() {
