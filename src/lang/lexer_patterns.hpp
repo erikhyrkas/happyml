@@ -3,8 +3,8 @@
 // Copyright 2022. Usable under MIT license.
 //
 
-#ifndef HAPPYML_PATTERN_HPP
-#define HAPPYML_PATTERN_HPP
+#ifndef HAPPYML_LEXER_PATTERNS_HPP
+#define HAPPYML_LEXER_PATTERNS_HPP
 
 #include <cstring>
 #include <algorithm>
@@ -349,4 +349,4 @@ namespace happyml {
         return pattern;
     }
 }
-#endif //HAPPYML_PATTERN_HPP
+#endif //HAPPYML_LEXER_PATTERNS_HPP

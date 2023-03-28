@@ -12,7 +12,7 @@ using namespace happyml;
 
 void testParser1() {
     auto parser = initializeHappymlParser();
-    string val = "create dataset test from file://blah with format x with expected image at 0 with given float at 1 through 21";
+    string val = "create dataset test from file://blah with format delimited with expected image at 0 with given float at 1 through 21";
     auto result = parser->parse(val);
     ASSERT_TRUE(result->isSuccessful());
 }

@@ -104,7 +104,7 @@ namespace happyml {
                     return generateError("Invalid token at: ", fromKeyword);
                 }
                 string location = parseLocation(stream);
-                string fileFormat = "csv";
+                string fileFormat = "delimited";
                 string expectedType = "scalar";
                 int expectedFrom = 0;
                 int expectedTo = -1;
@@ -131,6 +131,9 @@ namespace happyml {
                         givenTo = tryParseThroughRange(stream);
                     } else if ("format" == withType) {
                         fileFormat = stream->next()->getValue();
+                        if( "delimited" != fileFormat) {
+                            return generateError("The only file format currently supported for datasets are of type delimited. Invalid format: ", stream->previous());
+                        }
                     } else {
                         return generateError("with statement is malformed ", stream->previous());
                     }

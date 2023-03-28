@@ -10,7 +10,13 @@ See the [MNIST example](src/example/example_mnist_model_convolution.cpp).
 
 While image classification like that is a useful use case, you could create and train a model to make many types of predictions.
 
-I am working on adding a scripting language to interface with it, so that people who do not have C++ experience can easily integrate it into other applications with little effort.
+BytePairEncoding is a new feature, which you can use to create encodings for a language model or use to compress or decompress text.
+
+See the [BPE example](src/test/test_byte_pair_encoding.cpp).
+
+I am working on adding a scripting language to interface with it, so that people who do not have C++ experience can easily integrate it into other applications with little effort. The scripting language doesn't do much, yet, but I did write a working Lexer and Parser and the interpreter is ready to interface with the rest of happyml.
+
+
 
 ### What makes it special?
 
@@ -36,6 +42,10 @@ There are options as to how you use happyml.
 2. You could compile it to a library. I didn't provide an example of this, yet, but I can add that to my todo list.
 3. And, eventually, you'll be able to use it through the happyml scripting language, which is still a work in progress. See [my proposed language specification](src/lang/spec.md). This is something that I'm working on. 
 
+We have a working lexer and parser to make #3 a reality, but there is still work to be done on filling out the details on actually executing the commands.
+
+The work remaining on this is not so much hard as plentiful and a little boring.
+
 # Compiling
 I use CLion with Visual Studio 2022 community for the C++ runtime libraries.
 * https://visualstudio.microsoft.com/downloads/
@@ -51,10 +61,10 @@ This project isn't even in a complete alpha stage, yet.
 Nice-to-haves for alpha:
 * Need to fix and check-in Adam optimizer. I'm not even going to check it in until it seems plausibly right and I need to refactor the model object's training to support it correctly. I built the mini-batch gradient decent optimizer first because it was easier to make (even though I still had issues building it correctly -- that is part of the learning process), and it let me test all the other code.
 * Need to finish the half float and test. It currently doesn't handle any edge conditions and could produce incorrect results in some situations.
-* Finish lexer-parser to handle interfacing with happyml through a dsl.
+* Finish interpreter commands to handle interfacing with happyml through a dsl. (Lexer and parser now have a working foundation.)
 
 Back-of-the-mind considerations:
-* The save format could be more efficient and compact.
+* The save format could be more efficient and compact. (Added BytePairEncoding and have the start of a new format coming soon, just not checked in.)
 * There is a bug with multiple-inputs where the input shuffles aren't synchronized. This can be addressed, but I need to create an example that uses multiple inputs. Maybe I can get an image and label data set. I'm thinking I'll create a new type of data set that combined multiple other sources to keep them in sync when shuffling and offer "channels" to split those input into different neurons at the start of training. This will also be a chance to implement and test Convolutional 2d Same layers.
 
 At that point, the code will be in an alpha state, but I still won't have even tackled encoder-decoder and decoder-only requirements. For beta, I'd like to see at least decoder-only support. There's also Reinforcement Learning from Human Feedback (RLHF) that I'll ponder, but I doubt I can work that into the beta let along the alpha. That journey will continue.
@@ -143,11 +153,6 @@ Building a framework like this requires knowing some calculus and linear algebra
 I wrote this in C++, which is going to be off-putting for a lot of people. C++ is not a dead language, but it's not a popular language in the general population either. I chose it because I wanted this to work well with very little hardware and I needed some very low-level control over the data structures to do this. I could rebuild this with Rust and possibly C# or Java. I don't see myself ever building this in R, Go, Swift, Python, or JavaScript -- I'm not even sure what sort of black magic it would take to build this in JavaScript... maybe that is something that I should be thinking about if I want this to be accessible. I would like to roll this work into my most recent programming language Dog -- which is something I haven't finished and may never finish. Don't worry too much about the language. Read the comments and learn.
 
 I want to help the process of making machine learning accessible. Maybe this is a small step, possibly in the wrong direction, but it's the best I can do right now. It is my deepest hope that this helps you and is a small ripple that eventually helps others as well.
-
-
-HappymlDSL:
-* factory that builds a model with easy-ish to understand syntax.
-* Simple configuration to cover core decision points -- like input and output shape, number of neurons or layers, etc.
 
 # Why this project is important to me -- an opinion piece
 

@@ -8,7 +8,7 @@
 #ifndef HAPPYML_LEXER_HPP
 #define HAPPYML_LEXER_HPP
 
-#include "pattern.hpp"
+#include "lexer_patterns.hpp"
 
 using namespace std;
 
