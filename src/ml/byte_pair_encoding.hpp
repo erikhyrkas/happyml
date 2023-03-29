@@ -13,7 +13,8 @@
 #include <sstream>
 #include <regex>
 #include <iomanip>
-#include "data_util.hpp"
+#include <filesystem>
+#include "../util/data_util.hpp"
 
 using namespace std;
 
@@ -118,16 +119,17 @@ namespace happyml {
             unordered_map<u16string, u16string> bpe_codes;
 
             if (!ordered_bpe_codes_.empty()) {
-                if(show_progress_) {
+                if (show_progress_) {
                     cout << "Current Code Staring at: " << current_code << endl;
                     cout << "Loading existing bpe codes..." << endl;
                 }
                 for (const auto &element: ordered_bpe_codes_) {
                     bpe_codes[element.first] = element.second;
-                    uint16_t next = std::max(find_max_16bit_value(element.first), find_max_16bit_value(element.second)) + 1;
+                    uint16_t next =
+                            std::max(find_max_16bit_value(element.first), find_max_16bit_value(element.second)) + 1;
                     current_code = std::max(next, current_code);
                 }
-                if(show_progress_) {
+                if (show_progress_) {
                     cout << "Current Code now: " << current_code << endl;
                     cout << "Finished Loading existing bpe codes." << endl;
                 }
@@ -318,6 +320,65 @@ namespace happyml {
                 return 0.0;
             }
             return total_encoded_length / total_original_length;
+        }
+
+
+        bool save(const string &modelFolderPath, const string &knowledgeLabel, bool overwrite = true) {
+            string fullKnowledgePath = buildKnowledgePath(modelFolderPath, knowledgeLabel, overwrite);
+            string filePath = fullKnowledgePath + "/model.bpe";
+            std::ofstream file(filePath, std::ios::binary);
+
+            if (!file.is_open()) {
+                return false;
+            }
+
+            file.write(reinterpret_cast<const char *>(&delimiter_code_), sizeof(delimiter_code_));
+
+            for (const auto &code_pair: ordered_bpe_codes_) {
+                for (const auto &str: {code_pair.first, code_pair.second}) {
+                    auto str_length = static_cast<uint16_t>(str.size());
+                    file.write(reinterpret_cast<const char *>(&str_length), sizeof(str_length));
+                    file.write(reinterpret_cast<const char *>(str.data()), str_length * sizeof(char16_t));
+                }
+            }
+
+            file.close();
+            return true;
+        }
+
+        bool load(const string &modelFolderPath, const string &knowledgeLabel) {
+            string path = modelFolderPath + "/" + knowledgeLabel + "/model.bpe";
+            std::ifstream file(path, std::ios::binary);
+
+            if (!file.is_open()) {
+                return false;
+            }
+
+            uint16_t delimiter_code;
+            file.read(reinterpret_cast<char *>(&delimiter_code), sizeof(delimiter_code));
+            setDelimiterCode(delimiter_code);
+
+            while (!file.eof()) {
+                pair<u16string, u16string> code_pair;
+                for (auto &str: {&code_pair.first, &code_pair.second}) {
+                    uint16_t str_length;
+                    file.read(reinterpret_cast<char *>(&str_length), sizeof(str_length));
+
+                    if (file.eof()) {
+                        break;
+                    }
+
+                    str->resize(str_length);
+                    file.read(reinterpret_cast<char *>(str->data()), str_length * sizeof(char16_t));
+                }
+
+                if (!file.eof()) {
+                    ordered_bpe_codes_.push_back(std::move(code_pair));
+                }
+            }
+
+            file.close();
+            return true;
         }
 
     private:

@@ -398,22 +398,7 @@ namespace happyml {
         }
 
         void saveKnowledge(const string &modelFolderPath, const string &knowledgeLabel, bool overwrite) {
-            string fullKnowledgePath = modelFolderPath + "/" + knowledgeLabel;
-            if (filesystem::is_directory(fullKnowledgePath)) {
-                if (!overwrite) {
-                    auto canonicalFullKnowledgePath = filesystem::canonical(fullKnowledgePath);
-                    cerr << "Knowledge path " << canonicalFullKnowledgePath
-                         << " already existed, attempting to save to the new location: ";
-                    auto ms = std::to_string(chrono::duration_cast<chrono::milliseconds>(
-                            chrono::system_clock::now().time_since_epoch()).count());
-                    canonicalFullKnowledgePath += "_" + ms;
-                    cerr << canonicalFullKnowledgePath << endl;
-                    fullKnowledgePath = canonicalFullKnowledgePath.generic_string();
-                } else {
-                    filesystem::remove_all(fullKnowledgePath);
-                }
-            }
-            filesystem::create_directories(fullKnowledgePath);
+            string fullKnowledgePath = buildKnowledgePath(modelFolderPath, knowledgeLabel, overwrite);
             for (const auto & headNode : headNodes) {
                 headNode->markUnsaved();
                 headNode->saveKnowledge(fullKnowledgePath);

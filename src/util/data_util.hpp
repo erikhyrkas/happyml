@@ -17,8 +17,26 @@
 using namespace std;
 
 namespace happyml {
-    bool is_symbol(char c) {
-        return std::isprint(static_cast<unsigned char>(c)) && !std::isalnum(static_cast<unsigned char>(c));
+
+
+    string buildKnowledgePath(const string &modelFolderPath, const string &knowledgeLabel, bool overwrite) {
+        string fullKnowledgePath = modelFolderPath + "/" + knowledgeLabel;
+        if (filesystem::is_directory(fullKnowledgePath)) {
+            if (!overwrite) {
+                auto canonicalFullKnowledgePath = filesystem::canonical(fullKnowledgePath);
+                cerr << "Knowledge path " << canonicalFullKnowledgePath
+                     << " already existed, attempting to save to the new location: ";
+                auto ms = std::to_string(chrono::duration_cast<chrono::milliseconds>(
+                        chrono::system_clock::now().time_since_epoch()).count());
+                canonicalFullKnowledgePath += "_" + ms;
+                cerr << canonicalFullKnowledgePath << endl;
+                fullKnowledgePath = canonicalFullKnowledgePath.generic_string();
+            } else {
+                filesystem::remove_all(fullKnowledgePath);
+            }
+        }
+        filesystem::create_directories(fullKnowledgePath);
+        return fullKnowledgePath;
     }
 
     void append_char_to_tokens(char c, char &last_char, std::string &token, std::vector<std::string> &tokens) {
@@ -32,16 +50,20 @@ namespace happyml {
                 }
                 token.push_back(c);
             }
-        } else if (is_symbol(c) && (c != '.' || !isdigit(static_cast<unsigned char>(last_char)))) {
-            if (!token.empty()) {
-                tokens.push_back(token);
-                token.clear();
-            }
-            tokens.push_back(std::string(1, c));
-        } else if (!std::isprint(static_cast<unsigned char>(c))) {
-            token.push_back((char) 254);
         } else {
-            token.push_back(c);
+            if (isprint(static_cast<unsigned char>(c))
+                && !isalnum(static_cast<unsigned char>(c))
+                && (c != '.' || !isdigit(static_cast<unsigned char>(last_char)))) {
+                if (!token.empty()) {
+                    tokens.push_back(token);
+                    token.clear();
+                }
+                tokens.push_back(std::string(1, c));
+            } else if (!std::isprint(static_cast<unsigned char>(c))) {
+                token.push_back((char) 254);
+            } else {
+                token.push_back(c);
+            }
         }
         last_char = c;
     }

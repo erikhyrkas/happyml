@@ -4,7 +4,7 @@
 #include <iostream>
 #include "../util/unit_test.hpp"
 #include "../util/timers.hpp"
-#include "../util/byte_pair_encoding.hpp"
+#include "../ml/byte_pair_encoding.hpp"
 
 using namespace std;
 using namespace happyml;
@@ -322,20 +322,66 @@ void test_findMostFrequentPair() {
     }
 }
 
+void test_save_load() {
+    BytePairEncodingModel bpe1;
+    std::vector<std::string> data = string_to_tokens(generate_pseudo_corpus(100, 30));
+    bpe1.train(data);
+    auto bpe_codes1 = bpe1.getBpeCodes();
+    ASSERT_TRUE(!bpe_codes1.empty());
+    auto hello16_1 = bpe1.encode("hello");
+    bpe1.save("../repo", "bpe_test", true);
+
+    BytePairEncodingModel bpe;
+    bpe.load("../repo", "bpe_test");
+    auto bpe_codes = bpe.getBpeCodes();
+    ASSERT_TRUE(!bpe_codes.empty());
+    ASSERT_TRUE(bpe_codes1.size() == bpe_codes.size());
+    auto hello16 = bpe.encode("hello");
+    cout << "hello: " << string(hello16.begin(), hello16.end()) << endl;
+    ASSERT_TRUE(hello16_1 == hello16);
+    auto is16 = bpe.encode("is");
+    cout << "is: " << string(is16.begin(), is16.end()) << endl;
+    ASSERT_TRUE("hello" == bpe.decode(bpe.encode("hello")));
+    ASSERT_TRUE("mars" == bpe.decode(bpe.encode("mars")));
+    ASSERT_TRUE("is" == bpe.decode(bpe.encode("is")));
+    ASSERT_TRUE("i" == bpe.decode(bpe.encode("i")));
+}
+
 int main() {
     try {
         EvenMoreSimpleTimer timer;
+        test_save_load();
+        timer.printMilliseconds();
+
         test_training5();
+        timer.printMilliseconds();
+
         test_training4();
-//        test_training3();
+        timer.printMilliseconds();
+
+        //        test_training3();
+        //        timer.printMilliseconds();
+
         test_training();
+        timer.printMilliseconds();
+
         test_findMostFrequentPair();
+        timer.printMilliseconds();
+
         test_buildVocab();
+        timer.printMilliseconds();
+
         test_u16string_replace_all();
+        timer.printMilliseconds();
+
         test_train_and_encode_decode();
+        timer.printMilliseconds();
+
         test_empty_input_decode();
         timer.printMilliseconds();
 
+        test_multiple_encodings();
+        timer.printMilliseconds();
     } catch (const exception &e) {
         cout << e.what() << endl;
     }
