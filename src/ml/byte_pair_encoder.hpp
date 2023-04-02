@@ -2,8 +2,8 @@
 // Created by Erik Hyrkas on 3/26/2023.
 //
 
-#ifndef HAPPYML_BYTE_PAIR_ENCODING_HPP
-#define HAPPYML_BYTE_PAIR_ENCODING_HPP
+#ifndef HAPPYML_BYTE_PAIR_ENCODER_HPP
+#define HAPPYML_BYTE_PAIR_ENCODER_HPP
 
 #include <unordered_map>
 #include <set>
@@ -14,20 +14,28 @@
 #include <regex>
 #include <iomanip>
 #include <filesystem>
+#include <execution>
 #include "../util/data_util.hpp"
 
 using namespace std;
 
 namespace happyml {
 
-    class BytePairEncodingModel {
+    class BytePairEncoderModel {
     public:
-        // Constructs a BytePairEncodingModel with optional show_progress and delimiter_code parameters.
+        // Constructs a BytePairEncoderModel with optional show_progress and delimiter_code parameters.
+        // name: can be used to differentiate trained models when saved and loaded
         // show_progress: If true, training progress will be printed; default is true.
         // delimiter_code: The delimiter code to be used; default is 256.
-        explicit BytePairEncodingModel(bool show_progress = true, const uint16_t delimiter_code = 256) {
+        explicit BytePairEncoderModel(string name = "default",
+                                      bool show_progress = true,
+                                      const uint16_t delimiter_code = 256)
+                : show_progress_(show_progress), name_(std::move(name)) {
             setDelimiterCode(delimiter_code);
-            show_progress_ = show_progress;
+        }
+
+        string getName() {
+            return name_;
         }
 
         // Sets the delimiter code and delimiter string.
@@ -64,11 +72,20 @@ namespace happyml {
             if (text.empty()) {
                 return {};
             }
-            u16string text16bit(text.begin(), text.end());
-            u16string encoded = delimiter_ + text16bit + delimiter_;
+            u16string const text16bit(text.begin(), text.end());
+            // looks simpler, but we need to optimize:
+            // u16string encoded = delimiter_ + text16bit + delimiter_;
+            u16string encoded;
+            encoded.reserve(delimiter_.size() + text16bit.size() + delimiter_.size() + ordered_bpe_codes_.size() * 2);
+            encoded += delimiter_;
+            encoded += text16bit;
+            encoded += delimiter_;
+
+            u16string buffer;
             for (auto replacement = ordered_bpe_codes_.rbegin();
                  replacement != ordered_bpe_codes_.rend(); ++replacement) {
-                u16string_replace_all(encoded, replacement->first, replacement->second);
+                u16string_replace_all_to_buffer(encoded, buffer, replacement->first, replacement->second);
+                buffer.swap(encoded);
             }
             return encoded;
         }
@@ -81,27 +98,35 @@ namespace happyml {
                 return {};
             }
             u16string decoded = encoded;
+            u16string buffer;
             for (const auto &replacement: ordered_bpe_codes_) {
-                u16string_replace_all(decoded, replacement.second, replacement.first);
+                u16string_replace_all_to_buffer(decoded, buffer, replacement.second, replacement.first);
+                buffer.swap(decoded);
             }
             string result(decoded.begin() + (int) delimiter_.size(), decoded.end() - ((int) delimiter_.size()));
             return result;
         }
 
         // Trains a BPE model from a vector of strings.
+        // NOTE: leveraging early_stopping_patience will dramatically slow training, however it will
+        //  allow you to have greater control over how far you take merges. Unless you are really
+        //  passionate about validating while training, I'd consider using the validate_compression_rate()
+        //  after training is complete.
+        //
         // data: A vector of input strings for training. (See: string_to_tokens() and load_file_to_tokens() for how to build.)
         // early_stopping_patience: The number of iterations without improvement before stopping; default is 15.
         // early_stopping_improvement_minimum: The minimum improvement required for resetting the no-improvement counter; default is 0.00001.
         // min_frequency: The minimum frequency for a pair to be considered; default is 2.
         // num_merges: The maximum number of merges to perform; default is -1 (no limit).
         void train(const vector<string> &data,
-                   int early_stopping_patience = 15,
+                   int early_stopping_patience = -1,
                    double early_stopping_improvement_minimum = 0.00001,
                    size_t min_frequency = 2,
                    int num_merges = -1) {
+            ElapsedTimer totalTimer;
 
             if (show_progress_) {
-                cout << "Byte Pair Encoding Model Training started: " << std::fixed << std::setprecision(2);
+                cout << "Byte Pair Encoder Model Training started: " << std::fixed << std::setprecision(2);
             }
             vector<string> train_data, validation_data;
             if (early_stopping_patience >= 0) {
@@ -113,6 +138,15 @@ namespace happyml {
                 train_data = data;
             }
 
+
+            double total_validation_length = 0.0;
+            if (early_stopping_patience >= 0) {
+                for (const auto &text: validation_data) {
+                    total_validation_length += (double) text.length();
+                }
+            }
+
+            uint16_t const max_code = std::numeric_limits<char16_t>::max() - 1;
             uint16_t current_code = delimiter_code_ + 1;
             double best_validation_score = INFINITY;
 
@@ -125,7 +159,7 @@ namespace happyml {
                 }
                 for (const auto &element: ordered_bpe_codes_) {
                     bpe_codes[element.first] = element.second;
-                    uint16_t next =
+                    uint16_t const next =
                             std::max(find_max_16bit_value(element.first), find_max_16bit_value(element.second)) + 1;
                     current_code = std::max(next, current_code);
                 }
@@ -138,8 +172,9 @@ namespace happyml {
             unordered_map<u16string, size_t> vocab = buildVocab(train_data);
             size_t merge_count = 0;
             int no_improvement_counter = 0;
+            ElapsedTimer mergeTimer;
             while (!vocab.empty() && (merge_count < 1 || merge_count < num_merges)) {
-                pair<u16string, size_t> most_frequent = findMostFrequentPair(vocab, min_frequency);
+                auto most_frequent = findMostFrequentPair(vocab, min_frequency);
                 if (most_frequent.second == 0) {
                     break;
                 }
@@ -149,10 +184,24 @@ namespace happyml {
                     if (best_validation_score != INFINITY) {
                         cout << " Best Compression: " << best_validation_score;
                     }
+                    auto mergeTime = mergeTimer.getMilliseconds();
+                    if (mergeTime > 120000) {
+                        const auto min = mergeTime / 60000;
+                        const auto sec = (mergeTime % 60000) / 1000;
+                        printf("%5zd m %zd s ", min, sec);
+                    } else if (mergeTime > 2000) {
+                        const auto sec = (mergeTime / 1000);
+                        printf("%5zd s ", sec);
+                    } else {
+                        printf("%5zd ms ", mergeTime);
+                    }
                     cout << endl;
                 }
                 if (early_stopping_patience >= 0) {
-                    double current_validation_score = compression_rate(validation_data, bpe_codes, delimiter_code_);
+                    double const current_validation_score = validate_compression_rate(validation_data,
+                                                                                      bpe_codes,
+                                                                                      delimiter_code_,
+                                                                                      total_validation_length);
                     if (current_validation_score < (best_validation_score - early_stopping_improvement_minimum)) {
                         best_validation_score = current_validation_score;
                         no_improvement_counter = 0;
@@ -164,7 +213,7 @@ namespace happyml {
                     }
                 }
 
-                u16string current_code_string(1, current_code);
+                u16string const current_code_string(1, current_code);
                 auto most_frequent_string = most_frequent.first;
 
                 bpe_codes[most_frequent_string] = current_code_string;
@@ -174,9 +223,10 @@ namespace happyml {
                 current_code++;
                 merge_count++;
 
-                if (current_code > 59000) {
+                // roughly 59,000
+                if (current_code >= max_code) {
                     if (show_progress_) {
-                        cout << "Exiting early because Current Code hit the soft limit of 59,000." << endl;
+                        cout << "Exiting early because Current Code hit the limit of " << max_code << "." << endl;
                     }
                     break;
                 }
@@ -187,6 +237,17 @@ namespace happyml {
                      return a.second > b.second;
                  });
             ordered_bpe_codes_.swap(ordered_bpe_codes);
+            if (show_progress_) {
+                int64_t const elapsed = totalTimer.getMilliseconds();
+                cout << endl << "Finished BPE training in ";
+                if (elapsed < 2000) {
+                    cout << elapsed << " milliseconds." << endl;
+                } else if (elapsed < 120000) {
+                    cout << (elapsed / 1000) << " seconds." << endl;
+                } else {
+                    cout << (elapsed / 60000) << " minutes." << endl;
+                }
+            }
         }
 
         // Returns the BPE codes in the model as a vector of pairs.
@@ -207,23 +268,26 @@ namespace happyml {
                                const u16string &most_frequent_string,
                                const u16string &new_code) {
             unordered_map<u16string, size_t> new_vocab;
+            new_vocab.reserve(vocab.size());
+
+            u16string buffer;
             for (auto &entry: vocab) {
-                auto original_first = entry.first;
-                auto original_second = entry.second;
-                size_t found_pos = original_first.find(most_frequent_string);
+                auto &original_first = entry.first;
+                auto &original_second = entry.second;
+                size_t const found_pos = original_first.find(most_frequent_string);
                 if (found_pos != u16string::npos) {
                     u16string new_pair = original_first;
-                    u16string_replace_all(new_pair, most_frequent_string, new_code);
-                    original_second--;
-                    if (new_vocab.find(new_pair) != new_vocab.end()) {
-                        new_vocab[new_pair]++;
+                    // replace all will update the new_pair variable.
+                    u16string_replace_all_to_buffer(new_pair, buffer, most_frequent_string, new_code);
+                    new_pair.swap(buffer);
+                    auto existing_entry = new_vocab.find(new_pair);
+                    if (existing_entry != new_vocab.end()) {
+                        existing_entry->second++;
                     } else {
-                        new_vocab[new_pair] = 1;
+                        new_vocab.emplace_hint(new_vocab.end(), new_pair, 1);
                     }
-                }
-
-                if (original_second > 0) {
-                    new_vocab[original_first] = original_second;
+                } else {
+                    new_vocab.emplace_hint(new_vocab.end(), original_first, original_second);
                 }
             }
 
@@ -241,18 +305,24 @@ namespace happyml {
             auto most_frequent_count = most_frequent.second;
             vocab.erase(most_frequent_string);
             unordered_map<u16string, size_t> new_vocab;
+            new_vocab.reserve(vocab.size());
+
+            u16string buffer;
             for (auto &entry: vocab) {
                 auto original_first = entry.first;
                 auto original_second = entry.second;
                 if (original_first.find(most_frequent_string) != u16string::npos) {
                     original_second -= most_frequent_count;
-                    u16string_replace_all(original_first, most_frequent_string, new_code);
+                    u16string_replace_all_to_buffer(original_first, buffer, most_frequent_string, new_code);
+                    buffer.swap(original_first);
                 }
                 if (original_second > 0) {
-                    new_vocab[original_first] = original_second;
+                    new_vocab.emplace_hint(new_vocab.end(), std::move(original_first), original_second);
                 }
             }
-            new_vocab[new_code] = most_frequent_count;
+
+            new_vocab.emplace_hint(new_vocab.end(), new_code, most_frequent_count);
+
             vocab.swap(new_vocab);
         }
 
@@ -270,12 +340,14 @@ namespace happyml {
                 // It LOOKS like it works, which is why I'm leaving it in.
                 u16string line16 = encode(line);
                 for (size_t i = 0; i < line16.size() - 1; ++i) {
-                    u16string pair = u16string(1, line16[i]) + u16string(1, line16[i + 1]);
+                    u16string const pair = u16string(1, line16[i]) + u16string(1, line16[i + 1]);
                     // If the character pair is already in the vocab unordered_map, increment its frequency; otherwise, add it to the vocab unordered_map with a frequency of 1.
-                    if (vocab.find(pair) != vocab.end()) {
-                        vocab[pair]++;
+                    auto exiting_entry = vocab.find(
+                            pair);
+                    if (exiting_entry != vocab.end()) {
+                        exiting_entry->second++;
                     } else {
-                        vocab[pair] = 1;
+                        vocab.emplace_hint(vocab.end(), pair, 1);
                     }
                 }
             }
@@ -302,30 +374,42 @@ namespace happyml {
         // bpe_codes: The BPE codes to use.
         // delimiter: The delimiter code to use.
         // Returns the compression rate as a double.
-        static double compression_rate(const vector<string> &validation_data,
-                                       const unordered_map<u16string, u16string> &bpe_codes,
-                                       uint16_t delimiter) {
-            happyml::BytePairEncodingModel bpe;
-            bpe.configure(bpe_codes, delimiter);
-
-            double total_original_length = 0.0;
-            double total_encoded_length = 0.0;
-
-            for (const auto &text: validation_data) {
-                total_original_length += (double) text.length();
-                u16string encoded = bpe.encode(text);
-                total_encoded_length += (double) encoded.length();
-            }
-            if (total_original_length < 1) {
+        static double validate_compression_rate(const vector<string> &validation_data,
+                                                const unordered_map<u16string, u16string> &bpe_codes,
+                                                uint16_t delimiter,
+                                                const long total_validation_length) {
+            if (total_validation_length < 1) {
                 return 0.0;
             }
-            return total_encoded_length / total_original_length;
+            happyml::BytePairEncoderModel bpe;
+            bpe.configure(bpe_codes, delimiter);
+            return bpe.validate_compression_rate(validation_data, total_validation_length);
+        }
+
+        double validate_compression_rate(const vector<string> &validation_data, long total_validation_length = 0) {
+            if( total_validation_length < 1) {
+                for (const auto &text: validation_data) {
+                    total_validation_length += text.length();
+                }
+            }
+
+            long total_encoded_length = 0;
+#pragma omp parallel for reduction(+:total_encoded_length)
+            for (int i = 0; i < validation_data.size(); i++) {
+                auto encoded_string = encode(validation_data[i]);
+                total_encoded_length += static_cast<long>(encoded_string.length());
+            }
+
+            return total_encoded_length / (double) total_validation_length;
         }
 
 
+        // reminder: overwrite will remove all files in that folder because it assumes this is the only
+        // model in that folder. It is not a good practice with happyml for two different models to
+        // share output folders.
         bool save(const string &modelFolderPath, const string &knowledgeLabel, bool overwrite = true) {
-            string fullKnowledgePath = buildKnowledgePath(modelFolderPath, knowledgeLabel, overwrite);
-            string filePath = fullKnowledgePath + "/model.bpe";
+            string const fullKnowledgePath = buildKnowledgePath(modelFolderPath, knowledgeLabel, overwrite);
+            string const filePath = fullKnowledgePath + "/" + name_ + ".bpe";
             std::ofstream file(filePath, std::ios::binary);
 
             if (!file.is_open()) {
@@ -338,7 +422,8 @@ namespace happyml {
                 for (const auto &str: {code_pair.first, code_pair.second}) {
                     auto str_length = static_cast<uint16_t>(str.size());
                     file.write(reinterpret_cast<const char *>(&str_length), sizeof(str_length));
-                    file.write(reinterpret_cast<const char *>(str.data()), str_length * sizeof(char16_t));
+                    file.write(reinterpret_cast<const char *>(str.data()),
+                               static_cast<streamsize>(str_length * sizeof(char16_t)));
                 }
             }
 
@@ -347,21 +432,21 @@ namespace happyml {
         }
 
         bool load(const string &modelFolderPath, const string &knowledgeLabel) {
-            string path = modelFolderPath + "/" + knowledgeLabel + "/model.bpe";
+            string const path = modelFolderPath + "/" + knowledgeLabel + "/" + name_ + ".bpe";
             std::ifstream file(path, std::ios::binary);
 
             if (!file.is_open()) {
                 return false;
             }
 
-            uint16_t delimiter_code;
+            uint16_t delimiter_code = 0;
             file.read(reinterpret_cast<char *>(&delimiter_code), sizeof(delimiter_code));
             setDelimiterCode(delimiter_code);
 
             while (!file.eof()) {
                 pair<u16string, u16string> code_pair;
                 for (auto &str: {&code_pair.first, &code_pair.second}) {
-                    uint16_t str_length;
+                    uint16_t str_length = 0;
                     file.read(reinterpret_cast<char *>(&str_length), sizeof(str_length));
 
                     if (file.eof()) {
@@ -369,7 +454,8 @@ namespace happyml {
                     }
 
                     str->resize(str_length);
-                    file.read(reinterpret_cast<char *>(str->data()), str_length * sizeof(char16_t));
+                    file.read(const_cast<char *>(reinterpret_cast<const char *>(str->data())),
+                              static_cast<streamsize>(str_length * sizeof(char16_t)));
                 }
 
                 if (!file.eof()) {
@@ -386,7 +472,8 @@ namespace happyml {
         uint16_t delimiter_code_{}; // a value we can do math with and our base starting point.
         u16string delimiter_; // saves us from recomputing the u16 string
         bool show_progress_; // do we print out text while training?
+        string name_;
     };
 }
 
-#endif //HAPPYML_BYTE_PAIR_ENCODING_HPP
+#endif //HAPPYML_BYTE_PAIR_ENCODER_HPP

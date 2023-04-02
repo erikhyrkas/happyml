@@ -12,6 +12,7 @@
 #include <random>
 #include <iterator>
 #include <string>
+#include <unordered_set>
 #include "../types/tensor.hpp"
 #include "training_pair.hpp"
 #include "data_encoder.hpp"
@@ -24,8 +25,6 @@ namespace happyml {
         virtual size_t recordCount() = 0;
 
         virtual void shuffle() = 0;
-
-        virtual void shuffle(size_t start_offset, size_t end_offset) = 0;
 
         virtual void restart() = 0;
 
@@ -53,8 +52,6 @@ namespace happyml {
 
         void shuffle() override {}
 
-        void shuffle(size_t start_offset, size_t end_offset) override {}
-
         void restart() override {}
 
         vector<shared_ptr<TrainingPair>> nextBatch(size_t batch_size) override {
@@ -75,75 +72,95 @@ namespace happyml {
         }
     };
 
-    class PartialTrainingDataSet : public TrainingDataSet {
-    public:
-        //
-        PartialTrainingDataSet(const shared_ptr<TrainingDataSet> &dataSource, size_t first_record_offset,
-                               size_t last_record_offset) {
-            this->dataSource = dataSource;
-            this->firstRecordOffset = first_record_offset;
-            this->lastRecordOffset = last_record_offset;
-            this->count = last_record_offset - first_record_offset;
-            this->currentOffset = first_record_offset;
-            if (first_record_offset > last_record_offset) {
-                throw exception("First offset must be before last offset");
-            }
-            if (last_record_offset >= dataSource->recordCount()) {
-                throw exception("Record offset out of bounds");
-            }
-        }
+//
+//    class PagingDataSet : public TrainingDataSet {
+//    public:
+//        PagingDataSet(const std::string& file_path, char delimiter, bool skip_header, bool trim_strings,
+//                      const shared_ptr<DataEncoder>& given_encoder, const shared_ptr<DataEncoder>& expected_encoder,
+//                      const vector<size_t>& given_shape, const vector<size_t>& expected_shape)
+//                : current_offset(0), delimiter(delimiter), skip_header(skip_header), trimStrings(trim_strings),
+//                  given_encoder(given_encoder), expected_encoder(expected_encoder),
+//                  given_shape(given_shape), expected_shape(expected_shape) {
+//            training_data_path = file_path;
+//            total_records = countRecords(file_path);
+//        }
+//
+//        size_t recordCount() override {
+//            return total_records;
+//        }
+//
+//        void shuffle() override {
+//            // TODO: implement shuffle method
+////            random_device rd;
+////            mt19937 g(rd());
+////            std::shuffle(pairs.begin(), pairs.end(), g);
+//            restart();
+//        }
+//
+//        void restart() override {
+//            current_offset = 0;
+//        }
+//
+//        vector<shared_ptr<TrainingPair>> nextBatch(size_t batch_size) override {
+//            if (current_offset >= recordCount()) {
+//                return vector<shared_ptr<TrainingPair>>{};
+//            }
+//
+//            auto batch = loadBatch(batch_size);
+//            current_offset += batch_size;
+//            return batch;
+//        }
+//
+//    private:
+//        size_t current_offset;
+//        size_t total_records = 0;
+//        string training_data_path;
+//        char delimiter;
+//        bool skip_header;
+//        bool trimStrings;
+//
+//        shared_ptr<DataEncoder> given_encoder;
+//        shared_ptr<DataEncoder> expected_encoder;
+//        vector<size_t> given_shape;
+//        vector<size_t> expected_shape;
+//
+//        [[nodiscard]] size_t countRecords(const std::string& file_path) const {
+//            size_t record_count = 0;
+//            DelimitedTextFileReader reader(file_path, delimiter, skip_header);
+//            while (reader.hasNext()) {
+//                reader.nextRecord();
+//                record_count++;
+//            }
+//            return record_count;
+//        }
+//
+//        vector<shared_ptr<TrainingPair>> loadBatch(size_t batch_size) {
+//            vector<shared_ptr<TrainingPair>> batch;
+//            DelimitedTextFileReader reader(training_data_path, delimiter, skip_header);
+//            size_t counter = 0;
+//
+//            while (reader.hasNext() && counter < current_offset + batch_size) {
+//                auto record = reader.nextRecord();
+//                if (counter >= current_offset) {
+//                    auto middleIter(record.begin());
+//                    std::advance(middleIter, given_shape[1]);
+//                    vector<string> given_part(record.begin(), middleIter);
+//                    auto given_tensor = given_encoder->encode(given_part, given_shape[0], given_shape[1], given_shape[2],
+//                                                              trimStrings);
+//
+//                    vector<string> expected_part(middleIter, record.end());
+//                    auto expected_tensor = expected_encoder->encode(expected_part, expected_shape[0], expected_shape[1], expected_shape[2],
+//                                                                    trimStrings);
+//
+//                    batch.push_back(make_shared<TrainingPair>(given_tensor, expected_tensor));
+//                }
+//                counter++;
+//            }
+//
+//            return batch;
+//        }
+//    };
 
-        size_t recordCount() override {
-            return count;
-        }
-
-        void shuffle(size_t start_offset, size_t end_offset) override {
-            const size_t new_first = firstRecordOffset + start_offset;
-            const size_t new_end = firstRecordOffset + end_offset;
-            if (new_first > lastRecordOffset || new_end > lastRecordOffset) {
-                throw exception("shuffle offset out of range");
-            }
-            restart();
-            dataSource->shuffle(new_first, new_end);
-        }
-
-        void shuffle() override {
-            shuffle(firstRecordOffset, lastRecordOffset);
-        }
-
-        void restart() override {
-            currentOffset = firstRecordOffset;
-        }
-
-        vector<shared_ptr<TrainingPair>> nextBatch(size_t batch_size) override {
-            vector<shared_ptr<TrainingPair>> result;
-            const size_t target_last_offset = currentOffset + batch_size;
-            if (target_last_offset <= lastRecordOffset) {
-                for (size_t batch_offset = 0; batch_offset < batch_size; batch_offset++) {
-                    result.push_back(nextRecord());
-                }
-            }
-            return result;
-        }
-
-        shared_ptr<TrainingPair> nextRecord() override {
-            shared_ptr<TrainingPair> result = dataSource->nextRecord();
-            if (result) {
-                currentOffset++;
-            }
-            return result;
-        }
-
-    private:
-        shared_ptr<TrainingDataSet> dataSource;
-        size_t firstRecordOffset;
-        size_t lastRecordOffset;
-        size_t count;
-        size_t currentOffset;
-    };
-
-    // TODO: create a method to return the distinct values of a column, useful for
-    //  finding labels.
     class InMemoryTrainingDataSet : public TrainingDataSet {
     public:
         InMemoryTrainingDataSet() {
@@ -170,19 +187,34 @@ namespace happyml {
             restart();
         }
 
-        void shuffle(size_t start_offset, size_t end_offset) override {
-            // todo: likely can be optimized
-            random_device rd;
-            mt19937 g(rd());
-            const size_t end = recordCount() - end_offset;
-            // weird that I had to cast it down to an unsigned long
-            // feels like a bug waiting to happen with a large data set.
-            std::shuffle(pairs.begin() + (unsigned long) start_offset, pairs.end() - (unsigned long) end, g);
-            restart();
-        }
-
         void restart() override {
             current_offset = 0;
+        }
+
+        // Set of the distinct values for a given column, useful for finding labels.
+        unordered_set<float> getDistinctValuesForFirstExpectedColumn(size_t columnIndex) {
+            unordered_set<float> distinctValues;
+            for (const auto &pair : pairs) {
+                const auto &expectedTensor = pair->getFirstExpected();
+                if (columnIndex < expectedTensor->columnCount()) {
+                    float value = expectedTensor->getValue(0, columnIndex, 0);
+                    distinctValues.insert(value);
+                }
+            }
+            return distinctValues;
+        }
+
+        // Set of the distinct values for a given column, useful for finding labels.
+        unordered_set<float> getDistinctValuesForFirstGivenColumn(size_t columnIndex) {
+            unordered_set<float> distinctValues;
+            for (const auto &pair : pairs) {
+                const auto &expectedTensor = pair->getFirstGiven();
+                if (columnIndex < expectedTensor->columnCount()) {
+                    float value = expectedTensor->getValue(0, columnIndex, 0);
+                    distinctValues.insert(value);
+                }
+            }
+            return distinctValues;
         }
 
         // populate a batch vector of vectors, reusing the structure. This is to save the time we'd otherwise use
@@ -288,11 +320,8 @@ namespace happyml {
         shared_ptr<DataEncoder> givenEncoder;
 
         void load() {
-            DelimitedTextFileReader delimitedTextFileReader(path, delimiter);
+            DelimitedTextFileReader delimitedTextFileReader(path, delimiter, headerRow);
 
-            if (headerRow && delimitedTextFileReader.hasNext()) {
-                delimitedTextFileReader.nextRecord();
-            }
             size_t first_size;
             vector<size_t> first_shape;
             vector<size_t> second_shape;
@@ -328,7 +357,6 @@ namespace happyml {
                     addTrainingData(firstTensor, secondTensor);
                 }
             }
-
         }
     };
 }

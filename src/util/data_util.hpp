@@ -5,6 +5,7 @@
 #ifndef HAPPYML_DATA_UTIL_HPP
 #define HAPPYML_DATA_UTIL_HPP
 
+#include <filesystem>
 #include <string>
 #include <numeric>
 #include <fstream>
@@ -13,11 +14,23 @@
 #include <iostream>
 #include <cctype>
 #include <limits>
+#include <random>
+#include <set>
 
 using namespace std;
 
 namespace happyml {
 
+    std::string join_strings(const std::vector<std::string> &strings, const std::string &delimiter = "") {
+        std::stringstream ss;
+        for (size_t i = 0; i < strings.size(); ++i) {
+            ss << strings[i];
+            if (i < strings.size() - 1) {
+                ss << delimiter;
+            }
+        }
+        return ss.str();
+    }
 
     string buildKnowledgePath(const string &modelFolderPath, const string &knowledgeLabel, bool overwrite) {
         string fullKnowledgePath = modelFolderPath + "/" + knowledgeLabel;
@@ -129,13 +142,33 @@ namespace happyml {
         return lines;
     }
 
+    vector<string> sampleData(const vector<string> &data,
+                    float validation_ratio = 0.2) {
+        auto validation_size = static_cast<size_t>(data.size() * validation_ratio);
+        size_t const train_size = data.size() - validation_size;
+
+        std::random_device rd;
+        std::mt19937 g(rd());
+        vector<size_t> indices(data.size());
+        std::iota(indices.begin(), indices.end(), 0);
+        std::shuffle(indices.begin(), indices.end(), g);
+
+        vector<string> validation_data;
+        validation_data.reserve(validation_size);
+
+        for (size_t i = train_size; i < data.size(); ++i) {
+            validation_data.push_back(data[indices[i]]);
+        }
+        return std::move(validation_data);
+    }
+
     void splitData(const vector<string> &data,
                    vector<string> &train_data,
                    vector<string> &validation_data,
                    float validation_ratio = 0.2) {
 
         auto validation_size = static_cast<size_t>(data.size() * validation_ratio);
-        size_t train_size = data.size() - validation_size;
+        size_t const train_size = data.size() - validation_size;
 
         std::random_device rd;
         std::mt19937 g(rd());
@@ -155,6 +188,45 @@ namespace happyml {
         }
     }
 
+    void u16string_replace_all_to_buffer(const u16string &string_to_update,
+                                         u16string &result,
+                                         const u16string &substring_to_find,
+                                         const u16string &substring_replacement) {
+        const size_t find_length = substring_to_find.length();
+        const size_t replace_length = substring_replacement.length();
+
+        // If the substring to find is empty, simply return without modifying the input string
+        if (find_length == 0) {
+            return;
+        }
+
+        result.clear();
+        if (replace_length > find_length) {
+            result.reserve(string_to_update.length() * 2); // ensure that the resulting string has enough capacity
+        } else {
+            result.reserve(string_to_update.length());
+        }
+
+        size_t start_pos = 0;
+        const size_t original_length = string_to_update.length();
+        while (start_pos < original_length) {
+            size_t const found_pos = string_to_update.find(substring_to_find, start_pos);
+            if (found_pos == string::npos) {
+                // if no more occurrences of the substring are found, append the rest of the string and exit the loop
+                result.append(string_to_update, start_pos, original_length - start_pos);
+                break;
+            }
+            // append the portion of the string before the found substring
+            result.append(string_to_update, start_pos, found_pos - start_pos);
+            // append the replacement string
+            if (replace_length > 0) {
+                result.append(substring_replacement);
+            }
+            // update the start position to the end of the found substring
+            start_pos = found_pos + find_length;
+        }
+    }
+
     void u16string_replace_all(u16string &string_to_update,
                                const u16string &substring_to_find,
                                const u16string &substring_replacement) {
@@ -167,25 +239,7 @@ namespace happyml {
         }
 
         u16string result;
-        result.reserve(string_to_update.length()); // ensure that the resulting string has enough capacity
-
-        size_t start_pos = 0;
-        while (start_pos < string_to_update.length()) {
-            size_t found_pos = string_to_update.find(substring_to_find, start_pos);
-            if (found_pos == string::npos) {
-                // if no more occurrences of the substring are found, append the rest of the string and exit the loop
-                result.append(string_to_update, start_pos, string_to_update.length() - start_pos);
-                break;
-            }
-            // append the portion of the string before the found substring
-            result.append(string_to_update, start_pos, found_pos - start_pos);
-            // append the replacement string
-            if (replace_length > 0) {
-                result.append(substring_replacement);
-            }
-            // update the start position to the end of the found substring
-            start_pos = found_pos + find_length;
-        }
+        u16string_replace_all_to_buffer(string_to_update, result, substring_to_find, substring_replacement);
         string_to_update = std::move(result); // update the original string with the new one
     }
 
@@ -202,14 +256,21 @@ namespace happyml {
         }
 
         string result;
+        if (replace_length > find_length) {
+            result.reserve(string_to_update.length() * 2); // ensure that the resulting string has enough capacity
+        } else {
+            result.reserve(string_to_update.length());
+        }
+
         result.reserve(string_to_update.length()); // ensure that the resulting string has enough capacity
 
         size_t start_pos = 0;
-        while (start_pos < string_to_update.length()) {
-            size_t found_pos = string_to_update.find(substring_to_find, start_pos);
+        const size_t original_length = string_to_update.length();
+        while (start_pos < original_length) {
+            size_t const found_pos = string_to_update.find(substring_to_find, start_pos);
             if (found_pos == string::npos) {
                 // if no more occurrences of the substring are found, append the rest of the string and exit the loop
-                result.append(string_to_update, start_pos, string_to_update.length() - start_pos);
+                result.append(string_to_update, start_pos, original_length - start_pos);
                 break;
             }
             // append the portion of the string before the found substring

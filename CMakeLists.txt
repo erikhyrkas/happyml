@@ -20,6 +20,8 @@ add_executable(example_mnist_model_8bit src/example/example_mnist_model_8bit.cpp
 
 add_executable(example_mnist_model_full src/example/example_mnist_model_full.cpp)
 
+add_executable(example_bpe_model src/example/example_bpe_model.cpp)
+
 # Need to learn how to use CTest and convert the tests to use it.
 # https://cmake.org/cmake/help/book/mastering-cmake/chapter/Testing%20With%20CMake%20and%20CTest.html
 # What you see below is me doing what I knew would work for local testing.
@@ -42,3 +44,5 @@ add_executable(test_lexer src/test/test_lexer.cpp)
 add_executable(test_interpreter src/test/test_interpreter.cpp)
 
 add_executable(test_byte_pair_encoding src/test/test_byte_pair_encoding.cpp)
+
+add_executable(test_rotary_positional_embedding src/test/test_rotary_positional_embedding.cpp)

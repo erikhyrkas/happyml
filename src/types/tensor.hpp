@@ -189,6 +189,15 @@ namespace happyml {
             return {rowCount(), columnCount(), channelCount()};
         }
 
+        vector<float> getRowValues(size_t row, size_t channel=0) {
+            vector<float> nextRow;
+            size_t columnCount1 = columnCount();
+            for(size_t col = 0; col < columnCount1; col++) {
+                nextRow.push_back(getValue(row, col, 0));
+            }
+            return nextRow;
+        }
+
         float getValue(const unsigned long position_offset) {
             const size_t cols = columnCount();
             const unsigned long matrix_size = cols * rowCount();

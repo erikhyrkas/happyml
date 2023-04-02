@@ -39,16 +39,6 @@ namespace happyml {
             std::shuffle(pairs.begin(), pairs.end(), g);
         }
 
-        void shuffle(size_t start_offset, size_t end_offset) override {
-            // todo: likely can be optimized
-            random_device rd;
-            mt19937 g(rd());
-            const size_t end = datasetSize - end_offset;
-            // weird that I had to cast it down to an unsigned long
-            // feels like a bug waiting to happen with a large data set.
-            std::shuffle(pairs.begin() + (unsigned long) start_offset, pairs.end() - (unsigned long) end, g);
-        }
-
         void restart() override {
             currentOffset = 0;
         }
