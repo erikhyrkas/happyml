@@ -1,5 +1,6 @@
 # How To Get Test Data
 
+## MNIST
 I downloaded the mnist test data from:
 https://www.kaggle.com/datasets/oddrationale/mnist-in-csv?resource=download
 
@@ -13,7 +14,8 @@ I moved those files to the data folder:
 * happyml\data\mnist_train.csv
 * happyml\data\mnist_test.csv
 
-# About The Data
+
+### About The MNIST Data
 
 The csvs have the header:
 
@@ -23,3 +25,16 @@ label,1x1,1x2,1x3,1x4,1x5,1x6,1x7,1x8,1x9,1x10,1x11,1x12,1x13,1x14,1x15,1x16,1x1
 
 The label tells us what number the 28x28 pixel image holds.
 Each grey-scale pixel holds a value between 0 and 255.
+
+## Text Data
+I downloaded the text test data from:
+https://www.kaggle.com/datasets/jrobischon/wikipedia-movie-plots
+
+After I uncompressed the archive.zip, I moved the file to the data folder:
+
+* happyml\data\wiki_movie_plots_deduped.csv
+
+The csv has the following header:
+```
+Release Year,Title,Origin/Ethnicity,Director,Cast,Genre,Wiki Page,Plot
+```

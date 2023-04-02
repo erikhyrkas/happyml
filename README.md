@@ -1,3 +1,5 @@
+![happyml](happyml.png)
+
 # What is happyml?
 
 happyml is a small machine learning library. It is currently in a functional state, but there's more features to add to make it more robust.
