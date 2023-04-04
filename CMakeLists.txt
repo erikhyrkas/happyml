@@ -46,3 +46,5 @@ add_executable(test_interpreter src/test/test_interpreter.cpp)
 add_executable(test_byte_pair_encoding src/test/test_byte_pair_encoding.cpp)
 
 add_executable(test_rotary_positional_embedding src/test/test_rotary_positional_embedding.cpp)
+
+add_executable(test_one_hot_encoding src/test/test_one_hot_encoding.cpp)

@@ -17,8 +17,8 @@ enum PseudoWordType {
 };
 
 struct PseudoWord {
-    std::string value;
-    PseudoWordType type;
+    std::string value{};
+    PseudoWordType type{};
 };
 
 struct PseudoSentencePattern {
@@ -27,14 +27,14 @@ struct PseudoSentencePattern {
 
 std::string capitalize_first_letter(const std::string &word) {
     std::string capitalized_word = word;
-    capitalized_word[0] = toupper(capitalized_word[0]);
+    capitalized_word[0] = (char) toupper(capitalized_word[0]);
     return capitalized_word;
 }
 
 std::string random_string(int min_len, int max_len) {
     static const std::string alphabet = "abcdefghijklmnopqrstuvwxyz";
     std::uniform_int_distribution<> len_dist(min_len, max_len);
-    std::uniform_int_distribution<> index_dist(0, alphabet.size() - 1);
+    std::uniform_int_distribution<> index_dist(0, (int) alphabet.size() - 1);
     std::random_device rd;
     std::mt19937 gen(rd());
     int length = len_dist(gen);
@@ -47,6 +47,7 @@ std::string random_string(int min_len, int max_len) {
 
 std::vector<PseudoWord> generate_pseudo_vocabulary(int vocab_size, PseudoWordType type) {
     std::vector<PseudoWord> vocabulary;
+    vocabulary.reserve(vocab_size);
     for (int i = 0; i < vocab_size; i++) {
         vocabulary.push_back({random_string(1, 6), type});
     }
@@ -97,8 +98,19 @@ std::string generate_pseudo_corpus(int sentence_count, int vocab_size) {
 
     std::random_device rd;
     std::mt19937 rng(rd());
-    std::uniform_int_distribution<> pattern_dist(0, patterns.size() - 1);
+    std::uniform_int_distribution<> pattern_dist(0, (int) patterns.size() - 1);
     std::uniform_real_distribution<> newline_dist(0, 1);
+
+    std::uniform_int_distribution<> nouns_dist(0, (int) nouns.size() - 1);
+    std::uniform_int_distribution<> verbs_dist(0, (int) verbs.size() - 1);
+    std::uniform_int_distribution<> conjunctions_dist(0, (int) conjunctions.size() - 1);
+    std::uniform_int_distribution<> adjectives_dist(0, (int) adjectives.size() - 1);
+    std::uniform_int_distribution<> adverbs_dist(0, (int) adverbs.size() - 1);
+    std::uniform_int_distribution<> punctuation_dist(0, (int) punctuation.size() - 1);
+    std::uniform_int_distribution<> quotes_dist(0, (int) quotes.size() - 1);
+    std::uniform_int_distribution<> commas_dist(0, (int) commas.size() - 1);
+    std::uniform_int_distribution<> spaces_dist(0, (int) spaces.size() - 1);
+
 
     std::string result;
     bool capitalize_next = true;
@@ -109,31 +121,31 @@ std::string generate_pseudo_corpus(int sentence_count, int vocab_size) {
             PseudoWord selectedWord;
             switch (token) {
                 case Noun:
-                    selectedWord = nouns[rand() % nouns.size()];
+                    selectedWord = nouns[nouns_dist(rng)];
                     break;
                 case Verb:
-                    selectedWord = verbs[rand() % verbs.size()];
+                    selectedWord = verbs[verbs_dist(rng)];
                     break;
                 case Conjunction:
-                    selectedWord = conjunctions[rand() % conjunctions.size()];
+                    selectedWord = conjunctions[conjunctions_dist(rng)];
                     break;
                 case Adjective:
-                    selectedWord = adjectives[rand() % adjectives.size()];
+                    selectedWord = adjectives[adjectives_dist(rng)];
                     break;
                 case Adverb:
-                    selectedWord = adverbs[rand() % adverbs.size()];
+                    selectedWord = adverbs[adverbs_dist(rng)];
                     break;
                 case Punctuation:
-                    selectedWord = punctuation[rand() % punctuation.size()];
+                    selectedWord = punctuation[punctuation_dist(rng)];
                     break;
                 case Quote:
-                    selectedWord = quotes[rand() % quotes.size()];
+                    selectedWord = quotes[quotes_dist(rng)];
                     break;
                 case Comma:
-                    selectedWord = commas[rand() % commas.size()];
+                    selectedWord = commas[commas_dist(rng)];
                     break;
                 case Space:
-                    selectedWord = spaces[rand() % spaces.size()];
+                    selectedWord = spaces[spaces_dist(rng)];
                     break;
                 default:
                     break;
@@ -158,7 +170,7 @@ std::string generate_random_string(int length) {
     std::string charset = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(0, charset.size() - 1);
+    std::uniform_int_distribution<> dis(0, (int) charset.size() - 1);
     std::string random_string;
 
     for (int i = 0; i < length; i++) {
@@ -167,6 +179,26 @@ std::string generate_random_string(int length) {
 
     return random_string;
 }
+
+bool are_vector_of_vectors_equal(const std::vector<std::vector<float>> &v1, const std::vector<std::vector<float>> &v2) {
+    if (v1.size() != v2.size()) {
+        return false;
+    }
+
+    for (size_t i = 0; i < v1.size(); i++) {
+        if (v1[i].size() != v2[i].size()) {
+            return false;
+        }
+        for (size_t j = 0; j < v1[i].size(); j++) {
+            if (v1[i][j] != v2[i][j]) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
 
 template<typename K, typename V>
 bool are_maps_equal(const std::unordered_map<K, V> &map1, const std::unordered_map<K, V> &map2) {

@@ -20,9 +20,8 @@ using namespace std;
 namespace happyml {
     class TextLineFileWriter {
     public:
-        explicit TextLineFileWriter(const string &path) {
-            this->filename = path;
-            stream.open(filename);
+        explicit TextLineFileWriter(string path) : filename_(std::move(path)) {
+            stream_.open(filename_);
         }
 
         ~TextLineFileWriter() {
@@ -30,27 +29,26 @@ namespace happyml {
         }
 
         void close() {
-            if (stream.is_open()) {
-                stream.close();
+            if (stream_.is_open()) {
+                stream_.close();
             }
         }
 
         void writeLine(const string &line) {
-            if (!stream.is_open()) {
+            if (!stream_.is_open()) {
                 throw exception("File is closed.");
             }
-            stream << line << endl;
+            stream_ << line << endl;
         }
 
     private:
-        string filename;
-        ofstream stream;
+        string filename_;
+        ofstream stream_;
     };
 
     class DelimitedTextFileWriter {
     public:
-        DelimitedTextFileWriter(const string &path, char delimiter) : lineWriter(path) {
-            this->delimiter = delimiter;
+        DelimitedTextFileWriter(const string &path, char delimiter) : line_writer_(path), delimiter_(delimiter) {
         }
 
         ~DelimitedTextFileWriter() {
@@ -58,7 +56,7 @@ namespace happyml {
         }
 
         void close() {
-            lineWriter.close();
+            line_writer_.close();
         }
 
         void writeRecord(const vector<string> &record) {
@@ -66,20 +64,19 @@ namespace happyml {
             stringstream combinedRecord;
             for (const string &column: record) {
                 combinedRecord << currentDelimiter << column;
-                currentDelimiter = delimiter;
+                currentDelimiter = delimiter_;
             }
-            lineWriter.writeLine(combinedRecord.str());
+            line_writer_.writeLine(combinedRecord.str());
         }
 
     private:
-        TextLineFileWriter lineWriter;
-        char delimiter;
+        TextLineFileWriter line_writer_;
+        char delimiter_;
     };
 
     class BinaryDatasetWriter {
     public:
-        BinaryDatasetWriter(const string &path, shared_ptr<BytePairEncoderModel> bpe) {
-            bpeModel_ = std::move(bpe);
+        BinaryDatasetWriter(const string &path, shared_ptr<BytePairEncoderModel> bpe) : bpeModel_(std::move(bpe)) {
             binaryFile_.open(path, ios::binary | ios::out);
         }
 
@@ -149,7 +146,8 @@ namespace happyml {
                          const string &bpeModelName) {
             uint16_t columnTypesSize = columnTypes.size();
             binaryFile_.write(reinterpret_cast<const char *>(&columnTypesSize), sizeof(uint16_t));
-            binaryFile_.write(reinterpret_cast<const char *>(columnTypes.data()), static_cast<streamsize>(columnTypesSize * sizeof(char)));
+            binaryFile_.write(reinterpret_cast<const char *>(columnTypes.data()),
+                              static_cast<streamsize>(columnTypesSize * sizeof(char)));
 
             binaryFile_.write(reinterpret_cast<const char *>(&columnWidths[0]),
                               static_cast<streamsize>(columnWidths.size() * sizeof(size_t)));
@@ -183,12 +181,10 @@ namespace happyml {
             }
         }
 
-        static vector<variant < double, string>> convertStringsToVariants(
-        const vector<string> &record,
-        const vector<char> &columnTypes
-        ) {
-            vector<variant < double, string>>
-            result;
+        static vector<variant<double, string>> convertStringsToVariants(
+                const vector<string> &record,
+                const vector<char> &columnTypes ) {
+            vector<variant<double, string>> result;
             for (size_t i = 0; i < record.size(); ++i) {
                 if (columnTypes[i] == 'N') {
                     result.emplace_back(stod(record[i]));
@@ -199,11 +195,10 @@ namespace happyml {
             return result;
         }
 
-        static vector<variant < double, string>> convertDoublesToVariants(
-        const vector<double> &record
-        ) {
-            vector<variant < double, string>>
-            result;
+        static vector<variant<double, string>> convertDoublesToVariants(
+                const vector<double> &record ) {
+            vector<variant<double, string>> result;
+            result.reserve(record.size());
             for (const double &value: record) {
                 result.emplace_back(value);
             }

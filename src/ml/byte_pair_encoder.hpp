@@ -30,7 +30,9 @@ namespace happyml {
         explicit BytePairEncoderModel(string name = "default",
                                       bool show_progress = true,
                                       const uint16_t delimiter_code = 256)
-                : show_progress_(show_progress), name_(std::move(name)) {
+                : show_progress_(show_progress),
+                  name_(std::move(name)),
+                  next_code_(delimiter_code + 1) {
             setDelimiterCode(delimiter_code);
         }
 
@@ -38,12 +40,6 @@ namespace happyml {
             return name_;
         }
 
-        // Sets the delimiter code and delimiter string.
-        // delimiter_code: The delimiter code to be used.
-        void setDelimiterCode(const uint16_t delimiter_code) {
-            delimiter_code_ = delimiter_code;
-            delimiter_ = u16string(1, delimiter_code);
-        }
 
         // Sets the BPE codes from an unordered_map of BPE codes.
         // bpe_codes: An unordered_map of BPE codes to be set in the model.
@@ -55,13 +51,21 @@ namespace happyml {
                      return a.second > b.second;
                  });
             ordered_bpe_codes_.swap(ordered_bpe_codes);
+
+            for (const auto &element: ordered_bpe_codes_) {
+                uint16_t const next = std::max(find_max_16bit_value(element.first),
+                                               find_max_16bit_value(element.second)) + 1;
+                next_code_ = std::max(next, next_code_);
+            }
         }
 
         // Configures the BPE model with bpe_codes and delimiter_code.
         // bpe_codes: An unordered_map of BPE codes.
         // delimiter_code: The delimiter code to be used.
         void configure(unordered_map<u16string, u16string> bpe_codes, uint16_t delimiter_code) {
+            // set delimiter code first because it will update current_code
             setDelimiterCode(delimiter_code);
+            // set bpe codes second because it will update current_code to max.
             setBpeCodes(bpe_codes);
         }
 
@@ -139,32 +143,32 @@ namespace happyml {
             }
 
 
-            double total_validation_length = 0.0;
+            long total_validation_length = 0.0;
             if (early_stopping_patience >= 0) {
                 for (const auto &text: validation_data) {
-                    total_validation_length += (double) text.length();
+                    total_validation_length += (long) text.length();
                 }
             }
 
+            // I'm pondering if max_code is right or not, and whether it matters.
             uint16_t const max_code = std::numeric_limits<char16_t>::max() - 1;
-            uint16_t current_code = delimiter_code_ + 1;
             double best_validation_score = INFINITY;
 
             unordered_map<u16string, u16string> bpe_codes;
 
             if (!ordered_bpe_codes_.empty()) {
                 if (show_progress_) {
-                    cout << "Current Code Staring at: " << current_code << endl;
+                    cout << "Current Code Staring at: " << next_code_ << endl;
                     cout << "Loading existing bpe codes..." << endl;
                 }
                 for (const auto &element: ordered_bpe_codes_) {
                     bpe_codes[element.first] = element.second;
                     uint16_t const next =
                             std::max(find_max_16bit_value(element.first), find_max_16bit_value(element.second)) + 1;
-                    current_code = std::max(next, current_code);
+                    next_code_ = std::max(next, next_code_);
                 }
                 if (show_progress_) {
-                    cout << "Current Code now: " << current_code << endl;
+                    cout << "Next Code now: " << next_code_ << endl;
                     cout << "Finished Loading existing bpe codes." << endl;
                 }
             }
@@ -179,8 +183,7 @@ namespace happyml {
                     break;
                 }
                 if (show_progress_) {
-                    cout << "Merge count: " << merge_count << " Current Code: " << current_code;
-                    cout << " BPE Pairs: " << bpe_codes.size();
+                    cout << "Merge count: " << merge_count << " Largest Code: " << next_code_;
                     if (best_validation_score != INFINITY) {
                         cout << " Best Compression: " << best_validation_score;
                     }
@@ -213,18 +216,18 @@ namespace happyml {
                     }
                 }
 
-                u16string const current_code_string(1, current_code);
+                u16string const current_code_string(1, next_code_);
                 auto most_frequent_string = most_frequent.first;
 
                 bpe_codes[most_frequent_string] = current_code_string;
                 updateCodeForMostFrequentPair(vocab, most_frequent, current_code_string);
                 mergePairs(vocab, most_frequent_string, current_code_string);
 
-                current_code++;
+                next_code_++;
                 merge_count++;
 
                 // roughly 59,000
-                if (current_code >= max_code) {
+                if (next_code_ >= max_code) {
                     if (show_progress_) {
                         cout << "Exiting early because Current Code hit the limit of " << max_code << "." << endl;
                     }
@@ -258,6 +261,10 @@ namespace happyml {
         // Returns the delimiter used to separate character pairs as a u16string.
         u16string getDelimiter() {
             return delimiter_;
+        }
+
+        [[nodiscard]] uint16_t getLargestCode() const {
+            return next_code_;
         }
 
         // Merges a pair of characters with another pair in the vocabulary.
@@ -387,9 +394,9 @@ namespace happyml {
         }
 
         double validate_compression_rate(const vector<string> &validation_data, long total_validation_length = 0) {
-            if( total_validation_length < 1) {
+            if (total_validation_length < 1) {
                 for (const auto &text: validation_data) {
-                    total_validation_length += text.length();
+                    total_validation_length += (long) text.length();
                 }
             }
 
@@ -471,8 +478,17 @@ namespace happyml {
         vector<pair<u16string, u16string>> ordered_bpe_codes_; // the ordered list of byte-pair encodings
         uint16_t delimiter_code_{}; // a value we can do math with and our base starting point.
         u16string delimiter_; // saves us from recomputing the u16 string
+        uint16_t next_code_;
         bool show_progress_; // do we print out text while training?
         string name_;
+
+        // Sets the delimiter code and delimiter string.
+        // delimiter_code: The delimiter code to be used.
+        void setDelimiterCode(const uint16_t delimiter_code) {
+            delimiter_code_ = delimiter_code;
+            delimiter_ = u16string(1, delimiter_code);
+            next_code_ = delimiter_code_ + 1;
+        }
     };
 }
 
