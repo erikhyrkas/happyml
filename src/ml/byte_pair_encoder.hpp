@@ -69,14 +69,23 @@ namespace happyml {
             setBpeCodes(bpe_codes);
         }
 
+        vector<u16string > encode(const vector<string>& tokens) {
+            vector<u16string> bpe_encoded_tokens;
+            bpe_encoded_tokens.reserve(tokens.size());
+            for (const string &token: tokens) {
+                bpe_encoded_tokens.push_back(encode(token));
+            }
+            return bpe_encoded_tokens;
+        }
+
         // Encodes a string using the BPE codes in the model.
-        // text: The input string to be encoded.
+        // token: The input string to be encoded.
         // Returns the encoded u16string.
-        u16string encode(const string &text) {
-            if (text.empty()) {
+        u16string encode(const string &token) {
+            if (token.empty()) {
                 return {};
             }
-            u16string const text16bit(text.begin(), text.end());
+            u16string const text16bit(token.begin(), token.end());
             // looks simpler, but we need to optimize:
             // u16string encoded = delimiter_ + text16bit + delimiter_;
             u16string encoded;

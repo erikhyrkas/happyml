@@ -12,27 +12,19 @@ using namespace std;
 using namespace happyml;
 
 
-void quickTest() {
-    unsigned int seq_length = 10;
-    unsigned int dim = 64;
-    RotaryPositionalEmbedding rotary_positional_embedding(seq_length, dim);
-    auto positional_encoding = rotary_positional_embedding.get_positional_encoding();
-    positional_encoding->print();
-}
-
 void test_text_embedding() {
-    unsigned int seq_length = 10;
-    unsigned int dim = 4096;
+    size_t model_max_tokens = 10;
     auto bpe = make_shared<BytePairEncoderModel>();
-    RotaryPositionalEmbedding rotary_positional_embedding(seq_length, dim);
-    auto embeddingMatrix = rotary_positional_embedding.get_positional_encoding();
+    auto rpe = make_shared<RotaryPositionalEmbedder>(model_max_tokens, bpe->getLargestCode());
+    auto tensor = text_to_tensor_bpe_rotary("some random text", bpe, rpe);
 
-    auto tensor = text_to_tensor("some random text", bpe, 100,
-                                 embeddingMatrix,
-                                 rotary_positional_embedding.get_padding_token_embedding(),
-                                 rotary_positional_embedding.get_unknown_token_embedding());
-    tensor->print();
-
+    cout << fixed << setprecision(2);
+    for (const auto &token: tensor) {
+        for (const auto &val: token) {
+            cout << val << " ";
+        }
+        cout << endl << endl;
+    }
 }
 
 int main() {
@@ -41,8 +33,6 @@ int main() {
         test_text_embedding();
         timer.printMilliseconds();
 
-//        quickTest();
-//        timer.printMilliseconds();
     } catch (const exception &e) {
         cout << e.what() << endl;
     }
