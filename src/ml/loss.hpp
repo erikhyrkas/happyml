@@ -64,7 +64,7 @@ namespace happyml {
 //        float compute(shared_ptr<BaseTensor> &truth, shared_ptr<BaseTensor> &prediction) override {
 //            // cross_entropy = sum( truth * log(prediction))
 //            auto log_pred = make_shared<TensorLog2View>(prediction);
-//            auto truth_dot_log_pred = make_shared<TensorDotTensorView>(truth, log_pred);
+//            auto truth_dot_log_pred = make_shared<TensorMatrixMultiplyTensorView>(truth, log_pred);
 //            return (float) truth_dot_log_pred->sum();
 //        }
 //    };
@@ -78,7 +78,7 @@ namespace happyml {
 //        float compute(shared_ptr<BaseTensor> &truth, shared_ptr<BaseTensor> &prediction) override {
 //            // binary cross_entropy = - avg( truth * log(pred) + (1-truth) * log(1-pred) )
 //            auto log_pred = make_shared<TensorLog2View>(prediction);
-//            auto truth_dot_log_pred = make_shared<TensorDotTensorView>(truth, log_pred);
+//            auto truth_dot_log_pred = make_shared<TensorMatrixMultiplyTensorView>(truth, log_pred);
 //
 //            auto neg_truth = make_shared<TensorMultiplyByScalarView>(truth, -1.0);
 //            auto one_minus_truth = make_shared<TensorAddScalarView>(truth, 1.0);
@@ -87,7 +87,7 @@ namespace happyml {
 //            auto one_minus_pred = make_shared<TensorAddScalarView>(prediction, 1.0);
 //            auto log_one_minus_pred = make_shared<TensorLog2View>(one_minus_pred);
 //
-//            auto one_minus_truth_dot_log_one_minus_pred = make_shared<TensorDotTensorView>(one_minus_truth,
+//            auto one_minus_truth_dot_log_one_minus_pred = make_shared<TensorMatrixMultiplyTensorView>(one_minus_truth,
 //                                                                                           log_one_minus_pred);
 //
 //            auto result_tensor = make_shared<TensorAddTensorView>(truth_dot_log_pred,

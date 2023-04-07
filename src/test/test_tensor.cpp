@@ -286,7 +286,7 @@ void testDotProduct() {
     auto matrixFunc = [](size_t row, size_t col, size_t channel) { return ((float) (row + col)); };
     auto matrix1 = make_shared<TensorFromFunction>(matrixFunc, 2, 2, 1);
     auto matrix2 = make_shared<TensorFromFunction>(matrixFunc, 2, 2, 1);
-    auto dotProductView = make_shared<TensorDotTensorView>(matrix1, matrix2);
+    auto dotProductView = make_shared<TensorMatrixMultiplyTensorView>(matrix1, matrix2);
     ASSERT_TRUE(1.0f == dotProductView->getValue(0, 0, 0));
     ASSERT_TRUE(2.0f == dotProductView->getValue(0, 1, 0));
     ASSERT_TRUE(2.0f == dotProductView->getValue(1, 0, 0));
@@ -300,7 +300,7 @@ void testDotProduct2() {
     vector<vector<float>> b = {{4, 0},
                                {1, 4}};
     auto matrix2 = make_shared<QuarterTensor>(b, 8);
-    auto dotProductView = make_shared<TensorDotTensorView>(matrix1, matrix2);
+    auto dotProductView = make_shared<TensorMatrixMultiplyTensorView>(matrix1, matrix2);
     ASSERT_TRUE(18.0f == dotProductView->getValue(0, 0, 0));
     ASSERT_TRUE(8.0f == dotProductView->getValue(0, 1, 0));
     ASSERT_TRUE(3.0f == dotProductView->getValue(1, 0, 0));
@@ -315,7 +315,7 @@ void testDotProduct3() {
     vector<vector<float>> b = {{2, 1, 2},
                                {3, 2, 4}};
     auto matrix2 = make_shared<QuarterTensor>(b, 8);
-    auto dotProductView = make_shared<TensorDotTensorView>(matrix1, matrix2);
+    auto dotProductView = make_shared<TensorMatrixMultiplyTensorView>(matrix1, matrix2);
     ASSERT_TRUE(10.0f == dotProductView->getValue(0, 0, 0));
     ASSERT_TRUE(6.0f == dotProductView->getValue(0, 1, 0));
     ASSERT_TRUE(12.0f == dotProductView->getValue(0, 2, 0));
@@ -335,7 +335,7 @@ void testDotProduct4() {
                                {9,  10},
                                {11, 12}};
     auto matrix2 = make_shared<QuarterTensor>(b, 8);
-    auto dotProductView = make_shared<TensorDotTensorView>(matrix1, matrix2);
+    auto dotProductView = make_shared<TensorMatrixMultiplyTensorView>(matrix1, matrix2);
     ASSERT_TRUE(58.0f == dotProductView->getValue(0, 0, 0));
     ASSERT_TRUE(64.0f == dotProductView->getValue(0, 1, 0));
     ASSERT_TRUE(139.0f == dotProductView->getValue(1, 0, 0));

@@ -11,21 +11,19 @@
 #include "../util/basic_profiler.hpp"
 
 namespace happyml {
+    // side note: I read an article on back propagation I thought was interesting:
+    // https://medium.com/@erikhallstrm/backpropagation-from-the-beginning-77356edf427d
+
     class NeuralNetworkFunction {
     public:
-        // TODO: Can we switch the return types to unique pointers? would it matter?
         virtual shared_ptr<BaseTensor> forward(const vector<shared_ptr<BaseTensor>> &input, bool forTraining) = 0;
 
-        // I read an article here that I thought was interesting:
-        // https://medium.com/@erikhallstrm/backpropagation-from-the-beginning-77356edf427d
         virtual shared_ptr<BaseTensor> backward(const shared_ptr<BaseTensor> &output_error) = 0;
 
         virtual void saveKnowledge(const string &fullKnowledgePath) {
-
         }
 
         virtual void loadKnowledge(const string &fullKnowledgePath) {
-
         }
     };
 

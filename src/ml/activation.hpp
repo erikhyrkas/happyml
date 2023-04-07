@@ -127,7 +127,7 @@ namespace happyml {
             auto negative = make_shared<TensorMultiplyByScalarView>(softmaxOut, -1.0f);
             auto reshape = make_shared<TensorReshapeView>(softmaxOut, softmaxOut->columnCount(),
                                                           softmaxOut->rowCount());
-            auto dot_product_view = make_shared<TensorDotTensorView>(negative, reshape);
+            auto dot_product_view = make_shared<TensorMatrixMultiplyTensorView>(negative, reshape);
             auto diag = make_shared<TensorDiagonalView>(softmaxOut);
             cout << "softmax: work in progress... fix me." << endl;
             softmaxOut->print();

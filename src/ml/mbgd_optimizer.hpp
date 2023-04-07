@@ -257,11 +257,10 @@ namespace happyml {
                 lastInputs.push(lastInput);
             }
 
-            return make_shared<TensorDotTensorView>(lastInput, weights);
+            return make_shared<TensorMatrixMultiplyTensorView>(lastInput, weights);
         }
 
         // learning
-        // TODO: I think this can return a unique pointer.
         shared_ptr<BaseTensor> backward(const shared_ptr<BaseTensor> &output_error) override {
             PROFILE_BLOCK(profileBlock);
             size_t lastInputsSize = lastInputs.size();
@@ -286,11 +285,11 @@ namespace happyml {
             //  considerably more memory than we need. Part of me thinks that all dot product tensors should be materialized,
             //  and part of me thinks that there are situations of simple dot products don't need to be.
             shared_ptr<BaseTensor> input_error = make_shared<FullTensor>(
-                    make_shared<TensorDotTensorView>(output_error, weights_transposed));
+                    make_shared<TensorMatrixMultiplyTensorView>(output_error, weights_transposed));
 
             // update weights
             auto input_transposed = make_shared<TensorTransposeView>(average_last_inputs);
-            auto weights_error = make_shared<TensorDotTensorView>(input_transposed, output_error);
+            auto weights_error = make_shared<TensorMatrixMultiplyTensorView>(input_transposed, output_error);
             auto weights_error_at_learning_rate = make_shared<TensorMultiplyByScalarView>(weights_error,
                                                                                           learningState->learningRate *
                                                                                           mixedPrecisionScale);
