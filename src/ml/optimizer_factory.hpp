@@ -12,14 +12,18 @@ using namespace happyml;
 
 namespace happyml {
 
-    shared_ptr<Optimizer> createOptimizer(const OptimizerType optimizerType,
-                                          const float learningRate,
-                                          const float biasLearningRate) {
-        shared_ptr<Optimizer> result;
+    shared_ptr<BaseOptimizer> createOptimizer(const OptimizerType optimizerType,
+                                              const float learningRate,
+                                              const float biasLearningRate) {
+        shared_ptr<BaseOptimizer> result;
         switch (optimizerType) {
             case OptimizerType::microbatch:
                 result = make_shared<MBGDOptimizer>(learningRate, biasLearningRate);
                 break;
+// checking in working code... adam in progress
+//            case OptimizerType::adam:
+//                result = make_shared<AdamOptimizer>(learningRate, biasLearningRate);
+//                break;
             default:
                 result = make_shared<MBGDOptimizer>(learningRate, biasLearningRate);
         }

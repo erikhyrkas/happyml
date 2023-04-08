@@ -275,6 +275,7 @@ namespace happyml {
                 headNodes[i]->forwardFromInput(givenInputs[i], forTraining);
             }
             vector<shared_ptr<BaseTensor>> results;
+            results.reserve(outputNodes.size());
             for (const auto &output: outputNodes) {
                 results.push_back(output->consumeLastOutput());
             }
@@ -339,7 +340,7 @@ namespace happyml {
             this->lossFunction = f;
         }
 
-        shared_ptr<Optimizer> getOptimizer() {
+        shared_ptr<BaseOptimizer> getOptimizer() {
             return optimizer;
         }
 
@@ -666,7 +667,7 @@ namespace happyml {
 //            return false;
 //        }
 
-//        shared_ptr<NeuralNetworkNode> addFullyConnected(const shared_ptr<Optimizer> &optimizer, size_t input_size, size_t output_size, bool use_32_bit) {
+//        shared_ptr<NeuralNetworkNode> addFullyConnected(const shared_ptr<NodeFactory> &optimizer, size_t input_size, size_t output_size, bool use_32_bit) {
 //            auto networkNode = optimizer->createFullyConnectedNeurons(input_size, output_size, use_32_bit);
 //            head_nodes.push_back(networkNode);
 //            return networkNode;
@@ -687,7 +688,7 @@ namespace happyml {
         float biasLearningRate;
         OptimizerType optimizerType;
         LossType lossType;
-        shared_ptr<Optimizer> optimizer;
+        shared_ptr<BaseOptimizer> optimizer;
         shared_ptr<LossFunction> lossFunction;
         shared_ptr<ExitStrategy> exitStrategy;
         vector<vector<string>> networkMetadata;

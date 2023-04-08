@@ -281,7 +281,7 @@ namespace happymldsl {
                                            asString(getFilters()),
                                            asString(getKernelSize())
                                           });
-                shared_ptr<Optimizer> optimizer = nn->getOptimizer();
+                shared_ptr<BaseOptimizer> optimizer = nn->getOptimizer();
                 shared_ptr<NeuralNetworkNode> next_node;
                 shared_ptr<NeuralNetworkNode> last_node = nullptr;
                 if (node_type == NodeType::full) {
@@ -290,16 +290,20 @@ namespace happymldsl {
                         last_node = appendNode(last_node, flatten_node);
                     }
                     string fullNodeLabel = asString(vertexUniqueId) + "_full";
-                    next_node = make_shared<NeuralNetworkNode>(
-                            optimizer->createFullyConnectedNeurons(fullNodeLabel,
-                                                                   inputShape[0] * inputShape[1] * inputShape[2],
-                                                                   outputShape[0] * outputShape[1] * outputShape[2],
-                                                                   bits));
+                    const shared_ptr<FullyConnectedNeurons> &fcn = make_shared<FullyConnectedNeurons>(fullNodeLabel,
+                                                                                                      inputShape[0] *
+                                                                                                      inputShape[1] *
+                                                                                                      inputShape[2],
+                                                                                                      outputShape[0] *
+                                                                                                      outputShape[1] *
+                                                                                                      outputShape[2],
+                                                                                                      bits, optimizer);
+                    next_node = make_shared<NeuralNetworkNode>(fcn);
                 } else if (node_type == NodeType::convolution2dValid) {
                     string c2dvLabel = asString(vertexUniqueId) + "_c2dv";
-                    next_node = make_shared<NeuralNetworkNode>(
-                            optimizer->createConvolutional2d(c2dvLabel, inputShape, filters,
-                                                             kernel_size, bits));
+                    auto c2d = make_shared<Convolution2dValidFunction>(c2dvLabel, inputShape, filters, kernel_size, bits,
+                                                                       optimizer);
+                    next_node = make_shared<NeuralNetworkNode>(c2d);
                 } else {
                     throw exception("Unimplemented NodeType");
                 }
@@ -308,8 +312,8 @@ namespace happymldsl {
 
                 if (use_bias) {
                     string biasLabel = asString(vertexUniqueId) + "_bias";
-                    auto bias_node = make_shared<NeuralNetworkNode>(
-                            optimizer->createBias(biasLabel, outputShape, outputShape, bits));
+                    auto b = make_shared<BiasNeuron>(biasLabel, outputShape, outputShape, bits, optimizer);
+                    auto bias_node = make_shared<NeuralNetworkNode>(b);
                     last_node = appendNode(last_node, bias_node);
                 }
 
@@ -522,7 +526,7 @@ namespace happymldsl {
 
     void createVertexFromMetadata(const shared_ptr<HappymlDSL> &dsl,
                                   const vector<string> &vertexMetadata,
-                                  const shared_ptr<HappymlDSL::NNVertex>& parent,
+                                  const shared_ptr<HappymlDSL::NNVertex> &parent,
                                   map<uint32_t, shared_ptr<HappymlDSL::NNVertex>> &createdVertexes,
                                   map<uint32_t, vector<string>> &vertexes,
                                   map<uint32_t, vector<uint32_t>> &edgeFromTo) {
