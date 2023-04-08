@@ -125,6 +125,7 @@ namespace happyml {
                                    vector<size_t> inputShape, size_t filters, size_t kernelSize, uint8_t bits,
                                    const shared_ptr<BaseOptimizer> &optimizer) {
             this->label = label;
+            this->registration_id = optimizer->registerForWeightChanges();
             this->inputShape = inputShape;
             this->kernelSize = kernelSize;
             this->outputShape = {inputShape[0] - kernelSize + 1, inputShape[1] - kernelSize + 1, filters};
@@ -262,7 +263,9 @@ namespace happyml {
                     }
                 }
 
-                const auto adjustedWeights = optimizer->calculateWeightsChange(weights[outputLayer], weightChanges,
+                const auto adjustedWeights = optimizer->calculateWeightsChange(registration_id,
+                                                                               weights[outputLayer],
+                                                                               weightChanges,
                                                                                mixedPrecisionScale);
                 weights[outputLayer] = materializeTensor(adjustedWeights, bits);
             }
@@ -272,6 +275,7 @@ namespace happyml {
         }
 
     private:
+        int registration_id;
         queue<shared_ptr<BaseTensor>> lastInputs; // each input in a batch will queue in order during forward, and deque properly when back-propagating
         vector<shared_ptr<BaseTensor>> weights;
         uint8_t bits;
@@ -288,6 +292,7 @@ namespace happyml {
         FullyConnectedNeurons(const string &label, size_t inputSize, size_t outputSize, uint8_t bits,
                               const shared_ptr<BaseOptimizer> &optimizer) {
             this->label = label;
+            this->registration_id = optimizer->registerForWeightChanges();
             this->inputShapes = vector<vector<size_t >>{{1, inputSize, 1}};
             this->outputShape = vector<size_t>{1, outputSize, 1};
             this->weights = make_shared<TensorFromRandom>(inputSize, outputSize, 1, -0.5f, 0.5f, 42);
@@ -366,7 +371,8 @@ namespace happyml {
             auto input_transposed = make_shared<TensorTransposeView>(average_last_inputs);
             auto weights_error = make_shared<TensorMatrixMultiplyTensorView>(input_transposed, output_error);
 
-            const auto adjusted_weights = optimizer->calculateWeightsChange(weights, weights_error, mixedPrecisionScale);
+            const auto adjusted_weights = optimizer->calculateWeightsChange(
+                    registration_id, weights, weights_error, mixedPrecisionScale);
 
             weights = materializeTensor(adjusted_weights, bits);
 
@@ -375,6 +381,7 @@ namespace happyml {
 
     private:
         shared_ptr<BaseTensor> weights;
+        int registration_id;
         queue<shared_ptr<BaseTensor>> lastInputs; // each input in a batch will queue in order during forward, and deque properly when back-propagating
         uint8_t bits;
         float mixedPrecisionScale;
@@ -390,6 +397,7 @@ namespace happyml {
                    uint8_t bits,
                    const shared_ptr<BaseOptimizer> &optimizer) {
             this->label = label;
+            this->registration_id = optimizer->registerForBiasChanges();
             this->inputShapes = vector<vector<size_t >>{inputShape};
             this->outputShape = outputShape;
             // In my experiments, at least for the model I was testing, we found the correct results faster by starting at 0 bias.
@@ -477,7 +485,8 @@ namespace happyml {
         shared_ptr<BaseTensor> backward(const shared_ptr<BaseTensor> &output_error) override {
             PROFILE_BLOCK(profileBlock);
 
-            auto adjusted_bias = optimizer->calculateBiasChange(bias,
+            auto adjusted_bias = optimizer->calculateBiasChange(registration_id,
+                                                                bias,
                                                                 output_error,
                                                                 mixedPrecisionScale,
                                                                 (float) current_batch_size);
@@ -490,6 +499,7 @@ namespace happyml {
         }
 
     private:
+        int registration_id;
         shared_ptr<BaseTensor> bias;
         int current_batch_size;
         uint8_t bits;

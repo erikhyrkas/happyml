@@ -16,6 +16,7 @@
 #include <filesystem>
 #include <execution>
 #include "../util/data_util.hpp"
+#include "../util/timers.hpp"
 
 using namespace std;
 

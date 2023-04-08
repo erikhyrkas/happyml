@@ -41,7 +41,16 @@ namespace happyml {
                 : BaseOptimizer(learningRate, biasLearningRate) {}
 
 
-        shared_ptr<BaseTensor> calculateWeightsChange(const shared_ptr<BaseTensor> &weights,
+        int registerForWeightChanges() override {
+            return 0;
+        }
+
+        int registerForBiasChanges() override {
+            return 0;
+        }
+
+        shared_ptr<BaseTensor> calculateWeightsChange(int registration_id,
+                                                      const shared_ptr<BaseTensor> &weights,
                                                       const shared_ptr<BaseTensor> &weightChanges,
                                                       float mixedPrecisionScale) override {
 
@@ -53,7 +62,8 @@ namespace happyml {
             return adjustedWeights;
         }
 
-        shared_ptr<BaseTensor> calculateBiasChange(const shared_ptr<BaseTensor> &bias,
+        shared_ptr<BaseTensor> calculateBiasChange(int registration_id,
+                                                   const shared_ptr<BaseTensor> &bias,
                                                    const shared_ptr<BaseTensor> &loss_gradient,
                                                    float mixedPrecisionScale,
                                                    float current_batch_size) override {
