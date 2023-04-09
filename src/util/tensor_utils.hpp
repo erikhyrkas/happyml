@@ -111,6 +111,24 @@ namespace happyml {
         return make_shared<FullTensor>(path);
     }
 
+    bool hasInvalidValues(const shared_ptr<BaseTensor> &t1) {
+        for (size_t channel = 0; channel < t1->channelCount(); channel++) {
+            for (size_t row = 0; row < t1->rowCount(); row++) {
+                for (size_t col = 0; col < t1->columnCount(); col++) {
+                    float val = t1->getValue(row, col, channel);
+                    if (::isnan(val) || ::isinf(val)) {
+                        ostringstream message;
+                        message << "Value " << val << " is not valid for this tensor " << row << ", " << col << ", "
+                                << channel;
+                        cout << message.str() << endl;
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     void assertEqual(const shared_ptr<BaseTensor> &t1, const shared_ptr<BaseTensor> &t2) {
         if (t1->channelCount() != t2->channelCount()) {
             throw exception("Tensors don't have the same number of channels.");

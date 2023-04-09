@@ -12,7 +12,7 @@ using namespace std;
 namespace happyml {
 
     enum OptimizerType {
-        microbatch, adam
+        microbatch, adam, sgdm
     };
 
     enum LossType {
@@ -128,6 +128,8 @@ namespace happyml {
                 return "Micro Batch";
             case adam:
                 return "Adam";
+            case sgdm:
+                return "SGDM";
         }
         throw exception("Unknown Optimizer Type");
     }
@@ -138,6 +140,9 @@ namespace happyml {
         }
         if (optimizerType == "Adam") {
             return adam;
+        }
+        if(optimizerType == "SGDM") {
+            return sgdm;
         }
         throw exception("Unknown Optimizer Type");
     }

@@ -61,7 +61,6 @@ based on the [CMakeLists.txt](CMakeLists.txt).
 This project isn't even in a complete alpha stage, yet.
 
 Nice-to-haves for alpha:
-* Need to fix and check-in Adam optimizer. I'm not even going to check it in until it seems plausibly right and I need to refactor the model object's training to support it correctly. I built the mini-batch gradient decent optimizer first because it was easier to make (even though I still had issues building it correctly -- that is part of the learning process), and it let me test all the other code.
 * Need to finish the half float and test. It currently doesn't handle any edge conditions and could produce incorrect results in some situations.
 * Finish interpreter commands to handle interfacing with happyml through a dsl. (Lexer and parser now have a working foundation.)
 

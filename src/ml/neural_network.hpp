@@ -472,6 +472,9 @@ namespace happyml {
             do {
                 ElapsedTimer batchTimer;
                 trainingDataset->shuffle();
+
+                optimizer->update_time_step();
+
                 epochTrainingLoss = 0.f;
                 int batchOffset = 0;
                 vector<vector<shared_ptr<BaseTensor>>> batchPredictions;
@@ -494,6 +497,7 @@ namespace happyml {
 //                        }
                     }
                     batchOffset++;
+
                     nextRecord = trainingDataset->nextRecord();
                     if (batchOffset >= batchSize || nextRecord == nullptr) {
                         size_t currentBatch = ceil(current_record / batchSize);
@@ -510,11 +514,14 @@ namespace happyml {
                             totalBatchOutputLoss += batchLoss;
 
                             // batchOffset should be equal to batch_size, unless we are on the last partial batch.
-                            auto lossDerivative = lossFunction->partialDerivative(totalError, (float) batchOffset);
+                            shared_ptr<BaseTensor> lossDerivative = make_shared<TensorClipView>(lossFunction->partialDerivative(totalError, (float) batchOffset), 100, -100);
+//                            shared_ptr<BaseTensor> lossDerivative = lossFunction->partialDerivative(totalError, (float) batchOffset);
 
                             // todo: we don't weight loss when there are multiple outputs back propagating. we should, instead of treating them as equals.
                             outputNodes[outputIndex]->backward(lossDerivative);
-
+                            if(::isnan(batchLoss)) {
+                                throw exception("Error calculating loss.");
+                            }
                             batchTruths[outputIndex].clear();
                             batchPredictions[outputIndex].clear();
                         }

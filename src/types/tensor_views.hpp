@@ -586,12 +586,75 @@ namespace happyml {
         }
 
         void printMaterializationPlan() override {
-            cout << "TensorMinusTensorView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
+            cout << "TensorPowerView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
             child->printMaterializationPlan();
         }
 
     private:
         float power;
+    };
+
+    class TensorSqrtView : public BaseTensorUnaryOperatorView {
+    public:
+        TensorSqrtView(const shared_ptr<BaseTensor> &tensor) : BaseTensorUnaryOperatorView(
+                tensor) {
+        }
+
+        float getValue(size_t row, size_t column, size_t channel) override {
+            const float val = child->getValue(row, column, channel);
+            return ::sqrt(val);
+        }
+
+        void printMaterializationPlan() override {
+            cout << "TensorSqrtView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
+            child->printMaterializationPlan();
+        }
+
+    };
+
+
+    // Prevents the tensor's value from being bigger than or less than a value
+    class TensorClipView : public BaseTensorUnaryOperatorView {
+    public:
+        TensorClipView(const shared_ptr<BaseTensor> &tensor, float max_value, float min_value) : BaseTensorUnaryOperatorView(
+                tensor) {
+            this->max_value = max_value;
+            this->min_value = min_value;
+        }
+
+        float getValue(size_t row, size_t column, size_t channel) override {
+            const float val = child->getValue(row, column, channel);
+            return std::max(min_value, std::min(max_value, val));
+        }
+
+        void printMaterializationPlan() override {
+            cout << "TensorClipView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
+            child->printMaterializationPlan();
+        }
+    private:
+        float max_value;
+        float min_value;
+    };
+
+    // returns inverse of each value( 1.0f / original value )
+    class TensorInverseView : public BaseTensorUnaryOperatorView {
+    public:
+        TensorInverseView(const shared_ptr<BaseTensor> &tensor, float epsilon=1e-8) : BaseTensorUnaryOperatorView(
+                tensor) {
+            this->epsilon = epsilon;
+        }
+
+        float getValue(size_t row, size_t column, size_t channel) override {
+            const float val = child->getValue(row, column, channel) + epsilon;
+            return 1.0f / val;
+        }
+
+        void printMaterializationPlan() override {
+            cout << "TensorInverseView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
+            child->printMaterializationPlan();
+        }
+    private:
+        float epsilon;
     };
 
     class TensorLogView : public BaseTensorUnaryOperatorView {

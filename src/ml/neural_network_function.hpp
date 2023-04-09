@@ -263,10 +263,11 @@ namespace happyml {
                     }
                 }
 
+                const auto adjusted_weights_error = make_shared<TensorMultiplyByScalarView>(weightChanges,
+                                                                                            mixedPrecisionScale);
                 const auto adjustedWeights = optimizer->calculateWeightsChange(registration_id,
                                                                                weights[outputLayer],
-                                                                               weightChanges,
-                                                                               mixedPrecisionScale);
+                                                                               adjusted_weights_error);
                 weights[outputLayer] = materializeTensor(adjustedWeights, bits);
             }
 
@@ -371,8 +372,10 @@ namespace happyml {
             auto input_transposed = make_shared<TensorTransposeView>(average_last_inputs);
             auto weights_error = make_shared<TensorMatrixMultiplyTensorView>(input_transposed, output_error);
 
+            const auto adjusted_weights_error = make_shared<TensorMultiplyByScalarView>(weights_error,
+                                                                                        mixedPrecisionScale);
             const auto adjusted_weights = optimizer->calculateWeightsChange(
-                    registration_id, weights, weights_error, mixedPrecisionScale);
+                    registration_id, weights, adjusted_weights_error);
 
             weights = materializeTensor(adjusted_weights, bits);
 
@@ -402,9 +405,9 @@ namespace happyml {
             this->outputShape = outputShape;
             // In my experiments, at least for the model I was testing, we found the correct results faster by starting at 0 bias.
             // This may be a mistake.
-            this->bias = make_shared<UniformTensor>(outputShape[0], outputShape[1], outputShape[2], 0.f);
+//            this->bias = make_shared<UniformTensor>(outputShape[0], outputShape[1], outputShape[2], 0.f);
             // Original code started with a random value between -0.5 and 0.5:
-            //this->bias = make_shared<TensorFromRandom>(outputShape[0], outputShape[1],outputShape[2], -0.5f, 0.5f, 42);
+            this->bias = make_shared<TensorFromRandom>(outputShape[0], outputShape[1],outputShape[2], -0.5f, 0.5f, 42);
             this->bits = bits;
             this->optimizer = optimizer;
             // With models that are not fully 32-bit, if you don't scale the loss
@@ -431,20 +434,20 @@ namespace happyml {
                 //  our target without ever reaching it.
                 // I made this number up. it seemed to work well for both mixed-precision models and for models
                 // that are entirely 32-bit.
-                mixedPrecisionScale = 0.1f;
+                mixedPrecisionLearningRateScale = 0.1f;
             } else if (bits == 16) {
                 if (optimizer->getLearningRate() < 0.45) {
                     // I made this number up. it seemed to work well for mixed-precision models.
-                    mixedPrecisionScale = 2.f;
+                    mixedPrecisionLearningRateScale = 2.f;
                 } else {
-                    mixedPrecisionScale = 1.f;
+                    mixedPrecisionLearningRateScale = 1.f;
                 }
             } else {
                 if (optimizer->getLearningRate() < 0.3) {
                     // I made this number up. it seemed to work well for mixed-precision models.
-                    mixedPrecisionScale = 3.0f;
+                    mixedPrecisionLearningRateScale = 3.0f;
                 } else {
-                    mixedPrecisionScale = 1.0f;
+                    mixedPrecisionLearningRateScale = 1.0f;
                 }
             }
             this->current_batch_size = 0;
@@ -485,11 +488,11 @@ namespace happyml {
         shared_ptr<BaseTensor> backward(const shared_ptr<BaseTensor> &output_error) override {
             PROFILE_BLOCK(profileBlock);
 
+            const auto adjusted_bias_error = make_shared<TensorMultiplyByScalarView>(output_error,
+                                                                                     mixedPrecisionLearningRateScale / (float) current_batch_size);
             auto adjusted_bias = optimizer->calculateBiasChange(registration_id,
                                                                 bias,
-                                                                output_error,
-                                                                mixedPrecisionScale,
-                                                                (float) current_batch_size);
+                                                                output_error);
             bias = materializeTensor(adjusted_bias, bits);
 
             current_batch_size = 0;
@@ -503,7 +506,7 @@ namespace happyml {
         shared_ptr<BaseTensor> bias;
         int current_batch_size;
         uint8_t bits;
-        float mixedPrecisionScale;
+        float mixedPrecisionLearningRateScale;
         vector<vector<size_t>> inputShapes;
         vector<size_t> outputShape;
         shared_ptr<BaseOptimizer> optimizer;

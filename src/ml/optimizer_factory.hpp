@@ -7,6 +7,8 @@
 
 #include "enums.hpp"
 #include "mbgd_optimizer.hpp"
+#include "adam_optimizer.hpp"
+#include "sgdm_optimizer.hpp"
 
 using namespace happyml;
 
@@ -20,10 +22,12 @@ namespace happyml {
             case OptimizerType::microbatch:
                 result = make_shared<MBGDOptimizer>(learningRate, biasLearningRate);
                 break;
-// checking in working code... adam in progress
-//            case OptimizerType::adam:
-//                result = make_shared<AdamOptimizer>(learningRate, biasLearningRate);
-//                break;
+            case OptimizerType::adam:
+                result = make_shared<AdamOptimizer>(learningRate, biasLearningRate);
+                break;
+            case OptimizerType::sgdm:
+                result = make_shared<SGDMOptimizer>(learningRate, biasLearningRate);
+                break;
             default:
                 result = make_shared<MBGDOptimizer>(learningRate, biasLearningRate);
         }

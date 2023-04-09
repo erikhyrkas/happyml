@@ -51,12 +51,10 @@ namespace happyml {
 
         shared_ptr<BaseTensor> calculateWeightsChange(int registration_id,
                                                       const shared_ptr<BaseTensor> &weights,
-                                                      const shared_ptr<BaseTensor> &weightChanges,
-                                                      float mixedPrecisionScale) override {
+                                                      const shared_ptr<BaseTensor> &weightChanges) override {
 
             const auto adjustedWeightChanges = make_shared<TensorMultiplyByScalarView>(weightChanges,
-                                                                                       learningRate *
-                                                                                       mixedPrecisionScale);
+                                                                                       learningRate);
             const auto adjustedWeights = make_shared<TensorMinusTensorView>(weights,
                                                                             adjustedWeightChanges);
             return adjustedWeights;
@@ -64,17 +62,12 @@ namespace happyml {
 
         shared_ptr<BaseTensor> calculateBiasChange(int registration_id,
                                                    const shared_ptr<BaseTensor> &bias,
-                                                   const shared_ptr<BaseTensor> &loss_gradient,
-                                                   float mixedPrecisionScale,
-                                                   float current_batch_size) override {
+                                                   const shared_ptr<BaseTensor> &loss_gradient) override {
             auto bias_error_at_learning_rate = make_shared<TensorMultiplyByScalarView>(loss_gradient,
-                                                                                       biasLearningRate *
-                                                                                       mixedPrecisionScale /
-                                                                                       current_batch_size);
+                                                                                       biasLearningRate);
             auto adjusted_bias = make_shared<TensorMinusTensorView>(bias, bias_error_at_learning_rate);
             return adjusted_bias;
         }
-
     };
 }
 #endif //HAPPYML_MBGD_OPTIMIZER_HPP

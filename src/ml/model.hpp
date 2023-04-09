@@ -33,6 +33,14 @@ namespace happymldsl {
                     this->learningRate = 0.1;
                     this->biasLearningRate = 0.01;
                     break;
+                case adam:
+                    this->learningRate = 0.01;
+                    this->biasLearningRate = 0.001;
+                    break;
+                case sgdm:
+                    this->learningRate = 0.01;
+                    this->biasLearningRate = 0.001;
+                    break;
                 default:
                     throw exception("Unsupported model type.");
             }
@@ -301,7 +309,8 @@ namespace happymldsl {
                     next_node = make_shared<NeuralNetworkNode>(fcn);
                 } else if (node_type == NodeType::convolution2dValid) {
                     string c2dvLabel = asString(vertexUniqueId) + "_c2dv";
-                    auto c2d = make_shared<Convolution2dValidFunction>(c2dvLabel, inputShape, filters, kernel_size, bits,
+                    auto c2d = make_shared<Convolution2dValidFunction>(c2dvLabel, inputShape, filters, kernel_size,
+                                                                       bits,
                                                                        optimizer);
                     next_node = make_shared<NeuralNetworkNode>(c2d);
                 } else {
@@ -520,9 +529,8 @@ namespace happymldsl {
     }
 
     shared_ptr<HappymlDSL> neuralNetworkBuilder() {
-        return neuralNetworkBuilder(microbatch); // TODO: change to adam. just testing microbatch right now.
+        return neuralNetworkBuilder();
     }
-
 
     void createVertexFromMetadata(const shared_ptr<HappymlDSL> &dsl,
                                   const vector<string> &vertexMetadata,
