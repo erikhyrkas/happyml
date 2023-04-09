@@ -17,6 +17,7 @@
 #include "training_pair.hpp"
 #include "data_encoder.hpp"
 #include "../util/file_reader.hpp"
+#include "../util/shuffler.hpp"
 
 namespace happyml {
 
@@ -24,11 +25,7 @@ namespace happyml {
     public:
         virtual size_t recordCount() = 0;
 
-        virtual void shuffle() = 0;
-
         virtual void restart() = 0;
-
-        virtual vector<shared_ptr<TrainingPair>> nextBatch(size_t batch_size) = 0;
 
         virtual shared_ptr<TrainingPair> nextRecord() = 0;
 
@@ -43,6 +40,16 @@ namespace happyml {
         virtual vector<size_t> getExpectedShape() {
             return getExpectedShapes()[0];
         }
+
+        void setShuffler(const shared_ptr<Shuffler> &shuffler) {
+            if (shuffler != nullptr && shuffler->getSize() != recordCount()) {
+                throw exception("Shuffler needs to be sized appropriately for the dataset.");
+            }
+            shuffler_ = shuffler;
+        }
+
+    protected:
+        shared_ptr<Shuffler> shuffler_;
     };
 
     class EmptyTrainingDataSet : public TrainingDataSet {
@@ -50,14 +57,7 @@ namespace happyml {
             return 0;
         }
 
-        void shuffle() override {}
-
         void restart() override {}
-
-        vector<shared_ptr<TrainingPair>> nextBatch(size_t batch_size) override {
-            vector<shared_ptr<TrainingPair>> result;
-            return result;
-        }
 
         shared_ptr<TrainingPair> nextRecord() override {
             return nullptr;
@@ -87,14 +87,6 @@ namespace happyml {
 //
 //        size_t recordCount() override {
 //            return total_records;
-//        }
-//
-//        void shuffle() override {
-//            // TODO: implement shuffle method
-////            random_device rd;
-////            mt19937 g(rd());
-////            std::shuffle(pairs.begin(), pairs.end(), g);
-//            restart();
 //        }
 //
 //        void restart() override {
@@ -168,23 +160,21 @@ namespace happyml {
         }
 
         void addTrainingData(const shared_ptr<BaseTensor> &given, float expected) {
+            if (shuffler_ != nullptr) {
+                throw exception("Cannot add data after a shuffler has been assigned");
+            }
             pairs.push_back(make_shared<TrainingPair>(given, columnVector({expected})));
         }
 
         void addTrainingData(const shared_ptr<BaseTensor> &given, const shared_ptr<BaseTensor> &expected) {
+            if (shuffler_ != nullptr) {
+                throw exception("Cannot add data after a shuffler has been assigned");
+            }
             pairs.push_back(make_shared<TrainingPair>(given, expected));
         }
 
         size_t recordCount() override {
             return pairs.size();
-        }
-
-        void shuffle() override {
-            // todo: likely can be optimized
-            random_device rd;
-            mt19937 g(rd());
-            std::shuffle(pairs.begin(), pairs.end(), g);
-            restart();
         }
 
         void restart() override {
@@ -194,7 +184,7 @@ namespace happyml {
         // Set of the distinct values for a given column, useful for finding labels.
         unordered_set<float> getDistinctValuesForFirstExpectedColumn(size_t columnIndex) {
             unordered_set<float> distinctValues;
-            for (const auto &pair : pairs) {
+            for (const auto &pair: pairs) {
                 const auto &expectedTensor = pair->getFirstExpected();
                 if (columnIndex < expectedTensor->columnCount()) {
                     float value = expectedTensor->getValue(0, columnIndex, 0);
@@ -207,7 +197,7 @@ namespace happyml {
         // Set of the distinct values for a given column, useful for finding labels.
         unordered_set<float> getDistinctValuesForFirstGivenColumn(size_t columnIndex) {
             unordered_set<float> distinctValues;
-            for (const auto &pair : pairs) {
+            for (const auto &pair: pairs) {
                 const auto &expectedTensor = pair->getFirstGiven();
                 if (columnIndex < expectedTensor->columnCount()) {
                     float value = expectedTensor->getValue(0, columnIndex, 0);
@@ -217,27 +207,12 @@ namespace happyml {
             return distinctValues;
         }
 
-        // populate a batch vector of vectors, reusing the structure. This is to save the time we'd otherwise use
-        // to allocate.
-        vector<shared_ptr<TrainingPair>> nextBatch(size_t batch_size) override {
-            vector<shared_ptr<TrainingPair>> result;
-            for (size_t batch_offset = 0; batch_offset < batch_size; batch_offset++) {
-                if (current_offset >= recordCount()) {
-                    break;
-                }
-                shared_ptr<TrainingPair> next = nextRecord();
-                if (next) {
-                    result.push_back(next);
-                }
-            }
-            return result;
-        }
-
         shared_ptr<TrainingPair> nextRecord() override {
             if (current_offset >= recordCount()) {
                 return nullptr;
             }
-            shared_ptr<TrainingPair> result = pairs.at(current_offset);
+            auto shuffled_offset = shuffler_ != nullptr ? shuffler_->getShuffledIndex(current_offset) : current_offset;
+            shared_ptr<TrainingPair> result = pairs.at(shuffled_offset);
             if (result) {
                 current_offset++;
             }
@@ -248,117 +223,78 @@ namespace happyml {
             if (pairs.empty()) {
                 return vector<vector<size_t>>{{0, 0, 0}};
             }
-            auto given = pairs[0]->getGiven();
-            vector<vector<size_t>> result;
-            for (const auto &next: given) {
-                result.push_back(next->getShape());
+            if (givenShape.empty()) {
+                auto given = pairs[0]->getGiven();
+                givenShape.reserve(given.size());
+                for (const auto &next: given) {
+                    givenShape.push_back(next->getShape());
+                }
+
             }
-            return result;
+            return givenShape;
         }
 
         vector<vector<size_t>> getExpectedShapes() override {
             if (pairs.empty()) {
                 return vector<vector<size_t>>{{0, 0, 0}};
             }
-            auto expected = pairs[0]->getExpected();
-            vector<vector<size_t>> result;
-            for (const auto &next: expected) {
-                result.push_back(next->getShape());
+            if (expectedShape.empty()) {
+                auto expected = pairs[0]->getExpected();
+                expectedShape.reserve(expected.size());
+                for (const auto &next: expected) {
+                    expectedShape.push_back(next->getShape());
+                }
             }
-            return result;
+            return expectedShape;
         }
 
     private:
         vector<shared_ptr<TrainingPair>> pairs;
         size_t current_offset;
+        vector<vector<size_t>> expectedShape;
+        vector<vector<size_t>> givenShape;
     };
 
-    // This is fine for small datasets, but won't work at scale because not all datasets will fit in memory
-    class InMemoryDelimitedValuesTrainingDataSet : public InMemoryTrainingDataSet {
-    public:
-        InMemoryDelimitedValuesTrainingDataSet(const string &path, char delimiter,
-                                               bool header_row, bool trim_strings, bool expected_first,
-                                               size_t expected_columns, size_t given_columns,
-                                               const vector<size_t> &expected_shape, const vector<size_t> &given_shape,
-                                               const shared_ptr<DataEncoder> &expected_encoder,
-                                               const shared_ptr<DataEncoder> &given_encoder)
-                : InMemoryTrainingDataSet() {
-            this->path = path;
-            this->delimiter = delimiter;
-            this->headerRow = header_row;
-            this->trimStrings = trim_strings;
-            this->expectedFirst = expected_first;
-            this->expectedColumns = expected_columns;
-            this->expectedShape = expected_shape;
-            this->givenShape = given_shape;
-            this->givenColumns = given_columns;
-            this->expectedEncoder = expected_encoder;
-            this->givenEncoder = given_encoder;
-            load();
-        }
+    shared_ptr<InMemoryTrainingDataSet> loadDelimitedValuesDataset(const string &path, char delimiter,
+                                                                   bool header_row, bool trim_strings,
+                                                                   bool expected_first, size_t expected_columns,
+                                                                   size_t given_columns,
+                                                                   const vector<size_t> &expected_shape,
+                                                                   const vector<size_t> &given_shape,
+                                                                   const shared_ptr<DataEncoder> &expected_encoder,
+                                                                   const shared_ptr<DataEncoder> &given_encoder) {
 
+        auto dataset = make_shared<InMemoryTrainingDataSet>();
 
-        vector<vector<size_t>> getGivenShapes() override {
-            return {givenShape};
-        }
+        DelimitedTextFileReader delimitedTextFileReader(path, delimiter, header_row);
 
-        vector<vector<size_t>> getExpectedShapes() override {
-            return {expectedShape};
-        }
-
-    private:
-        string path;
-        char delimiter;
-        bool expectedFirst;
-        bool headerRow;
-        bool trimStrings;
-        size_t expectedColumns;
-        size_t givenColumns;
-        vector<size_t> expectedShape;
-        vector<size_t> givenShape;
-        shared_ptr<DataEncoder> expectedEncoder;
-        shared_ptr<DataEncoder> givenEncoder;
-
-        void load() {
-            DelimitedTextFileReader delimitedTextFileReader(path, delimiter, headerRow);
-
-            size_t first_size;
-            vector<size_t> first_shape;
-            vector<size_t> second_shape;
-            shared_ptr<DataEncoder> firstEncoder;
-            shared_ptr<DataEncoder> secondEncoder;
-            if (expectedFirst) {
-                first_size = expectedColumns;
-                first_shape = expectedShape;
-                firstEncoder = expectedEncoder;
-                second_shape = givenShape;
-                secondEncoder = givenEncoder;
+        while (delimitedTextFileReader.hasNext()) {
+            auto record = delimitedTextFileReader.nextRecord();
+            auto middleIter(record.begin());
+            std::advance(middleIter, expected_first ? expected_columns : given_columns);
+            vector<string> firstHalf(record.begin(), middleIter);
+            auto firstTensor = expected_first ?
+                               expected_encoder->encode(firstHalf, expected_shape[0], expected_shape[1],
+                                                        expected_shape[2], trim_strings) :
+                               given_encoder->encode(firstHalf, given_shape[0], given_shape[1], given_shape[2],
+                                                     trim_strings);
+            vector<string> secondHalf(middleIter, record.end());
+            auto secondTensor = expected_first ?
+                                given_encoder->encode(secondHalf, given_shape[0], given_shape[1], given_shape[2],
+                                                      trim_strings) :
+                                expected_encoder->encode(secondHalf, expected_shape[0], expected_shape[1],
+                                                         expected_shape[2], trim_strings);
+            if (expected_first) {
+                // given, expected
+                dataset->addTrainingData(secondTensor, firstTensor);
             } else {
-                first_size = givenColumns;
-                first_shape = givenShape;
-                firstEncoder = givenEncoder;
-                second_shape = expectedShape;
-                secondEncoder = expectedEncoder;
-            }
-            while (delimitedTextFileReader.hasNext()) {
-                auto record = delimitedTextFileReader.nextRecord();
-                auto middleIter(record.begin());
-                std::advance(middleIter, first_size);
-                vector<string> firstHalf(record.begin(), middleIter);
-                auto firstTensor = firstEncoder->encode(firstHalf, first_shape[0], first_shape[1], first_shape[2],
-                                                        trimStrings);
-                vector<string> secondHalf(middleIter, record.end());
-                auto secondTensor = secondEncoder->encode(secondHalf, second_shape[0], second_shape[1],
-                                                          second_shape[2], trimStrings);
-                if (expectedFirst) {
-                    // given, expected
-                    addTrainingData(secondTensor, firstTensor);
-                } else {
-                    addTrainingData(firstTensor, secondTensor);
-                }
+                dataset->addTrainingData(firstTensor, secondTensor);
             }
         }
-    };
+
+        return dataset;
+    }
+
 }
 
 #endif //HAPPYML_TRAINING_DATASET_HPP

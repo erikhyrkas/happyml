@@ -529,7 +529,7 @@ namespace happymldsl {
     }
 
     shared_ptr<HappymlDSL> neuralNetworkBuilder() {
-        return neuralNetworkBuilder();
+        return neuralNetworkBuilder(happyml::microbatch);
     }
 
     void createVertexFromMetadata(const shared_ptr<HappymlDSL> &dsl,

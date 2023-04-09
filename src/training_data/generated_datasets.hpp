@@ -32,38 +32,16 @@ namespace happyml {
             return datasetSize;
         }
 
-        void shuffle() override {
-            // todo: likely can be optimized
-            random_device rd;
-            mt19937 g(rd());
-            std::shuffle(pairs.begin(), pairs.end(), g);
-        }
-
         void restart() override {
             currentOffset = 0;
-        }
-
-        // populate a batch vector of vectors, reusing the structure. This is to save the time we'd otherwise use
-        // to allocate.
-        vector<shared_ptr<TrainingPair>> nextBatch(size_t batch_size) override {
-            vector<shared_ptr<TrainingPair>> result;
-            for (size_t batch_offset = 0; batch_offset < batch_size; batch_offset++) {
-                if (currentOffset >= datasetSize) {
-                    break;
-                }
-                shared_ptr<TrainingPair> next = nextRecord();
-                if (next) {
-                    result.push_back(next);
-                }
-            }
-            return result;
         }
 
         shared_ptr<TrainingPair> nextRecord() override {
             if (currentOffset >= datasetSize) {
                 return nullptr;
             }
-            shared_ptr<TrainingPair> result = pairs.at(currentOffset);
+            auto shuffled_offset = shuffler_ != nullptr? shuffler_->getShuffledIndex(currentOffset):currentOffset;
+            shared_ptr<TrainingPair> result = pairs.at(shuffled_offset);
             if (result) {
                 currentOffset++;
             }

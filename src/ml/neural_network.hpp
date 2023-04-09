@@ -444,11 +444,15 @@ namespace happyml {
         // a sample is a single record
         // a batch is the number of samples (records) to look at before updating weights
         // train/fit
+        // todo: we need support multiple for inputs. Now that we have the shuffler, we have
+        //  a way to properly manage those multiple inputs, but this train method only has a single
+        //  trainingDataset and testDataset for input.
         float train(const shared_ptr<TrainingDataSet> &trainingDataset,
                     const shared_ptr<TrainingDataSet> &testDataset,
                     int batchSize = 1,
                     TrainingRetentionPolicy trainingRetentionPolicy = best,
                     bool overwriteOutputLines = true) {
+            ElapsedTimer totalTimer;
             string knowledgeCheckpointLabel = "checkpoint_" + std::to_string(
                     chrono::duration_cast<chrono::milliseconds>(
                             chrono::system_clock::now().time_since_epoch()).count());
@@ -459,11 +463,14 @@ namespace happyml {
             if (batchSize > total_records) {
                 throw exception("Batch Size cannot be larger than trainingDataset data set.");
             }
-            ElapsedTimer totalTimer;
+
+            auto trainingShuffler = make_shared<Shuffler>(trainingDataset->recordCount());
+            trainingDataset->setShuffler(trainingShuffler);
+
             const size_t outputSize = outputNodes.size();
-            cout << endl;
             size_t lowestLossEpoch = 0;
             float lowestLoss = INFINITY;
+            cout << endl; // TODO: we really should have a silent mode.
             logTraining(0, 0, 0, ceil(total_records / batchSize), batchSize, 0, 0, 0, overwriteOutputLines);
             size_t epoch = 0;
             ElapsedTimer epochTimer;
@@ -471,7 +478,8 @@ namespace happyml {
             float epochTestingLoss;
             do {
                 ElapsedTimer batchTimer;
-                trainingDataset->shuffle();
+                trainingShuffler->shuffle();
+                trainingDataset->restart();
 
                 optimizer->update_time_step();
 

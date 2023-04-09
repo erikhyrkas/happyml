@@ -52,6 +52,7 @@ based on the [CMakeLists.txt](CMakeLists.txt).
 This project is pre-alpha.
 
 Recent Notable additions:
+* Dataset Shuffle is now in-place and the shuffler can be shared between datasets to keep them in sync. (4/23)
 * SGDM Optimizer with demon (4/23)
 * Adam Optimizer with demon (4/23)
 * Rotary Positional Embedding (4/23)
@@ -70,7 +71,7 @@ Nice-to-haves for alpha:
 
 Back-of-the-mind considerations:
 * The save format could be more efficient and compact. (The file support utilities exist as of 3/23, but the models aren't using it.)
-* There is a bug with multiple-inputs where the input shuffles aren't synchronized. This can be addressed, but I need to create an example that uses multiple inputs. Maybe I can get an image and label data set. I'm thinking I'll create a new type of data set that combined multiple other sources to keep them in sync when shuffling and offer "channels" to split those input into different neurons at the start of training. This will also be a chance to implement and test Convolutional 2d Same layers.
+* I need to create an example that uses multiple inputs. The train() function doesn't take in multiple data sets and there will need to be some other small improvements.
 
 At that point, the code will be in an alpha state, but I still won't have even tackled encoder-decoder and decoder-only requirements. For beta, I'd like to see at least decoder-only support. There's also Reinforcement Learning from Human Feedback (RLHF) that I'll ponder, but I doubt I can work that into the beta let along the alpha. That journey will continue.
 

@@ -10,12 +10,10 @@ time or energy to devote years to finding the perfect way express a language lik
 
 That said, since happyml is so lightweight, if you are happy with the version that works for you, keep using it. You
 could always move to a different version when you are ready. You could theoretically have multiple versions of it
-running
-alongside your code and the impact should be low.
+running alongside your code and the impact should be low.
 
 I don't want to be trapped into bad early decisions and not evolve as needed, just because somebody might be using it.
-And,
-I don't want to spend enormous amounts of time and energy trying to get it right in the first try.
+And, I don't want to spend enormous amounts of time and energy trying to get it right in the first try.
 
 # Current key word plans
 
@@ -53,19 +51,28 @@ I don't want to spend enormous amounts of time and energy trying to get it right
 ## Create Dataset
 
 Allows us to create a dataset. This will inform models what input and output should look like and
-what the valid range of output is.
+what the valid range of output is. We also need a way as part of this to split an original dataset
+into a training set and a testing set. 
+
+While the C++ implementation allows you to utilize delimited data directly and even do so completely 
+in-memory, for the scripting language, we'll use this to import in delimited data into a binary
+format that has a training and testing set and can easily be shuffled without being fully in-memory.
+
+This gives us the most robust, reusable, and reliable form for creating and managing datasets.
 
 ```
 create dataset <name> from <local file or folder|url> 
-[with format <delimited|image>]
+[with format <delimited|happyml>]
 [with expected [<scalar|category|pixel>] at <column> [through <column>] ] 
 [with given [<scalar|category|pixel>] at <column> [through <column>] ]
+[with testing set of <x>%]
 ```
 
 ## Train Model
 
-I hate the word "model" because it isn't meaningful to most people, but I also don't have a better word yet. In the
-code, I use the word "neural network", but I may want to support non-neural network models.
+I dislike the word "model" because it isn't meaningful to most people, or they don't really understand what it is, 
+but I also don't have a better word yet. In the code, I use the word "neural network", but I may want to support 
+non-neural network models. A model represents the code and configuration necessary to make predictions.
 
 ```
 train [<adjective>*] <model type> model <model name> [<knowledge label>] using <data set name>
@@ -79,31 +86,30 @@ train [<adjective>*] <model type> model <model name> [<knowledge label>] using <
 | discovery      | future  | Fill in the blank. Find the missing words in a paragraph or missing note in a song. Different than generation in that we are masking random parts of input. | 
 
 I'm lumping all forms of ML into 4 buckets for now, which is a bold (and probably inadvisable) move. Either you want to
-identify what something is (aka classify),
-you want to generate something new from something else (text or image generation are very popular right now), translate
-something (you have something in english and you want to change it
+identify what something is (aka classify), you want to generate something new from something else (text or image 
+generation are very popular right now), translate something (you have something in english, and you want to change it
 to latin, or maybe you have an image in one style and what to change it to a different style), or you want to discover
-the missing information (fill-in-the-blank answers or maybe unmasking
-a portion of an image.)
+the missing information (fill-in-the-blank answers or maybe unmasking a portion of an image.)
 
 There are many techniques in use today and my hope is that I can figure out which one to apply based on the dataset I'm
 given.
 
 For example, if you have a time series and want it completed, I'm lumping that into generation, since it follows the
-pattern of: Given some numbers, give me the numbers that follow. Will
-I be clever enough to pick the right algorithm based on the dataset? We'll see.
+pattern of: Given some numbers, give me the numbers that follow. Will I be clever enough to pick the right algorithm 
+based on the dataset? We'll see.
 
 Discovery might not be a needed type if there's a better way to specify how to do masking in generation. Translation is
-similar
-to generation as well, but the techniques are different when we use the dataset. Could I detect the right technique to
-use without
-this hint? Maybe.
+similar to generation as well, but the techniques are different when we use the dataset. Could I detect the right 
+technique to use without this hint? Maybe. When it comes down to it, you could even argue that identification is
+an awfully close concept to translation (taking in a value and creating a new value.)
 
-| adjective | immediate plan                                                                                                                                                          | future plan                                                                                   | eventual plan                                                                              |
-|-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|
-| fast      | Goal of good enough results. Materialize when possible to avoid duplicate operations. Always 32-bit. Only use bias on final output. Minimum necessary model complexity. | Leverage vectorization on cpu memory.                                                         | Use GPU when possible and support quantization (16/8 bit) when available.                  |
-| small     | Goal of good enough results. Materialize only when necessary. Use 8-bit or 16-bit when possible. Only use bias on final output. Minimum necessary model complexity.     | Page large tensors to disk when not in use. Use Sparse Tensors for inputs if it saves memory. | Distributed execution? Maybe there's a way to have different layers on different machines. |
-| accurate  | Goal of great results. Materialize only when necessary. Always 32-bit. Use bias on more layers when it increases accuracy. Maximum model complexity.                    | Use Sparse Tensors for inputs if it saves memory.                                             | Distributed execution? Maybe there's a way to have different layers on different machines. |
+The core goal of having a "model type" is to give a hint on the architecture of the model. 
+
+| adjective | immediate plan                                                                                                                                                                          | future plan                                                                                   | eventual plan                                                                              |
+|-----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|
+| fast      | Goal of good enough results. Adam optimizer. Materialize when possible to avoid duplicate operations. Always 32-bit. Only use bias on final output. Minimum necessary model complexity. | Leverage vectorization on cpu memory.                                                         | Use GPU when possible and support quantization (16/8 bit) when available.                  |
+| small     | Goal of good enough results. MBDD optimizer. Materialize only when necessary. Use 8-bit or 16-bit when possible. Only use bias on final output. Minimum necessary model complexity.     | Page large tensors to disk when not in use. Use Sparse Tensors for inputs if it saves memory. | Distributed execution? Maybe there's a way to have different layers on different machines. |
+| accurate  | Goal of great results. SGDM optimizer. Materialize only when necessary. Always 32-bit. Use bias on more layers when it increases accuracy. Maximum model complexity.                    | Use Sparse Tensors for inputs if it saves memory.                                             | Distributed execution? Maybe there's a way to have different layers on different machines. |
 
 Accurate will be the default.
 
@@ -148,10 +154,12 @@ but we continue to experiment if we don't meet our goal of 90% accuracy.
 People might also want a "sort of" adverb, like "sort of fast" or "sort of small", but I don't think I'll go that far.
 
 ## Predict
+I like the word "predict" because it is very simple english and it reminds people that the results aren't definitive. Infer is a less common word and while is roughly synonymous, it feels more like jargon to me. 
+
 
 `predict using <model name> [<model version>] given <input>`
 
-or
+or maybe
 
 `infer using <model name> [<model version>] given <input>`
 
@@ -167,6 +175,10 @@ validate model <model name> [<knowledge label>] using <data set name>
 ```
 
 ## Add
+
+NOTE: I'm having second thoughts about this. I think datasets need to be immutable in order
+to make other functionality robust. I may instead want a PUT-like command to upload a file,
+or simply rely on something outside the script to make files available.
 
 ```
 add rows to dataset <name> using delimited data:

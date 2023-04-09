@@ -20,7 +20,7 @@ int main() {
         //"..\\data\\mnist_test.csv"
         //"..\\data\\mnist_train.csv"
         cout << "Loading training data..." << endl;
-        auto mnistDataSource = make_shared<InMemoryDelimitedValuesTrainingDataSet>("..\\data\\mnist_train.csv", ',',
+        auto mnistDataSource = loadDelimitedValuesDataset("..\\data\\mnist_train.csv", ',',
                                                                                    true, false, true,
                                                                                    1, 28 * 28,
                                                                                    vector<size_t>{1, 10, 1},
@@ -28,7 +28,7 @@ int main() {
                                                                                    expectedEncoder, givenEncoder);
         cout << "Loaded training data." << endl;
         cout << "Loading test data..." << endl;
-        auto testMnistDataSource = make_shared<InMemoryDelimitedValuesTrainingDataSet>("..\\data\\mnist_test.csv", ',',
+        auto testMnistDataSource = loadDelimitedValuesDataset("..\\data\\mnist_test.csv", ',',
                                                                                        true, false, true,
                                                                                        1, 28 * 28,
                                                                                        vector<size_t>{1, 10, 1},
