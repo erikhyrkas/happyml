@@ -42,6 +42,7 @@ chance that I'm the only one that uses this, and so it makes sense to build it f
 | recommendations | given historical data, what are recommended things                     | low       | Common use case        | 
 | matching        | given a primary record and X return match probabilities                | low       | Common use case        |
 
+One of the parameters for a model may be to "value=speed" or "value=accuracy" or "value=memory".
 
 Refine the underlying model from a checkpoint (label) using a dataset.
 ```
