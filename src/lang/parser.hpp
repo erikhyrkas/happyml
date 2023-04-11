@@ -41,6 +41,14 @@ namespace happyml {
             return make_shared<ParseResult>(error_message.str(), false);
         }
 
+        static shared_ptr<ParseResult> parseHelpStatement(const shared_ptr<TokenStream> &stream) {
+            if (!stream->hasNext()) {
+                return make_shared<ParseResult>(make_shared<HelpStatement>());
+            }
+            auto next = stream->next();
+            return make_shared<ParseResult>(make_shared<HelpStatement>( next->getValue()));
+        }
+
         static int parseColumnValue(const shared_ptr<TokenStream> &stream) {
             try {
                 return stoi(stream->next()->getValue());
@@ -165,7 +173,15 @@ namespace happyml {
             while (stream->hasNext()) {
                 auto next = stream->next();
                 string label = next->getLabel();
-                if ("_create" == label) {
+                if( "_newline" == next->getLabel()) {
+                    continue;
+                } else if ("_help" == label) {
+                    auto helpStatementResult = parseHelpStatement(stream);
+                    if (!helpStatementResult->isSuccessful()) {
+                        return helpStatementResult;
+                    }
+                    codeBlock->addChild(helpStatementResult->getExecutable());
+                } else if ("_create" == label) {
                     auto createStatementResult = parseCreateStatement(stream);
                     if (!createStatementResult->isSuccessful()) {
                         return createStatementResult;

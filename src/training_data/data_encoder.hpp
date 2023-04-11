@@ -19,11 +19,19 @@ using namespace std;
 
 namespace happyml {
 
-    string stringTrim(string text) {
+    string strip(string text) {
         // we intentionally copy the string so we can trim it
         text.erase(text.begin(), std::find_if(text.begin(), text.end(), [](unsigned char ch) {
             return !std::isspace(ch);
         }));
+        text.erase(std::find_if(text.rbegin(), text.rend(), [](unsigned char ch) {
+            return !std::isspace(ch);
+        }).base(), text.end());
+        return text;
+    }
+
+    string trimEnd(string text) {
+        // we intentionally copy the string so we can trim it
         text.erase(std::find_if(text.rbegin(), text.rend(), [](unsigned char ch) {
             return !std::isspace(ch);
         }).base(), text.end());
@@ -63,7 +71,7 @@ namespace happyml {
                 for (size_t row = 0; row < rows; row++) {
                     result[channel][row].resize(columns);
                     for (size_t column = 0; column < columns; column++) {
-                        string word = trim ? stringTrim(words[offset]) : words[offset];
+                        string word = trim ? strip(words[offset]) : words[offset];
                         // we store the value as percentage of 255.
                         result[channel][row][column] = stringToFloat(word) / 255.f;
                         offset++;
@@ -86,7 +94,7 @@ namespace happyml {
                 for (size_t row = 0; row < rows; row++) {
                     result[channel][row].resize(columns);
                     for (size_t column = 0; column < columns; column++) {
-                        string word = trim ? stringTrim(words[offset]) : words[offset];
+                        string word = trim ? strip(words[offset]) : words[offset];
                         result[channel][row][column] = stringToFloat(word);
                         offset++;
                     }
@@ -129,7 +137,7 @@ namespace happyml {
             for (const auto &word: words) {
                 size_t column_offset;
                 if (trim) {
-                    column_offset = categoryMapping.at(stringTrim(word));
+                    column_offset = categoryMapping.at(strip(word));
                 } else {
                     column_offset = categoryMapping.at(word);
                 }

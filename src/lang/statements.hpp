@@ -7,6 +7,7 @@
 
 #include <string>
 #include <iostream>
+#include <utility>
 #include "execution_context.hpp"
 
 using namespace std;
@@ -20,6 +21,67 @@ namespace happyml {
             return make_shared<ExecutionResult>(true);
         }
     };
+
+    class HelpStatement : public ExecutableStatement {
+    public:
+        explicit HelpStatement(string help_menu_item = "default") : help_menu_item_(std::move(help_menu_item)) {
+
+        }
+
+        shared_ptr<ExecutionResult> execute(const shared_ptr<ExecutionContext> &context) override {
+
+            if (help_menu_item_ == "dataset" || help_menu_item_ == "datasets") {
+                cout << "Available commands: " << endl;
+                cout << "  create dataset <name> \n"
+                        "  [with config <key> <value>] \n"
+                        "  [with expected [<scalar|category|pixel>] at <column> [through <column>] ]\n"
+                        "  [with given [<scalar|category|pixel>] at <column> [through <column>] ]\n"
+                        "  using <local file or folder|url>\n"
+                     << endl << endl;
+                cout << "  list datasets [<starting with x>]" << endl << endl;
+
+            } else if (help_menu_item_ == "task" || help_menu_item_ == "tasks") {
+                cout << "Available commands: " << endl;
+                cout << "  create task <task type> <task name> \n"
+                        "  [with config <key> <value>]\n"
+                        "  using <dataset name>"
+                     << endl << endl;
+                cout << "  execute task <task name> \n"
+                        "  [with label <label>] \n"
+                        "  [with config <key> <value>] \n"
+                        "  using dataset <dataset>" << endl << endl;
+                cout << "  list tasks [<starting with x>]" << endl << endl;
+                cout << "  refine task <task name> \n"
+                        "  [with label [label]] \n"
+                        "  [with config <key> <value>] \n"
+                        "  using dataset <dataset name>" << endl << endl;
+
+            } else if (help_menu_item_ == "future") {
+                cout << "Future commands: " << endl;
+                cout << "  copy <task name> [<label>] to [<task name>] [<label>]" << endl << endl;
+                cout << "  copy <dataset name> to [<dataset name>]" << endl << endl;
+                cout << "  delete <task name> [<label>]" << endl << endl;
+                cout << "  delete <dataset name>" << endl << endl;
+
+                cout << "  execute task <task name> \n"
+                        "  [with label <label>] \n"
+                        "  [with config <key> <value>] \n"
+                        "  using input <csv encoded row>" << endl << endl;
+                cout << "  move <task name> [<label>] to [<task name>] [<label>]" << endl << endl;
+                cout << "  move <dataset name> to [<dataset name>] [<label>]" << endl << endl;
+            } else {
+                cout << "Available commands: " << endl;
+                cout << "  exit" << endl << endl;
+                cout << "  help [dataset|task|future]" << endl << endl;
+            }
+
+            return make_shared<ExecutionResult>(false);
+        }
+
+    private:
+        string help_menu_item_;
+    };
+
 
     class CreateDatasetStatement : public ExecutableStatement {
     public:

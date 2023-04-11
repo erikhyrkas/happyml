@@ -10,6 +10,66 @@ it didn't seem useful, or at least it seemed like it would take too much underst
 
 So, here's v2. I reserve the right to just change my mind again, but for the moment, this idea seems slightly better.
 
+# Comments
+
+# Keywords
+
+This will probably change, but after writing up the sample commands that I think I want with the syntax 
+that I think I want, here are the keywords I'm currently planning:
+
+* at
+* config
+* copy
+* create
+* dataset
+* datasets
+* delete
+* execute
+* expected
+* exit
+* given
+* help
+* input
+* label
+* list
+* move
+* pixel
+* refine
+* scalar
+* task
+* tasks
+* through
+* to
+* using
+* value
+* with
+
+# Basics
+
+There are 4 help menus. If you type "help" on its own, it will show you the top level menu with basic commands,
+and if you type with a submenu name, it will show you details from that submenu. 
+```
+  help [dataset|task|future]
+```
+
+You are done with your happyml session and want to exit.
+```
+  exit
+```
+
+Comments:
+```
+  # This is a comment. I am to remind us later why we wrote it this way.
+```
+
+For the CLI, commands are all contained on a single line, but if you need to continue the line you can use the `\` character.
+When describing syntax options below, I don't include the `\` because I'm just trying to show everything as 
+neatly as possible. Here's an example of having a line continue:
+```
+  create task label my_task_name \
+  using my_dataset
+```
+
 # Tasks
 
 I decided that creating "models" may be too math-y. And not really focused on the end user. I think the goal is to
@@ -18,10 +78,11 @@ but maybe even slightly more than that, because they may automate some of the lo
 purpose. In the original v1 spec, I even mentioned that I really wasn't a fan of having users create models, but at
 the time, I hadn't thought of another approach. Now, I have.
 
-
 Generate the task (which is more or less training a model and creating a default label) using a dataset:
 ```
-create task <task name> for <task type> with parameters <task specific parameters> using <dataset name>
+  create task <task type> <task name> 
+  [with config <key> <value>]
+  using <dataset name>
 ```
 
 Brainstorming some task types below, but the names and such could all be refined. There could be so many more. This
@@ -30,45 +91,83 @@ try my hand at, but this list could get really long. I'd prioritize them based o
 then what I find most interesting and then what I think would be most useful to others. Why? Because there's a good
 chance that I'm the only one that uses this, and so it makes sense to build it for my interests first.
 
-| task type       | description                                                            | priority  | Why                    |
-|-----------------|------------------------------------------------------------------------|-----------|------------------------|
-| label image     | given an image, apply a label from a list                              | immediate | Existing functionality |
-| label text      | given text, apply a label from a list                                  | immediate | Existing functionality |
-| complete text   | given text, complete it. (Causal language models.)                     | high      | Personal interest      |
-| summarize text  | given text, create a summary.                                          | moderate  | Personally useful      |
-| best move       | given state, find best move (chess for sure, but maybe other options?) | moderate  | Personally fun         |
-| image from text | given text, generate an image                                          | moderate  | Personally fun         |
-| time series     | given past data points, predict future data points                     | low       | Common use case        |
-| recommendations | given historical data, what are recommended things                     | low       | Common use case        | 
-| matching        | given a primary record and X return match probabilities                | low       | Common use case        |
+My observation is that my entire initial list involves supervised learning methods (you teach the model by showing it
+a large set of data with each row in the format of "given input and expected output" pair, and then later just give
+the trained model the input, and it spits out the output.) There are many great unsupervised learning tasks and are
+interesting, but they get off the beaten path of what I've been building so far. Maybe in the future, we can circle
+back for them.
 
-One of the parameters for a task may be to "value=speed" or "value=accuracy" or "value=memory".
+Possible task types:
+
+| task type | description                                                  | priority  | Why                         |
+|-----------|--------------------------------------------------------------|-----------|-----------------------------|
+| label     | given an image or text, apply a label from a list            | immediate | Uses existing functionality |
+| estimate  | given data, estimate one or more values                      | immediate | Uses existing functionality |
+| generate  | given text and/or an image generate text and/or an image     | high      | Personal interest           |
+| summarize | Paraphrase/summarize text                                    | moderate  | Personally useful           |
+| win       | given game state, find best move (chess, go, and others?)    | low       | Personally fun              |
+| complete  | given past data points, predict future data points           | low       | Common use case             |
+| recommend | given historical data, what are recommended things           | low       | Common use case             | 
+| match     | given a primary record and X return match probabilities      | low       | Common use case             |
+| rank      | given viewer metadata plus X records, return record rankings | low       | Common use case             |
+
+I didn't get very granular with the tasks, except "win", which I imagine using a similar process as
+label, with a monte carlo algorithm on top. I mean, a lot of tasks could be seen as subtasks. For example, you
+might want to "score" data/documents in a specific way. You could just look at this applying labels and looking 
+at the probability of a label being true to act as a score. One could argue that "win" shouldn't be an option
+and that the caller should just use label first and then implement their own monte carlo algorithm, but I
+think that there aren't enough people who understand how to do this and yet there are a large group of people who
+would benefit from being able to apply it to the game of their choice. 
+
+Possible parameters:
+
+| Parameter | Values                     |
+|-----------|----------------------------|
+| value     | speed, accuracy, or memory |
+
 
 Refine the underlying model from a checkpoint (label) using a dataset.
 ```
-refine task <task name> [label] using <dataset name> [<label>]
+  refine task <task name> 
+  [with label [label]] 
+  [with config <key> <value>] 
+  using dataset <dataset name>
 ```
 
 List the existing tasks and checkpoints. 
 ```
-list tasks [starting with <x>]
+  list tasks [<starting with x>]
 ```
 
 Execute a task. I'll start off with doing so against a dataset, since I have the needed code immediately, but 
-supporting input directly will enable other more real-time possibilities. Note: I'm pondering how to handle 
-embedded newlines with a syntax like this, since the interpreter currently assumes that a new line should execute
-the command. Sender might need to encode newlines with \n and the parser may need to handle that. We'll cross that
-bridge when we are working on that command.
+supporting input directly will enable other more real-time possibilities. The interpreter has been updated to 
+handle lines ending with a backslash (\) character by removing the backslash and keeping the newline in the text. 
+This enables the interpreter to process a CSV row with newlines. If a line ends with a backslash, the interpreter 
+reads in another line before attempting to parse the combined text as a complete command. Be sure to use quotes
+around csv text columns.
 ```
-execute task <task name> [with <label>] for dataset <dataset>
-execute task <task name> [with <label>] for input <csv encoded row>
+  execute task <task name> 
+  [with label <label>] 
+  [with config <key> <value>] 
+  using dataset <dataset>
+  
+  # Future
+  execute task <task name>
+  [with label <label>]
+  [with config <key> <value>]
+  using input <csv encoded row>    
 ```
 
-Maybe a copy, move, and delete.
+Copy, move, and delete.
 ```
-copy <task name> [<label>] to task [<task name>] label [<label>]
-move <task name> [<label>] to task [<task name>] label [<label>]
-delete <task name> [<label>]
+  # Future
+  copy <task name> [<label>] to [<task name>] [<label>]
+  
+  # Future
+  delete <task name> [<label>]
+
+  # Future
+  move <task name> [<label>] to [<task name>] [<label>]
 ```
 
 ## Create Dataset
@@ -84,8 +183,26 @@ format that has a training and testing set and can easily be shuffled without be
 This gives us the most robust, reusable, and reliable form for creating and managing datasets.
 
 ```
-create dataset <name> from <local file or folder|url> 
-[with expected [<scalar|category|pixel>] at <column> [through <column>] ] 
-[with given [<scalar|category|pixel>] at <column> [through <column>] ]
-[with testing set of <x>%]
+  create dataset <name> 
+  [with config <key> <value>]
+  [with expected [<scalar|category|pixel>] at <column> [through <column>] ]
+  [with given [<scalar|category|pixel>] at <column> [through <column>] ]
+  using <local file or folder|url>
+```
+
+List existing datasets:
+```
+  list datasets [<starting with x>]
+```
+
+Copy, move, and delete.
+```
+  # Future
+  copy <dataset name> to [<dataset name>]
+  
+  # Future
+  delete <dataset name>
+ 
+  # Future
+  move <dataset name> to [<dataset name>] [<label>]
 ```

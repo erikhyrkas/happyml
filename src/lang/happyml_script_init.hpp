@@ -18,42 +18,33 @@ namespace happyml {
         // than our scripting language. So, we pass in the patterns.
 
         vector<shared_ptr<Pattern>> patterns;
-        // objects
-        patterns.push_back(createKeywordToken("model"));
-        patterns.push_back(createKeywordToken("dataset"));
-        patterns.push_back(createKeywordToken("row"));
-        patterns.push_back(createKeywordToken("rows"));
-        patterns.push_back(createKeywordToken("column"));
-        patterns.push_back(createKeywordToken("columns"));
-        // actions
-        patterns.push_back(createKeywordToken("exit"));
-        patterns.push_back(createKeywordToken("create"));
-        patterns.push_back(createKeywordToken("train"));
-        patterns.push_back(createKeywordToken("retrain"));
-        patterns.push_back(createKeywordToken("tune"));
-        patterns.push_back(createKeywordToken("predict"));
-        patterns.push_back(createKeywordToken("infer"));
-        patterns.push_back(createKeywordToken("validate"));
-        patterns.push_back(createKeywordToken("set"));
-        patterns.push_back(createKeywordToken("let"));
-        patterns.push_back(createKeywordToken("copy"));
-        patterns.push_back(createKeywordToken("log"));
-        // criteria
-        patterns.push_back(createKeywordToken("with"));
-        patterns.push_back(createKeywordToken("at"));
-        patterns.push_back(createKeywordToken("from"));
-        patterns.push_back(createKeywordToken("through"));
-        patterns.push_back(createKeywordToken("add"));
-        patterns.push_back(createKeywordToken("using"));
-        patterns.push_back(createKeywordToken("given"));
-//            I don't think these need to be keywords.
-//            // adjectives
-//            patterns.push_back(createKeyword("fast"));
-//            patterns.push_back(createKeyword("small"));
-//            patterns.push_back(createKeyword("accurate"));
-//            patterns.push_back(createKeyword("comma"));
-//            patterns.push_back(createKeyword("tab"));
 
+        patterns.push_back(createKeywordToken("at"));
+        patterns.push_back(createKeywordToken("config"));
+        patterns.push_back(createKeywordToken("copy"));
+        patterns.push_back(createKeywordToken("create"));
+        patterns.push_back(createKeywordToken("dataset"));
+        patterns.push_back(createKeywordToken("datasets"));
+        patterns.push_back(createKeywordToken("delete"));
+        patterns.push_back(createKeywordToken("execute"));
+        patterns.push_back(createKeywordToken("expected"));
+        patterns.push_back(createKeywordToken("exit"));
+        patterns.push_back(createKeywordToken("given"));
+        patterns.push_back(createKeywordToken("help"));
+        patterns.push_back(createKeywordToken("input"));
+        patterns.push_back(createKeywordToken("label"));
+        patterns.push_back(createKeywordToken("list"));
+        patterns.push_back(createKeywordToken("move"));
+        patterns.push_back(createKeywordToken("pixel"));
+        patterns.push_back(createKeywordToken("refine"));
+        patterns.push_back(createKeywordToken("scalar"));
+        patterns.push_back(createKeywordToken("task"));
+        patterns.push_back(createKeywordToken("tasks"));
+        patterns.push_back(createKeywordToken("through"));
+        patterns.push_back(createKeywordToken("to"));
+        patterns.push_back(createKeywordToken("using"));
+        patterns.push_back(createKeywordToken("value"));
+        patterns.push_back(createKeywordToken("with"));
 
         patterns.push_back(createCommentPattern());
         patterns.push_back(createStringPattern());
@@ -67,6 +58,7 @@ namespace happyml {
         patterns.push_back(createToken("_colon", ":"));
         patterns.push_back(createToken("_slash", "/"));
         patterns.push_back(createToken("_dot", "."));
+        patterns.push_back(createToken("_percent", "%"));
         patterns.push_back(createToken("_backslash", "\\"));
         patterns.push_back(createToken("_double_quote", "\""));
         patterns.push_back(createToken("_single_quote", "\'"));

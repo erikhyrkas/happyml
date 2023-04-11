@@ -10,6 +10,7 @@
 #include <sstream>
 #include "happyml_script_init.hpp"
 #include "execution_context.hpp"
+#include "../training_data/data_encoder.hpp"
 
 using namespace std;
 
@@ -62,15 +63,29 @@ namespace happyml {
         }
 
         void interactiveInterpret() {
+            cout << "happyml v0.0.1 interpreter." << endl;
+            cout << "For a list of commands use the command: help" << endl;
+            cout << "READY" << endl;
             // interpret commandline until done
-            std::string nextLine;
+            std::string nextLine, fullLine;
             cout << "> ";
             while (std::getline(std::cin, nextLine)) {
-                const bool done = interpretCommands(nextLine, "cli");
-                if (done) {
-                    break;
+                nextLine = trimEnd(nextLine);
+                if (nextLine.back() == '\\') {
+                    // Remove the backslash and add the line to the buffer
+                    nextLine.pop_back();
+                    fullLine += nextLine + '\n';
+                } else {
+                    // Add the line to the buffer and interpret the command
+                    fullLine += nextLine;
+                    const bool done = interpretCommands(fullLine, "cli");
+                    if (done) {
+                        break;
+                    }
+                    // Reset the buffer for the next command
+                    fullLine.clear();
+                    cout << "> ";
                 }
-                cout << "> ";
             }
         }
 
