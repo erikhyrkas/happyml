@@ -104,6 +104,9 @@ namespace happyml {
                 }
                 auto datasetName = stream->next();
                 string name = datasetName->getValue();
+                if (datasetName->getLabel() != "_word") {
+                    return generateError("create dataset name is invalid: ", datasetName);
+                }
                 if (!stream->hasNext(2)) {
                     return generateError("create dataset requires a location: ", datasetName);
                 }
