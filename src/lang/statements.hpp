@@ -31,47 +31,53 @@ namespace happyml {
         shared_ptr<ExecutionResult> execute(const shared_ptr<ExecutionContext> &context) override {
 
             if (help_menu_item_ == "dataset" || help_menu_item_ == "datasets") {
-                cout << "Available commands: " << endl;
-                cout << "  create dataset <name> \n"
-                        "  [with config <key> <value>] \n"
-                        "  [with expected [<scalar|category|pixel>] at <column> [through <column>] ]\n"
-                        "  [with given [<scalar|category|pixel>] at <column> [through <column>] ]\n"
-                        "  using <local file or folder|url>\n"
-                     << endl << endl;
+                cout << "Available dataset commands: " << endl;
+                cout << "  create dataset <name>" << endl
+                     << "  [with expected [<scalar|category|pixel|text>] at <column> [through <column>] ]" << endl
+                     << "  [with given [<scalar|category|pixel|text>] at <column> [through <column>] ]" << endl
+                     << "  using <file://path/>" << endl << endl;
+
                 cout << "  list datasets [<starting with x>]" << endl << endl;
 
             } else if (help_menu_item_ == "task" || help_menu_item_ == "tasks") {
-                cout << "Available commands: " << endl;
-                cout << "  create task <task type> <task name> \n"
-                        "  [with config <key> <value>]\n"
-                        "  using <dataset name>"
-                     << endl << endl;
-                cout << "  execute task <task name> \n"
-                        "  [with label <label>] \n"
-                        "  [with config <key> <value>] \n"
-                        "  using dataset <dataset>" << endl << endl;
+                cout << "Available task commands: " << endl;
+                cout << "  create task <task type> <task name>" << endl
+                     << "  [with goal <speed|accuracy|memory>]" << endl
+                     << "  using <dataset name>" << endl << endl;
+
+                cout << "  execute task <task name>" << endl
+                     << "  [with label <label>]" << endl
+                     << "  using dataset <dataset>" << endl << endl;
+
                 cout << "  list tasks [<starting with x>]" << endl << endl;
-                cout << "  refine task <task name> \n"
-                        "  [with label [label]] \n"
-                        "  [with config <key> <value>] \n"
-                        "  using dataset <dataset name>" << endl << endl;
+
+                cout << "  refine task <task name>" << endl
+                     << "  [with goal <speed|accuracy|memory>]" << endl
+                     << "  [with label [label]]" << endl
+                     << "  using dataset <dataset name>" << endl << endl;
 
             } else if (help_menu_item_ == "future") {
                 cout << "Future commands: " << endl;
                 cout << "  copy <task name> [<label>] to [<task name>] [<label>]" << endl << endl;
+
                 cout << "  copy <dataset name> to [<dataset name>]" << endl << endl;
+
                 cout << "  delete <task name> [<label>]" << endl << endl;
+
                 cout << "  delete <dataset name>" << endl << endl;
 
-                cout << "  execute task <task name> \n"
-                        "  [with label <label>] \n"
-                        "  [with config <key> <value>] \n"
-                        "  using input <csv encoded row>" << endl << endl;
+                cout << "  execute task <task name>" << endl
+                     << "  [with goal <speed|accuracy|memory>]" << endl
+                     << "  [with label <label>]" << endl
+                     << "  using input <csv encoded row>" << endl << endl;
+
                 cout << "  move <task name> [<label>] to [<task name>] [<label>]" << endl << endl;
+
                 cout << "  move <dataset name> to [<dataset name>] [<label>]" << endl << endl;
             } else {
                 cout << "Available commands: " << endl;
                 cout << "  exit" << endl << endl;
+
                 cout << "  help [dataset|task|future]" << endl << endl;
             }
 
@@ -85,12 +91,11 @@ namespace happyml {
 
     class CreateDatasetStatement : public ExecutableStatement {
     public:
-        CreateDatasetStatement(string name, string location, string fileFormat,
-                               string expectedType, size_t expectedTo, size_t expectedFrom,
-                               string givenType, size_t givenTo, size_t givenFrom) :
+        CreateDatasetStatement(string name, string location,
+                               string expectedType, int expectedTo, int expectedFrom,
+                               string givenType, int givenTo, int givenFrom) :
                 name(std::move(name)),
                 location(std::move(location)),
-                fileFormat(std::move(fileFormat)),
                 expectedType(std::move(expectedType)),
                 expectedFrom(expectedFrom),
                 expectedTo(expectedTo),
@@ -101,28 +106,48 @@ namespace happyml {
 
         shared_ptr<ExecutionResult> execute(const shared_ptr<ExecutionContext> &context) override {
             // default to success if there are no children.
-            shared_ptr<ExecutionResult> lastResult = make_shared<ExecutionResult>();
-            // TODO: create dataset
-            cout << "create dataset " << name << " from " << location
-                 << " with format " << fileFormat
+            if (location.find("file://") != 0) {
+                return make_shared<ExecutionResult>(false, false,
+                                                    "create dataset only supports file:// location type at the moment.");
+            }
+            if (expectedType != "scalar" &&
+                expectedType != "category" &&
+                expectedType != "pixel" &&
+                expectedType != "text") {
+                return make_shared<ExecutionResult>(false, false,
+                                                    "create dataset's expected type must be one of: scalar, category, pixel, or text.");
+            }
+            if (givenType != "scalar" &&
+                givenType != "category" &&
+                givenType != "pixel" &&
+                givenType != "text") {
+                return make_shared<ExecutionResult>(false, false,
+                                                    "create dataset's given type must be one of: scalar, category, pixel, or text.");
+            }
+            //  create dataset <name>
+            //  [with expected [<scalar|category|pixel|text>] at <column> [through <column>] ]
+            //  [with given [<scalar|category|pixel|text>] at <column> [through <column>] ]
+            //  using <file://path/>
+
+            cout << "create dataset " << name
                  << " with expected " << expectedType << " at " << expectedTo << " through "
                  << expectedFrom
                  << " with given " << givenType << " at " << givenTo << " through "
                  << givenFrom
+                 << " using " << location
                  << endl;
-            return lastResult;
+            return make_shared<ExecutionResult>(false, true, "Created.");;
         }
 
     private:
         string name;
         string location;
-        string fileFormat;
         string expectedType;
-        size_t expectedFrom;
-        size_t expectedTo;
+        int expectedFrom;
+        int expectedTo;
         string givenType;
-        size_t givenFrom;
-        size_t givenTo;
+        int givenFrom;
+        int givenTo;
     };
 
     class CodeBlock : public ExecutableStatement {

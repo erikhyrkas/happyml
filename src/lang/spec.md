@@ -81,7 +81,7 @@ the time, I hadn't thought of another approach. Now, I have.
 Generate the task (which is more or less training a model and creating a default label) using a dataset:
 ```
   create task <task type> <task name> 
-  [with config <key> <value>]
+  [with goal <speed|accuracy|memory>]
   using <dataset name>
 ```
 
@@ -119,18 +119,12 @@ and that the caller should just use label first and then implement their own mon
 think that there aren't enough people who understand how to do this and yet there are a large group of people who
 would benefit from being able to apply it to the game of their choice. 
 
-Possible parameters:
-
-| Parameter | Values                     |
-|-----------|----------------------------|
-| value     | speed, accuracy, or memory |
-
 
 Refine the underlying model from a checkpoint (label) using a dataset.
 ```
   refine task <task name> 
   [with label [label]] 
-  [with config <key> <value>] 
+  [with goal <speed|accuracy|memory>]
   using dataset <dataset name>
 ```
 
@@ -148,13 +142,11 @@ around csv text columns.
 ```
   execute task <task name> 
   [with label <label>] 
-  [with config <key> <value>] 
   using dataset <dataset>
   
   # Future
   execute task <task name>
   [with label <label>]
-  [with config <key> <value>]
   using input <csv encoded row>    
 ```
 
@@ -182,12 +174,13 @@ format that has a training and testing set and can easily be shuffled without be
 
 This gives us the most robust, reusable, and reliable form for creating and managing datasets.
 
+Note: supporting "file://" initially. Eventually I'd like to support http and maybe https. Each come with a 
+certain amount of work when it comes to ensuring a cross-platform solution. 
 ```
   create dataset <name> 
-  [with config <key> <value>]
-  [with expected [<scalar|category|pixel>] at <column> [through <column>] ]
-  [with given [<scalar|category|pixel>] at <column> [through <column>] ]
-  using <local file or folder|url>
+  [with expected [<scalar|category|pixel|text>] at <column> [through <column>] ]
+  [with given [<scalar|category|pixel|text>] at <column> [through <column>] ]
+  using <file://path/>
 ```
 
 List existing datasets:

@@ -95,10 +95,10 @@ namespace happyml {
         static shared_ptr<ParseResult> parseCreateDataset(const shared_ptr<TokenStream> &stream,
                                                           shared_ptr<Token> &next) {
             try {
-                //create dataset <name> from <local file|local folder|url>
-                //[with format <delimited|image>]
-                //[with expected [<scalar|category|pixel>] at <column> [through <column>] ]
-                //[with given [<scalar|category|pixel>] at <column> [through <column>] ]
+                //  create dataset <name>
+                //  [with expected [<scalar|category|pixel|text>] at <column> [through <column>] ]
+                //  [with given [<scalar|category|pixel|text>] at <column> [through <column>] ]
+                //  using <local file or folder|url>
                 if (!stream->hasNext()) {
                     return generateError("create dataset requires a name: ", next);
                 }
@@ -107,12 +107,6 @@ namespace happyml {
                 if (!stream->hasNext(2)) {
                     return generateError("create dataset requires a location: ", datasetName);
                 }
-                auto fromKeyword = stream->next();
-                if ("_from" != fromKeyword->getLabel()) {
-                    return generateError("Invalid token at: ", fromKeyword);
-                }
-                string location = parseLocation(stream);
-                string fileFormat = "delimited";
                 string expectedType = "scalar";
                 int expectedFrom = 0;
                 int expectedTo = -1;
@@ -137,16 +131,17 @@ namespace happyml {
                         }
                         givenFrom = parseColumnValue(stream);
                         givenTo = tryParseThroughRange(stream);
-                    } else if ("format" == withType) {
-                        fileFormat = stream->next()->getValue();
-                        if( "delimited" != fileFormat) {
-                            return generateError("The only file format currently supported for datasets are of type delimited. Invalid format: ", stream->previous());
-                        }
                     } else {
                         return generateError("with statement is malformed ", stream->previous());
                     }
                 }
-                auto createDataset = make_shared<CreateDatasetStatement>(name, location, fileFormat,
+                auto usingKeyword = stream->next();
+                if ("_using" != usingKeyword->getLabel()) {
+                    return generateError("Invalid token at: ", usingKeyword);
+                }
+                string location = parseLocation(stream);
+
+                auto createDataset = make_shared<CreateDatasetStatement>(name, location,
                                                                          expectedType, expectedTo, expectedFrom,
                                                                          givenType, givenTo, givenFrom);
                 return make_shared<ParseResult>(createDataset);
