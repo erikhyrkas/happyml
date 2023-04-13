@@ -124,7 +124,6 @@ Refine the underlying model from a checkpoint (label) using a dataset.
 ```
   refine task <task name> 
   [with label [label]] 
-  [with goal <speed|accuracy|memory>]
   using dataset <dataset name>
 ```
 
@@ -175,11 +174,12 @@ format that has a training and testing set and can easily be shuffled without be
 This gives us the most robust, reusable, and reliable form for creating and managing datasets.
 
 Note: supporting "file://" initially. Eventually I'd like to support http and maybe https. Each come with a 
-certain amount of work when it comes to ensuring a cross-platform solution. 
+certain amount of work when it comes to ensuring a cross-platform solution.
+
 ```
-  create dataset <name> 
-  [with expected [<scalar|category|pixel|text>] at <column> [through <column>] ]
-  [with given [<scalar|category|pixel|text>] at <column> [through <column>] ]
+  create dataset <name>
+  [with expected <label|number|text|image> at <column> [through <column>] ]*
+  [with given <label|number|text|image> at <column> [through <column>] ]*   
   using <file://path/>
 ```
 

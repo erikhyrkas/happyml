@@ -214,6 +214,19 @@ namespace happyml {
         }
     };
 
+    class WordBodyPatternMatcher : public PatternMatcher {
+    public:
+        shared_ptr<PatternMatchResult> match(const string &text, size_t offset, size_t scanLimit) override {
+            if (offset < std::min(text.length(), scanLimit)) {
+                auto nextChar = text[offset];
+                if (::isalnum(nextChar) || '_' == nextChar) {
+                    return make_shared<PatternMatchResult>(1);
+                }
+            }
+            return nullptr;
+        }
+    };
+
     // TODO: this could probably be refactored to be "NotPattern" and take in
     //  any pattern, but I didn't have the energy to figure it out at the
     //  time.
@@ -329,7 +342,7 @@ namespace happyml {
 
     shared_ptr<Pattern> createWordPattern() {
         const auto alphaToken = make_shared<AlphaPatternMatcher>();
-        const auto alphaNumericToken = make_shared<AlphaNumericPatternMatcher>();
+        const auto alphaNumericToken = make_shared<WordBodyPatternMatcher>();
         const auto repeatTokens = make_shared<FrequencyPatternMatcher>(alphaNumericToken,
                                                                        FrequencyQualifier::zeroOrMore);
         vector<shared_ptr<PatternMatcher>> patterns{alphaToken, repeatTokens};

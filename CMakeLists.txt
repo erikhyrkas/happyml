@@ -22,9 +22,14 @@ add_executable(example_mnist_model_full src/example/example_mnist_model_full.cpp
 
 add_executable(example_bpe_model src/example/example_bpe_model.cpp)
 
-# Need to learn how to use CTest and convert the tests to use it.
-# https://cmake.org/cmake/help/book/mastering-cmake/chapter/Testing%20With%20CMake%20and%20CTest.html
-# What you see below is me doing what I knew would work for local testing.
+# TODO: Need to learn how to use CTest and convert the tests to use it.
+#  https://cmake.org/cmake/help/book/mastering-cmake/chapter/Testing%20With%20CMake%20and%20CTest.html
+#  What you see below is me doing what I knew would work for local testing.
+#  Keep in mind, I work in a lot of programing languages and sometimes I'm rusty or
+#  don't keep up with changes... or never learned about it from the beginning.
+#  I'm of the opinion that it's better to do a whole project with what you know rather
+#  than do a small portion of a project perfectly and never finish. I will eventually
+#  circle back and take what I learned to do this better.
 add_executable(test_quarter_float src/test/test_quarter_float.cpp)
 
 add_executable(test_tensor src/test/test_tensor.cpp)
@@ -48,3 +53,5 @@ add_executable(test_byte_pair_encoding src/test/test_byte_pair_encoding.cpp)
 add_executable(test_rotary_positional_embedding src/test/test_rotary_positional_embedding.cpp)
 
 add_executable(test_one_hot_encoding src/test/test_one_hot_encoding.cpp)
+
+add_executable(test_create_dataset_statement src/test/test_create_dataset_statement.cpp)

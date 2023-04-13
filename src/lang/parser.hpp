@@ -81,7 +81,8 @@ namespace happyml {
             url << scheme->getValue() << "://";
             auto nextLabel = stream->peek()->getLabel();
             while ("_word" == nextLabel || "_slash" == nextLabel || "_backslash" == nextLabel
-                   || "_dot" == nextLabel || "_colon" == nextLabel) {
+                   || "_dot" == nextLabel || "_colon" == nextLabel || "_number" == nextLabel
+                   || "_underscore" == nextLabel) {
                 url << stream->next()->getValue();
                 if (!stream->hasNext()) {
                     break;

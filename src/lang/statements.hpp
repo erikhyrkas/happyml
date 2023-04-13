@@ -1,5 +1,5 @@
 //
-// Created by erikh on 3/25/2023.
+// Created by Erik Hyrkas on 3/25/2023.
 //
 
 #ifndef HAPPYML_STATEMENTS_HPP
@@ -8,6 +8,7 @@
 #include <string>
 #include <iostream>
 #include <utility>
+#include <vector>
 #include "execution_context.hpp"
 
 using namespace std;
@@ -33,8 +34,8 @@ namespace happyml {
             if (help_menu_item_ == "dataset" || help_menu_item_ == "datasets") {
                 cout << "Available dataset commands: " << endl;
                 cout << "  create dataset <name>" << endl
-                     << "  [with expected [<scalar|category|pixel|text>] at <column> [through <column>] ]" << endl
-                     << "  [with given [<scalar|category|pixel|text>] at <column> [through <column>] ]" << endl
+                     << "  [with expected <label|number|text|image> at <column> [through <column>] ]*" << endl
+                     << "  [with given <label|number|text|image> at <column> [through <column>] ]*" << endl
                      << "  using <file://path/>" << endl << endl;
 
                 cout << "  list datasets [<starting with x>]" << endl << endl;
@@ -52,7 +53,6 @@ namespace happyml {
                 cout << "  list tasks [<starting with x>]" << endl << endl;
 
                 cout << "  refine task <task name>" << endl
-                     << "  [with goal <speed|accuracy|memory>]" << endl
                      << "  [with label [label]]" << endl
                      << "  using dataset <dataset name>" << endl << endl;
 
@@ -67,7 +67,6 @@ namespace happyml {
                 cout << "  delete <dataset name>" << endl << endl;
 
                 cout << "  execute task <task name>" << endl
-                     << "  [with goal <speed|accuracy|memory>]" << endl
                      << "  [with label <label>]" << endl
                      << "  using input <csv encoded row>" << endl << endl;
 
@@ -94,7 +93,7 @@ namespace happyml {
         CreateDatasetStatement(string name, string location,
                                string expectedType, int expectedTo, int expectedFrom,
                                string givenType, int givenTo, int givenFrom) :
-                name(std::move(name)),
+                name(std::move(name)), // TODO: fix ... create dataset has changed syntax.
                 location(std::move(location)),
                 expectedType(std::move(expectedType)),
                 expectedFrom(expectedFrom),
@@ -136,7 +135,7 @@ namespace happyml {
                  << givenFrom
                  << " using " << location
                  << endl;
-            return make_shared<ExecutionResult>(false, true, "Created.");;
+            return make_shared<ExecutionResult>(false, true, "Created.");
         }
 
     private:
@@ -171,7 +170,7 @@ namespace happyml {
         }
 
     private:
-        vector<shared_ptr<ExecutableStatement>> children;
+        vector<shared_ptr<ExecutableStatement>> children{};
     };
 }
 #endif //HAPPYML_STATEMENTS_HPP

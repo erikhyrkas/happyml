@@ -63,6 +63,7 @@ namespace happyml {
         patterns.push_back(createToken("_double_quote", "\""));
         patterns.push_back(createToken("_single_quote", "\'"));
         patterns.push_back(createToken("_comma", ","));
+        patterns.push_back(createToken("_underscore", "_"));
         patterns.push_back(createSkippedToken("_newline", "\n"));
         patterns.push_back(createSkippedToken("_tab", "\t"));
         patterns.push_back(createSkippedToken("_return", "\r"));
