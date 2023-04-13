@@ -46,7 +46,7 @@ namespace happyml {
                 return make_shared<ParseResult>(make_shared<HelpStatement>());
             }
             auto next = stream->next();
-            return make_shared<ParseResult>(make_shared<HelpStatement>( next->getValue()));
+            return make_shared<ParseResult>(make_shared<HelpStatement>(next->getValue()));
         }
 
         static int parseColumnValue(const shared_ptr<TokenStream> &stream) {
@@ -111,30 +111,36 @@ namespace happyml {
                 if (!stream->hasNext(2)) {
                     return generateError("create dataset requires a location: ", datasetName);
                 }
-                string expectedType = "scalar";
-                int expectedFrom = 0;
-                int expectedTo = -1;
-                string givenType = "scalar";
-                int givenFrom = 1;
-                int givenTo = -1;
+                vector<ColumnGroup> expected;
+                vector<ColumnGroup> given;
+//                string expectedType = "scalar";
+//                int expectedFrom = 0;
+//                int expectedTo = -1;
+//                string givenType = "scalar";
+//                int givenFrom = 1;
+//                int givenTo = -1;
 
                 while (stream->hasNext() && "_with" == stream->peek()->getLabel()) {
                     stream->consume();
                     string withType = stream->next()->getValue();
                     if ("expected" == withType) {
-                        expectedType = stream->next()->getValue();
+                        ColumnGroup columnGroup;
+                        columnGroup.dataType = stream->next()->getValue();
                         if ("_at" != stream->next()->getLabel()) {
                             return generateError("with statement is malformed: ", stream->previous());
                         }
-                        expectedFrom = parseColumnValue(stream);
-                        expectedTo = tryParseThroughRange(stream);
+                        columnGroup.startIndex = parseColumnValue(stream);
+                        columnGroup.endIndex = tryParseThroughRange(stream);
+                        expected.push_back(columnGroup);
                     } else if ("given" == withType) {
-                        givenType = stream->next()->getValue();
+                        ColumnGroup columnGroup;
+                        columnGroup.dataType = stream->next()->getValue();
                         if ("_at" != stream->next()->getLabel()) {
                             return generateError("with statement is malformed: ", stream->previous());
                         }
-                        givenFrom = parseColumnValue(stream);
-                        givenTo = tryParseThroughRange(stream);
+                        columnGroup.startIndex = parseColumnValue(stream);
+                        columnGroup.endIndex = tryParseThroughRange(stream);
+                        given.push_back(columnGroup);
                     } else {
                         return generateError("with statement is malformed ", stream->previous());
                     }
@@ -145,9 +151,7 @@ namespace happyml {
                 }
                 string location = parseLocation(stream);
 
-                auto createDataset = make_shared<CreateDatasetStatement>(name, location,
-                                                                         expectedType, expectedTo, expectedFrom,
-                                                                         givenType, givenTo, givenFrom);
+                auto createDataset = make_shared<CreateDatasetStatement>(name, location, expected, given);
                 return make_shared<ParseResult>(createDataset);
             } catch (runtime_error &e) {
                 return generateError(e.what(), stream->previous());
@@ -172,7 +176,7 @@ namespace happyml {
             while (stream->hasNext()) {
                 auto next = stream->next();
                 string label = next->getLabel();
-                if( "_newline" == next->getLabel()) {
+                if ("_newline" == next->getLabel()) {
                     continue;
                 } else if ("_help" == label) {
                     auto helpStatementResult = parseHelpStatement(stream);

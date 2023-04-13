@@ -88,19 +88,22 @@ namespace happyml {
     };
 
 
+    struct ColumnGroup {
+        string dataType;
+        int startIndex;
+        int endIndex;
+    };
+
     class CreateDatasetStatement : public ExecutableStatement {
     public:
-        CreateDatasetStatement(string name, string location,
-                               string expectedType, int expectedTo, int expectedFrom,
-                               string givenType, int givenTo, int givenFrom) :
-                name(std::move(name)), // TODO: fix ... create dataset has changed syntax.
+        CreateDatasetStatement(string name,
+                               string location,
+                               vector<ColumnGroup> expected,
+                               vector<ColumnGroup> given) :
+                name(std::move(name)),
                 location(std::move(location)),
-                expectedType(std::move(expectedType)),
-                expectedFrom(expectedFrom),
-                expectedTo(expectedTo),
-                givenType(std::move(givenType)),
-                givenFrom(givenFrom),
-                givenTo(givenTo) {
+                expected_(std::move(expected)),
+                given_(std::move(given)) {
         }
 
         shared_ptr<ExecutionResult> execute(const shared_ptr<ExecutionContext> &context) override {
@@ -109,44 +112,46 @@ namespace happyml {
                 return make_shared<ExecutionResult>(false, false,
                                                     "create dataset only supports file:// location type at the moment.");
             }
-            if (expectedType != "scalar" &&
-                expectedType != "category" &&
-                expectedType != "pixel" &&
-                expectedType != "text") {
-                return make_shared<ExecutionResult>(false, false,
-                                                    "create dataset's expected type must be one of: scalar, category, pixel, or text.");
+            for(const auto &columnGroup : expected_) {
+                if (columnGroup.dataType != "label" &&
+                        columnGroup.dataType != "number" &&
+                        columnGroup.dataType != "text" &&
+                        columnGroup.dataType != "image") {
+                    return make_shared<ExecutionResult>(false, false,
+                                                        "create dataset's expected type must be one of: scalar, category, pixel, or text.");
+                }
+                // todo
             }
-            if (givenType != "scalar" &&
-                givenType != "category" &&
-                givenType != "pixel" &&
-                givenType != "text") {
-                return make_shared<ExecutionResult>(false, false,
-                                                    "create dataset's given type must be one of: scalar, category, pixel, or text.");
+            for(const auto &columnGroup : given_) {
+                if (columnGroup.dataType != "label" &&
+                    columnGroup.dataType != "number" &&
+                    columnGroup.dataType != "text" &&
+                    columnGroup.dataType != "image") {
+                    return make_shared<ExecutionResult>(false, false,
+                                                        "create dataset's given type must be one of: scalar, category, pixel, or text.");
+                }
+                // todo
             }
             //  create dataset <name>
-            //  [with expected [<scalar|category|pixel|text>] at <column> [through <column>] ]
-            //  [with given [<scalar|category|pixel|text>] at <column> [through <column>] ]
+            //  [with expected <label|number|text|image> at <column> [through <column>] ]*
+            //  [with given <label|number|text|image> at <column> [through <column>] ]*
             //  using <file://path/>
 
-            cout << "create dataset " << name
-                 << " with expected " << expectedType << " at " << expectedTo << " through "
-                 << expectedFrom
-                 << " with given " << givenType << " at " << givenTo << " through "
-                 << givenFrom
-                 << " using " << location
-                 << endl;
+//            cout << "create dataset " << name
+//                 << " with expected " << expectedType << " at " << expectedTo << " through "
+//                 << expectedFrom
+//                 << " with given " << givenType << " at " << givenTo << " through "
+//                 << givenFrom
+//                 << " using " << location
+//                 << endl;
             return make_shared<ExecutionResult>(false, true, "Created.");
         }
 
     private:
         string name;
         string location;
-        string expectedType;
-        int expectedFrom;
-        int expectedTo;
-        string givenType;
-        int givenFrom;
-        int givenTo;
+        vector<ColumnGroup> expected_;
+        vector<ColumnGroup> given_;
     };
 
     class CodeBlock : public ExecutableStatement {

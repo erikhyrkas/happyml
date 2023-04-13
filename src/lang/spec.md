@@ -173,8 +173,22 @@ format that has a training and testing set and can easily be shuffled without be
 
 This gives us the most robust, reusable, and reliable form for creating and managing datasets.
 
-Note: supporting "file://" initially. Eventually I'd like to support http and maybe https. Each come with a 
-certain amount of work when it comes to ensuring a cross-platform solution.
+Right now, datasets and tasks are backed by simple files, but eventually, it would be nice to support backing 
+by a database or cloud storage. 
+
+It's also important to note that I'm not including file utilities like "union", "copy", or "delete" because 
+those operations get into managing resources in a way you could do outside happyml easily enough. I 
+considered supporting union as part of making a dataset, but the problem because validating that the 
+union was right. I'm storing the datasets in a binary format, and if things were unioned wrong, it 
+would be hard to see without making even more utilities. Instead, I decided that the caller was 
+responsible for making sure the incoming file was good before it was turned it into a dataset.
+
+Note: I'm supporting "file://" initially. Eventually I'd like to support http and maybe https, or even a 
+sql query against a database. Each option comes with a certain amount of work when it comes to ensuring 
+a cross-platform solution. Right now, making it the caller's responsibility to make a good file is
+the easiest option to support and shouldn't be terribly onerous. It will require more disk space, but I
+don't imagine that being the biggest issue, even for large datasets. If you can do those operations to
+prepare the data because of disk space, happyml isn't going to be able to do it for you.
 
 ```
   create dataset <name>

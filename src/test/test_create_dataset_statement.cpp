@@ -3,13 +3,17 @@
 //
 
 #include "../util/timers.hpp"
-#include "../lang//statements.hpp"
+#include "../lang/statements.hpp"
+#include "../util/unit_test.hpp"
 
 using namespace std;
 using namespace happyml;
 
 void test_multi_input_multi_output_create() {
-    CreateDatasetStatement test();
+    auto executionContext = make_shared<ExecutionContext>();
+    CreateDatasetStatement test("test", "file://../test_data/unit_test_1.csv", {}, {});
+    auto result = test.execute(executionContext);
+    ASSERT_TRUE(result->isSuccessful());
 }
 
 void test_sing_input_multi_output_create() {
