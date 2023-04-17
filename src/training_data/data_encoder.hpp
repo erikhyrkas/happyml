@@ -12,8 +12,12 @@
 #include <cctype>
 #include <locale>
 #include <map>
+#include <utility>
 #include "../types/tensor.hpp"
 #include "../util/tensor_utils.hpp"
+#include "../ml/byte_pair_encoder.hpp"
+#include "../ml/rotary_positional_embedding.hpp"
+#include "../util/one_hot_encoder.hpp"
 
 using namespace std;
 
@@ -104,7 +108,7 @@ namespace happyml {
         }
     };
 
-    // TODO: we should be able to calculate category labels from a column
+    // See get_distinct_values() in dataset_utils.hpp for how to calculate the category labels.
     class TextToUniqueCategoryEncoder : public DataEncoder {
     public:
         explicit TextToUniqueCategoryEncoder(const vector<string> &categoryLabels) {
@@ -152,6 +156,49 @@ namespace happyml {
         map<string, size_t> categoryMapping;
     };
 
+    class TextToEmbeddedTokensEncoder : public DataEncoder {
+    public:
+        explicit TextToEmbeddedTokensEncoder(shared_ptr <BytePairEncoderModel> bytePairEncoderModel,
+                                             shared_ptr <Embedder> embedder) :
+                bytePairEncoderModel_(std::move(bytePairEncoderModel)),
+                embedder_(std::move(embedder)) {}
+
+        shared_ptr <BaseTensor> encode(const vector<string> &columnsOfText,
+                                       size_t rows, size_t columns, size_t channels, bool trim) override {
+            // I considered just doing character-level encoding using one_hot_encode_characters(), but
+            // it would take a huge amount of memory and not produce good results. It's better to stop
+            // the caller now and let them fix their code.
+            if (bytePairEncoderModel_ == nullptr || embedder_ == nullptr) {
+                throw exception("BytePairEncoderModel and Embedder must be set.");
+            }
+            size_t largest_bpe_code = bytePairEncoderModel_->getLargestCode();
+
+            vector<vector<vector<float>>> result;
+            result.resize(channels);
+            for (size_t channel = 0; channel < channels; channel++) {
+                result[channel].resize(rows);
+                for (size_t row = 0; row < rows; row++) {
+                    result[channel][row].resize(columns);
+                }
+            }
+
+            size_t channel_offset = 0;
+            for (const auto &columnOfText: columnsOfText) {
+                vector<string> tokens = trim ? string_to_tokens(strip(columnOfText)) : string_to_tokens(columnOfText);
+                vector<u16string> bpe_encoded_tokens = bytePairEncoderModel_->encode(tokens);
+                auto one_hot_encoded = one_hot_encode_bpe_tokens(bpe_encoded_tokens, largest_bpe_code);
+                auto embedded_tokens = embedder_->embed_tokens(one_hot_encoded);
+                result[channel_offset] = embedded_tokens;
+                channel_offset++;
+            }
+
+            return tensor(result);
+        }
+
+    private:
+        shared_ptr <BytePairEncoderModel> bytePairEncoderModel_;
+        shared_ptr <Embedder> embedder_;
+    };
 
 }
 #endif //HAPPYML_DATA_ENCODER_HPP

@@ -399,7 +399,7 @@ namespace happyml {
         }
 
         void saveKnowledge(const string &modelFolderPath, const string &knowledgeLabel, bool overwrite) {
-            string fullKnowledgePath = buildKnowledgePath(modelFolderPath, knowledgeLabel, overwrite);
+            string fullKnowledgePath = initialize_knowledge_path_directory(modelFolderPath, knowledgeLabel, overwrite);
             for (const auto & headNode : headNodes) {
                 headNode->markUnsaved();
                 headNode->saveKnowledge(fullKnowledgePath);

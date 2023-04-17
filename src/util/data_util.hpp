@@ -16,11 +16,65 @@
 #include <limits>
 #include <random>
 #include <set>
+#include <functional>
 
 using namespace std;
 
 namespace happyml {
 
+    class TrieNode : public enable_shared_from_this<TrieNode> {
+    public:
+        unordered_map<char16_t, shared_ptr<TrieNode>> children;
+        u16string value_;
+        size_t key_length = 0;
+
+        void insert(const u16string &key, const u16string &value, size_t index = 0) {
+            if (index == key.size()) {
+                this->value_ = value;
+                this->key_length = key.size();
+                return;
+            }
+
+            char16_t c = key[index];
+            if (children.find(c) == children.end()) {
+                children[c] = make_shared<TrieNode>();
+            }
+            children[c]->insert(key, value, index + 1);
+        }
+
+        shared_ptr<TrieNode> find(const u16string &key, size_t index = 0) {
+            if (index == key.size()) {
+                return shared_from_this();
+            }
+
+            char16_t c = key[index];
+            if (children.find(c) == children.end()) {
+                return nullptr;
+            }
+            return children[c]->find(key, index + 1);
+        }
+    };
+
+    shared_ptr<TrieNode> build_trie_for_encode(const vector<pair<u16string, u16string>> &ordered_bpe_codes) {
+        auto root = make_shared<TrieNode>();
+
+        for (auto it = ordered_bpe_codes.rbegin(); it != ordered_bpe_codes.rend(); ++it) {
+            const auto &[key, value] = *it;
+            root->insert(key, value);
+        }
+
+        return root;
+    }
+
+    shared_ptr<TrieNode> build_trie_for_decode(const vector<pair<u16string, u16string>> &ordered_bpe_codes) {
+        auto root = make_shared<TrieNode>();
+
+        for (const auto &[key, value] : ordered_bpe_codes) {
+            root->insert(value, key);
+        }
+
+        return root;
+    }
     std::string join_strings(const std::vector<std::string> &strings, const std::string &delimiter = "") {
         std::stringstream ss;
         for (size_t i = 0; i < strings.size(); ++i) {
@@ -32,7 +86,7 @@ namespace happyml {
         return ss.str();
     }
 
-    string buildKnowledgePath(const string &modelFolderPath, const string &knowledgeLabel, bool overwrite) {
+    string initialize_knowledge_path_directory(const string &modelFolderPath, const string &knowledgeLabel, bool overwrite) {
         string fullKnowledgePath = modelFolderPath + "/" + knowledgeLabel;
         if (filesystem::is_directory(fullKnowledgePath)) {
             if (!overwrite) {
@@ -52,33 +106,47 @@ namespace happyml {
         return fullKnowledgePath;
     }
 
-    void append_char_to_tokens(char c, char &last_char, std::string &token, std::vector<std::string> &tokens) {
-        if (c == '\r') return;
 
-        if (std::isspace(static_cast<unsigned char>(c))) {
-            if (c != last_char) {
-                if (!token.empty()) {
-                    tokens.push_back(token);
-                    token.clear();
+    void append_character(char current_character,
+                          char &previous_character,
+                          std::string &current_token,
+                          const std::function<void(const std::string&)>& process_token) {
+        if (current_character == '\r') {
+            return;
+        }
+
+        if (std::isspace(static_cast<unsigned char>(current_character))) {
+            if (current_character != previous_character) {
+                if (!current_token.empty()) {
+                    process_token(current_token);
+                    current_token.clear();
                 }
-                token.push_back(c);
+                current_token.push_back(current_character);
             }
         } else {
-            if (isprint(static_cast<unsigned char>(c))
-                && !isalnum(static_cast<unsigned char>(c))
-                && (c != '.' || !isdigit(static_cast<unsigned char>(last_char)))) {
-                if (!token.empty()) {
-                    tokens.push_back(token);
-                    token.clear();
+            if (isprint(static_cast<unsigned char>(current_character))
+                && !isalnum(static_cast<unsigned char>(current_character))
+                && (current_character != '.' || !isdigit(static_cast<unsigned char>(previous_character)))) {
+                if (!current_token.empty()) {
+                    process_token(current_token);
+                    current_token.clear();
                 }
-                tokens.push_back(std::string(1, c));
-            } else if (!std::isprint(static_cast<unsigned char>(c))) {
-                token.push_back((char) 254);
+                process_token(std::string(1, current_character));
+            } else if (!std::isprint(static_cast<unsigned char>(current_character))) {
+                current_token.push_back((char)254);
             } else {
-                token.push_back(c);
+                current_token.push_back(current_character);
             }
         }
-        last_char = c;
+        previous_character = current_character;
+    }
+
+    void append_character(char current_character, char &previous_character,
+                          std::string &current_token, std::vector<std::string> &tokens) {
+        auto process_token = [&tokens](const std::string& new_token) {
+            tokens.push_back(new_token);
+        };
+        append_character(current_character, previous_character, current_token, process_token);
     }
 
     std::vector<std::string> string_to_tokens(const std::string &text) {
@@ -87,7 +155,7 @@ namespace happyml {
         char last_char = 0;
 
         for (const auto &c: text) {
-            append_char_to_tokens(c, last_char, token, tokens);
+            append_character(c, last_char, token, tokens);
         }
 
         if (!token.empty()) {
@@ -102,10 +170,17 @@ namespace happyml {
         std::vector<std::string> tokens;
         std::string token;
         char last_char = 0;
-        char c;
 
-        while (file.get(c)) {
-            append_char_to_tokens(c, last_char, token, tokens);
+        char buffer[32*1024];
+        while (file.read(buffer, sizeof(buffer))) {
+            for (int i = 0; i < file.gcount(); ++i) {
+                char c = buffer[i];
+                append_character(c, last_char, token, tokens);
+            }
+        }
+        for (int i = 0; i < file.gcount(); ++i) {
+            char c = buffer[i];
+            append_character(c, last_char, token, tokens);
         }
 
         if (!token.empty()) {
@@ -227,6 +302,39 @@ namespace happyml {
         }
     }
 
+    void u16string_replace_all_to_buffer(const u16string &string_to_update,
+                                         u16string &result,
+                                         const u16string &substring_to_find,
+                                         const u16string &substring_replacement,
+                                         size_t find_length,
+                                         size_t replace_length) {
+        if (find_length == 0) {
+            return;
+        }
+
+        result.clear();
+        if (replace_length > find_length) {
+            result.reserve(string_to_update.length() * 2);
+        } else {
+            result.reserve(string_to_update.length());
+        }
+
+        size_t start_pos = 0;
+        const size_t original_length = string_to_update.length();
+        while (start_pos < original_length) {
+            size_t const found_pos = string_to_update.find(substring_to_find, start_pos);
+            if (found_pos == string::npos) {
+                result.append(string_to_update, start_pos, original_length - start_pos);
+                break;
+            }
+            result.append(string_to_update, start_pos, found_pos - start_pos);
+            if (replace_length > 0) {
+                result.append(substring_replacement);
+            }
+            start_pos = found_pos + find_length;
+        }
+    }
+
     void u16string_replace_all(u16string &string_to_update,
                                const u16string &substring_to_find,
                                const u16string &substring_replacement) {
@@ -284,18 +392,21 @@ namespace happyml {
         }
         string_to_update = std::move(result); // update the original string with the new one
     }
-}
 
-
-uint16_t find_max_16bit_value(const std::u16string &str) {
-    uint16_t max_value = std::numeric_limits<uint16_t>::min();
-    for (auto c: str) {
-        auto value = static_cast<uint16_t>(c);
-        if (value > max_value) {
-            max_value = value;
+    uint16_t find_max_16bit_value(const std::u16string &str) {
+        uint16_t max_value = std::numeric_limits<uint16_t>::min();
+        for (auto c: str) {
+            auto value = static_cast<uint16_t>(c);
+            if (value > max_value && value < 0x7FFF) {
+                max_value = value;
+            }
         }
+        return max_value;
     }
-    return max_value;
+
+
 }
+
+
 
 #endif //HAPPYML_DATA_UTIL_HPP

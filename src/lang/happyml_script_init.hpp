@@ -40,7 +40,6 @@ namespace happyml {
         patterns.push_back(createKeywordToken("scalar"));
         patterns.push_back(createKeywordToken("task"));
         patterns.push_back(createKeywordToken("tasks"));
-        patterns.push_back(createKeywordToken("through"));
         patterns.push_back(createKeywordToken("to"));
         patterns.push_back(createKeywordToken("using"));
         patterns.push_back(createKeywordToken("value"));

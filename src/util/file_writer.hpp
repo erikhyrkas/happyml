@@ -255,5 +255,17 @@ namespace happyml {
         shared_ptr<BytePairEncoderModel> bpeModel_;
     };
 
+    void save_config(const string &path, vector<vector<string>> &metadata) {
+        if (filesystem::is_directory(path)) {
+            filesystem::remove_all(path);
+        }
+        filesystem::create_directories(path);
+        string modelProperties = path + "/configuration.happyml";
+        auto writer = make_unique<DelimitedTextFileWriter>(modelProperties, ':');
+        for (const auto &record: metadata) {
+            writer->writeRecord(record);
+        }
+        writer->close();
+    }
 }
 #endif //HAPPYML_FILE_WRITER_HPP

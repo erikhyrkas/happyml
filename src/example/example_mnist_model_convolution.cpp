@@ -5,6 +5,7 @@
 #include <memory>
 #include "../ml/model.hpp"
 #include "../training_data/data_decoder.hpp"
+#include "../util/dataset_utils.hpp"
 
 using namespace std;
 using namespace happyml;
@@ -72,9 +73,9 @@ int main() {
         auto nextRecord = testMnistDataSource->nextRecord();
         while (nextRecord && limit > 0) {
             // Here we predict one test record at a time
-            auto prediction = decoder->decode(neuralNetwork->predictOne(nextRecord->getFirstGiven()));
+            auto prediction = decoder->decode(neuralNetwork->predictOne(nextRecord->getGiven()[0]));
             // mapping the predicted value (probability array) to a label
-            cout << "mnist truth: " << decoder->decode(nextRecord->getFirstExpected()) << " happyml prediction: "
+            cout << "mnist truth: " << decoder->decode(nextRecord->getExpected()[0]) << " happyml prediction: "
                  << prediction
                  << endl;
             nextRecord = testMnistDataSource->nextRecord();

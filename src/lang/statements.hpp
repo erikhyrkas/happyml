@@ -5,11 +5,15 @@
 #ifndef HAPPYML_STATEMENTS_HPP
 #define HAPPYML_STATEMENTS_HPP
 
+#define DEFAULT_HAPPYML_REPO_PATH "../happyml_repo/"
+
 #include <string>
 #include <iostream>
 #include <utility>
 #include <vector>
 #include "execution_context.hpp"
+#include "../training_data/training_dataset.hpp"
+#include "../util/dataset_utils.hpp"
 
 using namespace std;
 
@@ -34,8 +38,10 @@ namespace happyml {
             if (help_menu_item_ == "dataset" || help_menu_item_ == "datasets") {
                 cout << "Available dataset commands: " << endl;
                 cout << "  create dataset <name>" << endl
-                     << "  [with expected <label|number|text|image> at <column> [through <column>] ]*" << endl
-                     << "  [with given <label|number|text|image> at <column> [through <column>] ]*" << endl
+                     << "  [with expected <label|number|text|image> [(<rows>, <columns>, <channels>)] at <column> ]*"
+                     << endl
+                     << "  [with given <label|number|text|image> [(<rows>, <columns>, <channels>)] at <column> ]* "
+                     << endl
                      << "  using <file://path/>" << endl << endl;
 
                 cout << "  list datasets [<starting with x>]" << endl << endl;
@@ -88,53 +94,60 @@ namespace happyml {
     };
 
 
-    struct ColumnGroup {
-        string dataType;
-        int startIndex;
-        int endIndex;
-    };
-
     class CreateDatasetStatement : public ExecutableStatement {
     public:
         CreateDatasetStatement(string name,
                                string location,
-                               vector<ColumnGroup> expected,
-                               vector<ColumnGroup> given) :
+                               vector<ColumnGroup> column_groups) :
                 name(std::move(name)),
                 location(std::move(location)),
-                expected_(std::move(expected)),
-                given_(std::move(given)) {
+                column_groups_(std::move(column_groups)) {
         }
 
         shared_ptr<ExecutionResult> execute(const shared_ptr<ExecutionContext> &context) override {
+            string warning;
+
             // default to success if there are no children.
             if (location.find("file://") != 0) {
                 return make_shared<ExecutionResult>(false, false,
                                                     "create dataset only supports file:// location type at the moment.");
             }
-            for(const auto &columnGroup : expected_) {
-                if (columnGroup.dataType != "label" &&
-                        columnGroup.dataType != "number" &&
-                        columnGroup.dataType != "text" &&
-                        columnGroup.dataType != "image") {
-                    return make_shared<ExecutionResult>(false, false,
-                                                        "create dataset's expected type must be one of: scalar, category, pixel, or text.");
-                }
-                // todo
-            }
-            for(const auto &columnGroup : given_) {
+            bool has_text = false;
+            for (const auto &columnGroup: column_groups_) {
                 if (columnGroup.dataType != "label" &&
                     columnGroup.dataType != "number" &&
                     columnGroup.dataType != "text" &&
                     columnGroup.dataType != "image") {
-                    return make_shared<ExecutionResult>(false, false,
-                                                        "create dataset's given type must be one of: scalar, category, pixel, or text.");
+                    if (columnGroup.expected) {
+                        return make_shared<ExecutionResult>(false, false,
+                                                            "create dataset's expected type must be one of: scalar, category, pixel, or text.");
+                    } else {
+                        return make_shared<ExecutionResult>(false, false,
+                                                            "create dataset's given type must be one of: scalar, category, pixel, or text.");
+                    }
+                } else if (columnGroup.dataType == "text" && !has_text) {
+                    has_text = true;
                 }
-                // todo
             }
+            if (sort_and_check_overlaps(column_groups_)) {
+                return make_shared<ExecutionResult>(false, false,
+                                                    "create dataset's utilize columns that overlap.");
+            }
+
+            if (has_text) {
+                shared_ptr<BytePairEncoderModel> defaultBytePairEncoder = context->getBpeEncoder();
+                if (defaultBytePairEncoder == nullptr) {
+                    defaultBytePairEncoder = load_default_byte_pair_encoder(DEFAULT_HAPPYML_REPO_PATH);
+                    context->setBpeEncoder(defaultBytePairEncoder);
+                }
+            }
+            //TODO: finish this
+//            create_binary_dataset_from_delimited_values(DEFAULT_HAPPYML_REPO_PATH,
+//                                                        name,
+//                                                        location);
             //  create dataset <name>
-            //  [with expected <label|number|text|image> at <column> [through <column>] ]*
-            //  [with given <label|number|text|image> at <column> [through <column>] ]*
+            //  [with expected <label|number|text|image> [(<rows>, <columns>, <channels>)] at <column> ]*
+            //  [with given <label|number|text|image> [(<rows>, <columns>, <channels>)] at <column> ]*
             //  using <file://path/>
 
 //            cout << "create dataset " << name
@@ -150,8 +163,7 @@ namespace happyml {
     private:
         string name;
         string location;
-        vector<ColumnGroup> expected_;
-        vector<ColumnGroup> given_;
+        vector<ColumnGroup> column_groups_;
     };
 
     class CodeBlock : public ExecutableStatement {

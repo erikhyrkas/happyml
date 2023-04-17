@@ -104,10 +104,10 @@ namespace happyml {
                                 columns,
                                 channels);
 
-#pragma omp for collapse(3)
-        for (size_t channel = 0; channel < channels; channel++) {
-            for (size_t row = 0; row < rows; row++) {
-                for (size_t column = 0; column < columns; column++) {
+//#pragma omp for collapse(3)
+        for (long long channel = 0; channel < channels; channel++) {
+            for (long long row = 0; row < rows; row++) {
+                for (long long column = 0; column < columns; column++) {
                     data.at(channel).at(row).at(column) = conversionFunction(original->getValue(row, column, channel));
                 }
             }
@@ -129,10 +129,10 @@ namespace happyml {
                                         columns,
                                         channels);
 
-#pragma omp for collapse(3)
-            for (size_t channel = 0; channel < channels; channel++) {
-                for (size_t row = 0; row < rows; row++) {
-                    for (size_t col = 0; col < columns; col++) {
+//#pragma omp for collapse(3)
+            for (long long channel = 0; channel < channels; channel++) {
+                for (long long row = 0; row < rows; row++) {
+                    for (long long col = 0; col < columns; col++) {
                         setVal(row, col, channel, original->getValue(row, col, channel));
                     }
                 }
@@ -268,10 +268,10 @@ namespace happyml {
                                             channels);
 
 
-#pragma omp for collapse(3)
-            for (size_t channel = 0; channel < channels; channel++) {
-                for (size_t row = 0; row < rows; row++) {
-                    for (size_t col = 0; col < columns; col++) {
+//#pragma omp for collapse(3)
+            for (long long channel = 0; channel < channels; channel++) {
+                for (long long row = 0; row < rows; row++) {
+                    for (long long col = 0; col < columns; col++) {
                         setVal(row, col, channel, original->getValue(row, col, channel));
                     }
                 }
@@ -399,10 +399,10 @@ namespace happyml {
                                           columns,
                                           channels);
 
-#pragma omp for collapse(3)
-            for (size_t channel = 0; channel < channels; channel++) {
-                for (size_t row = 0; row < rows; row++) {
-                    for (size_t col = 0; col < columns; col++) {
+//#pragma omp for collapse(3)
+            for (long long channel = 0; channel < channels; channel++) {
+                for (long long row = 0; row < rows; row++) {
+                    for (long long col = 0; col < columns; col++) {
                         setVal(row, col, channel, original->getValue(row, col, channel));
                     }
                 }
@@ -531,10 +531,10 @@ namespace happyml {
                                            columns,
                                            channels);
 
-#pragma omp for collapse(3)
-            for (size_t channel = 0; channel < channels; channel++) {
-                for (size_t row = 0; row < rows; row++) {
-                    for (size_t col = 0; col < columns; col++) {
+//#pragma omp for collapse(3)
+            for (long long channel = 0; channel < channels; channel++) {
+                for (long long row = 0; row < rows; row++) {
+                    for (long long col = 0; col < columns; col++) {
                         setVal(row, col, channel, original->getValue(row, col, channel));
                     }
                 }

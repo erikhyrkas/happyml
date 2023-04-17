@@ -17,18 +17,18 @@ int main() {
             // example dataset from https://www.kaggle.com/datasets/jrobischon/wikipedia-movie-plots
             // See the README.md in this folder for details on preparing it.
             auto reader = DelimitedTextFileReader("..\\data\\wiki_movie_plots_deduped.csv", ',', true);
-            std::string token;
-            char last_char = 0;
+            std::string current_token;
+            char previous_character = 0;
 
             while (reader.hasNext()) {
                 // we've stripped out the csv encoding, but now we want to join the columns together as text.
                 auto line = join_strings(reader.nextRecord(), "\n");
                 for (const auto &c: line) {
-                    append_char_to_tokens(c, last_char, token, tokens);
+                    append_character(c, previous_character, current_token, tokens);
                 }
             }
-            if (!token.empty()) {
-                tokens.push_back(token);
+            if (!current_token.empty()) {
+                tokens.push_back(current_token);
             }
         }
         BytePairEncoderModel bpe;

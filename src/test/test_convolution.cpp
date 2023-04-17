@@ -25,11 +25,11 @@ void testSimpleConv2DBias() {
 
     conv2dDataSource->restart();
     auto record = conv2dDataSource->nextRecord();
-    auto result = neuralNetwork->predict(record->getFirstGiven());
+    auto result = neuralNetwork->predict(record->getGiven()[0]);
     cout << "Result: " << endl;
     result[0]->print();
     cout << "Expected: " << endl;
-    record->getFirstExpected()->print();
+    record->getExpected()[0]->print();
     ASSERT_TRUE(loss < 0.01);
 
 }
@@ -49,11 +49,11 @@ void testSimpleConv2DNoBias() {
 
     conv2dDataSource->restart();
     auto record = conv2dDataSource->nextRecord();
-    auto result = neuralNetwork->predict(record->getFirstGiven());
+    auto result = neuralNetwork->predict(record->getGiven()[0]);
     cout << "Result: " << endl;
     result[0]->print();
     cout << "Expected: " << endl;
-    record->getFirstExpected()->print();
+    record->getExpected()[0]->print();
     ASSERT_TRUE(loss < 0.01);
 
 }
@@ -75,11 +75,11 @@ void testConv2DWithFilterNoBias() {
 
     conv2dDataSource->restart();
     auto record = conv2dDataSource->nextRecord();
-    auto result = neuralNetwork->predict(record->getFirstGiven());
+    auto result = neuralNetwork->predict(record->getGiven()[0]);
     cout << "Result: " << endl;
     result[0]->print();
     cout << "Expected: " << endl;
-    record->getFirstExpected()->print();
+    record->getExpected()[0]->print();
     cout << "Loss: " << loss << endl;
     ASSERT_TRUE(loss < 0.1);
 }
@@ -99,11 +99,11 @@ void testConv2DWithFilterBias() {
 
     conv2dDataSource->restart();
     auto record = conv2dDataSource->nextRecord();
-    auto result = neuralNetwork->predict(record->getFirstGiven());
+    auto result = neuralNetwork->predict(record->getGiven()[0]);
     cout << "Result: " << endl;
     result[0]->print();
     cout << "Expected: " << endl;
-    record->getFirstExpected()->print();
+    record->getExpected()[0]->print();
     cout << "Loss: " << loss << endl;
     ASSERT_TRUE(loss < 0.1);
 }
@@ -126,11 +126,11 @@ void testConv2DComplexNoBias() {
 
     conv2dDataSource->restart();
     auto record = conv2dDataSource->nextRecord();
-    auto result = neuralNetwork->predict(record->getFirstGiven());
+    auto result = neuralNetwork->predict(record->getGiven()[0]);
     cout << "Result: " << endl;
     result[0]->print();
     cout << "Expected: " << endl;
-    record->getFirstExpected()->print();
+    record->getExpected()[0]->print();
     cout << "Loss: " << loss << endl;
     ASSERT_TRUE(loss < 0.1);
 }
@@ -151,11 +151,11 @@ void testConv2DComplexBias() {
 
     conv2dDataSource->restart();
     auto record = conv2dDataSource->nextRecord();
-    auto result = neuralNetwork->predict(record->getFirstGiven());
+    auto result = neuralNetwork->predict(record->getGiven()[0]);
     cout << "Result: " << endl;
     result[0]->print();
     cout << "Expected: " << endl;
-    record->getFirstExpected()->print();
+    record->getExpected()[0]->print();
     cout << "Loss: " << loss << endl;
     ASSERT_TRUE(loss < 0.1);
 }
@@ -175,11 +175,11 @@ void testConv2DComplexTanhBias() {
     float loss = neuralNetwork->train(conv2dDataSource);
     conv2dDataSource->restart();
     auto record = conv2dDataSource->nextRecord();
-    auto result = neuralNetwork->predict(record->getFirstGiven());
+    auto result = neuralNetwork->predict(record->getGiven()[0]);
     cout << "Result: " << endl;
     result[0]->print();
     cout << "Expected: " << endl;
-    record->getFirstExpected()->print();
+    record->getExpected()[0]->print();
     cout << "Loss: " << loss << endl;
     ASSERT_TRUE(loss < 0.1);
 }

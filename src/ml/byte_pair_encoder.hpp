@@ -15,6 +15,7 @@
 #include <iomanip>
 #include <filesystem>
 #include <execution>
+#include <omp.h>
 #include "../util/data_util.hpp"
 #include "../util/timers.hpp"
 
@@ -35,6 +36,8 @@ namespace happyml {
                   name_(std::move(name)),
                   next_code_(delimiter_code + 1) {
             setDelimiterCode(delimiter_code);
+            encode_trie_root = build_trie_for_encode(ordered_bpe_codes_);
+            decode_trie_root = build_trie_for_decode(ordered_bpe_codes_);
         }
 
         string getName() {
@@ -52,7 +55,8 @@ namespace happyml {
                      return a.second > b.second;
                  });
             ordered_bpe_codes_.swap(ordered_bpe_codes);
-
+            encode_trie_root = build_trie_for_encode(ordered_bpe_codes_);
+            decode_trie_root = build_trie_for_decode(ordered_bpe_codes_);
             for (const auto &element: ordered_bpe_codes_) {
                 uint16_t const next = std::max(find_max_16bit_value(element.first),
                                                find_max_16bit_value(element.second)) + 1;
@@ -70,7 +74,7 @@ namespace happyml {
             setBpeCodes(bpe_codes);
         }
 
-        vector<u16string > encode(const vector<string>& tokens) {
+        vector<u16string> encode(const vector<string> &tokens) {
             vector<u16string> bpe_encoded_tokens;
             bpe_encoded_tokens.reserve(tokens.size());
             for (const string &token: tokens) {
@@ -86,27 +90,104 @@ namespace happyml {
             if (token.empty()) {
                 return {};
             }
-            u16string const text16bit(token.begin(), token.end());
-            // looks simpler, but we need to optimize:
-            // u16string encoded = delimiter_ + text16bit + delimiter_;
+            const u16string text16bit(token.begin(), token.end());
             u16string encoded;
-            encoded.reserve(delimiter_.size() + text16bit.size() + delimiter_.size() + ordered_bpe_codes_.size() * 2);
+            encoded.reserve(delimiter_.size() * 2 + text16bit.size());
             encoded += delimiter_;
             encoded += text16bit;
             encoded += delimiter_;
 
-            u16string buffer;
+            u16string result;
+            result.reserve(encoded.size());
+
+            size_t start_pos = 0;
+            while (start_pos < encoded.size()) {
+                shared_ptr<TrieNode> node = encode_trie_root;
+                size_t i;
+                for (i = start_pos; i < encoded.size(); ++i) {
+                    node = node->find(encoded, i);
+                    if (!node) {
+                        break;
+                    }
+
+                    if (!node->value_.empty()) {
+                        result += node->value_;
+                        start_pos = i + node->key_length;
+                        break;
+                    }
+                }
+
+                if (i == encoded.size() || !node) {
+                    result += encoded[start_pos++];
+                }
+            }
+
+            return result;
+        }
+
+        u16string encode_v1(const string &token) {
+            if (token.empty()) {
+                return {};
+            }
+            u16string const text16bit(token.begin(), token.end());
+            // looks simpler, but we need to optimize:
+            // u16string encoded = delimiter_ + text16bit + delimiter_;
+            u16string encoded;
+            encoded.reserve(delimiter_.size() * 2 + text16bit.size());
+            encoded += delimiter_;
+            encoded += text16bit;
+            encoded += delimiter_;
+            shared_ptr<u16string> buffer = make_shared<u16string>();
+            shared_ptr<u16string> encoded_ptr = make_shared<u16string>(std::move(encoded));
+
             for (auto replacement = ordered_bpe_codes_.rbegin();
                  replacement != ordered_bpe_codes_.rend(); ++replacement) {
-                u16string_replace_all_to_buffer(encoded, buffer, replacement->first, replacement->second);
-                buffer.swap(encoded);
+                size_t find_length = replacement->first.length();
+                size_t replace_length = replacement->second.length();
+
+                u16string_replace_all_to_buffer(*encoded_ptr, *buffer, replacement->first, replacement->second,
+                                                find_length, replace_length);
+                buffer.swap(encoded_ptr);
             }
-            return encoded;
+            return *encoded_ptr;
         }
 
         // Decodes an encoded u16string using the BPE codes in the model.
         // encoded: The input u16string to be decoded.
         // Returns the decoded string.
+        string decode_v2(const u16string &encoded) {
+            if (encoded.empty()) {
+                return {};
+            }
+
+            string result;
+            result.reserve(encoded.size());
+
+            size_t start_pos = 0;
+            while (start_pos < encoded.size()) {
+                shared_ptr<TrieNode> node = decode_trie_root;
+                size_t i;
+                for (i = start_pos; i < encoded.size(); ++i) {
+                    node = node->find(encoded, i);
+                    if (!node) {
+                        break;
+                    }
+
+                    if (!node->value_.empty()) {
+                        result.append(node->value_.begin(), node->value_.end());
+                        start_pos = i + 1;
+                        break;
+                    }
+                }
+
+                if (i == encoded.size() || !node) {
+                    result.push_back(static_cast<char>(encoded[start_pos++]));
+                }
+            }
+
+            return result;
+        }
+
         string decode(const u16string &encoded) {
             if (encoded.empty()) {
                 return {};
@@ -120,6 +201,131 @@ namespace happyml {
             string result(decoded.begin() + (int) delimiter_.size(), decoded.end() - ((int) delimiter_.size()));
             return result;
         }
+
+        // Trains the BPE model on a file. Efficient for a single large file.
+        // WARNING: This implementation will overwrite any existing training
+        // in the model.
+        bool train_on_file(const string &filename) {
+            if (show_progress_) {
+                cout << "Training BPE on file \"" << filename << "\"" << endl;
+                cout << "Building vocab..." << endl;
+            }
+            unordered_map<u16string, size_t> vocab;
+            std::ifstream file(filename);
+            if (file.is_open()) {
+                vocab = buildVocab(file, show_progress_);
+                file.close();
+            } else {
+                std::cerr << "Unable to open file: " << filename << std::endl;
+                return false;
+            }
+            unordered_map<u16string, u16string> bpe_codes;
+            train_on_vocab(-1,
+                           0.0001,
+                           2,
+                           -1,
+                           {},
+                           0,
+                           bpe_codes,
+                           vocab);
+            return true;
+        }
+
+        // This function trains the BPE model on an entire folder
+        // of text files.
+        // NOTE: If you are training a BPE model on a whole folder of
+        // many files with gigabytes of data, you don't want your first
+        // few files to influence the result too much. To avoid this,
+        // set the num_merges parameter to a small number (e.g. 1000)
+        bool train_on_folder(const string &folder, int num_merges_per_file = 1000) {
+            if (show_progress_) {
+                cout << "Training BPE on folder \"" << folder << "\"" << endl;
+            }
+            bool files_found = false;
+            bool error_occurred = false;
+            int file_count = 0;
+            vector<unordered_map<u16string, size_t>> individual_vocab;
+
+            vector<string> file_paths;
+            for (const auto &directory_entry: filesystem::directory_iterator(folder)) {
+                if (directory_entry.is_regular_file()) {
+                    file_paths.push_back(directory_entry.path().string());
+                }
+            }
+
+            int processing_threads = 3; //std::max(4, static_cast<int>(omp_get_max_threads() * 0.5));
+
+            omp_set_num_threads(processing_threads);
+
+#pragma omp parallel
+            {
+                vector<unordered_map<u16string, size_t>> individual_vocab_private;
+#pragma omp for schedule(dynamic) nowait
+                for (int i = 0; i < file_paths.size(); ++i) {
+                    if (!error_occurred) {
+                        files_found = true;
+#pragma omp atomic
+                        file_count++;
+
+                        if (show_progress_) {
+#pragma omp critical
+                            {
+                                int thread_id = omp_get_thread_num();
+                                int active_threads = omp_get_num_threads();
+                                cout << "Thread ID: " << thread_id << " Loading (" << file_count << ") byte pairs for file \""
+                                     << file_paths[i]
+                                     << "\" (Active Threads: " << active_threads << ")" << endl;
+                            }
+                        }
+
+                        unordered_map<u16string, size_t> vocab;
+                        string filename = file_paths[i];
+                        std::ifstream file(filename);
+                        if (file.is_open()) {
+                            vocab = buildVocab(file, false);
+                            file.close();
+                        } else {
+#pragma omp critical
+                            {
+                                std::cerr << "Unable to open file: " << filename << std::endl;
+                                error_occurred = true;
+                            }
+                        }
+                        individual_vocab_private.push_back(vocab);
+
+                    }
+                }
+#pragma omp critical
+                individual_vocab.insert(individual_vocab.end(), individual_vocab_private.begin(),
+                                        individual_vocab_private.end());
+            }
+
+            if (error_occurred) {
+                return false;
+            }
+
+            unordered_map<u16string, size_t> combined_vocab;
+            for (const auto &vocab: individual_vocab) {
+                for (const auto &pair: vocab) {
+                    combined_vocab[pair.first] += pair.second;
+                }
+            }
+            if (show_progress_) {
+                cout << "BPE Training..."
+                     << endl;
+            }
+            unordered_map<u16string, u16string> bpe_codes;
+            train_on_vocab(-1,
+                           0.0001,
+                           2,
+                           -1,
+                           {},
+                           0,
+                           bpe_codes,
+                           combined_vocab);
+            return files_found;
+        }
+
 
         // Trains a BPE model from a vector of strings.
         // NOTE: leveraging early_stopping_patience will dramatically slow training, however it will
@@ -142,27 +348,20 @@ namespace happyml {
             if (show_progress_) {
                 cout << "Byte Pair Encoder Model Training started: " << std::fixed << std::setprecision(2);
             }
+
+            long total_validation_length = 0;
             vector<string> train_data, validation_data;
             if (early_stopping_patience >= 0) {
                 splitData(data, train_data, validation_data);
                 if (validation_data.empty()) {
                     validation_data = train_data;
                 }
-            } else {
-                train_data = data;
-            }
-
-
-            long total_validation_length = 0.0;
-            if (early_stopping_patience >= 0) {
                 for (const auto &text: validation_data) {
                     total_validation_length += (long) text.length();
                 }
+            } else {
+                train_data = data;
             }
-
-            // I'm pondering if max_code is right or not, and whether it matters.
-            uint16_t const max_code = std::numeric_limits<char16_t>::max() - 1;
-            double best_validation_score = INFINITY;
 
             unordered_map<u16string, u16string> bpe_codes;
 
@@ -181,9 +380,40 @@ namespace happyml {
                     cout << "Next Code now: " << next_code_ << endl;
                     cout << "Finished Loading existing bpe codes." << endl;
                 }
+
             }
 
+            if (show_progress_) {
+                cout << "Building Vocab..." << endl;
+            }
             unordered_map<u16string, size_t> vocab = buildVocab(train_data);
+            train_on_vocab(early_stopping_patience, early_stopping_improvement_minimum, min_frequency, num_merges,
+                           validation_data,
+                           total_validation_length, bpe_codes, vocab);
+            if (show_progress_) {
+                int64_t const elapsed = totalTimer.getMilliseconds();
+                cout << endl << "Finished BPE training in ";
+                if (elapsed < 2000) {
+                    cout << elapsed << " milliseconds." << endl;
+                } else if (elapsed < 120000) {
+                    cout << (elapsed / 1000) << " seconds." << endl;
+                } else {
+                    cout << (elapsed / 60000) << " minutes." << endl;
+                }
+            }
+        }
+
+        void train_on_vocab(int early_stopping_patience,
+                            double early_stopping_improvement_minimum,
+                            size_t min_frequency,
+                            int num_merges,
+                            const vector<string> &validation_data,
+                            long total_validation_length,
+                            unordered_map<u16string, u16string> &bpe_codes,
+                            unordered_map<u16string, size_t> &vocab) {
+
+            const uint16_t max_code = 0x7FFE; // 0x7FFF (32,767) is reserved for the padding delimiter
+            double best_validation_score = INFINITY;
             size_t merge_count = 0;
             int no_improvement_counter = 0;
             ElapsedTimer mergeTimer;
@@ -236,7 +466,7 @@ namespace happyml {
                 next_code_++;
                 merge_count++;
 
-                // roughly 59,000
+                // 32,767 codes is the limit of the current implementation
                 if (next_code_ >= max_code) {
                     if (show_progress_) {
                         cout << "Exiting early because Current Code hit the limit of " << max_code << "." << endl;
@@ -250,17 +480,9 @@ namespace happyml {
                      return a.second > b.second;
                  });
             ordered_bpe_codes_.swap(ordered_bpe_codes);
-            if (show_progress_) {
-                int64_t const elapsed = totalTimer.getMilliseconds();
-                cout << endl << "Finished BPE training in ";
-                if (elapsed < 2000) {
-                    cout << elapsed << " milliseconds." << endl;
-                } else if (elapsed < 120000) {
-                    cout << (elapsed / 1000) << " seconds." << endl;
-                } else {
-                    cout << (elapsed / 60000) << " minutes." << endl;
-                }
-            }
+            encode_trie_root = build_trie_for_encode(ordered_bpe_codes_);
+            decode_trie_root = build_trie_for_decode(ordered_bpe_codes_);
+
         }
 
         // Returns the BPE codes in the model as a vector of pairs.
@@ -345,17 +567,17 @@ namespace happyml {
 
 
         // Builds a vocabulary from a vector of input strings.
-        // data: A vector of input strings for building the vocabulary.
+        // tokens: A vector of input strings for building the vocabulary.
         // Returns an unordered_map of character pairs and their frequencies.
-        unordered_map<u16string, size_t> buildVocab(const vector<string> &data) {
+        unordered_map<u16string, size_t> buildVocab(const vector<string> &tokens) {
             unordered_map<u16string, size_t> vocab;
-            for (const string &line: data) {
+            for (const string &token: tokens) {
                 // Originally, I just added the delimiter before and after the line, but
                 // to support calling train() multiple times, I decided to encode()
                 // this should have the same effect on the first pass, but result
                 // in a more compact vocabulary the second call to train()
                 // It LOOKS like it works, which is why I'm leaving it in.
-                u16string line16 = encode(line);
+                u16string line16 = encode(token);
                 for (size_t i = 0; i < line16.size() - 1; ++i) {
                     u16string const pair = u16string(1, line16[i]) + u16string(1, line16[i + 1]);
                     // If the character pair is already in the vocab unordered_map, increment its frequency; otherwise, add it to the vocab unordered_map with a frequency of 1.
@@ -425,7 +647,8 @@ namespace happyml {
         // model in that folder. It is not a good practice with happyml for two different models to
         // share output folders.
         bool save(const string &modelFolderPath, const string &knowledgeLabel, bool overwrite = true) {
-            string const fullKnowledgePath = buildKnowledgePath(modelFolderPath, knowledgeLabel, overwrite);
+            string const fullKnowledgePath = initialize_knowledge_path_directory(modelFolderPath, knowledgeLabel,
+                                                                                 overwrite);
             string const filePath = fullKnowledgePath + "/" + name_ + ".bpe";
             std::ofstream file(filePath, std::ios::binary);
 
@@ -477,6 +700,8 @@ namespace happyml {
 
                 if (!file.eof()) {
                     ordered_bpe_codes_.push_back(std::move(code_pair));
+                    encode_trie_root = build_trie_for_encode(ordered_bpe_codes_);
+                    decode_trie_root = build_trie_for_decode(ordered_bpe_codes_);
                 }
             }
 
@@ -491,6 +716,8 @@ namespace happyml {
         uint16_t next_code_;
         bool show_progress_; // do we print out text while training?
         string name_;
+        shared_ptr<TrieNode> encode_trie_root;
+        shared_ptr<TrieNode> decode_trie_root;
 
         // Sets the delimiter code and delimiter string.
         // delimiter_code: The delimiter code to be used.
@@ -499,7 +726,64 @@ namespace happyml {
             delimiter_ = u16string(1, delimiter_code);
             next_code_ = delimiter_code_ + 1;
         }
+
+        unordered_map<u16string, size_t> buildVocab(std::ifstream &file, bool show_progress) {
+            unordered_map<u16string, size_t> vocab;
+            std::string token;
+            char last_char = 0;
+            char buffer[256 * 1024];
+            std::streamsize bytesRead;
+            size_t total_bytes_read = 0;
+            streampos currentPos = file.tellg();
+            file.seekg(0, ios::end);
+            size_t file_size = file.tellg() / (1024 * 1024);
+            file.seekg(currentPos);
+            while ((bytesRead = file.read(buffer, sizeof(buffer)).gcount()) > 0) {
+                total_bytes_read += bytesRead;
+                if (show_progress) {
+                    std::cout << "Read " << total_bytes_read / (1024 * 1024) << " of " << file_size
+                              << " megabytes of byte pairs\r"
+                              << std::flush;
+                }
+                for (int i = 0; i < bytesRead; ++i) {
+                    char c = buffer[i];
+                    append_character(c, last_char, token, [&vocab, this](const std::string &new_token) {
+                        u16string line16 = this->encode(new_token);
+                        for (size_t i = 0; i < line16.size() - 1; ++i) {
+                            u16string const pair = u16string(1, line16[i]) + u16string(1, line16[i + 1]);
+                            auto existing_entry = vocab.find(pair);
+                            if (existing_entry != vocab.end()) {
+                                existing_entry->second++;
+                            } else {
+                                vocab.emplace_hint(vocab.end(), pair, 1);
+                            }
+                        }
+                    });
+                }
+            }
+
+            // Process any remaining data after the buffer read
+            if (!token.empty()) {
+                u16string line16 = encode(token);
+                for (size_t i = 0; i < line16.size() - 1; ++i) {
+                    u16string const pair = u16string(1, line16[i]) + u16string(1, line16[i + 1]);
+                    auto existing_entry = vocab.find(pair);
+                    if (existing_entry != vocab.end()) {
+                        existing_entry->second++;
+                    } else {
+                        vocab.emplace_hint(vocab.end(), pair, 1);
+                    }
+                }
+            }
+            if (show_progress) {
+                std::cout << endl << "Finish." << std::endl;
+            }
+
+            return vocab;
+        }
     };
+
+
 }
 
 #endif //HAPPYML_BYTE_PAIR_ENCODER_HPP

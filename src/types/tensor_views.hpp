@@ -447,8 +447,8 @@ namespace happyml {
         float getValue(size_t row, size_t column, size_t channel) override {
             float val = 0;
             const auto childColumnCount = child1->columnCount();
-#pragma omp for
-            for (size_t t1_col = 0; t1_col < childColumnCount; t1_col++) {
+//#pragma omp for
+            for (long long t1_col = 0; t1_col < childColumnCount; t1_col++) {
                 val += child1->getValue(row, t1_col, channel) * child2->getValue(t1_col, column, channel);
             }
             return val;
@@ -759,8 +759,8 @@ namespace happyml {
             }
             float result = 0.f;
             const size_t channels = child->channelCount();
-#pragma omp for
-            for (size_t next_channel = 0; next_channel < channels; next_channel++) {
+//#pragma omp for
+            for (long long next_channel = 0; next_channel < channels; next_channel++) {
                 result += child->getValue(row, column, next_channel);
             }
             return result;
@@ -881,9 +881,9 @@ namespace happyml {
             const auto kernel_rows = child2->rowCount();
             const auto kernel_cols = child2->columnCount();
             float result = 0.f;
-#pragma omp for collapse(2)
-            for (size_t kernel_row = 0; kernel_row < kernel_rows; kernel_row++) {
-                for (size_t kernel_col = 0; kernel_col < kernel_cols; kernel_col++) {
+//#pragma omp for collapse(2)
+            for (long long kernel_row = 0; kernel_row < kernel_rows; kernel_row++) {
+                for (long long kernel_col = 0; kernel_col < kernel_cols; kernel_col++) {
                     const auto kernel_val = child2->getValue(kernel_row, kernel_col,
                                                              channel); // channel 0 is applied to all channels of tensor
                     const auto tensor_val = child1->getValue(row + kernel_row, column + kernel_col, channel);

@@ -7,6 +7,7 @@
 
 #include <string>
 #include <memory>
+#include "../ml/byte_pair_encoder.hpp"
 
 using namespace std;
 
@@ -17,6 +18,17 @@ namespace happyml {
         // * external configuration
         // * session variables
         // * debugging/troubleshooting information
+    public:
+        [[nodiscard]] const shared_ptr <BytePairEncoderModel> &getBpeEncoder() const {
+            return bpe_encoder;
+        }
+
+        void setBpeEncoder(const shared_ptr <BytePairEncoderModel> &bpeEncoder) {
+            bpe_encoder = bpeEncoder;
+        }
+
+    private:
+        shared_ptr <BytePairEncoderModel> bpe_encoder;
     };
 
     class ExecutionResult {

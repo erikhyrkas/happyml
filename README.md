@@ -52,34 +52,57 @@ based on the [CMakeLists.txt](CMakeLists.txt).
 This project is pre-alpha.
 
 Recent Notable additions:
-* Dataset Shuffle is now in-place and the shuffler can be shared between datasets to keep them in sync. (4/23)
-* SGDM Optimizer with demon (4/23)
-* Adam Optimizer with demon (4/23)
-* Rotary Positional Embedding (4/23)
-* One Hot Encoding (4/23)
-* New Logo (4/23)
-* Byte Pair Encoding (3/23)
-* Basic Binary File Support (more to come for datasets) (3/23)
-* New Style Guide (that I'm occasionally following--I'll try to do better) (3/23)
-* Working Parser/Interpreter (but integration with framework still needs most features) (3/23)
-* Documentation (2/23)
-* Working Lexer (1/23)
+* Default Trained Byte Pair Encoding Model for happyml scripting language (4/2023)
+* New program "create_tokenizer" to train default BPE model from a file (4/2023)
+* Edge cases for Half float and tests (4/2023)
+* BPE encoding/decoding optimization (4/2023)
+* Dataset Shuffle is now in-place and the shuffler can be shared between datasets to keep them in sync. (4/2023)
+* SGDM Optimizer with demon (4/2023)
+* Adam Optimizer with demon (4/2023)
+* Rotary Positional Embedding (4/2023)
+* One Hot Encoding (4/2023)
+* New Logo (4/2023)
+* Byte Pair Encoding (3/2023)
+* Basic Binary File Support (more to come for datasets) (3/2023)
+* New Style Guide (that I'm occasionally following--I'll try to do better) (3/2023)
+* Working Parser/Interpreter (but integration with framework still needs most features) (3/2023)
+* Documentation (2/2023)
+* Working Lexer (1/2023)
 
 Nice-to-haves for alpha:
-* Need to finish the half float and test. It currently doesn't handle any edge conditions and could produce incorrect results in some situations.
-* Finish interpreter commands to handle interfacing with happyml through a dsl. (Lexer and parser now have a working foundation.)
+* Finish interpreter commands to handle interfacing with happyml through a dsl. 
+* Possibly support a decoder-only transformer model.
 
-Back-of-the-mind considerations:
+Issues to address later:
 * The save format could be more efficient and compact. (The file support utilities exist as of 3/23, but the models aren't using it.)
 * I need to create an example that uses multiple inputs. The train() function doesn't take in multiple data sets and there will need to be some other small improvements.
+* OpenMP is not helping performance, if anything it is hurting it. I will likely remove it and rewrite concurrency to use std::thread and pick better places to use concurrency.
+* Apply the style guide. I'm all over the place. I'll try to do better.
+* I need to adopt CMAKE tests and add more tests.
+* I need to add more comments to the code for educational purposes.
+* I need to fix the build process for Linux and Mac on GitHub.
 
-At that point, the code will be in an alpha state, but I still won't have even tackled encoder-decoder and decoder-only requirements. For beta, I'd like to see at least decoder-only support. There's also Reinforcement Learning from Human Feedback (RLHF) that I'll ponder, but I doubt I can work that into the beta let along the alpha. That journey will continue.
+Future:
+* Flesh out more tasks from the happyml scripting language
+  * Encoder-Decoder Transformer Model support
+* Reinforcement Learning from Human Feedback (RLHF) support
+* Example usage of scripts to achieve real-world solutions
+  * Generate text from a prompt
+  * Summarize text
+  * Grammar checker
+  * Image labeling
+  * Text labeling
+  * Image generation from a prompt
+  * Audio to text
+  * Text to audio
 
-This project is still a long way off from democratizing the power of ml. Right now, it's mostly focused on making large models run on commodity hardware. Next steps will be to make the interface to using it easier for people without a data science background. And finally, I hope that everything I build is educational.
+
+Right now, this project is mostly focused on making large models run on commodity hardware and making a scripting 
+language that gives a simple interface. And finally, I hope that everything I build is educational.
 
 # Why did you build this?
 
 Three reasons I built happyml:
 1. LEARNING: I want to understand every aspect of what goes into the science and algorithms fueling the future, and share what I learn along the way. The next generation can pick up this torch and build their own dreams.
-2. DEMOCRATIZING POWER: The most powerful machine learning done today is done on millions of dollars of hardware by a relatively few people. While I may not invent a way of democratizing the power of machine learning, I hope this is a small step toward inspiring somebody smarter than me to bring it about. See the section on democratizing power.
+2. DEMOCRATIZING POWER: The most powerful machine learning done today is done on millions of dollars of hardware by a relatively few people. My hope is that this framework can be used by anybody on commodity hardware to build their own dreams. 
 3. STUBBORNNESS: There are a million reasons not to build this, which is enough to harden my resolve to build it.

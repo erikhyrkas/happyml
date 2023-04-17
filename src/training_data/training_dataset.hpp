@@ -173,6 +173,13 @@ namespace happyml {
             pairs.push_back(make_shared<TrainingPair>(given, expected));
         }
 
+        void addTrainingData(const vector<shared_ptr<BaseTensor>> &given, const vector<shared_ptr<BaseTensor>> &expected) {
+            if (shuffler_ != nullptr) {
+                throw exception("Cannot add data after a shuffler has been assigned");
+            }
+            pairs.push_back(make_shared<TrainingPair>(given, expected));
+        }
+
         size_t recordCount() override {
             return pairs.size();
         }
@@ -181,31 +188,31 @@ namespace happyml {
             current_offset = 0;
         }
 
-        // Set of the distinct values for a given column, useful for finding labels.
-        unordered_set<float> getDistinctValuesForFirstExpectedColumn(size_t columnIndex) {
-            unordered_set<float> distinctValues;
-            for (const auto &pair: pairs) {
-                const auto &expectedTensor = pair->getFirstExpected();
-                if (columnIndex < expectedTensor->columnCount()) {
-                    float value = expectedTensor->getValue(0, columnIndex, 0);
-                    distinctValues.insert(value);
-                }
-            }
-            return distinctValues;
-        }
-
-        // Set of the distinct values for a given column, useful for finding labels.
-        unordered_set<float> getDistinctValuesForFirstGivenColumn(size_t columnIndex) {
-            unordered_set<float> distinctValues;
-            for (const auto &pair: pairs) {
-                const auto &expectedTensor = pair->getFirstGiven();
-                if (columnIndex < expectedTensor->columnCount()) {
-                    float value = expectedTensor->getValue(0, columnIndex, 0);
-                    distinctValues.insert(value);
-                }
-            }
-            return distinctValues;
-        }
+//        // Set of the distinct values for a given column, useful for finding labels.
+//        unordered_set<float> getDistinctValuesForFirstExpectedColumn(size_t columnIndex) {
+//            unordered_set<float> distinctValues;
+//            for (const auto &pair: pairs) {
+//                const auto &expectedTensor = pair->getFirstExpected();
+//                if (columnIndex < expectedTensor->columnCount()) {
+//                    float value = expectedTensor->getValue(0, columnIndex, 0);
+//                    distinctValues.insert(value);
+//                }
+//            }
+//            return distinctValues;
+//        }
+//
+//        // Set of the distinct values for a given column, useful for finding labels.
+//        unordered_set<float> getDistinctValuesForFirstGivenColumn(size_t columnIndex) {
+//            unordered_set<float> distinctValues;
+//            for (const auto &pair: pairs) {
+//                const auto &expectedTensor = pair->getFirstGiven();
+//                if (columnIndex < expectedTensor->columnCount()) {
+//                    float value = expectedTensor->getValue(0, columnIndex, 0);
+//                    distinctValues.insert(value);
+//                }
+//            }
+//            return distinctValues;
+//        }
 
         shared_ptr<TrainingPair> nextRecord() override {
             if (current_offset >= recordCount()) {
@@ -255,45 +262,17 @@ namespace happyml {
         vector<vector<size_t>> givenShape;
     };
 
-    shared_ptr<InMemoryTrainingDataSet> loadDelimitedValuesDataset(const string &path, char delimiter,
-                                                                   bool header_row, bool trim_strings,
-                                                                   bool expected_first, size_t expected_columns,
-                                                                   size_t given_columns,
-                                                                   const vector<size_t> &expected_shape,
-                                                                   const vector<size_t> &given_shape,
-                                                                   const shared_ptr<DataEncoder> &expected_encoder,
-                                                                   const shared_ptr<DataEncoder> &given_encoder) {
+    struct ColumnGroup {
+        string dataType;
+        size_t startIndex;
+        size_t rows;
+        size_t columns;
+        size_t channels;
+        bool expected;
+        string encoder_name;
+        shared_ptr<DataEncoder> encoder;
+    };
 
-        auto dataset = make_shared<InMemoryTrainingDataSet>();
-
-        DelimitedTextFileReader delimitedTextFileReader(path, delimiter, header_row);
-
-        while (delimitedTextFileReader.hasNext()) {
-            auto record = delimitedTextFileReader.nextRecord();
-            auto middleIter(record.begin());
-            std::advance(middleIter, expected_first ? expected_columns : given_columns);
-            vector<string> firstHalf(record.begin(), middleIter);
-            auto firstTensor = expected_first ?
-                               expected_encoder->encode(firstHalf, expected_shape[0], expected_shape[1],
-                                                        expected_shape[2], trim_strings) :
-                               given_encoder->encode(firstHalf, given_shape[0], given_shape[1], given_shape[2],
-                                                     trim_strings);
-            vector<string> secondHalf(middleIter, record.end());
-            auto secondTensor = expected_first ?
-                                given_encoder->encode(secondHalf, given_shape[0], given_shape[1], given_shape[2],
-                                                      trim_strings) :
-                                expected_encoder->encode(secondHalf, expected_shape[0], expected_shape[1],
-                                                         expected_shape[2], trim_strings);
-            if (expected_first) {
-                // given, expected
-                dataset->addTrainingData(secondTensor, firstTensor);
-            } else {
-                dataset->addTrainingData(firstTensor, secondTensor);
-            }
-        }
-
-        return dataset;
-    }
 
 }
 

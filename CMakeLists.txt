@@ -1,11 +1,27 @@
 cmake_minimum_required(VERSION 3.23)
 project(happyml CXX)
 
+# Disabling OpenMP for the moment. It's hurting performance more than helping it.
+# and it increases the complexity. I'll revisit this later and possibly use std::thread.
+#find_package(OpenMP)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+#if (MSVC)
+#    add_compile_options(-openmp:llvm)
+#endif()
+
 add_executable(happyml src/main.cpp)
+#if (OpenMP_CXX_FOUND)
+#    target_link_libraries(happyml PUBLIC OpenMP::OpenMP_CXX)
+#endif()
+
+add_executable(create_tokenizer src/create_tokenizer.cpp)
+#if (OpenMP_CXX_FOUND)
+#    target_link_libraries(create_tokenizer PUBLIC OpenMP::OpenMP_CXX)
+#endif()
 
 # examples of using happyml directly without using the scripting language:
 add_executable(example_xor_model_tanh src/example/example_xor_model_tanh.cpp)
@@ -55,3 +71,5 @@ add_executable(test_rotary_positional_embedding src/test/test_rotary_positional_
 add_executable(test_one_hot_encoding src/test/test_one_hot_encoding.cpp)
 
 add_executable(test_create_dataset_statement src/test/test_create_dataset_statement.cpp)
+
+add_executable(test_half_float src/test/test_half_float.cpp)

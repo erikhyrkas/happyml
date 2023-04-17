@@ -9,8 +9,8 @@
 #include <cstdint>
 
 #define FLOAT_BIAS 127
-#define FLOAT_NAN 0b11111111110000000000000000000000
-#define FLOAT_NAN2 0b01111111110000000000000000000000
+#define FLOAT_NEG_NAN 0b11111111110000000000000000000000
+#define FLOAT_POS_NAN 0b01111111110000000000000000000000
 #define FLOAT_INF 0b01111111100000000000000000000000
 #define FLOAT_NEG_INF 0b11111111100000000000000000000000
 #define QUARTER_NAN 0b11111111
@@ -103,10 +103,10 @@ namespace happyml {
         const uint32_t result_bits = (special_case_tiny) * 0b10000000 +
                                      (!special_case_tiny) * prepped_bits;
 
-        return (encoded_value == FLOAT_NAN || encoded_value == FLOAT_NAN2) * QUARTER_NAN +
+        return (encoded_value == FLOAT_NEG_NAN || encoded_value == FLOAT_POS_NAN) * QUARTER_NAN +
                (encoded_value == FLOAT_INF) * QUARTER_POS_INFINITY
                + (encoded_value == FLOAT_NEG_INF) * QUARTER_NEG_INFINITY +
-               ((encoded_value != FLOAT_NAN && encoded_value != FLOAT_NAN2) && (encoded_value != FLOAT_INF) &&
+               ((encoded_value != FLOAT_NEG_NAN && encoded_value != FLOAT_POS_NAN) && (encoded_value != FLOAT_INF) &&
                 (encoded_value != FLOAT_NEG_INF)) *
                result_bits;
     }
@@ -125,7 +125,7 @@ namespace happyml {
         const uint32_t float_bias_adjustment = FLOAT_BIAS - bias;
         const uint32_t exponent = (raw_exponent > 0 || mantissa > 0) * (raw_exponent + float_bias_adjustment);
         const uint32_t result = ((sign << 31) | (exponent << 23) | (mantissa << mantissa_shift));
-        const uint32_t no_branch_result = (q == QUARTER_NAN) * FLOAT_NAN +
+        const uint32_t no_branch_result = (q == QUARTER_NAN) * FLOAT_NEG_NAN +
                                           (q == QUARTER_POS_INFINITY) * FLOAT_INF +
                                           (q == QUARTER_NEG_INFINITY) * FLOAT_NEG_INF +
                                           (q != QUARTER_NAN && q != QUARTER_POS_INFINITY && q != QUARTER_NEG_INFINITY) *

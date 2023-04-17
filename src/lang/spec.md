@@ -38,7 +38,6 @@ that I think I want, here are the keywords I'm currently planning:
 * scalar
 * task
 * tasks
-* through
 * to
 * using
 * value
@@ -99,17 +98,18 @@ back for them.
 
 Possible task types:
 
-| task type | description                                                  | priority  | Why                         |
-|-----------|--------------------------------------------------------------|-----------|-----------------------------|
-| label     | given an image or text, apply a label from a list            | immediate | Uses existing functionality |
-| estimate  | given data, estimate one or more values                      | immediate | Uses existing functionality |
-| generate  | given text and/or an image generate text and/or an image     | high      | Personal interest           |
-| summarize | Paraphrase/summarize text                                    | moderate  | Personally useful           |
-| win       | given game state, find best move (chess, go, and others?)    | low       | Personally fun              |
-| complete  | given past data points, predict future data points           | low       | Common use case             |
-| recommend | given historical data, what are recommended things           | low       | Common use case             | 
-| match     | given a primary record and X return match probabilities      | low       | Common use case             |
-| rank      | given viewer metadata plus X records, return record rankings | low       | Common use case             |
+| task type | description                                                                        | priority  | Why                         |
+|-----------|------------------------------------------------------------------------------------|-----------|-----------------------------|
+| label     | given an image or text, apply a label from a list                                  | immediate | Uses existing functionality |
+| estimate  | given data, estimate one or more values                                            | immediate | Uses existing functionality |
+| generate  | given text and/or an image generate text and/or an image                           | high      | Personal interest           |
+| summarize | Paraphrase/summarize text                                                          | moderate  | Personally useful           |
+| win       | given game state, find best move (chess, go, and others?)                          | low       | Personally fun              |
+| perfect   | given image/text that is imperfect, perfect it. (image filter is a simple example) | low       | Personally fun              |
+| forecast  | given past data points, predict future data points                                 | low       | Common use case             |
+| recommend | given historical data, what are recommended things                                 | low       | Common use case             | 
+| match     | given a primary record and X other records, return match probabilities             | low       | Common use case             |
+| rank      | given viewer metadata plus X records, return record rankings                       | low       | Common use case             |
 
 I didn't get very granular with the tasks, except "win", which I imagine using a similar process as
 label, with a monte carlo algorithm on top. I mean, a lot of tasks could be seen as subtasks. For example, you
@@ -118,6 +118,58 @@ at the probability of a label being true to act as a score. One could argue that
 and that the caller should just use label first and then implement their own monte carlo algorithm, but I
 think that there aren't enough people who understand how to do this and yet there are a large group of people who
 would benefit from being able to apply it to the game of their choice. 
+
+I think match and rank are basically the same thing with different engineering around it. You send in two records 
+and a score comes out, repeat for remaining records. Return either the records ordered by score for ranking or 
+return the records plus score. If I get to the point of implementing these, maybe I'll find a better or more 
+interesting way of solving them. I could theoretically have the models take in more than 2 things at a time
+and then use binary cross entropy vs categorical cross entropy depending on if it is match or rank. None of this
+is suitable for a large number of entries. If you were building a search engine (something that I have actually 
+helped with), ranking millions of documents is more complex. However, for the simple case of you have maybe 100
+items, and you want to order them or pick the things that are most similar to your criteria, then this would
+possibly be handy. 
+
+Random thought experiment: If I wanted to only use happyml to create a search engine with minimal external
+code, I'd probably create different happyml tasks for categorizing items (whatever we are searching), categorizing 
+search text (with the goal of filtering down results by best category matches compared to items and the search text), 
+ranking the categories that the user or entire user-base was most likely to be interested in (using past user 
+behavior, but clearly this has a bootstrap issue where there will be no user behavior if your search engine is 
+new, but I can't solve all of your imaginary problems), and then a final task to rank items. I would use a 
+combination of keyword searches, item category matches with the search text categories and the user's and
+user-base's category preferences, and maybe an item popularity factor (how often do people view a given item that 
+has matching search terms) to find reasonable top results that I could then do final ranking related to 
+that user. Maybe. The hardest part of this is bootstrapping: getting enough data to start and train. You could 
+start off treating all categories as having equal weight and rank evenly, then slowly let user-base and 
+user-specific click-through feed into the process. Keyword search, search text classification, and item 
+classification might be enough to get you reasonable initial results to then refine later with more weighting 
+around the types of classifications and items that a user might be more likely to click on. There's probably also 
+the need to evaluate the use cases of whether it's important to show user new items or new categories to evaluate 
+whether they might click it. Clearly this would be a lot of work, and not be easy. Building an industrial strength 
+search engine that performs well in both elapsed time and quality of matches for the specific user is challenging, 
+and I'm not confident that my off-the-cuff ramblings would work. And so much of it would depend on the quality and 
+granularity of your categorization. We're talking about huge amounts of manual labor to build training datasets if 
+you can't find a way to utilize something you have. And honestly, you'd probably want multiple granularities of 
+categorization so that poor searches that don't categorize well fall into a parent category. You need a way to
+find an initial pool of results quickly with your keywords and category matching, so you spend the bulk of your time
+sorting the top X results that they user will actually look at. I'm willing to bet that people want the answer
+to their query to be in the top 3 results, and they want it there a milliseconds. So you can't afford to check
+every document against the search text as specifically as you'd like.
+
+
+Recommend is something that would generally use one of the popular recommendation approaches, but we could probably 
+also solve this with a neural network just because that's what happyml does. This problem is super common and a well 
+traveled path, but if I solved it, I don't know if I would want to leave the neural network path for it. I'm not 
+going to rebuild xgboost. I'd rather re-use as much as I can of what I built, even if the solution isn't as
+efficient.
+
+Complete is something that's also another time series problem solver. This has been done a billion times. If
+I do it, I'll still use a neural network, even though that's not optimal solution. Why? Because this library is
+(mostly) about making neural networks. (Yeah, I know that BPE is technically a model, but I'm not exposing BPE
+to the end users directly.) I know that neural networks are a hammer and not everything is a nail, but I also
+only have so much time to implement things and creating something new that integrates with what I've built so
+far makes me tired just thinking about. Especially when I'm not even that excited about solving this exact 
+problem. Everybody has solved this problem before hundreds of times. I'm pretty sure you could use xgboost
+to forecast a time series.
 
 
 Refine the underlying model from a checkpoint (label) using a dataset.
@@ -190,12 +242,37 @@ the easiest option to support and shouldn't be terribly onerous. It will require
 don't imagine that being the biggest issue, even for large datasets. If you can do those operations to
 prepare the data because of disk space, happyml isn't going to be able to do it for you.
 
+Also, for this initial release, I'm only supporting CSVs with header rows. Strings will be trimmed and it
+will assume the delimiter is a comma. I know this is more restrictive than the C++ api, but I'd rather keep
+the syntax simple for now. Maybe in the future there can be a "with format" criteria that helps configure
+how the data is loaded.
+
 ```
   create dataset <name>
-  [with expected <label|number|text|image> at <column> [through <column>] ]*
-  [with given <label|number|text|image> at <column> [through <column>] ]*   
+  [with expected label at <column> ]*
+  [with expected text at <column> ]*
+  [with expected number(<rows>, <columns>, <channels>) at <column> ]*
+  [with expected image(<rows>, <columns>, <channels>) at <column> ]*
+  [with given <label|number|text|image> [(<rows>, <columns>, <channels>)] at <column> ]*   
   using <file://path/>
 ```
+
+By default, it's assumed that the data is in one row with one channel, but you can optionally specify the dimensions of the 
+data. For example, an RGB image would have 3 channels: one for red, one for green, and one for blue. That image would also
+have rows equal to the picture's height and columns equal to the pictures width. By having multiple columns, you are also
+hinting to happyml that this should be a convolutional neural network. A chess engine would use numbers rather than pixels,
+but it works in a similar fashion as the image, in which it might have 30 or more channels, each with 8 rows and 8 columns.
+
+Types:
+
+| Type   | Description                                                                                                                                                                                                                                                                              |
+|--------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| label  | As a programmer, you can think of a label as an enum. In the file, it is text or a number that represents a category or label, different than "text" in that the label is an indicator of what type of thing we are looking at, the model doesn't treat this as english, but as a number |
+| number | A numeric value that the happyml has the option of standardizing, normalizing, and regularizing.                                                                                                                                                                                         |
+| text   | text that should be byte-pair encoded and that the model will attempt to understand                                                                                                                                                                                                      |
+| image  | pixels that make up the specified rows, columns and channels.                                                                                                                                                                                                                            |
+
+
 
 List existing datasets:
 ```

@@ -21,14 +21,14 @@ namespace happyml {
 // of models that make multiple predictions.
     class TrainingPair {
     public:
-        TrainingPair(vector<shared_ptr<BaseTensor>> &given, vector<shared_ptr<BaseTensor>> &expected) {
-            for (const shared_ptr<BaseTensor> &tensor: given) {
-                this->given.push_back(tensor);
-            }
-            for (const shared_ptr<BaseTensor> &tensor: expected) {
-                this->expected.push_back(tensor);
-            }
-        }
+//        TrainingPair(vector<shared_ptr<BaseTensor>> &given, vector<shared_ptr<BaseTensor>> &expected) {
+//            for (const shared_ptr<BaseTensor> &tensor: given) {
+//                this->given.push_back(tensor);
+//            }
+//            for (const shared_ptr<BaseTensor> &tensor: expected) {
+//                this->expected.push_back(tensor);
+//            }
+//        }
 
         TrainingPair(const vector<shared_ptr<BaseTensor>> &given, const vector<shared_ptr<BaseTensor>> &expected) {
             for (const shared_ptr<BaseTensor> &tensor: given) {
@@ -49,20 +49,12 @@ namespace happyml {
             this->expected.push_back(columnVector(expected));
         }
 
-        shared_ptr<BaseTensor> getFirstGiven() {
-            return given[0];
-        }
-
         vector<shared_ptr<BaseTensor>> getGiven() {
             return given;
         }
 
         size_t getGivenSize() {
             return given.size();
-        }
-
-        shared_ptr<BaseTensor> getFirstExpected() {
-            return expected[0];
         }
 
         vector<shared_ptr<BaseTensor>> getExpected() {

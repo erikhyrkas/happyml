@@ -49,7 +49,7 @@ namespace happyml {
             return make_shared<ParseResult>(make_shared<HelpStatement>(next->getValue()));
         }
 
-        static int parseColumnValue(const shared_ptr<TokenStream> &stream) {
+        static int parseNextNumber(const shared_ptr<TokenStream> &stream) {
             try {
                 return stoi(stream->next()->getValue());
             } catch (invalid_argument const &ex) {
@@ -59,16 +59,39 @@ namespace happyml {
             }
         }
 
-        static int tryParseThroughRange(const shared_ptr<TokenStream> &stream) {
-            if (!stream->hasNext() || "_through" != stream->peek()->getLabel()) {
-                // we default to -1 if there was no value.
-                return -1;
+        static shared_ptr<ParseResult> parseColumnGroup(ColumnGroup &columnGroup,
+                                                        const shared_ptr<TokenStream> &stream) {
+            columnGroup.dataType = stream->next()->getValue();
+            auto dim_or_at = stream->next()->getLabel();
+            if ("_open_parenthesis" == dim_or_at && stream->hasNext()) {
+                columnGroup.rows = parseNextNumber(stream);
+                if(!stream->hasNext()) {
+                    return generateError("with statement is malformed ", stream->previous());
+                }
+                auto comma = stream->next()->getLabel();
+                if ("_comma" != comma || !stream->hasNext()) {
+                    return generateError("with statement is malformed: ", stream->previous());
+                }
+                columnGroup.columns = parseNextNumber(stream);
+                comma = stream->next()->getLabel();
+                if ("_comma" != comma || !stream->hasNext()) {
+                    return generateError("with statement is malformed: ", stream->previous());
+                }
+                columnGroup.channels = parseNextNumber(stream);
+                if ("_close_parenthesis" != stream->next()->getLabel() || !stream->hasNext()) {
+                    return generateError("with statement is malformed: ", stream->previous());
+                }
+                dim_or_at = stream->next()->getLabel();
+            } else {
+                columnGroup.rows = 1;
+                columnGroup.columns = 1;
+                columnGroup.channels = 1;
             }
-            stream->consume();
-            if (!stream->hasNext()) {
-                throw runtime_error("Missing value: " + stream->previous()->render());
+            if ("_at" != dim_or_at || !stream->hasNext()) {
+                return generateError("with statement is malformed: ", stream->previous());
             }
-            return parseColumnValue(stream);
+            columnGroup.startIndex = parseNextNumber(stream);
+            return make_shared<ParseResult>("Success", true);
         }
 
         static string parseLocation(const shared_ptr<TokenStream> &stream) {
@@ -111,39 +134,27 @@ namespace happyml {
                 if (!stream->hasNext(2)) {
                     return generateError("create dataset requires a location: ", datasetName);
                 }
-                vector<ColumnGroup> expected;
-                vector<ColumnGroup> given;
-//                string expectedType = "scalar";
-//                int expectedFrom = 0;
-//                int expectedTo = -1;
-//                string givenType = "scalar";
-//                int givenFrom = 1;
-//                int givenTo = -1;
+                vector<ColumnGroup> column_groups;
 
                 while (stream->hasNext() && "_with" == stream->peek()->getLabel()) {
                     stream->consume();
+                    ColumnGroup columnGroup;
                     string withType = stream->next()->getValue();
                     if ("expected" == withType) {
-                        ColumnGroup columnGroup;
-                        columnGroup.dataType = stream->next()->getValue();
-                        if ("_at" != stream->next()->getLabel()) {
-                            return generateError("with statement is malformed: ", stream->previous());
-                        }
-                        columnGroup.startIndex = parseColumnValue(stream);
-                        columnGroup.endIndex = tryParseThroughRange(stream);
-                        expected.push_back(columnGroup);
+                        columnGroup.expected = true;
                     } else if ("given" == withType) {
-                        ColumnGroup columnGroup;
-                        columnGroup.dataType = stream->next()->getValue();
-                        if ("_at" != stream->next()->getLabel()) {
-                            return generateError("with statement is malformed: ", stream->previous());
-                        }
-                        columnGroup.startIndex = parseColumnValue(stream);
-                        columnGroup.endIndex = tryParseThroughRange(stream);
-                        given.push_back(columnGroup);
+                        columnGroup.expected = false;
                     } else {
                         return generateError("with statement is malformed ", stream->previous());
                     }
+                    auto columnGroupParseResult = parseColumnGroup(columnGroup, stream);
+                    if (!columnGroupParseResult->isSuccessful()) {
+                        return columnGroupParseResult;
+                    }
+                    column_groups.push_back(columnGroup);
+                }
+                if(!stream->hasNext()) {
+                    return generateError("with statement is malformed ", stream->previous());
                 }
                 auto usingKeyword = stream->next();
                 if ("_using" != usingKeyword->getLabel()) {
@@ -151,7 +162,7 @@ namespace happyml {
                 }
                 string location = parseLocation(stream);
 
-                auto createDataset = make_shared<CreateDatasetStatement>(name, location, expected, given);
+                auto createDataset = make_shared<CreateDatasetStatement>(name, location, column_groups);
                 return make_shared<ParseResult>(createDataset);
             } catch (runtime_error &e) {
                 return generateError(e.what(), stream->previous());
