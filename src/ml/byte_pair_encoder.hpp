@@ -522,8 +522,8 @@ namespace happyml {
             }
 
             long total_encoded_length = 0;
-            for (int i = 0; i < validation_data.size(); i++) {
-                auto encoded_string = encode(validation_data[i]);
+            for (const auto & i : validation_data) {
+                auto encoded_string = encode(i);
                 total_encoded_length += static_cast<long>(encoded_string.length());
             }
 
