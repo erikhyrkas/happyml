@@ -156,7 +156,7 @@ namespace happyml {
         // many files with gigabytes of data, you don't want your first
         // few files to influence the result too much. To avoid this,
         // set the num_merges parameter to a small number (e.g. 1000)
-        bool train_on_folder(const string &folder, int num_merges_per_file = 1000) {
+        bool train_on_folder(const string &folder) {
             if (show_progress_) {
                 cout << "Training BPE on folder \"" << folder << "\"" << endl;
             }
