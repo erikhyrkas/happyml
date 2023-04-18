@@ -132,7 +132,7 @@ namespace happyml {
             unordered_map<u16string, size_t> vocab;
             std::ifstream file(filename);
             if (file.is_open()) {
-                vocab = buildVocab(file, show_progress_);
+                buildVocab(file, show_progress_, vocab);
                 file.close();
             } else {
                 std::cerr << "Unable to open file: " << filename << std::endl;
@@ -152,36 +152,31 @@ namespace happyml {
 
         // This function trains the BPE model on an entire folder
         // of text files.
-        // NOTE: If you are training a BPE model on a whole folder of
-        // many files with gigabytes of data, you don't want your first
-        // few files to influence the result too much. To avoid this,
-        // set the num_merges parameter to a small number (e.g. 1000)
         bool train_on_folder(const string &folder) {
             if (show_progress_) {
                 cout << "Training BPE on folder \"" << folder << "\"" << endl;
             }
             bool files_found = false;
             int file_count = 0;
-            vector<unordered_map<u16string, size_t>> individual_vocab;
 
             vector<string> file_paths;
             for (const auto &directory_entry: filesystem::directory_iterator(folder)) {
                 if (directory_entry.is_regular_file()) {
                     file_paths.push_back(directory_entry.path().string());
                     files_found = true;
-                    file_count++;
                 }
             }
-
+            unordered_map<u16string, size_t> vocab;
             for (const auto &file_path: file_paths) {
+                file_count++;
                 if (show_progress_) {
-                    cout << " Loading (" << file_count << ") byte pairs for file \"" << file_path << endl;
+                    cout << "Loading byte pairs for file: " << file_path << " (" << file_count << "/"
+                         << file_paths.size() << ")" << endl;
                 }
 
-                unordered_map<u16string, size_t> vocab;
                 std::ifstream file(file_path);
                 if (file.is_open()) {
-                    vocab = buildVocab(file, false);
+                    buildVocab(file, false, vocab);
                     file.close();
                 } else {
                     {
@@ -189,16 +184,8 @@ namespace happyml {
                         return false;
                     }
                 }
-                individual_vocab.push_back(vocab);
             }
 
-
-            unordered_map<u16string, size_t> combined_vocab;
-            for (const auto &vocab: individual_vocab) {
-                for (const auto &pair: vocab) {
-                    combined_vocab[pair.first] += pair.second;
-                }
-            }
             if (show_progress_) {
                 cout << "BPE Training..."
                      << endl;
@@ -211,7 +198,7 @@ namespace happyml {
                            {},
                            0,
                            bpe_codes,
-                           combined_vocab);
+                           vocab);
             return files_found;
         }
 
@@ -522,7 +509,7 @@ namespace happyml {
             }
 
             long total_encoded_length = 0;
-            for (const auto & i : validation_data) {
+            for (const auto &i: validation_data) {
                 auto encoded_string = encode(i);
                 total_encoded_length += static_cast<long>(encoded_string.length());
             }
@@ -611,8 +598,7 @@ namespace happyml {
             next_code_ = delimiter_code_ + 1;
         }
 
-        unordered_map<u16string, size_t> buildVocab(std::ifstream &file, bool show_progress) {
-            unordered_map<u16string, size_t> vocab;
+        void buildVocab(std::ifstream &file, bool show_progress, unordered_map<u16string, size_t> &vocab) {
             std::string token;
             char last_char = 0;
             char buffer[256 * 1024];
@@ -662,8 +648,6 @@ namespace happyml {
             if (show_progress) {
                 std::cout << endl << "Finish." << std::endl;
             }
-
-            return vocab;
         }
     };
 

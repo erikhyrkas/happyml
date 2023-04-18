@@ -58,9 +58,9 @@ void test_training() {
     ASSERT_TRUE("i" == bpe.decode(bpe.encode("i")));
 }
 
-void test_training3() {
+void test_training_large_file() {
     BytePairEncoderModel bpe;
-    vector<string> const data = load_file_to_tokens("../data/text/data.txt");
+    vector<string> const data = load_file_to_tokens("../data/data.txt");
     bpe.train(data);
 
     auto bpe_codes = bpe.getBpeCodes();
@@ -93,7 +93,7 @@ void test_training4() {
     ASSERT_TRUE("is" == bpe.decode(bpe.encode("is")));
     ASSERT_TRUE("i" == bpe.decode(bpe.encode("i")));
 
-    cout << "Compression: "<< bpe.validate_compression_rate(data) << endl;
+    cout << "Compression: " << bpe.validate_compression_rate(data) << endl;
 
 }
 
@@ -353,7 +353,7 @@ void test_save_load() {
 void test_train_folder() {
     {
         BytePairEncoderModel bpe;
-        bpe.train_on_folder("../data/text");
+        bpe.train_on_folder("../data/misc");
         bpe.save("../repo", "bpe_test_large_folder", true);
     }
     {
@@ -370,6 +370,9 @@ void test_train_folder() {
         ASSERT_TRUE("mars" == bpe.decode(bpe.encode("mars")));
         ASSERT_TRUE("is" == bpe.decode(bpe.encode("is")));
         ASSERT_TRUE("i" == bpe.decode(bpe.encode("i")));
+
+        const vector<string> data = load_file_to_tokens("../data/data.txt");
+        cout << "Compression: " << bpe.validate_compression_rate(data) << endl;
     }
 }
 
@@ -412,7 +415,7 @@ void test_validate_file() {
     ASSERT_TRUE("i" == bpe.decode(bpe.encode("i")));
     const vector<string> data = load_file_to_tokens("../data/text/data.txt");
 
-    cout << "Compression: "<< bpe.validate_compression_rate(data) << endl;
+    cout << "Compression: " << bpe.validate_compression_rate(data) << endl;
 }
 
 
@@ -427,7 +430,10 @@ int main() {
 
 //        test_train_folder();
 //        timer.printMilliseconds();
-//
+
+//        test_training_large_file();
+//        timer.printMilliseconds();
+
         test_save_load();
         timer.printMilliseconds();
 
@@ -436,9 +442,6 @@ int main() {
 
         test_training4();
         timer.printMilliseconds();
-
-//                test_training3();
-//                timer.printMilliseconds();
 
         test_training();
         timer.printMilliseconds();

@@ -248,6 +248,7 @@ namespace happyml {
 
         // If the substring to find is empty, simply return without modifying the input string
         if (find_length == 0) {
+            result = string_to_update;
             return;
         }
 
