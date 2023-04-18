@@ -73,3 +73,5 @@ add_executable(test_one_hot_encoding src/test/test_one_hot_encoding.cpp)
 add_executable(test_create_dataset_statement src/test/test_create_dataset_statement.cpp)
 
 add_executable(test_half_float src/test/test_half_float.cpp)
+
+add_executable(test_trie src/test/test_trie.cpp)

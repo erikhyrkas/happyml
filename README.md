@@ -4,13 +4,27 @@
 
 happyml is a small machine learning library with a simple interface intended for everybody. 
 
-# MIT License
-
-See the [LICENSE](LICENSE) file for details.
-
 ### What can it do?
 
-The components are present to build a number of different types of deep learning models.
+**In the (hopefully) near future**, you'll be able to use happyml to define tasks backed by a 
+machine learning model and train it to solve the task by giving it a set of example inputs 
+and the corresponding outputs. The syntax is still in flux, but it will look something like this:
+
+```happyml
+create dataset my_chat_base using file://chat_base.csv
+
+create dataset my_chat_tasks using file://chat_tasks.csv
+
+create task generate my_chat_task using my_chat_base
+
+refine task my_chat_task using my_chat_tasks
+
+execute my_chat_task using input "How tall is a giraffe?"
+```
+
+**At the present**, you still need to use C++ instead of the scripting language, and it does
+require a deeper understanding of how machine learning works, but happyml still tries to make
+it as simple as possible.
 
 Here are two examples:
 * [MNIST example](src/example/example_mnist_model_convolution.cpp).
@@ -106,3 +120,7 @@ Three reasons I built happyml:
 1. LEARNING: I want to understand every aspect of what goes into the science and algorithms fueling the future, and share what I learn along the way. The next generation can pick up this torch and build their own dreams.
 2. DEMOCRATIZING POWER: The most powerful machine learning done today is done on millions of dollars of hardware by a relatively few people. My hope is that this framework can be used by anybody on commodity hardware to build their own dreams. 
 3. STUBBORNNESS: There are a million reasons not to build this, which is enough to harden my resolve to build it.
+
+# MIT License
+
+See the [LICENSE](LICENSE) file for details.

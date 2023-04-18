@@ -15,7 +15,6 @@
 #include <iomanip>
 #include <filesystem>
 #include <execution>
-#include <omp.h>
 #include "../util/data_util.hpp"
 #include "../util/timers.hpp"
 
@@ -36,8 +35,6 @@ namespace happyml {
                   name_(std::move(name)),
                   next_code_(delimiter_code + 1) {
             setDelimiterCode(delimiter_code);
-            encode_trie_root = build_trie_for_encode(ordered_bpe_codes_);
-            decode_trie_root = build_trie_for_decode(ordered_bpe_codes_);
         }
 
         string getName() {
@@ -55,8 +52,6 @@ namespace happyml {
                      return a.second > b.second;
                  });
             ordered_bpe_codes_.swap(ordered_bpe_codes);
-            encode_trie_root = build_trie_for_encode(ordered_bpe_codes_);
-            decode_trie_root = build_trie_for_decode(ordered_bpe_codes_);
             for (const auto &element: ordered_bpe_codes_) {
                 uint16_t const next = std::max(find_max_16bit_value(element.first),
                                                find_max_16bit_value(element.second)) + 1;
@@ -90,45 +85,6 @@ namespace happyml {
             if (token.empty()) {
                 return {};
             }
-            const u16string text16bit(token.begin(), token.end());
-            u16string encoded;
-            encoded.reserve(delimiter_.size() * 2 + text16bit.size());
-            encoded += delimiter_;
-            encoded += text16bit;
-            encoded += delimiter_;
-
-            u16string result;
-            result.reserve(encoded.size());
-
-            size_t start_pos = 0;
-            while (start_pos < encoded.size()) {
-                shared_ptr<TrieNode> node = encode_trie_root;
-                size_t i;
-                for (i = start_pos; i < encoded.size(); ++i) {
-                    node = node->find(encoded, i);
-                    if (!node) {
-                        break;
-                    }
-
-                    if (!node->value_.empty()) {
-                        result += node->value_;
-                        start_pos = i + node->key_length;
-                        break;
-                    }
-                }
-
-                if (i == encoded.size() || !node) {
-                    result += encoded[start_pos++];
-                }
-            }
-
-            return result;
-        }
-
-        u16string encode_v1(const string &token) {
-            if (token.empty()) {
-                return {};
-            }
             u16string const text16bit(token.begin(), token.end());
             // looks simpler, but we need to optimize:
             // u16string encoded = delimiter_ + text16bit + delimiter_;
@@ -142,11 +98,7 @@ namespace happyml {
 
             for (auto replacement = ordered_bpe_codes_.rbegin();
                  replacement != ordered_bpe_codes_.rend(); ++replacement) {
-                size_t find_length = replacement->first.length();
-                size_t replace_length = replacement->second.length();
-
-                u16string_replace_all_to_buffer(*encoded_ptr, *buffer, replacement->first, replacement->second,
-                                                find_length, replace_length);
+                u16string_replace_all_to_buffer(*encoded_ptr, *buffer, replacement->first, replacement->second);
                 buffer.swap(encoded_ptr);
             }
             return *encoded_ptr;
@@ -155,39 +107,6 @@ namespace happyml {
         // Decodes an encoded u16string using the BPE codes in the model.
         // encoded: The input u16string to be decoded.
         // Returns the decoded string.
-        string decode_v2(const u16string &encoded) {
-            if (encoded.empty()) {
-                return {};
-            }
-
-            string result;
-            result.reserve(encoded.size());
-
-            size_t start_pos = 0;
-            while (start_pos < encoded.size()) {
-                shared_ptr<TrieNode> node = decode_trie_root;
-                size_t i;
-                for (i = start_pos; i < encoded.size(); ++i) {
-                    node = node->find(encoded, i);
-                    if (!node) {
-                        break;
-                    }
-
-                    if (!node->value_.empty()) {
-                        result.append(node->value_.begin(), node->value_.end());
-                        start_pos = i + 1;
-                        break;
-                    }
-                }
-
-                if (i == encoded.size() || !node) {
-                    result.push_back(static_cast<char>(encoded[start_pos++]));
-                }
-            }
-
-            return result;
-        }
-
         string decode(const u16string &encoded) {
             if (encoded.empty()) {
                 return {};
@@ -242,7 +161,6 @@ namespace happyml {
                 cout << "Training BPE on folder \"" << folder << "\"" << endl;
             }
             bool files_found = false;
-            bool error_occurred = false;
             int file_count = 0;
             vector<unordered_map<u16string, size_t>> individual_vocab;
 
@@ -250,59 +168,30 @@ namespace happyml {
             for (const auto &directory_entry: filesystem::directory_iterator(folder)) {
                 if (directory_entry.is_regular_file()) {
                     file_paths.push_back(directory_entry.path().string());
+                    files_found = true;
+                    file_count++;
                 }
             }
 
-            int processing_threads = 3; //std::max(4, static_cast<int>(omp_get_max_threads() * 0.5));
+            for (const auto &file_path: file_paths) {
+                if (show_progress_) {
+                    cout << " Loading (" << file_count << ") byte pairs for file \"" << file_path << endl;
+                }
 
-            omp_set_num_threads(processing_threads);
-
-#pragma omp parallel
-            {
-                vector<unordered_map<u16string, size_t>> individual_vocab_private;
-#pragma omp for schedule(dynamic) nowait
-                for (int i = 0; i < file_paths.size(); ++i) {
-                    if (!error_occurred) {
-                        files_found = true;
-#pragma omp atomic
-                        file_count++;
-
-                        if (show_progress_) {
-#pragma omp critical
-                            {
-                                int thread_id = omp_get_thread_num();
-                                int active_threads = omp_get_num_threads();
-                                cout << "Thread ID: " << thread_id << " Loading (" << file_count << ") byte pairs for file \""
-                                     << file_paths[i]
-                                     << "\" (Active Threads: " << active_threads << ")" << endl;
-                            }
-                        }
-
-                        unordered_map<u16string, size_t> vocab;
-                        string filename = file_paths[i];
-                        std::ifstream file(filename);
-                        if (file.is_open()) {
-                            vocab = buildVocab(file, false);
-                            file.close();
-                        } else {
-#pragma omp critical
-                            {
-                                std::cerr << "Unable to open file: " << filename << std::endl;
-                                error_occurred = true;
-                            }
-                        }
-                        individual_vocab_private.push_back(vocab);
-
+                unordered_map<u16string, size_t> vocab;
+                std::ifstream file(file_path);
+                if (file.is_open()) {
+                    vocab = buildVocab(file, false);
+                    file.close();
+                } else {
+                    {
+                        std::cerr << "Unable to open file: " << file_path << std::endl;
+                        return false;
                     }
                 }
-#pragma omp critical
-                individual_vocab.insert(individual_vocab.end(), individual_vocab_private.begin(),
-                                        individual_vocab_private.end());
+                individual_vocab.push_back(vocab);
             }
 
-            if (error_occurred) {
-                return false;
-            }
 
             unordered_map<u16string, size_t> combined_vocab;
             for (const auto &vocab: individual_vocab) {
@@ -480,9 +369,6 @@ namespace happyml {
                      return a.second > b.second;
                  });
             ordered_bpe_codes_.swap(ordered_bpe_codes);
-            encode_trie_root = build_trie_for_encode(ordered_bpe_codes_);
-            decode_trie_root = build_trie_for_decode(ordered_bpe_codes_);
-
         }
 
         // Returns the BPE codes in the model as a vector of pairs.
@@ -630,10 +516,12 @@ namespace happyml {
                 for (const auto &text: validation_data) {
                     total_validation_length += (long) text.length();
                 }
+                if (total_validation_length < 1) {
+                    return 0.0;
+                }
             }
 
             long total_encoded_length = 0;
-#pragma omp parallel for reduction(+:total_encoded_length)
             for (int i = 0; i < validation_data.size(); i++) {
                 auto encoded_string = encode(validation_data[i]);
                 total_encoded_length += static_cast<long>(encoded_string.length());
@@ -700,8 +588,6 @@ namespace happyml {
 
                 if (!file.eof()) {
                     ordered_bpe_codes_.push_back(std::move(code_pair));
-                    encode_trie_root = build_trie_for_encode(ordered_bpe_codes_);
-                    decode_trie_root = build_trie_for_decode(ordered_bpe_codes_);
                 }
             }
 
@@ -714,10 +600,8 @@ namespace happyml {
         uint16_t delimiter_code_{}; // a value we can do math with and our base starting point.
         u16string delimiter_; // saves us from recomputing the u16 string
         uint16_t next_code_;
-        bool show_progress_; // do we print out text while training?
+        bool show_progress_; // do we print text while training?
         string name_;
-        shared_ptr<TrieNode> encode_trie_root;
-        shared_ptr<TrieNode> decode_trie_root;
 
         // Sets the delimiter code and delimiter string.
         // delimiter_code: The delimiter code to be used.

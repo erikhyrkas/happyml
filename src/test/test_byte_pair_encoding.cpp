@@ -92,6 +92,9 @@ void test_training4() {
     ASSERT_TRUE("mars" == bpe.decode(bpe.encode("mars")));
     ASSERT_TRUE("is" == bpe.decode(bpe.encode("is")));
     ASSERT_TRUE("i" == bpe.decode(bpe.encode("i")));
+
+    cout << "Compression: "<< bpe.validate_compression_rate(data) << endl;
+
 }
 
 
@@ -373,12 +376,12 @@ void test_train_folder() {
 void test_train_file() {
     {
         BytePairEncoderModel bpe;
-        bpe.train_on_file("../data/internet.txt");
-        bpe.save("../repo", "bpe_test_large_file", true);
+        bpe.train_on_file("../data/data.txt");
+        bpe.save("../repo", "bpe_data", true);
     }
     {
         BytePairEncoderModel bpe;
-        bpe.load("../repo", "bpe_test_large_file");
+        bpe.load("../repo", "bpe_data");
         ASSERT_TRUE(!bpe.getBpeCodes().empty());
 
         auto hello16 = bpe.encode("hello");
@@ -393,9 +396,34 @@ void test_train_file() {
     }
 }
 
+void test_validate_file() {
+    BytePairEncoderModel bpe;
+    bpe.load("../happyml_repo", "default_token_encoder");
+    ASSERT_TRUE(!bpe.getBpeCodes().empty());
+
+    auto hello16 = bpe.encode("hello");
+    cout << "hello: " << string(hello16.begin(), hello16.end()) << endl;
+    auto is16 = bpe.encode("is");
+    cout << "is: " << string(is16.begin(), is16.end()) << endl;
+
+    ASSERT_TRUE("hello" == bpe.decode(bpe.encode("hello")));
+    ASSERT_TRUE("mars" == bpe.decode(bpe.encode("mars")));
+    ASSERT_TRUE("is" == bpe.decode(bpe.encode("is")));
+    ASSERT_TRUE("i" == bpe.decode(bpe.encode("i")));
+    const vector<string> data = load_file_to_tokens("../data/text/data.txt");
+
+    cout << "Compression: "<< bpe.validate_compression_rate(data) << endl;
+}
+
+
 int main() {
     try {
         EvenMoreSimpleTimer timer;
+//        test_validate_file();
+//        timer.printMilliseconds();
+
+//        test_train_file();
+//        timer.printMilliseconds();
 
 //        test_train_folder();
 //        timer.printMilliseconds();
