@@ -184,6 +184,10 @@ namespace happyml {
             assignFromStream(stream);
         }
 
+        explicit FullTensor(ifstream &stream, uint64_t rows, uint64_t columns, uint64_t channels) {
+            assignBodyFromStream(stream, rows, columns, channels);
+        }
+
         size_t channelCount() override {
             return data.size();
         }
@@ -225,6 +229,10 @@ namespace happyml {
             stream.read(reinterpret_cast<char *>(&columns), sizeof(columns));
             columns = portableBytes(columns);
 
+            assignBodyFromStream(stream, rows, columns, channels);
+        }
+
+        void assignBodyFromStream(ifstream &stream, uint64_t rows, uint64_t columns, uint64_t channels) {
             data.resize(channels);
             for (size_t channel = 0; channel < channels; channel++) {
                 data.at(channel).resize(rows);
@@ -325,6 +333,10 @@ namespace happyml {
             assignFromStream(stream);
         }
 
+        explicit PixelTensor(ifstream &stream, uint64_t rows, uint64_t columns, uint64_t channels) {
+            assignBodyFromStream(stream, rows, columns, channels);
+        }
+
         size_t channelCount() override {
             return data.size();
         }
@@ -366,6 +378,10 @@ namespace happyml {
             stream.read(reinterpret_cast<char *>(&columns), sizeof(columns));
             columns = portableBytes(columns);
 
+            assignBodyFromStream(stream, rows, columns, channels);
+        }
+
+        void assignBodyFromStream(ifstream &stream, uint64_t rows, uint64_t columns, uint64_t channels) {
             data.resize(channels);
             for (size_t channel = 0; channel < channels; channel++) {
                 data.at(channel).resize(rows);
@@ -447,6 +463,10 @@ namespace happyml {
             this->bias = bias;
             assignFromStream(stream);
         }
+        explicit QuarterTensor(ifstream &stream, const int bias, uint64_t rows, uint64_t columns, uint64_t channels) {
+            this->bias = bias;
+            assignBodyFromStream(stream, rows, columns, channels);
+        }
 
         size_t channelCount() override {
             return data.size();
@@ -495,6 +515,10 @@ namespace happyml {
             stream.read(reinterpret_cast<char *>(&columns), sizeof(columns));
             columns = portableBytes(columns);
 
+            assignBodyFromStream(stream, rows, columns, channels);
+        }
+
+        void assignBodyFromStream(ifstream &stream, uint64_t rows, uint64_t columns, uint64_t channels) {
             data.resize(channels);
             for (size_t channel = 0; channel < channels; channel++) {
                 data.at(channel).resize(rows);
@@ -510,7 +534,6 @@ namespace happyml {
                 }
             }
         }
-
         // Don't assign values directly to a tensor. If you have specific values for specific entries,
         // use a view like TensorFromFunction to represent it. Chances are, you don't need to allocate
         // a lot of memory for a full tensor that you will then do other math on. Wait to use memory

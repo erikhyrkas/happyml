@@ -413,7 +413,7 @@ void test_validate_file() {
     ASSERT_TRUE("mars" == bpe.decode(bpe.encode("mars")));
     ASSERT_TRUE("is" == bpe.decode(bpe.encode("is")));
     ASSERT_TRUE("i" == bpe.decode(bpe.encode("i")));
-    const vector<string> data = load_file_to_tokens("../data/text/data.txt");
+    const vector<string> data = load_file_to_tokens("../data/misc/tritium gambit.txt");//data.txt");
 
     cout << "Compression: " << bpe.validate_compression_rate(data) << endl;
 }

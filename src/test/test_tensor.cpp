@@ -561,11 +561,27 @@ void testFullSaveLoad() {
     remove(filename.c_str());
 }
 
+void test_0_1_tensor() {
+    vector<vector<float>> a = {{1, 0, 0},
+                               {0, 1, 0},
+                               {0, 0, 1}};
+    auto matrix1 = make_shared<QuarterTensor>(a, 4);
+    for(int i = 0; i < 3; i++) {
+        for(int j = 0; j < 3; j++) {
+            ASSERT_TRUE(matrix1->getValue(i, j, 0) == (i == j));
+        }
+    }
+//    matrix1->print();
+    PASS_TEST();
+}
+
 int main() {
     try {
         // TODO: a lot of these tests don't cover the situation where we have many channels
         // they often test the simple case of a single channel.
         EvenMoreSimpleTimer timer;
+        test_0_1_tensor();
+        timer.printMilliseconds();
         sumTest();
         timer.printMilliseconds();
         productTest();

@@ -120,17 +120,18 @@ namespace happyml {
             return false;
         }
 
-        void save(ofstream &stream) {
+        void save(ofstream &stream, bool no_header = false) {
             uint64_t channels = channelCount();
             uint64_t rows = rowCount();
             uint64_t columns = columnCount();
-
-            auto portableChannels = portableBytes(channels);
-            stream.write(reinterpret_cast<const char *>(&portableChannels), sizeof(portableChannels));
-            auto portableRows = portableBytes(rows);
-            stream.write(reinterpret_cast<const char *>(&portableRows), sizeof(portableRows));
-            auto portableColumns = portableBytes(columns);
-            stream.write(reinterpret_cast<const char *>(&portableColumns), sizeof(portableColumns));
+            if(no_header) {
+                auto portableChannels = portableBytes(channels);
+                stream.write(reinterpret_cast<const char *>(&portableChannels), sizeof(portableChannels));
+                auto portableRows = portableBytes(rows);
+                stream.write(reinterpret_cast<const char *>(&portableRows), sizeof(portableRows));
+                auto portableColumns = portableBytes(columns);
+                stream.write(reinterpret_cast<const char *>(&portableColumns), sizeof(portableColumns));
+            }
 
             for (size_t channel = 0; channel < channels; channel++) {
                 for (size_t row = 0; row < rows; row++) {
