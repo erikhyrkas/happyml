@@ -98,9 +98,11 @@ namespace happyml {
     public:
         CreateDatasetStatement(string name,
                                string location,
+                               bool skip_header,
                                vector<ColumnGroup> column_groups) :
-                name(std::move(name)),
-                location(std::move(location)),
+                name_(std::move(name)),
+                location_(std::move(location)),
+                skip_header_(skip_header),
                 column_groups_(std::move(column_groups)) {
         }
 
@@ -108,7 +110,7 @@ namespace happyml {
             string warning;
 
             // default to success if there are no children.
-            if (location.find("file://") != 0) {
+            if (location_.find("file://") != 0) {
                 return make_shared<ExecutionResult>(false, false,
                                                     "create dataset only supports file:// location type at the moment.");
             }
@@ -141,6 +143,39 @@ namespace happyml {
                     context->setBpeEncoder(defaultBytePairEncoder);
                 }
             }
+
+            // steps:
+            // 1. Map old column order to new column order with givens values first, then expected values second, we'll need this for the following steps
+
+            vector<ColumnGroup> given_column_groups;
+            vector<ColumnGroup> expected_column_groups;
+            for( const auto &columnGroup : column_groups_ ) {
+                if( columnGroup.expected ) {
+                    expected_column_groups.push_back( columnGroup );
+                } else {
+                    given_column_groups.push_back( columnGroup );
+                }
+            }
+
+            // 2. Copy the original text file to a new "given-expected" file, arranging given before expected values
+            //    b. Copy the original file to a new file, arranging columns as expected
+
+            update_column_positions(location_, location_ + ".given-expected", given_column_groups, expected_column_groups, skip_header_ );
+
+
+            // 3. Use FileSorter.sort() to sort and dedupe the "given-expected" file as a new "sorted-deduped" file
+            //    NOTE: remove "given-expected" file
+
+
+            // 4. Create new BinaryDataset from "sorted-deduped" file, deduping any givens that are the same, call new binary file "clean dataset"
+            //    NOTE: remove "sorted-deduped" file
+            // 5. If needed, standarize and normalize the "clean dataset" file, call new binary file "standardized-normalized dataset"
+            //    NOTE: remove "clean dataset" file
+            // 6. Save a properties file that tracks the original given and expected metadata (data types, shapes, and starting column positions) and the new binary order
+            //    NOTE: This is used later when the user creates a task, and the task needs to understand how the user might send requests
+
+
+
             //TODO: finish this
 //            create_binary_dataset_from_delimited_values(DEFAULT_HAPPYML_REPO_PATH,
 //                                                        name,
@@ -161,9 +196,10 @@ namespace happyml {
         }
 
     private:
-        string name;
-        string location;
+        string name_;
+        string location_;
         vector<ColumnGroup> column_groups_;
+        bool skip_header_;
     };
 
     class CodeBlock : public ExecutableStatement {

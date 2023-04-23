@@ -40,7 +40,9 @@
 void printBits(const uint64_t x) {
     for (int i = 63; i >= 0; i--) {
         cout << ((x >> i) & 1);
-        if ((i % 8) == 0) cout << " ";
+        if ((i % 8) == 0) {
+            cout << " ";
+        }
     }
     cout << endl;
 }
@@ -79,7 +81,7 @@ string asString(bool b) {
     return b ? "true" : "false";
 }
 
-bool asBool(const string& b) {
+bool asBool(const string &b) {
     return b == "true";
 }
 
@@ -125,5 +127,10 @@ uint16_t portableBytes(uint16_t bytes) {
 }
 
 #endif
+
+float portableFloat(uint32_t bytes) {
+    uint32_t temp = portableBytes(bytes);
+    return *(float *) &temp;
+}
 
 #endif //HAPPYML_PORTABLE_BYTES_HPP

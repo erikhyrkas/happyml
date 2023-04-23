@@ -162,8 +162,9 @@ namespace happyml {
                 }
                 string location = parseLocation(stream);
 
-                auto createDataset = make_shared<CreateDatasetStatement>(name, location, column_groups);
-                return make_shared<ParseResult>(createDataset);
+//                auto createDataset = make_shared<CreateDatasetStatement>(name, location, column_groups);
+//                return make_shared<ParseResult>(createDataset);
+                return generateError("Unimplemented: Work in progress.", usingKeyword);
             } catch (runtime_error &e) {
                 return generateError(e.what(), stream->previous());
             }

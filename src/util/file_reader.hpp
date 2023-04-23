@@ -14,6 +14,10 @@
 #include <filesystem>
 #include <variant>
 #include "../ml/byte_pair_encoder.hpp"
+#include "../types/materialized_tensors.hpp"
+#include "column_metadata.hpp"
+#include "text_file_encoder_decoder.hpp"
+
 
 using namespace std;
 
@@ -112,9 +116,10 @@ namespace happyml {
 
     class DelimitedTextFileReader {
     public:
-        explicit DelimitedTextFileReader(const string &path, char delimiter=',', bool skip_header = false) : lineReader(path,
-                                                                                                           skip_header) {
-            this->delimiter = delimiter;
+        explicit DelimitedTextFileReader(const string &path, char delimiter = ',', bool skip_header = false) :
+                lineReader(path,
+                           skip_header) {
+            this->delimiter_ = delimiter;
         }
 
         ~DelimitedTextFileReader() {
@@ -131,15 +136,15 @@ namespace happyml {
 
         vector<string> nextRecord() {
             vector<string> result;
-            string current_word = "";
+            string current_word;
             bool in_quotes = false;
 
             while (lineReader.hasNext()) {
                 string line = lineReader.nextLine();
                 for (size_t i = 0; i < line.size(); ++i) {
                     char c = line[i];
-                    if (c == delimiter && !in_quotes) {
-                        result.push_back(current_word);
+                    if (c == delimiter_ && !in_quotes) {
+                        result.push_back(TextFileEncoderDecoder::decodeString(current_word, delimiter_));
                         current_word = "";
                     } else if (c == '"') {
                         if (!in_quotes) {
@@ -171,146 +176,154 @@ namespace happyml {
 
     private:
         TextLinePathReader lineReader;
-        char delimiter;
+        char delimiter_;
     };
+
 
     class BinaryDatasetReader {
     public:
-        BinaryDatasetReader(const string &inputPath, shared_ptr<BytePairEncoderModel> bpe) :
-                bpeModel_(std::move(bpe)) {
-            binaryFile_.open(inputPath, ios::binary | ios::in);
+        explicit BinaryDatasetReader(const string &path) : path_(path) {
+            binaryFile_.open(path, ios::binary | ios::in);
             readHeader();
         }
 
         ~BinaryDatasetReader() {
-            binaryFile_.close();
+            close();
         }
 
-        [[nodiscard]] bool hasNext() const {
-            return currentPosition_ < recordCount_;
-        }
-
-        // Method to get the total number of records in the file
-        [[nodiscard]] size_t getRecordCount() const {
-            return recordCount_;
-        }
-
-        // Method to fetch a specific record by its index
-        vector<variant<double, string>> fetchRecord(size_t index) {
-            if (index >= recordCount_) {
-                throw out_of_range("Requested index is out of range.");
+        void close() {
+            if (binaryFile_.is_open()) {
+                binaryFile_.close();
             }
-            // Move to the requested index
-            binaryFile_.seekg(static_cast<long long>(headerSize_ + index * recordSize_), ios::beg);
+        }
 
-            // Read the requested record
-            vector<variant<double, string>> record;
-            record.reserve(columnTypes_.size());
+        [[nodiscard]] size_t rowCount() const {
+            return number_of_rows_;
+        }
 
-            for (size_t i = 0; i < columnTypes_.size(); ++i) {
-                if (columnTypes_[i] == 'N') {
-                    double number;
-                    binaryFile_.read(reinterpret_cast<char *>(&number), sizeof(double));
-                    record.emplace_back(number);
-                } else {
-                    size_t encodedSize = columnWidths_[i] / sizeof(char16_t);
-                    vector<char16_t> encoded(encodedSize);
-                    binaryFile_.read(reinterpret_cast<char *>(encoded.data()), static_cast<streamsize>(columnWidths_[i]));
-                    u16string encodedStr(encoded.begin(), encoded.end());
-                    auto first_null = encodedStr.find(u'\0');
-                    if( first_null != string::npos) {
-                        encodedStr.erase(first_null, string::npos);  // Remove padding
-                    }
-                    string text = bpeModel_->decode(encodedStr);
-                    record.emplace_back(text);
-                }
+        pair<vector<shared_ptr<BaseTensor>>, vector<shared_ptr<BaseTensor>>> readRow(size_t index) {
+            // advance to the beginning of the row, which is header_size_ + index * row_size_
+            std::streamoff offset = static_cast<std::streamoff>(index) * static_cast<std::streamoff>(row_size_);
+            binaryFile_.seekg(header_size_ + offset, ios::beg);
+
+            vector<shared_ptr<BaseTensor>> given_tensors;
+            for (const auto &metadata: given_metadata_) {
+                shared_ptr<BaseTensor> next_tensor = loadTensor(metadata);
+                given_tensors.push_back(next_tensor);
             }
-
-            currentPosition_ = index + 1;
-            return record;
-        }
-
-        vector<variant<double, string>> nextMixedRecord() {
-            return fetchRecord(currentPosition_);
-        }
-
-        vector<double> nextDoubleRecord() {
-            vector<variant<double, string>> mixedRecord = fetchRecord(currentPosition_);
-            vector<double> record;
-            record.reserve(mixedRecord.size());
-
-            for (const auto &value : mixedRecord) {
-                if (holds_alternative<double>(value)) {
-                    record.push_back(get<double>(value));
-                } else {
-                    throw runtime_error("This record contains a non-numeric value.");
-                }
+            vector<shared_ptr<BaseTensor>> expected_tensors;
+            for (const auto &metadata: expected_metadata_) {
+                shared_ptr<BaseTensor> next_tensor = loadTensor(metadata);
+                expected_tensors.push_back(next_tensor);
             }
-
-            return record;
+            return {given_tensors, expected_tensors};
         }
 
-        // Method that checks if all columns are of the numeric type
-        [[nodiscard]] bool areAllColumnsNumbers() const {
-            return all_of(columnTypes_.begin(), columnTypes_.end(), [](char colType) {
-                return colType == 'N';
-            });
-        }
 
-        vector<string> nextRecord() {
-            vector<variant<double, string>> mixedRecord = fetchRecord(currentPosition_);
-            vector<string> record;
-            record.reserve(mixedRecord.size());
-
-            for (const auto &value : mixedRecord) {
-                if (holds_alternative<double>(value)) {
-                    record.push_back(to_string(get<double>(value)));
-                } else {
-                    record.emplace_back(get<string>(value));
-                }
+        char getExpectedTensorPurpose(size_t index) {
+            if (index >= expected_metadata_.size()) {
+                throw runtime_error("Index out of bounds");
             }
+            return expected_metadata_[index]->purpose;
+        }
 
-            return record;
+        char getGivenTensorPurpose(size_t index) {
+            if (index >= given_metadata_.size()) {
+                throw runtime_error("Index out of bounds");
+            }
+            return given_metadata_[index]->purpose;
+        }
+
+        vector<size_t> getExpectedTensorDims(size_t index) {
+            if (index >= expected_metadata_.size()) {
+                throw runtime_error("Index out of bounds");
+            }
+            return {expected_metadata_[index]->rows, expected_metadata_[index]->columns, expected_metadata_[index]->channels};
+        }
+
+        vector<size_t> getGivenTensorDims(size_t index) {
+            if (index >= given_metadata_.size()) {
+                throw runtime_error("Index out of bounds");
+            }
+            return {given_metadata_[index]->rows, given_metadata_[index]->columns, given_metadata_[index]->channels};
         }
 
     private:
         ifstream binaryFile_;
-        shared_ptr<BytePairEncoderModel> bpeModel_;
-        vector<char> columnTypes_;
-        vector<size_t> columnWidths_;
-        size_t recordCount_{};
-        size_t currentPosition_ = 0;
-        size_t headerSize_ = 0;
-        size_t recordSize_ = 0;
+        size_t row_size_{};
+        streampos header_size_;
+        vector<shared_ptr<BinaryColumnMetadata>> given_metadata_;
+        vector<shared_ptr<BinaryColumnMetadata>> expected_metadata_;
+        size_t number_of_rows_{};
+        string path_;
 
         void readHeader() {
-            // Read column types
-            uint16_t columnTypesSize;
-            binaryFile_.read(reinterpret_cast<char *>(&columnTypesSize), sizeof(uint16_t));
-            columnTypes_.resize(columnTypesSize);
-            binaryFile_.read(reinterpret_cast<char *>(columnTypes_.data()), static_cast<streamsize>(columnTypesSize * sizeof(char)));
-
-            // Read column widths
-            size_t columnWidthsSize = columnTypes_.size();
-            columnWidths_.resize(columnWidthsSize);
-            binaryFile_.read(reinterpret_cast<char *>(columnWidths_.data()), static_cast<streamsize>(columnWidthsSize * sizeof(size_t)));
-            recordSize_ = accumulate(columnWidths_.begin(), columnWidths_.end(), size_t{0});
-
-            // Read record count
-            binaryFile_.read(reinterpret_cast<char *>(&recordCount_), sizeof(size_t));
-
-            // Read BPE model name
-            uint16_t bpeModelNameLength;
-
-            binaryFile_.read(reinterpret_cast<char *>(&bpeModelNameLength), sizeof(uint16_t));
-            string bpeModelName(bpeModelNameLength, '\0');
-            binaryFile_.read(&bpeModelName[0], static_cast<streamsize>(bpeModelNameLength * sizeof(char)));
-
-            // Verify BPE model name matches
-            if (bpeModel_->getName() != bpeModelName) {
-                throw runtime_error("BPE model name in binary file does not match provided BPE model.");
+            row_size_ = 0;
+            uint64_t number_of_given;
+            binaryFile_.read(reinterpret_cast<char *>(&number_of_given), sizeof(uint64_t));
+            for (size_t i = 0; i < number_of_given; i++) {
+                shared_ptr<BinaryColumnMetadata> metadata = readColumnMetadata();
+                row_size_ += metadata->rows * metadata->columns * metadata->channels * sizeof(float);
+                given_metadata_.emplace_back(metadata);
             }
-            headerSize_ = binaryFile_.tellg();
+            uint64_t number_of_expected;
+            binaryFile_.read(reinterpret_cast<char *>(&number_of_expected), sizeof(uint64_t));
+            for (size_t i = 0; i < number_of_expected; i++) {
+                shared_ptr<BinaryColumnMetadata> metadata = readColumnMetadata();
+                row_size_ += metadata->rows * metadata->columns * metadata->channels * sizeof(float);
+                expected_metadata_.emplace_back(metadata);
+            }
+            header_size_ = binaryFile_.tellg();
+            number_of_rows_ = static_cast<size_t>(filesystem::file_size(path_) - header_size_) / row_size_;
+        }
+
+        shared_ptr<BinaryColumnMetadata> readColumnMetadata() {
+            shared_ptr<BinaryColumnMetadata> metadata = make_shared<BinaryColumnMetadata>();
+            binaryFile_.read(reinterpret_cast<char *>(&metadata->purpose), sizeof(char));
+
+            binaryFile_.read(reinterpret_cast<char *>(&metadata->is_standardized), sizeof(bool));
+            uint32_t portableMean;
+            binaryFile_.read(reinterpret_cast<char *>(&portableMean), sizeof(uint32_t));
+            portableMean = portableBytes(portableMean);
+            metadata->mean = *(float *) &portableMean;
+            uint32_t portableStandardDeviation;
+            binaryFile_.read(reinterpret_cast<char *>(&portableStandardDeviation), sizeof(uint32_t));
+            metadata->standard_deviation = portableFloat(portableStandardDeviation);
+
+            binaryFile_.read(reinterpret_cast<char *>(&metadata->is_normalized), sizeof(bool));
+            uint32_t portableMinValue;
+            binaryFile_.read(reinterpret_cast<char *>(&portableMinValue), sizeof(uint32_t));
+            metadata->min_value = portableFloat(portableMinValue);
+            uint32_t portableMaxValue;
+            binaryFile_.read(reinterpret_cast<char *>(&portableMaxValue), sizeof(uint32_t));
+            metadata->max_value = portableFloat(portableMaxValue);
+
+            size_t portableRows;
+            binaryFile_.read(reinterpret_cast<char *>(&portableRows), sizeof(uint64_t));
+            metadata->rows = portableBytes(portableRows);
+            size_t portableColumns;
+            binaryFile_.read(reinterpret_cast<char *>(&portableColumns), sizeof(uint64_t));
+            metadata->columns = portableBytes(portableColumns);
+            size_t portableChannels;
+            binaryFile_.read(reinterpret_cast<char *>(&portableChannels), sizeof(uint64_t));
+            metadata->channels = portableBytes(portableChannels);
+            return metadata;
+        }
+
+        [[nodiscard]] shared_ptr<BaseTensor> loadTensor(const shared_ptr<BinaryColumnMetadata> &metadata) {
+            shared_ptr<BaseTensor> next_tensor;
+            if (metadata->purpose == 'I') {
+                // Pixel tensors are 8-bit unsigned integers in memory.
+                next_tensor = make_shared<PixelTensor>(binaryFile_, metadata->rows, metadata->columns, metadata->channels);
+            } else if (metadata->purpose == 'L') {
+                // Labels are one-hot-encoded, so we can use quarter tensors.
+                // Quarter tensors are 8-bit floats in memory. This is fine since labels are 0s and 1s.
+                // A bias of 4 can represent 0s and 1s.
+                next_tensor = make_shared<QuarterTensor>(binaryFile_, 4, metadata->rows, metadata->columns, metadata->channels);
+            } else {
+                next_tensor = make_shared<FullTensor>(binaryFile_, metadata->rows, metadata->columns, metadata->channels);
+            }
+            return next_tensor;
         }
     };
 }

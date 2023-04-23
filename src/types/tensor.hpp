@@ -120,11 +120,11 @@ namespace happyml {
             return false;
         }
 
-        void save(ofstream &stream, bool no_header = false) {
+        void save(ofstream &stream, bool header = true) {
             uint64_t channels = channelCount();
             uint64_t rows = rowCount();
             uint64_t columns = columnCount();
-            if(no_header) {
+            if(header) {
                 auto portableChannels = portableBytes(channels);
                 stream.write(reinterpret_cast<const char *>(&portableChannels), sizeof(portableChannels));
                 auto portableRows = portableBytes(rows);
@@ -368,6 +368,27 @@ namespace happyml {
                 }
             }
             return result;
+        }
+
+        float standardDeviation() {
+            double average = arithmeticMean();
+            double variance = 0;
+            double index = 0;
+            const size_t rows = rowCount();
+            const size_t cols = columnCount();
+            const size_t maxChannels = channelCount();
+            for (size_t channel = 0; channel < maxChannels; channel++) {
+                for (size_t row = 0; row < rows; row++) {
+                    for (size_t col = 0; col < cols; col++) {
+                        index++;
+                        const double val = getValue(row, col, channel);
+                        double diff = val - average;
+                        variance += (diff * diff - variance) / index;
+                    }
+                }
+            }
+
+            return static_cast<float>(sqrt(variance));
         }
 
         float arithmeticMean() {

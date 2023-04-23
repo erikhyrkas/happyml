@@ -152,6 +152,47 @@ namespace happyml {
             }
         }
     }
+
+    void calcStandardizationValuesForEntireSet(const vector<shared_ptr<BaseTensor>> &tensors, float &mean_result, float &standard_deviation) {
+        double mean = 0.0;
+        double M2 = 0.0;
+        double total_elements = 0;
+
+        for (const auto &tensor: tensors) {
+            size_t rows = tensor->rowCount();
+            size_t cols = tensor->columnCount();
+            size_t channels = tensor->channelCount();
+
+            for (size_t channel = 0; channel < channels; ++channel) {
+                for (size_t row = 0; row < rows; ++row) {
+                    for (size_t col = 0; col < cols; ++col) {
+                        double value = tensor->getValue(row, col, channel);
+                        total_elements++;
+
+                        double delta = value - mean;
+                        mean += delta / total_elements;
+                        double delta2 = value - mean;
+                        M2 += delta * delta2;
+                    }
+                }
+            }
+        }
+
+        double variance = M2 / total_elements;
+        mean_result = (float) mean;
+        standard_deviation = (float) sqrt(variance);
+    }
+
+    void calcNormalizationValuesForEntireSet(const vector<shared_ptr<BaseTensor>> &tensors, float &min_value, float &max_value) {
+        min_value = numeric_limits<float>::max();
+        max_value = numeric_limits<float>::lowest();
+
+        // Find the minimum and maximum values among all elements in the tensors
+        for (const auto &t: tensors) {
+            min_value = min(min_value, t->min());
+            max_value = max(max_value, t->max());
+        }
+    }
 }
 
 #endif //HAPPYML_TENSOR_UTILS_HPP

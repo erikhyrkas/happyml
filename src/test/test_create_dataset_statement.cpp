@@ -11,7 +11,7 @@ using namespace happyml;
 
 void test_multi_input_multi_output_create() {
     auto executionContext = make_shared<ExecutionContext>();
-    CreateDatasetStatement test("test", "file://../test_data/unit_test_1.csv", {});
+    CreateDatasetStatement test("test", "file://../test_data/unit_test_1.csv", true, {});
     auto result = test.execute(executionContext);
     ASSERT_TRUE(result->isSuccessful());
 }

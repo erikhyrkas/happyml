@@ -181,6 +181,19 @@ void testStackingMultiplyViews() {
 //]
 //}
 
+void testStandardDeviation() {
+    auto matrixFunc = [](size_t row, size_t col, size_t channel) { return (float) row; };
+    auto matrix = make_unique<TensorFromFunction>(matrixFunc, 2, 2, 1);
+    // 0.000, 0.000
+    // 1.000, 1.000
+    //
+    // Mean: 0.5
+    // Standard Deviation: sqrt(((0-0.5)^2 + (0-0.5)^2 + (1-0.5)^2 + (1-0.5)^2) / 4) = 0.5
+
+    const float epsilon = 0.001f; // Use an epsilon for floating-point comparison
+    ASSERT_TRUE(abs(matrix->standardDeviation() - 0.5) < epsilon);
+}
+
 void testArithmeticMean() {
     auto matrixFunc = [](size_t row, size_t col, size_t channel) { return (float) row; };
     auto matrix = make_unique<TensorFromFunction>(matrixFunc, 2, 2, 1);
@@ -580,6 +593,8 @@ int main() {
         // TODO: a lot of these tests don't cover the situation where we have many channels
         // they often test the simple case of a single channel.
         EvenMoreSimpleTimer timer;
+        testStandardDeviation();
+        timer.printMilliseconds();
         test_0_1_tensor();
         timer.printMilliseconds();
         sumTest();

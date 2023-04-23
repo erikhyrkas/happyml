@@ -18,6 +18,7 @@
 #include "data_encoder.hpp"
 #include "../util/file_reader.hpp"
 #include "../util/shuffler.hpp"
+#include "../util/file_writer.hpp"
 
 namespace happyml {
 
@@ -273,7 +274,35 @@ namespace happyml {
         shared_ptr<DataEncoder> encoder;
     };
 
-
+    void update_column_positions(const string& original_file, const string& new_file, const vector<ColumnGroup>& given_columns, const vector<ColumnGroup>& expected_columns, bool skip_header) {
+        DelimitedTextFileReader reader(original_file, ',', skip_header);
+        DelimitedTextFileWriter writer(new_file, ',');
+        while (reader.hasNext()) {
+            auto record = reader.nextRecord();
+            vector<string> new_record;
+            for (const auto& column: given_columns) {
+                for (size_t i = 0; i < column.rows; i++) {
+                    for (size_t j = 0; j < column.columns; j++) {
+                        for (size_t k = 0; k < column.channels; k++) {
+                            size_t index = column.startIndex + (i * column.columns * column.channels) + (j * column.channels) + k;
+                            new_record.push_back(record[index]);
+                        }
+                    }
+                }
+            }
+            for (const auto& column: expected_columns) {
+                for (size_t i = 0; i < column.rows; i++) {
+                    for (size_t j = 0; j < column.columns; j++) {
+                        for (size_t k = 0; k < column.channels; k++) {
+                            size_t index = column.startIndex + (i * column.columns * column.channels) + (j * column.channels) + k;
+                            new_record.push_back(record[index]);
+                        }
+                    }
+                }
+            }
+            writer.writeRecord(new_record);
+        }
+    }
 }
 
 #endif //HAPPYML_TRAINING_DATASET_HPP

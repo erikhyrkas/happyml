@@ -12,8 +12,11 @@
 #include <vector>
 #include <sstream>
 #include <variant>
+#include "lru_cache.h"
 #include "file_reader.hpp"
 #include "../ml/byte_pair_encoder.hpp"
+#include "column_metadata.hpp"
+#include "text_file_encoder_decoder.hpp"
 
 using namespace std;
 
@@ -48,8 +51,8 @@ namespace happyml {
 
     class DelimitedTextFileWriter {
     public:
-        DelimitedTextFileWriter(const string &path, char delimiter) : line_writer_(path), delimiter_(delimiter) {
-        }
+        DelimitedTextFileWriter(const string &path, char delimiter)
+                : line_writer_(path), delimiter_(delimiter) {}
 
         ~DelimitedTextFileWriter() {
             close();
@@ -62,8 +65,8 @@ namespace happyml {
         void writeRecord(const vector<string> &record) {
             string currentDelimiter;
             stringstream combinedRecord;
-            for (const string &column: record) {
-                combinedRecord << currentDelimiter << column;
+            for (const string &column : record) {
+                combinedRecord << currentDelimiter << TextFileEncoderDecoder::encodeString(column, delimiter_);
                 currentDelimiter = delimiter_;
             }
             line_writer_.writeLine(combinedRecord.str());
@@ -74,10 +77,42 @@ namespace happyml {
         char delimiter_;
     };
 
+    // The binary dataset format is as follows:
+    // 1. The header is written first:
+    //      a. the number of given tensors
+    //      b. each given tensor's purpose and dimensions
+    //          i. tensor purpose: 'I' (image), 'T' (text), 'N' (number), 'L' (label)
+    //          ii. tensor dimensions
+    //      c. the number of expected tensors
+    //      d. each expected tensor's purpose and dimensions
+    //          i. tensor purpose: 'I' (image), 'T' (text), 'N' (number), 'L' (label)
+    //          ii. tensor dimensions
+    // 2. The data is written next, one row at a time:
+    //      a. each given tensor's data
+    //      b. each expected tensor's data
     class BinaryDatasetWriter {
     public:
-        BinaryDatasetWriter(const string &path, shared_ptr<BytePairEncoderModel> bpe) : bpeModel_(std::move(bpe)) {
+        explicit BinaryDatasetWriter(const string &path,
+                                     vector<shared_ptr<BinaryColumnMetadata>> given_metadata,
+                                     size_t lru_cache_size = 100000) :
+                BinaryDatasetWriter(path,
+                                    std::move(given_metadata),
+                                    {},
+                                    lru_cache_size) {
+        }
+
+        explicit BinaryDatasetWriter(const string &path, vector<shared_ptr<BinaryColumnMetadata>> given_metadata,
+                                     vector<shared_ptr<BinaryColumnMetadata>> expected_metadata,
+                                     size_t lru_cache_size = 100000) :
+                given_metadata_(std::move(given_metadata)),
+                expected_metadata_(std::move(expected_metadata)) {
+            if(lru_cache_size > 0) {
+                lru_cache_ = make_shared<LruCache<size_t, bool>>(lru_cache_size);
+            } else {
+                lru_cache_ = nullptr;
+            }
             binaryFile_.open(path, ios::binary | ios::out);
+            writeHeader();
         }
 
         ~BinaryDatasetWriter() {
@@ -90,169 +125,81 @@ namespace happyml {
             }
         }
 
-        void calculateAndWriteHeader(vector<vector<std::variant<double, string>>> &records) {
-            // Detect column types and widths.
-            columnTypes_.clear();
-            columnWidths_.clear();
-            size_t recordCount = records.size();
-            detectColumnTypes(records[0], columnTypes_);
-            for (const auto &record: records) {
-                updateColumnWidths(record, columnTypes_, columnWidths_);
-            }
-
-            // Write the header
-            writeHeader(columnTypes_, columnWidths_, recordCount, bpeModel_->getName());
+        void writeRow(const vector<shared_ptr<BaseTensor>> &given_tensors) {
+            writeRow(given_tensors, {});
         }
 
-        void writeRecord(const vector<std::variant<double, string>> &record) {
-            writeRecordInternal(record, columnTypes_, columnWidths_);
-        }
-
-        static void detectColumnTypes(const vector<std::variant<double, string>> &record, vector<char> &columnTypes) {
-            for (const auto &cell: record) {
-                columnTypes.push_back(holds_alternative<double>(cell) ? 'N' : 'T');
-            }
-        }
-
-        static bool isNumber(const string &s) {
-            return !s.empty() &&
-                   find_if(s.begin(), s.end(), [](unsigned char c) { return !isdigit(c) && c != '.'; }) == s.end();
-        }
-
-        void updateColumnWidths(const vector<std::variant<double, string>> &record, const vector<char> &columnTypes,
-                                vector<size_t> &columnWidths) {
-            if (columnWidths.empty()) {
-                for (size_t i = 0; i < record.size(); ++i) {
-                    if (columnTypes[i] == 'N') {
-                        columnWidths.push_back(sizeof(double));
-                    } else {
-                        u16string encoded = bpeModel_->encode(get<string>(record[i]));
-                        columnWidths.push_back(encoded.size() * sizeof(char16_t));
-                    }
+        void writeRow(const vector<shared_ptr<BaseTensor>> &given_tensors,
+                      const vector<shared_ptr<BaseTensor>> &expected_tensors) {
+            if (lru_cache_ != nullptr) {
+                size_t given_hash = compute_given_hash(given_tensors);
+                if (lru_cache_->contains(given_hash)) {
+                    return;  // Skip writing the duplicate row
                 }
-            } else {
-                for (size_t i = 0; i < record.size(); ++i) {
-                    if (columnTypes[i] == 'T') {
-                        u16string encoded = bpeModel_->encode(get<string>(record[i]));
-                        columnWidths[i] = max(columnWidths[i], encoded.size() * sizeof(char16_t));
-                    }
-                }
+                lru_cache_->insert(given_hash, true);
+            }
+
+            for (const auto &tensor: given_tensors) {
+                // (8 bytes * L rows * M columns * N channels)
+                tensor->save(binaryFile_, false);
+            }
+            for (const auto &tensor: expected_tensors) {
+                tensor->save(binaryFile_, false);
             }
         }
 
-        void writeHeader(const vector<char> &columnTypes,
-                         const vector<size_t> &columnWidths,
-                         size_t recordCount,
-                         const string &bpeModelName) {
-            uint16_t columnTypesSize = columnTypes.size();
-            binaryFile_.write(reinterpret_cast<const char *>(&columnTypesSize), sizeof(uint16_t));
-            binaryFile_.write(reinterpret_cast<const char *>(columnTypes.data()),
-                              static_cast<streamsize>(columnTypesSize * sizeof(char)));
-
-            binaryFile_.write(reinterpret_cast<const char *>(&columnWidths[0]),
-                              static_cast<streamsize>(columnWidths.size() * sizeof(size_t)));
-
-            binaryFile_.write(reinterpret_cast<const char *>(&recordCount), sizeof(size_t));
-            uint16_t bpeModelNameLength = bpeModelName.size();
-            binaryFile_.write(reinterpret_cast<const char *>(&bpeModelNameLength), sizeof(uint16_t));
-            binaryFile_.write(bpeModelName.c_str(), static_cast<streamsize>(bpeModelNameLength * sizeof(char)));
-        }
-
-        void writeRecordInternal(const vector<std::variant<double, string>> &record, const vector<char> &columnTypes,
-                                 const vector<size_t> &columnWidths) {
-            for (size_t i = 0; i < record.size(); ++i) {
-                if (columnTypes[i] == 'N') {
-                    double number = get<double>(record[i]);
-                    binaryFile_.write(reinterpret_cast<const char *>(&number), sizeof(double));
-                } else {
-                    u16string encoded = bpeModel_->encode(get<string>(record[i]));
-                    vector<char16_t> encodedResized(encoded.size());
-                    copy(encoded.begin(), encoded.end(), encodedResized.begin());
-                    encodedResized.resize(columnWidths[i] / sizeof(char16_t), u'\0');
-                    binaryFile_.write(reinterpret_cast<const char *>(encodedResized.data()),
-                                      static_cast<streamsize>(columnWidths[i]));
-                }
-            }
-        }
-
-        static void detectColumnTypes(const vector<string> &record, vector<char> &columnTypes) {
-            for (const string &cell: record) {
-                columnTypes.push_back(isNumber(cell) ? 'N' : 'T');
-            }
-        }
-
-        static vector<variant<double, string>> convertStringsToVariants(
-                const vector<string> &record,
-                const vector<char> &columnTypes ) {
-            vector<variant<double, string>> result;
-            for (size_t i = 0; i < record.size(); ++i) {
-                if (columnTypes[i] == 'N') {
-                    result.emplace_back(stod(record[i]));
-                } else {
-                    result.emplace_back(record[i]);
-                }
-            }
-            return result;
-        }
-
-        static vector<variant<double, string>> convertDoublesToVariants(
-                const vector<double> &record ) {
-            vector<variant<double, string>> result;
-            result.reserve(record.size());
-            for (const double &value: record) {
-                result.emplace_back(value);
-            }
-            return result;
-        }
     private:
-        shared_ptr<BytePairEncoderModel> bpeModel_;
         ofstream binaryFile_;
-        vector<char> columnTypes_;
-        vector<size_t> columnWidths_;
-    };
+        vector<shared_ptr<BinaryColumnMetadata>> given_metadata_;
+        vector<shared_ptr<BinaryColumnMetadata>> expected_metadata_;
+        shared_ptr<LruCache < size_t, bool>> lru_cache_;
 
-    class TextToBinaryDatasetConverter {
-    public:
-        explicit TextToBinaryDatasetConverter(const shared_ptr<BytePairEncoderModel> &bpe) : bpeModel_(bpe) {
-        }
-
-        void convert(const string &inputPath, const string &outputPath, char delimiter,
-                     bool skip_header = false) {
-            BinaryDatasetWriter writer = BinaryDatasetWriter(outputPath, bpeModel_);
-            DelimitedTextFileReader textFileReader(inputPath, delimiter, skip_header);
-            vector<vector<std::variant<double, string>>> records;
-            vector<char> columnTypes;
-
-            // Read input text file and convert records.
-            while (textFileReader.hasNext()) {
-                vector<string> textRecord = textFileReader.nextRecord();
-                if (columnTypes.empty()) {
-                    // Initialize column types with 'N' for each column.
-                    columnTypes.assign(textRecord.size(), 'N');
-                }
-
-                // Update column types based on record values.
-                for (size_t i = 0; i < textRecord.size(); ++i) {
-                    if (columnTypes[i] == 'N' && !BinaryDatasetWriter::isNumber(textRecord[i])) {
-                        columnTypes[i] = 'T';
-                    }
-                }
-                records.push_back(BinaryDatasetWriter::convertStringsToVariants(textRecord, columnTypes));
+        void writeHeader() {
+            uint64_t number_of_given = given_metadata_.size();
+            binaryFile_.write(reinterpret_cast<const char *>(&number_of_given), sizeof(uint64_t));
+            for (const auto &metadata: given_metadata_) {
+                writeColumnMetadata(metadata);
             }
-
-            textFileReader.close();
-
-            // Calculate and write the header using BinaryDatasetWriter.
-            writer.calculateAndWriteHeader(records);
-
-            // Write out the data using BinaryDatasetWriter.
-            for (const auto &record: records) {
-                writer.writeRecord(record);
+            uint64_t number_of_expected = expected_metadata_.size();
+            binaryFile_.write(reinterpret_cast<const char *>(&number_of_expected), sizeof(uint64_t));
+            for (const auto &metadata: expected_metadata_) {
+                writeColumnMetadata(metadata);
             }
         }
 
-    private:
-        shared_ptr<BytePairEncoderModel> bpeModel_;
+        void writeColumnMetadata(const shared_ptr<BinaryColumnMetadata> &column_metadata) {
+            binaryFile_.write(reinterpret_cast<const char *>(&column_metadata->purpose), sizeof(char));
+
+            binaryFile_.write(reinterpret_cast<const char *>(&column_metadata->is_standardized), sizeof(bool));
+            auto portableMean = portableBytes(*(uint32_t *) &column_metadata->mean);
+            binaryFile_.write(reinterpret_cast<const char *>(&portableMean), sizeof(float));
+            auto portalStandardDeviation = portableBytes(*(uint32_t *) &column_metadata->standard_deviation);
+            binaryFile_.write(reinterpret_cast<const char *>(&portalStandardDeviation), sizeof(float));
+
+            binaryFile_.write(reinterpret_cast<const char *>(&column_metadata->is_normalized), sizeof(bool));
+            auto portableMinValue = portableBytes(*(uint32_t *) &column_metadata->min_value);
+            binaryFile_.write(reinterpret_cast<const char *>(&portableMinValue), sizeof(float));
+            auto portableMaxValue = portableBytes(*(uint32_t *) &column_metadata->max_value);
+            binaryFile_.write(reinterpret_cast<const char *>(&portableMaxValue), sizeof(float));
+
+            auto portableRows = portableBytes(column_metadata->rows);
+            binaryFile_.write(reinterpret_cast<const char *>(&portableRows), sizeof(uint64_t));
+            auto portableColumns = portableBytes(column_metadata->columns);
+            binaryFile_.write(reinterpret_cast<const char *>(&portableColumns), sizeof(uint64_t));
+            auto portableChannels = portableBytes(column_metadata->channels);
+            binaryFile_.write(reinterpret_cast<const char *>(&portableChannels), sizeof(uint64_t));
+        }
+
+        static size_t compute_given_hash(const vector<shared_ptr<BaseTensor>> &given_tensors) {
+            std::hash<string> hasher;
+            size_t result = 0;
+            for (const auto &next_tensor: given_tensors) {
+                stringstream ss;
+                next_tensor->print(ss);
+                result ^= hasher(ss.str()) + 0x9e3779b9 + (result << 6) + (result >> 2);
+            }
+            return result;
+        }
     };
 
     void save_config(const string &path, vector<vector<string>> &metadata) {

@@ -75,3 +75,5 @@ add_executable(test_create_dataset_statement src/test/test_create_dataset_statem
 add_executable(test_half_float src/test/test_half_float.cpp)
 
 add_executable(test_trie src/test/test_trie.cpp)
+
+add_executable(test_file_sorter src/test/test_text_file_sorter.cpp)

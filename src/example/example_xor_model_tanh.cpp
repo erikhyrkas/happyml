@@ -39,11 +39,11 @@ int main() {
         cout << "1 xor 1 = 0 Prediction: " << neuralNetwork->predictScalar(columnVector({1.f, 1.f})) << endl;
 
         // testing save logic:
-//        neuralNetwork->saveWithOverwrite();
-//        auto loadedNeuralNetwork = loadNeuralNetworkForTraining("xor_example",
-//                                                                "../repo/");
-//        float testLoss = loadedNeuralNetwork->test(xorDataSource);
-//        cout << fixed << setprecision(2) << "Result testLoss: " << testLoss << endl;
+        neuralNetwork->saveWithOverwrite();
+        auto loadedNeuralNetwork = loadNeuralNetworkForTraining("xor_example",
+                                                                "../repo/");
+        float testLoss = loadedNeuralNetwork->test(xorDataSource);
+        cout << fixed << setprecision(2) << "Result testLoss: " << testLoss << endl;
     } catch (const exception &e) {
         cout << e.what() << endl;
     }

@@ -596,7 +596,7 @@ namespace happyml {
 
     class TensorSqrtView : public BaseTensorUnaryOperatorView {
     public:
-        TensorSqrtView(const shared_ptr<BaseTensor> &tensor) : BaseTensorUnaryOperatorView(
+        explicit TensorSqrtView(const shared_ptr<BaseTensor> &tensor) : BaseTensorUnaryOperatorView(
                 tensor) {
         }
 
@@ -612,6 +612,97 @@ namespace happyml {
 
     };
 
+    class TensorStandardizeView : public BaseTensorUnaryOperatorView {
+    public:
+        explicit TensorStandardizeView(const shared_ptr<BaseTensor>& tensor, float mean, float std_dev)
+                : BaseTensorUnaryOperatorView(tensor), mean_(mean), std_dev_(std_dev) {
+        }
+
+        float getValue(size_t row, size_t column, size_t channel) override {
+            const float val = child->getValue(row, column, channel);
+            return (val - mean_) / std_dev_;
+        }
+
+        void printMaterializationPlan() override {
+            cout << "TensorStandardizeView{" << rowCount() << "," << columnCount() << "," << channelCount()
+                 << "}->";
+            child->printMaterializationPlan();
+        }
+
+    private:
+        float mean_;
+        float std_dev_;
+    };
+
+    class TensorUnstandardizeView : public BaseTensorUnaryOperatorView {
+    public:
+        explicit TensorUnstandardizeView(const shared_ptr<BaseTensor>& tensor, float mean, float std_dev)
+                : BaseTensorUnaryOperatorView(tensor), mean_(mean), std_dev_(std_dev) {
+        }
+
+        float getValue(size_t row, size_t column, size_t channel) override {
+            const float val = child->getValue(row, column, channel);
+            return (val * std_dev_) + mean_;
+        }
+
+        void printMaterializationPlan() override {
+            cout << "TensorUnstandardizeView{" << rowCount() << "," << columnCount() << "," << channelCount()
+                 << "}->";
+            child->printMaterializationPlan();
+        }
+
+    private:
+        float mean_;
+        float std_dev_;
+    };
+
+    class TensorNormalizeView : public BaseTensorUnaryOperatorView {
+    public:
+        explicit TensorNormalizeView(const shared_ptr<BaseTensor>& tensor, float min_val, float max_val)
+                : BaseTensorUnaryOperatorView(tensor), min_val_(min_val), max_val_(max_val) {
+            val_range_ = max_val_ - min_val_;
+        }
+
+        float getValue(size_t row, size_t column, size_t channel) override {
+            const float val = child->getValue(row, column, channel);
+            return (val - min_val_) / val_range_;
+        }
+
+        void printMaterializationPlan() override {
+            cout << "TensorNormalizeView{" << rowCount() << "," << columnCount() << "," << channelCount()
+                 << "}->";
+            child->printMaterializationPlan();
+        }
+
+    private:
+        float min_val_;
+        float max_val_;
+        float val_range_;
+    };
+
+    class TensorDenormalizeView : public BaseTensorUnaryOperatorView {
+    public:
+        explicit TensorDenormalizeView(const shared_ptr<BaseTensor>& tensor, float min_val, float max_val)
+                : BaseTensorUnaryOperatorView(tensor), min_val_(min_val), max_val_(max_val) {
+            val_range_ = max_val_ - min_val_;
+        }
+
+        float getValue(size_t row, size_t column, size_t channel) override {
+            const float val = child->getValue(row, column, channel);
+            return (val * val_range_) + min_val_;
+        }
+
+        void printMaterializationPlan() override {
+            cout << "TensorDenormalizeView{" << rowCount() << "," << columnCount() << "," << channelCount()
+                 << "}->";
+            child->printMaterializationPlan();
+        }
+
+    private:
+        float min_val_;
+        float max_val_;
+        float val_range_;
+    };
 
     // Prevents the tensor's value from being bigger than or less than a value
     class TensorClipView : public BaseTensorUnaryOperatorView {
@@ -639,7 +730,7 @@ namespace happyml {
     // returns inverse of each value( 1.0f / original value )
     class TensorInverseView : public BaseTensorUnaryOperatorView {
     public:
-        TensorInverseView(const shared_ptr<BaseTensor> &tensor, float epsilon=1e-8) : BaseTensorUnaryOperatorView(
+        explicit TensorInverseView(const shared_ptr<BaseTensor> &tensor, float epsilon=1e-8) : BaseTensorUnaryOperatorView(
                 tensor) {
             this->epsilon = epsilon;
         }

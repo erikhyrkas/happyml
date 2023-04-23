@@ -1,0 +1,5 @@
+col1,col2
+"abc", 1
+"def<NL>
+ghi", 2
+"jk,<D>l", 3
