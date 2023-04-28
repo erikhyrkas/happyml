@@ -16,7 +16,8 @@
 #include "../ml/byte_pair_encoder.hpp"
 #include "../types/materialized_tensors.hpp"
 #include "column_metadata.hpp"
-#include "text_file_encoder_decoder.hpp"
+#include "text_encoder_decoder.hpp"
+#include "../training_data/data_encoder.hpp"
 
 
 using namespace std;
@@ -98,6 +99,10 @@ namespace happyml {
             return result;
         }
 
+        bool is_open() {
+            return stream.is_open();
+        }
+
     private:
         void skipHeader() {
             string line;
@@ -134,6 +139,10 @@ namespace happyml {
             return lineReader.hasNext();
         }
 
+        bool is_open() {
+            return lineReader.is_open();
+        }
+
         vector<string> nextRecord() {
             vector<string> result;
             string current_word;
@@ -144,7 +153,7 @@ namespace happyml {
                 for (size_t i = 0; i < line.size(); ++i) {
                     char c = line[i];
                     if (c == delimiter_ && !in_quotes) {
-                        result.push_back(TextFileEncoderDecoder::decodeString(current_word, delimiter_));
+                        result.push_back(decode(current_word));
                         current_word = "";
                     } else if (c == '"') {
                         if (!in_quotes) {
@@ -170,8 +179,20 @@ namespace happyml {
             if (in_quotes) {
                 throw runtime_error("Malformed input: unclosed quote");
             }
-            result.push_back(current_word);
+            result.push_back(decode(current_word));
             return result;
+        }
+
+        string decode(string &current_word) const {
+            auto stripped_column = strip(current_word);
+            auto stripped_column_length = stripped_column.length();
+            if (stripped_column_length > 0 && stripped_column[0] == '"' &&
+                stripped_column[stripped_column_length - 1] == '"') {
+                stripped_column = stripped_column.substr(1, stripped_column_length - 2);
+            }
+            string_replace_all(stripped_column, "\"\"", "\"");
+            stripped_column = TextEncoderDecoder::decodeString(stripped_column, delimiter_);
+            return stripped_column;
         }
 
     private:
@@ -247,7 +268,12 @@ namespace happyml {
             }
             return {given_metadata_[index]->rows, given_metadata_[index]->columns, given_metadata_[index]->channels};
         }
-
+        size_t get_given_column_count() {
+            return given_metadata_.size();
+        }
+        size_t get_expected_column_count() {
+            return expected_metadata_.size();
+        }
     private:
         ifstream binaryFile_;
         size_t row_size_{};
@@ -260,14 +286,18 @@ namespace happyml {
         void readHeader() {
             row_size_ = 0;
             uint64_t number_of_given;
-            binaryFile_.read(reinterpret_cast<char *>(&number_of_given), sizeof(uint64_t));
+            if(!binaryFile_.read(reinterpret_cast<char *>(&number_of_given), sizeof(uint64_t))) {
+                throw exception("Could not read number of given tensors");
+            }
             for (size_t i = 0; i < number_of_given; i++) {
                 shared_ptr<BinaryColumnMetadata> metadata = readColumnMetadata();
                 row_size_ += metadata->rows * metadata->columns * metadata->channels * sizeof(float);
                 given_metadata_.emplace_back(metadata);
             }
             uint64_t number_of_expected;
-            binaryFile_.read(reinterpret_cast<char *>(&number_of_expected), sizeof(uint64_t));
+            if(!binaryFile_.read(reinterpret_cast<char *>(&number_of_expected), sizeof(uint64_t))) {
+                throw exception("Could not read number of expected tensors");
+            }
             for (size_t i = 0; i < number_of_expected; i++) {
                 shared_ptr<BinaryColumnMetadata> metadata = readColumnMetadata();
                 row_size_ += metadata->rows * metadata->columns * metadata->channels * sizeof(float);

@@ -498,11 +498,11 @@ namespace happyml {
         }
 
         void print() {
-            print(cout);
+            print(cout, 3);
         }
 
-        void print(ostream &out) {
-            out << setprecision(3) << fixed << endl;
+        void print(ostream &out, int precision = 15) {
+            out << setprecision(precision) << fixed << endl;
             const size_t rows = rowCount();
             const size_t cols = columnCount();
             const size_t maxChannels = channelCount();
@@ -512,9 +512,9 @@ namespace happyml {
                 }
                 for (size_t row = 0; row < rows; row++) {
                     if (rows > 1) {
-                        cout << "|";
+                        out << "|";
                     } else {
-                        cout << "[";
+                        out << "[";
                     }
                     string delim;
                     for (size_t col = 0; col < cols; col++) {

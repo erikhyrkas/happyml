@@ -8,6 +8,7 @@
 #include "../util/file_writer.hpp"
 #include "../util/unit_test.hpp"
 #include "../util/tensor_utils.hpp"
+#include "../util/dataset_utils.hpp"
 
 using namespace std;
 using namespace happyml;
@@ -76,6 +77,7 @@ void test_save_tensor() {
     auto reader = make_shared<BinaryDatasetReader>("..\\test_data\\unit_test_tensor.bin");
     auto row = reader->readRow(0);
     reader->close();
+
     ASSERT_TRUE(2 == row.first.size());
     ASSERT_TRUE(row.second.empty());
     auto t1_read = row.first[0];
@@ -86,6 +88,7 @@ void test_save_tensor() {
     ASSERT_TRUE(t1->channelCount() == t1_read->channelCount());
     t1->print();
     t1_read->print();
+
     ASSERT_TRUE(t1->getValue(0, 0, 0) == t1_read->getValue(0, 0, 0));
     ASSERT_TRUE(t1->getValue(0, 1, 0) == t1_read->getValue(0, 1, 0));
     ASSERT_TRUE(reader->getGivenTensorPurpose(0) == 'N');
@@ -157,9 +160,15 @@ void test_escaped_encode_decode_of_newlines() {
     filesystem::remove("..\\test_data\\unit_test_3_test.csv");
 }
 
+void test_convert_txt_to_csv() {
+    convert_txt_to_csv("../data/data.txt", "../data/data.csv", 4000);
+}
+
 int main() {
     try {
         EvenMoreSimpleTimer timer;
+        test_convert_txt_to_csv();
+        timer.printMilliseconds();
         test_escaped_encode_decode_of_newlines();
         timer.printMilliseconds();
         test_encode_decode_of_newlines();

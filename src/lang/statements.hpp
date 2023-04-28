@@ -14,6 +14,7 @@
 #include "execution_context.hpp"
 #include "../training_data/training_dataset.hpp"
 #include "../util/dataset_utils.hpp"
+#include "../util/text_file_sorter.hpp"
 
 using namespace std;
 
@@ -98,13 +99,14 @@ namespace happyml {
     public:
         CreateDatasetStatement(string name,
                                string location,
-                               bool skip_header,
-                               vector<ColumnGroup> column_groups) :
+                               bool has_header,
+                               vector <ColumnGroup> column_groups) :
                 name_(std::move(name)),
                 location_(std::move(location)),
-                skip_header_(skip_header),
+                has_header_(has_header),
                 column_groups_(std::move(column_groups)) {
         }
+
 
         shared_ptr<ExecutionResult> execute(const shared_ptr<ExecutionContext> &context) override {
             string warning;
@@ -114,21 +116,34 @@ namespace happyml {
                 return make_shared<ExecutionResult>(false, false,
                                                     "create dataset only supports file:// location type at the moment.");
             }
+            if (column_groups_.empty()) {
+                // based on file extension, I could guess the column groups.
+                // a txt file would have a single text column group
+                // a csv or tsv is trickier. we could assume there the first column is the expected value, and the rest are given.
+                // but that would be a guess. We'd also have to guess the data types. Expected might be a label, given might be a number.
+                // for the moment, we'll make the caller be explicit.
+                return make_shared<ExecutionResult>(false, false,
+                                                    "create dataset must have at least one column group.");
+            }
             bool has_text = false;
             for (const auto &columnGroup: column_groups_) {
-                if (columnGroup.dataType != "label" &&
-                    columnGroup.dataType != "number" &&
-                    columnGroup.dataType != "text" &&
-                    columnGroup.dataType != "image") {
-                    if (columnGroup.expected) {
+                if (columnGroup.data_type != "label" &&
+                    columnGroup.data_type != "number" &&
+                    columnGroup.data_type != "text" &&
+                    columnGroup.data_type != "image") {
+                    if (columnGroup.use == "expected") {
                         return make_shared<ExecutionResult>(false, false,
                                                             "create dataset's expected type must be one of: scalar, category, pixel, or text.");
                     } else {
                         return make_shared<ExecutionResult>(false, false,
                                                             "create dataset's given type must be one of: scalar, category, pixel, or text.");
                     }
-                } else if (columnGroup.dataType == "text" && !has_text) {
+                } else if (columnGroup.data_type == "text" && !has_text) {
                     has_text = true;
+                }
+                if (columnGroup.use != "expected" && columnGroup.use != "given") {
+                    return make_shared<ExecutionResult>(false, false,
+                                                        "create dataset's use must be one of: expected or given.");
                 }
             }
             if (sort_and_check_overlaps(column_groups_)) {
@@ -144,42 +159,115 @@ namespace happyml {
                 }
             }
 
+            // TODO: remove any non-printable characters... maybe even uncommon ascii characters as well.
+            // clean_dataset(location_, new_location, skip_header_, column_groups_, warning);
+
+
+            // if file extension is txt, we need to convert it to csv. if the file extension is tsv, we need to convert it to csv.
+            // if the file extension is csv, we can just use it as is.
+            // if the file extension is anything else, we need to throw an error.
+            size_t last_period_offset = location_.find_last_of('.');
+            string file_extension = location_.substr(last_period_offset + 1);
+            auto index_of_start_of_file_name = location_.find("://") + 3;
+            string base_file_path = location_.substr(index_of_start_of_file_name, last_period_offset - index_of_start_of_file_name);
+            string current_location = base_file_path + ".csv";
+            bool has_header = has_header_;
+            if (file_extension == "txt") {
+                has_header = false;
+                if (!convert_txt_to_csv(location_, current_location, 4000)) {
+                    return make_shared<ExecutionResult>(false, false,
+                                                        "Could not open source or destination file to convert text to csv.");
+                }
+            } else if (file_extension == "tsv") {
+                if (!convert_tsv_to_csv(location_, current_location)) {
+                    return make_shared<ExecutionResult>(false, false,
+                                                        "Could not open source or destination file to convert tsv to csv.");
+                }
+            } else if (file_extension != "csv") {
+                return make_shared<ExecutionResult>(false, false,
+                                                    "create dataset only supports .csv, .txt, and .tsv file types at the moment.");
+            }
+            // check if current_location exists:
+            if (!filesystem::exists(current_location)) {
+                return make_shared<ExecutionResult>(false, false,
+                                                    "create dataset could not find the file: " + current_location);
+            }
             // steps:
             // 1. Map old column order to new column order with givens values first, then expected values second, we'll need this for the following steps
 
             vector<ColumnGroup> given_column_groups;
             vector<ColumnGroup> expected_column_groups;
-            for( const auto &columnGroup : column_groups_ ) {
-                if( columnGroup.expected ) {
-                    expected_column_groups.push_back( columnGroup );
+            for (const auto &columnGroup: column_groups_) {
+                if (columnGroup.use == "expected") {
+                    expected_column_groups.push_back(columnGroup);
                 } else {
-                    given_column_groups.push_back( columnGroup );
+                    given_column_groups.push_back(columnGroup);
                 }
+            }
+            vector<ColumnGroup> updatedColumnGroups;
+            size_t current_index = 0;
+            for (const auto &columnGroup: given_column_groups) {
+                ColumnGroup updatedColumnGroup = columnGroup;
+                updatedColumnGroup.start_index = current_index;
+                current_index += (updatedColumnGroup.rows * updatedColumnGroup.columns * updatedColumnGroup.channels);
+                updatedColumnGroups.push_back(updatedColumnGroup);
+            }
+            for (const auto &columnGroup: expected_column_groups) {
+                ColumnGroup updatedColumnGroup = columnGroup;
+                updatedColumnGroup.start_index = current_index;
+                current_index += (updatedColumnGroup.rows * updatedColumnGroup.columns * updatedColumnGroup.channels);
+                updatedColumnGroups.push_back(updatedColumnGroup);
             }
 
             // 2. Copy the original text file to a new "given-expected" file, arranging given before expected values
-            //    b. Copy the original file to a new file, arranging columns as expected
-
-            update_column_positions(location_, location_ + ".given-expected", given_column_groups, expected_column_groups, skip_header_ );
-
+            //    a. Copy the original file to a new file, arranging columns as expected
+            //    b. This also removes the header if it exists
+            auto organized_location = base_file_path + ".given-expected.csv";
+            if (!update_column_positions(current_location, organized_location, given_column_groups, expected_column_groups, has_header)) {
+                return make_shared<ExecutionResult>(false, false,
+                                                    "Empty dataset");
+            }
 
             // 3. Use FileSorter.sort() to sort and dedupe the "given-expected" file as a new "sorted-deduped" file
             //    NOTE: remove "given-expected" file
-
+            auto sorted_location = base_file_path + ".sorted.csv";
+            if (!FileSorter::sort(organized_location, sorted_location, false)) {
+                return make_shared<ExecutionResult>(false, false,
+                                                    "Could not sort the given-expected file.");
+            }
+//            if(!filesystem::remove(organized_location)) {
+//                return make_shared<ExecutionResult>(false, false,
+//                                                    "Could not remove the given-expected file.");
+//            }
 
             // 4. Create new BinaryDataset from "sorted-deduped" file, deduping any givens that are the same, call new binary file "clean dataset"
             //    NOTE: remove "sorted-deduped" file
+            // TODO: this method isn't fully written:
+            auto raw_location = create_binary_dataset_from_delimited_values(DEFAULT_HAPPYML_REPO_PATH,
+                                                                            name_,
+                                                                            sorted_location,
+                                                                            ',',
+                                                                            false,
+                                                                            updatedColumnGroups,
+                                                                            context->getBpeEncoder());
+            if (!filesystem::remove(sorted_location)) {
+                return make_shared<ExecutionResult>(false, false,
+                                                    "Could not remove the sorted-deduped file.");
+            }
+
             // 5. If needed, standarize and normalize the "clean dataset" file, call new binary file "standardized-normalized dataset"
             //    NOTE: remove "clean dataset" file
+            normalize_and_standardize_dataset(raw_location,
+                                              DEFAULT_HAPPYML_REPO_PATH,
+                                              name_);
+            if (!filesystem::remove(raw_location)) {
+                return make_shared<ExecutionResult>(false, false,
+                                                    "Could not remove the clean dataset file.");
+            }
             // 6. Save a properties file that tracks the original given and expected metadata (data types, shapes, and starting column positions) and the new binary order
             //    NOTE: This is used later when the user creates a task, and the task needs to understand how the user might send requests
 
 
-
-            //TODO: finish this
-//            create_binary_dataset_from_delimited_values(DEFAULT_HAPPYML_REPO_PATH,
-//                                                        name,
-//                                                        location);
             //  create dataset <name>
             //  [with expected <label|number|text|image> [(<rows>, <columns>, <channels>)] at <column> ]*
             //  [with given <label|number|text|image> [(<rows>, <columns>, <channels>)] at <column> ]*
@@ -192,14 +280,16 @@ namespace happyml {
 //                 << givenFrom
 //                 << " using " << location
 //                 << endl;
+
+            // 7. Return a success message
             return make_shared<ExecutionResult>(false, true, "Created.");
         }
 
     private:
         string name_;
         string location_;
-        vector<ColumnGroup> column_groups_;
-        bool skip_header_;
+        vector <ColumnGroup> column_groups_;
+        bool has_header_;
     };
 
     class CodeBlock : public ExecutableStatement {
@@ -223,7 +313,7 @@ namespace happyml {
         }
 
     private:
-        vector<shared_ptr<ExecutableStatement>> children{};
+        vector <shared_ptr<ExecutableStatement>> children{};
     };
 }
 #endif //HAPPYML_STATEMENTS_HPP

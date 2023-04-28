@@ -153,6 +153,47 @@ namespace happyml {
         }
     }
 
+    struct StandardizationAndNormalizationValues {
+        StandardizationAndNormalizationValues() {
+            mean_result = 0.0;
+            standard_deviation = 0.0;
+            M2 = 0.0;
+            total_elements = 0;
+            min_value = numeric_limits<double>::max();
+            max_value = numeric_limits<double>::lowest();
+        }
+        double mean_result;
+        double standard_deviation;
+        double M2;
+        double total_elements;
+        double min_value;
+        double max_value;
+    };
+
+    void update_standardization_normalization_values_calculation(shared_ptr<StandardizationAndNormalizationValues> &values, shared_ptr <BaseTensor> &tensor) {
+        size_t rows = tensor->rowCount();
+        size_t cols = tensor->columnCount();
+        size_t channels = tensor->channelCount();
+
+        for (size_t channel = 0; channel < channels; ++channel) {
+            for (size_t row = 0; row < rows; ++row) {
+                for (size_t col = 0; col < cols; ++col) {
+                    double value = tensor->getValue(row, col, channel);
+                    values->min_value = std::min(values->min_value, value);
+                    values->max_value = std::max(values->max_value, value);
+                    values->total_elements++;
+
+                    double delta = value - values->mean_result;
+                    values->mean_result += delta / values->total_elements;
+                    double delta2 = value - values->mean_result;
+                    values->M2 += delta * delta2;
+                }
+            }
+        }
+        double variance = values->M2 / values->total_elements;
+        values->standard_deviation = sqrt(variance);
+    }
+
     void calcStandardizationValuesForEntireSet(const vector<shared_ptr<BaseTensor>> &tensors, float &mean_result, float &standard_deviation) {
         double mean = 0.0;
         double M2 = 0.0;

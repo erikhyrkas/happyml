@@ -2,8 +2,8 @@
 // Created by Erik Hyrkas on 4/23/2023.
 //
 
-#ifndef HAPPYML_TEXT_FILE_ENCODER_DECODER_HPP
-#define HAPPYML_TEXT_FILE_ENCODER_DECODER_HPP
+#ifndef HAPPYML_TEXT_ENCODER_DECODER_HPP
+#define HAPPYML_TEXT_ENCODER_DECODER_HPP
 
 #include <sstream>
 #include <string>
@@ -12,7 +12,7 @@ using namespace std;
 
 namespace happyml {
 
-    class TextFileEncoderDecoder {
+    class TextEncoderDecoder {
     public:
         static string encodeString(const string &str, const char delimiter) {
             stringstream encoded;
@@ -67,4 +67,4 @@ namespace happyml {
     };
 
 }
-#endif //HAPPYML_TEXT_FILE_ENCODER_DECODER_HPP
+#endif //HAPPYML_TEXT_ENCODER_DECODER_HPP

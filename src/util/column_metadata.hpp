@@ -7,7 +7,7 @@
 
 namespace happyml {
     struct BinaryColumnMetadata {
-        char purpose;
+        char purpose; // 'I' (image), 'T' (text), 'N' (number), 'L' (label)
         // For scalars (numbers):
         // If the data flagged as is_standardized, it was standardized first then normalized.
         // We always normalize data if it is a scalar.

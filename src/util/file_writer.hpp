@@ -16,7 +16,8 @@
 #include "file_reader.hpp"
 #include "../ml/byte_pair_encoder.hpp"
 #include "column_metadata.hpp"
-#include "text_file_encoder_decoder.hpp"
+#include "text_encoder_decoder.hpp"
+#include "../training_data/data_encoder.hpp"
 
 using namespace std;
 
@@ -44,6 +45,10 @@ namespace happyml {
             stream_ << line << endl;
         }
 
+        bool is_open() {
+            return stream_.is_open();
+        }
+
     private:
         string filename_;
         ofstream stream_;
@@ -65,11 +70,36 @@ namespace happyml {
         void writeRecord(const vector<string> &record) {
             string currentDelimiter;
             stringstream combinedRecord;
-            for (const string &column : record) {
-                combinedRecord << currentDelimiter << TextFileEncoderDecoder::encodeString(column, delimiter_);
+            for (const string &column: record) {
+                auto stripped_column = strip(column);
+                auto stripped_column_length = stripped_column.length();
+                if (stripped_column_length > 0) {
+                    if (stripped_column[0] == '\"' && stripped_column[stripped_column_length - 1] == '\"') {
+                        stripped_column = stripped_column.substr(1, stripped_column_length - 2);
+                        string_replace_all(stripped_column, "\"", "\"\"");
+                        auto encoded_column = TextEncoderDecoder::encodeString(stripped_column, delimiter_);
+                        stripped_column = "\"" + encoded_column + "\"";
+                    } else {
+                        // check if it is a number
+                        try {
+                            stringToFloat(stripped_column);
+                        } catch (exception &e) {
+                            // it is not a number, so we need to encode it
+                            string_replace_all(stripped_column, "\"", "\"\"");
+                            auto encoded_column = TextEncoderDecoder::encodeString(stripped_column, delimiter_);
+                            stripped_column = "\"" + encoded_column + "\"";
+                        }
+                    }
+                }
+                combinedRecord << currentDelimiter << stripped_column;
                 currentDelimiter = delimiter_;
             }
+
             line_writer_.writeLine(combinedRecord.str());
+        }
+
+        bool is_open() {
+            return line_writer_.is_open();
         }
 
     private:
@@ -77,19 +107,19 @@ namespace happyml {
         char delimiter_;
     };
 
-    // The binary dataset format is as follows:
-    // 1. The header is written first:
-    //      a. the number of given tensors
-    //      b. each given tensor's purpose and dimensions
-    //          i. tensor purpose: 'I' (image), 'T' (text), 'N' (number), 'L' (label)
-    //          ii. tensor dimensions
-    //      c. the number of expected tensors
-    //      d. each expected tensor's purpose and dimensions
-    //          i. tensor purpose: 'I' (image), 'T' (text), 'N' (number), 'L' (label)
-    //          ii. tensor dimensions
-    // 2. The data is written next, one row at a time:
-    //      a. each given tensor's data
-    //      b. each expected tensor's data
+// The binary dataset format is as follows:
+// 1. The header is written first:
+//      a. the number of given tensors
+//      b. each given tensor's purpose and dimensions
+//          i. tensor purpose: 'I' (image), 'T' (text), 'N' (number), 'L' (label)
+//          ii. tensor dimensions
+//      c. the number of expected tensors
+//      d. each expected tensor's purpose and dimensions
+//          i. tensor purpose: 'I' (image), 'T' (text), 'N' (number), 'L' (label)
+//          ii. tensor dimensions
+// 2. The data is written next, one row at a time:
+//      a. each given tensor's data
+//      b. each expected tensor's data
     class BinaryDatasetWriter {
     public:
         explicit BinaryDatasetWriter(const string &path,
@@ -106,8 +136,9 @@ namespace happyml {
                                      size_t lru_cache_size = 100000) :
                 given_metadata_(std::move(given_metadata)),
                 expected_metadata_(std::move(expected_metadata)) {
-            if(lru_cache_size > 0) {
-                lru_cache_ = make_shared<LruCache<size_t, bool>>(lru_cache_size);
+            if (lru_cache_size > 0) {
+                lru_cache_ = make_shared<LruCache<size_t, bool>>
+                        (lru_cache_size);
             } else {
                 lru_cache_ = nullptr;
             }
@@ -156,6 +187,9 @@ namespace happyml {
 
         void writeHeader() {
             uint64_t number_of_given = given_metadata_.size();
+            if( number_of_given == 0) {
+                throw runtime_error("No given tensors were provided");
+            }
             binaryFile_.write(reinterpret_cast<const char *>(&number_of_given), sizeof(uint64_t));
             for (const auto &metadata: given_metadata_) {
                 writeColumnMetadata(metadata);
@@ -214,5 +248,6 @@ namespace happyml {
         }
         writer->close();
     }
+
 }
 #endif //HAPPYML_FILE_WRITER_HPP

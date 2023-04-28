@@ -61,7 +61,7 @@ namespace happyml {
 
         static shared_ptr<ParseResult> parseColumnGroup(ColumnGroup &columnGroup,
                                                         const shared_ptr<TokenStream> &stream) {
-            columnGroup.dataType = stream->next()->getValue();
+            columnGroup.data_type = stream->next()->getValue();
             auto dim_or_at = stream->next()->getLabel();
             if ("_open_parenthesis" == dim_or_at && stream->hasNext()) {
                 columnGroup.rows = parseNextNumber(stream);
@@ -90,7 +90,7 @@ namespace happyml {
             if ("_at" != dim_or_at || !stream->hasNext()) {
                 return generateError("with statement is malformed: ", stream->previous());
             }
-            columnGroup.startIndex = parseNextNumber(stream);
+            columnGroup.start_index = parseNextNumber(stream);
             return make_shared<ParseResult>("Success", true);
         }
 

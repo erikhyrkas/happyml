@@ -120,17 +120,26 @@ namespace happyml {
                 output << header << '\n';
             }
 
-            if (!min_heap.empty()) {
-                previous_line = min_heap.top().first;
-                output << previous_line << '\n';
-                min_heap.pop();
-            }
+//            if (!min_heap.empty()) {
+//                previous_line = min_heap.top().first;
+//                auto chunk_file = min_heap.top().second;
+//                min_heap.pop();
+//
+//                output << previous_line << '\n';
+//
+//                std::getline(*chunk_file, previous_line);
+//                if (*chunk_file) {
+//                    min_heap.emplace(previous_line, chunk_file);
+//                }
+//            }
 
+            bool first_record = true;
             while (!min_heap.empty()) {
                 auto [line, chunk_file] = min_heap.top();
                 min_heap.pop();
 
-                if (!(delete_duplicates && line == previous_line) && !line.empty()) {
+                if (first_record || !(delete_duplicates && line == previous_line) && !line.empty()) {
+                    first_record = false;
                     output << line << '\n';
                     previous_line = line;
                 }
@@ -138,6 +147,10 @@ namespace happyml {
                 if (*chunk_file) {
                     min_heap.emplace(line, chunk_file);
                 }
+            }
+            output.close();
+            for(auto &chunk_file: chunk_files) {
+                chunk_file.close();
             }
         }
     };

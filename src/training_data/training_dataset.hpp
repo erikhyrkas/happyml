@@ -8,6 +8,7 @@
 
 #include <cstdint>
 #include <iostream>
+#include <utility>
 #include <vector>
 #include <random>
 #include <iterator>
@@ -264,37 +265,40 @@ namespace happyml {
     };
 
     struct ColumnGroup {
-        string dataType;
-        size_t startIndex;
+        ColumnGroup(size_t startIndex, string use, string dataType, size_t rows, size_t columns, size_t channels) :
+                start_index(startIndex), use(std::move(use)), data_type(std::move(dataType)), rows(rows), columns(columns), channels(channels) {}
+
+        size_t start_index;
+        string use; // given or expected
+        string data_type; // image, label, number, text
         size_t rows;
         size_t columns;
         size_t channels;
-        bool expected;
-        string encoder_name;
-        shared_ptr<DataEncoder> encoder;
     };
 
-    void update_column_positions(const string& original_file, const string& new_file, const vector<ColumnGroup>& given_columns, const vector<ColumnGroup>& expected_columns, bool skip_header) {
-        DelimitedTextFileReader reader(original_file, ',', skip_header);
+    bool update_column_positions(const string &original_file, const string &new_file, const vector<ColumnGroup> &given_columns, const vector<ColumnGroup> &expected_columns, bool has_header) {
+        DelimitedTextFileReader reader(original_file, ',', has_header);
         DelimitedTextFileWriter writer(new_file, ',');
+        size_t records_updated = 0;
         while (reader.hasNext()) {
+            records_updated++;
             auto record = reader.nextRecord();
             vector<string> new_record;
-            for (const auto& column: given_columns) {
+            for (const auto &column: given_columns) {
                 for (size_t i = 0; i < column.rows; i++) {
                     for (size_t j = 0; j < column.columns; j++) {
                         for (size_t k = 0; k < column.channels; k++) {
-                            size_t index = column.startIndex + (i * column.columns * column.channels) + (j * column.channels) + k;
+                            size_t index = column.start_index + (i * column.columns * column.channels) + (j * column.channels) + k;
                             new_record.push_back(record[index]);
                         }
                     }
                 }
             }
-            for (const auto& column: expected_columns) {
+            for (const auto &column: expected_columns) {
                 for (size_t i = 0; i < column.rows; i++) {
                     for (size_t j = 0; j < column.columns; j++) {
                         for (size_t k = 0; k < column.channels; k++) {
-                            size_t index = column.startIndex + (i * column.columns * column.channels) + (j * column.channels) + k;
+                            size_t index = column.start_index + (i * column.columns * column.channels) + (j * column.channels) + k;
                             new_record.push_back(record[index]);
                         }
                     }
@@ -302,6 +306,9 @@ namespace happyml {
             }
             writer.writeRecord(new_record);
         }
+        writer.close();
+        reader.close();
+        return records_updated > 0;
     }
 }
 
