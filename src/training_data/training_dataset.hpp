@@ -265,8 +265,10 @@ namespace happyml {
     };
 
     struct ColumnGroup {
-        ColumnGroup(size_t startIndex, string use, string dataType, size_t rows, size_t columns, size_t channels) :
-                start_index(startIndex), use(std::move(use)), data_type(std::move(dataType)), rows(rows), columns(columns), channels(channels) {}
+        ColumnGroup() : id_(0), start_index(0), rows(0), columns(0), channels(0) {}
+
+        ColumnGroup(size_t id, size_t startIndex, string use, string dataType, size_t rows, size_t columns, size_t channels) :
+                id_(id), start_index(startIndex), use(std::move(use)), data_type(std::move(dataType)), rows(rows), columns(columns), channels(channels) {}
 
         size_t start_index;
         string use; // given or expected
@@ -274,6 +276,7 @@ namespace happyml {
         size_t rows;
         size_t columns;
         size_t channels;
+        size_t id_;
     };
 
     bool update_column_positions(const string &original_file, const string &new_file, const vector<ColumnGroup> &given_columns, const vector<ColumnGroup> &expected_columns, bool has_header) {

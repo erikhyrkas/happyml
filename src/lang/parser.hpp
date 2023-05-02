@@ -141,12 +141,13 @@ namespace happyml {
                     ColumnGroup columnGroup;
                     string withType = stream->next()->getValue();
                     if ("expected" == withType) {
-                        columnGroup.expected = true;
+                        columnGroup.use = withType;
                     } else if ("given" == withType) {
-                        columnGroup.expected = false;
+                        columnGroup.use = withType;
                     } else {
                         return generateError("with statement is malformed ", stream->previous());
                     }
+                    columnGroup.id_ = column_groups.size() + 1;
                     auto columnGroupParseResult = parseColumnGroup(columnGroup, stream);
                     if (!columnGroupParseResult->isSuccessful()) {
                         return columnGroupParseResult;

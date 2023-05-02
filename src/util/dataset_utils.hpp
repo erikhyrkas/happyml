@@ -258,6 +258,7 @@ namespace happyml {
                                                        char delimiter,
                                                        bool header_row,
                                                        vector<ColumnGroup> &sortedColumnGroups,
+                                                       vector<ColumnGroup> &originalColumnGroups,
                                                        const shared_ptr<BytePairEncoderModel> &defaultBytePairEncoder) {
 
 
@@ -270,6 +271,7 @@ namespace happyml {
         vector<pair<ColumnGroup, shared_ptr<DataEncoder>>> columnGroupEncoders;
         for (const auto &column_group: sortedColumnGroups) {
             vector<string> column_group_metadata = {"column_group",
+                                                    to_string(column_group.id_),
                                                     to_string(column_group.start_index),
                                                     column_group.use,
                                                     column_group.data_type,
@@ -293,10 +295,24 @@ namespace happyml {
             } else if ("text" == column_group.data_type) {
                 //columnGroupEncoders.emplace_back(column_group, make_shared<TextToEmbeddedTokensEncoder>(defaultBytePairEncoder));
                 //TODO: finish this
+                string error = "Unimplemented data type: " + column_group.data_type;
+                throw exception(error.c_str());
             } else {
-                // error we don't have an encoder for this type.
-                break;
+                string error = "Unknown data type: " + column_group.data_type;
+                throw exception(error.c_str());
             }
+        }
+
+        for (const auto &column_group: originalColumnGroups) {
+            vector<string> column_group_metadata = {"original_column_group",
+                                                    to_string(column_group.id_),
+                                                    to_string(column_group.start_index),
+                                                    column_group.use,
+                                                    column_group.data_type,
+                                                    to_string(column_group.rows),
+                                                    to_string(column_group.columns),
+                                                    to_string(column_group.channels)};
+            dataset_metadata.push_back(column_group_metadata);
         }
         auto new_dataset_path = repo_path + dataset_name;
         save_config(new_dataset_path, dataset_metadata);

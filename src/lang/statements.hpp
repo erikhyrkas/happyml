@@ -242,6 +242,9 @@ namespace happyml {
 
             // 4. Create new BinaryDataset from "sorted-deduped" file, deduping any givens that are the same, call new binary file "clean dataset"
             //    NOTE: remove "sorted-deduped" file
+            //    PLUS: Save a properties file that tracks the original given and expected metadata (data types, shapes, and starting column positions) and the new binary order
+            //    NOTE: This is used later when the user creates a task, and the task needs to understand how the user might send requests
+
             // TODO: this method isn't fully written:
             auto raw_location = create_binary_dataset_from_delimited_values(DEFAULT_HAPPYML_REPO_PATH,
                                                                             name_,
@@ -249,6 +252,7 @@ namespace happyml {
                                                                             ',',
                                                                             false,
                                                                             updatedColumnGroups,
+                                                                            column_groups_,
                                                                             context->getBpeEncoder());
             if (!filesystem::remove(sorted_location)) {
                 return make_shared<ExecutionResult>(false, false,
@@ -264,9 +268,6 @@ namespace happyml {
                 return make_shared<ExecutionResult>(false, false,
                                                     "Could not remove the clean dataset file.");
             }
-            // 6. Save a properties file that tracks the original given and expected metadata (data types, shapes, and starting column positions) and the new binary order
-            //    NOTE: This is used later when the user creates a task, and the task needs to understand how the user might send requests
-
 
             //  create dataset <name>
             //  [with expected <label|number|text|image> [(<rows>, <columns>, <channels>)] at <column> ]*
