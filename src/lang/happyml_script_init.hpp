@@ -31,6 +31,7 @@ namespace happyml {
         patterns.push_back(createKeywordToken("exit"));
         patterns.push_back(createKeywordToken("given"));
         patterns.push_back(createKeywordToken("help"));
+        patterns.push_back(createKeywordToken("print"));
         patterns.push_back(createKeywordToken("input"));
         patterns.push_back(createKeywordToken("label"));
         patterns.push_back(createKeywordToken("list"));

@@ -28,6 +28,44 @@ namespace happyml {
         }
     };
 
+    class PrintStatement : public ExecutableStatement {
+    public:
+        explicit PrintStatement(string dataset_name, int limit = -1) : dataset_name_(std::move(dataset_name)), limit_(limit) {
+        }
+        shared_ptr<ExecutionResult> execute(const shared_ptr<ExecutionContext> &context) override {
+            string base_path = DEFAULT_HAPPYML_REPO_PATH;
+            string result_path = base_path + dataset_name_ + "/dataset.bin";
+            BinaryDatasetReader reader(result_path);
+            auto row_count = reader.rowCount();
+            auto max_rows = (limit_ == -1) ? reader.rowCount() : min(row_count,(size_t)limit_);
+            for(int i = 0; i < max_rows; i++) {
+                cout << "Row: " << (i+1) << endl;
+                auto row = reader.readRow(i);
+                auto given_tensors = row.first;
+                auto expected_tensors = row.second;
+                auto offset = 0;
+                for (auto &given_tensor: given_tensors) {
+                    cout << "Given: " << offset;
+                    auto original_val = unstandardize_and_denormalize(given_tensor, reader.get_given_metadata(offset));
+                    original_val->print();
+                    offset++;
+                }
+                offset = 0;
+                for (auto &expected_tensor: expected_tensors) {
+                    cout << "Expected: " << offset;
+                    auto original_val = unstandardize_and_denormalize(expected_tensor, reader.get_expected_metadata(offset));
+                    original_val->print();
+                    offset++;
+                }
+            }
+
+            return make_shared<ExecutionResult>(false);
+        }
+    private:
+        string dataset_name_;
+        int limit_;
+    };
+
     class HelpStatement : public ExecutableStatement {
     public:
         explicit HelpStatement(string help_menu_item = "default") : help_menu_item_(std::move(help_menu_item)) {
@@ -44,10 +82,15 @@ namespace happyml {
                      << "  [with expected <label|number|text|image> [(<rows>, <columns>, <channels>)] at <column> ]*" << endl
                      << "  using <file://path/>" << endl << endl;
 
-                cout << "  list datasets [<starting with x>]" << endl << endl;
+                cout << "  print dataset <name> [limit <x>]" << endl << endl;
 
             } else if (help_menu_item_ == "task" || help_menu_item_ == "tasks") {
                 cout << "Available task commands: " << endl;
+
+                cout << "  coming soon..." << endl << endl;
+
+            } else if (help_menu_item_ == "future") {
+                cout << "Future commands: " << endl;
                 cout << "  create task <task type> <task name>" << endl
                      << "  [with goal <speed|accuracy|memory>]" << endl
                      << "  using <dataset name>" << endl << endl;
@@ -62,8 +105,8 @@ namespace happyml {
                      << "  [with label [label]]" << endl
                      << "  using dataset <dataset name>" << endl << endl;
 
-            } else if (help_menu_item_ == "future") {
-                cout << "Future commands: " << endl;
+                cout << "  list datasets [<starting with x>]" << endl << endl;
+
                 cout << "  copy <task name> [<label>] to [<task name>] [<label>]" << endl << endl;
 
                 cout << "  copy <dataset name> to [<dataset name>]" << endl << endl;

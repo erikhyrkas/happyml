@@ -223,6 +223,9 @@ namespace happyml {
         }
 
         pair<vector<shared_ptr<BaseTensor>>, vector<shared_ptr<BaseTensor>>> readRow(size_t index) {
+            if( index >= number_of_rows_ ) {
+                throw runtime_error("Index out of bounds");
+            }
             // advance to the beginning of the row, which is header_size_ + index * row_size_
             std::streamoff offset = static_cast<std::streamoff>(index) * static_cast<std::streamoff>(row_size_);
             binaryFile_.seekg(header_size_ + offset, ios::beg);

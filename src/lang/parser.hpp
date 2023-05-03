@@ -49,6 +49,23 @@ namespace happyml {
             return make_shared<ParseResult>(make_shared<HelpStatement>(next->getValue()));
         }
 
+        static shared_ptr<ParseResult> parsePrintStatement(const shared_ptr<TokenStream> &stream) {
+            if (!stream->hasNext()) {
+                return generateError("usage: print dataset <name> [limit <x>]", stream->previous());
+            }
+            auto next = stream->next();
+            if ("_dataset" != next->getLabel()) {
+                return generateError("usage: print dataset <name> [limit <x>]", stream->previous());
+            }
+            next = stream->next();
+            auto dataset_name = next->getValue();
+            if (!stream->hasNext() || "limit" != stream->peek()->getValue()) {
+                return make_shared<ParseResult>(make_shared<PrintStatement>(dataset_name));
+            }
+            stream->next();
+            auto limit = parseNextNumber(stream);
+            return make_shared<ParseResult>(make_shared<PrintStatement>(next->getValue(), limit));
+        }
         static int parseNextNumber(const shared_ptr<TokenStream> &stream) {
             try {
                 return stoi(stream->next()->getValue());
@@ -213,6 +230,12 @@ namespace happyml {
                         return helpStatementResult;
                     }
                     codeBlock->addChild(helpStatementResult->getExecutable());
+                } else if ("_print" == label) {
+                    auto printStatementResult = parsePrintStatement(stream);
+                    if (!printStatementResult->isSuccessful()) {
+                        return printStatementResult;
+                    }
+                    codeBlock->addChild(printStatementResult->getExecutable());
                 } else if ("_create" == label) {
                     auto createStatementResult = parseCreateStatement(stream);
                     if (!createStatementResult->isSuccessful()) {
