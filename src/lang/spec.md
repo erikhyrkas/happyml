@@ -31,9 +31,11 @@ that I think I want, here are the keywords I'm currently planning:
 * help
 * input
 * label
+* limit
 * list
 * move
 * pixel
+* print
 * refine
 * scalar
 * task

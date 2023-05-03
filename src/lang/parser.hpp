@@ -59,7 +59,7 @@ namespace happyml {
             }
             next = stream->next();
             auto dataset_name = next->getValue();
-            if (!stream->hasNext() || "limit" != stream->peek()->getValue()) {
+            if (!stream->hasNext() || "_limit" != stream->peek()->getLabel()) {
                 return make_shared<ParseResult>(make_shared<PrintStatement>(dataset_name));
             }
             stream->next();
