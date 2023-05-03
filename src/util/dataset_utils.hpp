@@ -118,9 +118,49 @@ namespace happyml {
         return true;
     }
 
-    shared_ptr<BinaryColumnMetadata> initialize_column_metadata(const vector<size_t> &dims, char purpose);
 
-    shared_ptr<BaseTensor> &standardize_and_normalize(shared_ptr<BaseTensor> &standardized_normalized_given_tensor, const shared_ptr<BinaryColumnMetadata> &current_metadata);
+    shared_ptr<BaseTensor> &standardize_and_normalize(shared_ptr<BaseTensor> &standardized_normalized_given_tensor, const shared_ptr<BinaryColumnMetadata> &current_metadata) {
+        if (current_metadata->is_standardized) {
+            standardized_normalized_given_tensor = make_shared < TensorStandardizeView > (standardized_normalized_given_tensor,
+                                                                                          current_metadata->mean,
+                                                                                          current_metadata->standard_deviation);
+        }
+        if (current_metadata->is_normalized) {
+            standardized_normalized_given_tensor = make_shared < TensorNormalizeView > (standardized_normalized_given_tensor,
+                                                                                        current_metadata->min_value,
+                                                                                        current_metadata->max_value);
+        }
+        return standardized_normalized_given_tensor;
+    }
+
+    shared_ptr<BaseTensor> &unstandardize_and_denormalize(shared_ptr<BaseTensor> &unstandardized_denormalized_given_tensor, const shared_ptr<BinaryColumnMetadata> &current_metadata) {
+        if (current_metadata->is_normalized) {
+            unstandardized_denormalized_given_tensor = make_shared < TensorDenormalizeView > (unstandardized_denormalized_given_tensor,
+                                                                                              current_metadata->min_value,
+                                                                                              current_metadata->max_value);
+        }
+        if (current_metadata->is_standardized) {
+            unstandardized_denormalized_given_tensor = make_shared < TensorUnstandardizeView > (unstandardized_denormalized_given_tensor,
+                                                                                                current_metadata->mean,
+                                                                                                current_metadata->standard_deviation);
+        }
+        return unstandardized_denormalized_given_tensor;
+    }
+
+    shared_ptr<BinaryColumnMetadata> initialize_column_metadata(const vector<size_t> &dims, char purpose) {
+        auto next_metadata = make_shared < BinaryColumnMetadata > ();
+        next_metadata->purpose = purpose;
+        next_metadata->rows = dims[0];
+        next_metadata->columns = dims[1];
+        next_metadata->channels = dims[2];
+        next_metadata->is_standardized = false;
+        next_metadata->mean = 0.0;
+        next_metadata->standard_deviation = 0.0;
+        next_metadata->is_normalized = false;
+        next_metadata->min_value = 0.0;
+        next_metadata->max_value = 0.0;
+        return next_metadata;
+    }
 
     void normalize_and_standardize_dataset(const string &raw_binary_file,
                                            const string &repo_path,
@@ -200,7 +240,7 @@ namespace happyml {
             }
         }
 
-        auto new_dataset_path = repo_path + name;
+        auto new_dataset_path = repo_path + name+ "/dataset.bin";
         BinaryDatasetWriter binaryDatasetWriter(new_dataset_path, given_metadata, expected_metadata, 0);
         size_t row_count = binaryDatasetReader.rowCount();
         for (size_t index = 0; index < row_count; ++index) {
@@ -223,34 +263,6 @@ namespace happyml {
         binaryDatasetReader.close();
     }
 
-    shared_ptr<BaseTensor> &standardize_and_normalize(shared_ptr<BaseTensor> &standardized_normalized_given_tensor, const shared_ptr<BinaryColumnMetadata> &current_metadata) {
-        if (current_metadata->is_standardized) {
-            standardized_normalized_given_tensor = make_shared < TensorStandardizeView > (standardized_normalized_given_tensor,
-                    current_metadata->mean,
-                    current_metadata->standard_deviation);
-        }
-        if (current_metadata->is_normalized) {
-            standardized_normalized_given_tensor = make_shared < TensorNormalizeView > (standardized_normalized_given_tensor,
-                    current_metadata->min_value,
-                    current_metadata->max_value);
-        }
-        return standardized_normalized_given_tensor;
-    }
-
-    shared_ptr<BinaryColumnMetadata> initialize_column_metadata(const vector<size_t> &dims, char purpose) {
-        auto next_metadata = make_shared < BinaryColumnMetadata > ();
-        next_metadata->purpose = purpose;
-        next_metadata->rows = dims[0];
-        next_metadata->columns = dims[1];
-        next_metadata->channels = dims[2];
-        next_metadata->is_standardized = false;
-        next_metadata->mean = 0.0;
-        next_metadata->standard_deviation = 0.0;
-        next_metadata->is_normalized = false;
-        next_metadata->min_value = 0.0;
-        next_metadata->max_value = 0.0;
-        return next_metadata;
-    }
 
     string create_binary_dataset_from_delimited_values(const string &repo_path,
                                                        const string &dataset_name,
@@ -320,9 +332,10 @@ namespace happyml {
         // new_dataset_path+"/raw.bin" is the name of the binary file that will be created.
 
         DelimitedTextFileReader delimitedTextFileReader(delimited_file_path, delimiter, header_row);
-        auto dataset_file_path = repo_path + dataset_name + "/raw.bin";
+        auto dataset_file_path = new_dataset_path + "/raw.bin";
 
         vector<shared_ptr<BinaryColumnMetadata>> given_metadata;
+        vector<shared_ptr<BinaryColumnMetadata>> expected_metadata;
         for (const auto &column_group: columnGroupEncoders) {
             auto next_column_metadata = make_shared<BinaryColumnMetadata>();
             // 'I' (image), 'T' (text), 'N' (number), 'L' (label)
@@ -346,9 +359,12 @@ namespace happyml {
             next_column_metadata->is_standardized = false;
             next_column_metadata->mean = 0.0;
             next_column_metadata->standard_deviation = 0.0;
-            given_metadata.push_back(next_column_metadata);
+            if( column_group.first.use == "given" ){
+                given_metadata.push_back(next_column_metadata);
+            } else {
+                expected_metadata.push_back(next_column_metadata);
+            }
         }
-        vector<shared_ptr<BinaryColumnMetadata>> expected_metadata;
         BinaryDatasetWriter binaryDatasetWriter(dataset_file_path, given_metadata, expected_metadata);
 
         // iterate over delimitedTextFileReader and create tensors for each column group.
@@ -383,6 +399,7 @@ namespace happyml {
             }
             binaryDatasetWriter.writeRow(result_row_givens, result_row_expecteds);
         }
+        binaryDatasetWriter.close();
         return dataset_file_path;
     }
 

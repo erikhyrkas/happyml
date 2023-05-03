@@ -79,16 +79,11 @@ namespace happyml {
                         string_replace_all(stripped_column, "\"", "\"\"");
                         auto encoded_column = TextEncoderDecoder::encodeString(stripped_column, delimiter_);
                         stripped_column = "\"" + encoded_column + "\"";
-                    } else {
-                        // check if it is a number
-                        try {
-                            stringToFloat(stripped_column);
-                        } catch (exception &e) {
-                            // it is not a number, so we need to encode it
-                            string_replace_all(stripped_column, "\"", "\"\"");
-                            auto encoded_column = TextEncoderDecoder::encodeString(stripped_column, delimiter_);
-                            stripped_column = "\"" + encoded_column + "\"";
-                        }
+                    } else if (!isFloat(stripped_column)) { // check if it is a number
+                        // it is not a number, so we need to encode it
+                        string_replace_all(stripped_column, "\"", "\"\"");
+                        auto encoded_column = TextEncoderDecoder::encodeString(stripped_column, delimiter_);
+                        stripped_column = "\"" + encoded_column + "\"";
                     }
                 }
                 combinedRecord << currentDelimiter << stripped_column;
@@ -152,6 +147,7 @@ namespace happyml {
 
         void close() {
             if (binaryFile_.is_open()) {
+                binaryFile_.flush();
                 binaryFile_.close();
             }
         }
@@ -187,7 +183,7 @@ namespace happyml {
 
         void writeHeader() {
             uint64_t number_of_given = given_metadata_.size();
-            if( number_of_given == 0) {
+            if (number_of_given == 0) {
                 throw runtime_error("No given tensors were provided");
             }
             binaryFile_.write(reinterpret_cast<const char *>(&number_of_given), sizeof(uint64_t));

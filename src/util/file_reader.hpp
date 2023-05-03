@@ -274,6 +274,32 @@ namespace happyml {
         size_t get_expected_column_count() {
             return expected_metadata_.size();
         }
+
+        bool is_standardized(size_t index) {
+            if (index >= expected_metadata_.size()) {
+                throw runtime_error("Index out of bounds");
+            }
+            return expected_metadata_[index]->is_standardized;
+        }
+        bool is_normalized(size_t index) {
+            if (index >= expected_metadata_.size()) {
+                throw runtime_error("Index out of bounds");
+            }
+            return expected_metadata_[index]->is_normalized;
+        }
+
+        shared_ptr<BinaryColumnMetadata> get_given_metadata(size_t index) {
+            if (index >= given_metadata_.size()) {
+                throw runtime_error("Index out of bounds");
+            }
+            return given_metadata_[index];
+        }
+        shared_ptr<BinaryColumnMetadata> get_expected_metadata(size_t index) {
+            if (index >= expected_metadata_.size()) {
+                throw runtime_error("Index out of bounds");
+            }
+            return expected_metadata_[index];
+        }
     private:
         ifstream binaryFile_;
         size_t row_size_{};

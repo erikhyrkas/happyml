@@ -235,10 +235,10 @@ namespace happyml {
                 return make_shared<ExecutionResult>(false, false,
                                                     "Could not sort the given-expected file.");
             }
-//            if(!filesystem::remove(organized_location)) {
-//                return make_shared<ExecutionResult>(false, false,
-//                                                    "Could not remove the given-expected file.");
-//            }
+            if(!filesystem::remove(organized_location)) {
+                return make_shared<ExecutionResult>(false, false,
+                                                    "Could not remove the given-expected file.");
+            }
 
             // 4. Create new BinaryDataset from "sorted-deduped" file, deduping any givens that are the same, call new binary file "clean dataset"
             //    NOTE: remove "sorted-deduped" file

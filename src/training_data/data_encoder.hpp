@@ -51,6 +51,17 @@ namespace happyml {
         return value;
     }
 
+    bool stringToFloat(const string& text, float& value) {
+        auto [ptr, error_check] = std::from_chars(text.data(), text.data() + text.size(), value);
+        return error_check == std::errc();
+    }
+
+    bool isFloat(const string& text) {
+        float value = 0.0;
+        auto [ptr, error_check] = std::from_chars(text.data(), text.data() + text.size(), value);
+        return error_check == std::errc();
+    }
+
     class DataEncoder {
     public:
         virtual shared_ptr<BaseTensor> encode(const vector<string> &words,
