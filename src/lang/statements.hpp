@@ -39,10 +39,9 @@ namespace happyml {
             if (help_menu_item_ == "dataset" || help_menu_item_ == "datasets") {
                 cout << "Available dataset commands: " << endl;
                 cout << "  create dataset <name>" << endl
-                     << "  [with expected <label|number|text|image> [(<rows>, <columns>, <channels>)] at <column> ]*"
-                     << endl
-                     << "  [with given <label|number|text|image> [(<rows>, <columns>, <channels>)] at <column> ]* "
-                     << endl
+                     << "  [with header]" << endl
+                     << "  [with given <label|number|text|image> [(<rows>, <columns>, <channels>)] at <column> ]+ " << endl
+                     << "  [with expected <label|number|text|image> [(<rows>, <columns>, <channels>)] at <column> ]*" << endl
                      << "  using <file://path/>" << endl << endl;
 
                 cout << "  list datasets [<starting with x>]" << endl << endl;
@@ -123,7 +122,7 @@ namespace happyml {
                 // but that would be a guess. We'd also have to guess the data types. Expected might be a label, given might be a number.
                 // for the moment, we'll make the caller be explicit.
                 return make_shared<ExecutionResult>(false, false,
-                                                    "create dataset must have at least one column group.");
+                                                    "create dataset must have at least one given column.");
             }
             bool has_text = false;
             for (const auto &columnGroup: column_groups_) {
@@ -204,6 +203,10 @@ namespace happyml {
                     given_column_groups.push_back(columnGroup);
                 }
             }
+            if (given_column_groups.empty()) {
+                return make_shared<ExecutionResult>(false, false,
+                                                    "create dataset must have at least one given column.");
+            }
             vector<ColumnGroup> updatedColumnGroups;
             size_t current_index = 0;
             for (const auto &columnGroup: given_column_groups) {
@@ -235,7 +238,7 @@ namespace happyml {
                 return make_shared<ExecutionResult>(false, false,
                                                     "Could not sort the given-expected file.");
             }
-            if(!filesystem::remove(organized_location)) {
+            if (!filesystem::remove(organized_location)) {
                 return make_shared<ExecutionResult>(false, false,
                                                     "Could not remove the given-expected file.");
             }
@@ -244,8 +247,6 @@ namespace happyml {
             //    NOTE: remove "sorted-deduped" file
             //    PLUS: Save a properties file that tracks the original given and expected metadata (data types, shapes, and starting column positions) and the new binary order
             //    NOTE: This is used later when the user creates a task, and the task needs to understand how the user might send requests
-
-            // TODO: this method isn't fully written:
             auto raw_location = create_binary_dataset_from_delimited_values(DEFAULT_HAPPYML_REPO_PATH,
                                                                             name_,
                                                                             sorted_location,
