@@ -43,20 +43,23 @@ namespace happyml {
     }
 
     float stringToFloat(const string &text) {
-        float value = 0.0;
-        auto [ptr, error_check] = std::from_chars(text.data(), text.data() + text.size(), value);
-        if (error_check != std::errc()) {
-            throw exception("Couldn't convert text to float");
+        float value = 0.0f;
+        if (!text.empty()) {
+            auto [ptr, error_check] = std::from_chars(text.data(), text.data() + text.size(), value);
+            if (error_check != std::errc()) {
+                string message = "Couldn't convert text to float: " + text;
+                throw exception(message.c_str());
+            }
         }
         return value;
     }
 
-    bool stringToFloat(const string& text, float& value) {
+    bool stringToFloat(const string &text, float &value) {
         auto [ptr, error_check] = std::from_chars(text.data(), text.data() + text.size(), value);
         return error_check == std::errc();
     }
 
-    bool isFloat(const string& text) {
+    bool isFloat(const string &text) {
         float value = 0.0;
         auto [ptr, error_check] = std::from_chars(text.data(), text.data() + text.size(), value);
         return error_check == std::errc();
@@ -66,6 +69,8 @@ namespace happyml {
     public:
         virtual shared_ptr<BaseTensor> encode(const vector<string> &words,
                                               size_t rows, size_t columns, size_t channels, bool trim) = 0;
+
+        virtual vector<size_t> calculate_output_shape(size_t rows, size_t columns, size_t channels) = 0;
     };
 
 
@@ -95,6 +100,10 @@ namespace happyml {
             }
             return pixelTensor(result);
         }
+
+        vector<size_t> calculate_output_shape(size_t rows, size_t columns, size_t channels) override {
+            return {rows, columns, channels};
+        }
     };
 
     class TextToScalarEncoder : public DataEncoder {
@@ -117,6 +126,10 @@ namespace happyml {
             }
             return tensor(result);
         }
+
+        vector<size_t> calculate_output_shape(size_t rows, size_t columns, size_t channels) override {
+            return {rows, columns, channels};
+        }
     };
 
     // See get_distinct_values() in dataset_utils.hpp for how to calculate the category labels.
@@ -129,15 +142,22 @@ namespace happyml {
 
         }
 
-        explicit TextToUniqueCategoryEncoder(const map<string, size_t> &categoryMapping) {
+        explicit TextToUniqueCategoryEncoder(const map <string, size_t> &categoryMapping) {
             this->categoryMapping = categoryMapping;
         }
 
         shared_ptr<BaseTensor> encode(const vector<string> &words,
                                       size_t rows, size_t columns, size_t channels, bool trim) override {
-            if (words.size() != channels) {
-                throw exception(
-                        "The result tensor must have exactly the same number of channels as there are words to encode.");
+            if (channels != 1) {
+                throw exception("The result tensor must have exactly one channel.");
+            }
+            if (words.size() != rows) {
+                string message = "The result tensor must have exactly the same number of rows as there are words to encode. Expected " + to_string(rows) + " but got " + to_string(words.size());
+                throw exception(message.c_str());
+            }
+            if (columns != categoryMapping.size()) {
+                string message = "The result tensor must have exactly the same number of columns as there are categories. Expected " + to_string(categoryMapping.size()) + " but got " + to_string(columns);
+                throw exception(message.c_str());
             }
             vector<vector<vector<float>>> result;
             result.resize(channels);
@@ -148,7 +168,7 @@ namespace happyml {
                 }
             }
 
-            size_t channel_offset = 0;
+            size_t row_offset = 0;
             for (const auto &word: words) {
                 size_t column_offset;
                 if (trim) {
@@ -156,26 +176,36 @@ namespace happyml {
                 } else {
                     column_offset = categoryMapping.at(word);
                 }
-                result[channel_offset][0][column_offset] = 1.f;
-                channel_offset++;
+                if (row_offset >= rows) {
+                    throw exception("mapping returned an out of bounds index for rows.");
+                }
+                if (column_offset >= columns) {
+                    throw exception("mapping returned an out of bounds index for columns.");
+                }
+                result[0][row_offset][column_offset] = 1.f;
+                row_offset++;
             }
 
             return tensor(result);
         }
 
+        vector<size_t> calculate_output_shape(size_t rows, size_t columns, size_t channels) override {
+            return {rows, categoryMapping.size(), 1};
+        }
+
     private:
-        map<string, size_t> categoryMapping;
+        map <string, size_t> categoryMapping;
     };
 
     class TextToEmbeddedTokensEncoder : public DataEncoder {
     public:
-        explicit TextToEmbeddedTokensEncoder(shared_ptr <BytePairEncoderModel> bytePairEncoderModel,
-                                             shared_ptr <Embedder> embedder) :
+        explicit TextToEmbeddedTokensEncoder(shared_ptr<BytePairEncoderModel> bytePairEncoderModel,
+                                             shared_ptr<Embedder> embedder) :
                 bytePairEncoderModel_(std::move(bytePairEncoderModel)),
                 embedder_(std::move(embedder)) {}
 
-        shared_ptr <BaseTensor> encode(const vector<string> &columnsOfText,
-                                       size_t rows, size_t columns, size_t channels, bool trim) override {
+        shared_ptr<BaseTensor> encode(const vector<string> &columnsOfText,
+                                      size_t rows, size_t columns, size_t channels, bool trim) override {
             // I considered just doing character-level encoding using one_hot_encode_characters(), but
             // it would take a huge amount of memory and not produce good results. It's better to stop
             // the caller now and let them fix their code.
@@ -201,14 +231,22 @@ namespace happyml {
                 auto embedded_tokens = embedder_->embed_tokens(one_hot_encoded);
                 result[channel_offset] = embedded_tokens;
                 channel_offset++;
+                if (channel_offset >= channels) {
+                    break;
+                }
             }
 
             return tensor(result);
         }
 
+        vector<size_t> calculate_output_shape(size_t rows, size_t columns, size_t channels) override {
+            auto embedded_shape = embedder_->calculate_result_shape();
+            return {embedded_shape[0], embedded_shape[1], channels};
+        }
+
     private:
-        shared_ptr <BytePairEncoderModel> bytePairEncoderModel_;
-        shared_ptr <Embedder> embedder_;
+        shared_ptr<BytePairEncoderModel> bytePairEncoderModel_;
+        shared_ptr<Embedder> embedder_;
     };
 
 }

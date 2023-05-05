@@ -52,6 +52,7 @@ void test_save_tensor() {
     metadata1->purpose = 'N';
     metadata1->is_normalized = false;
     metadata1->is_standardized = false;
+    metadata1->source_column_count = 6;
     metadata1->rows = t1->rowCount();
     metadata1->columns = t1->columnCount();
     metadata1->channels = t1->channelCount();
@@ -65,6 +66,7 @@ void test_save_tensor() {
     metadata2->purpose = 'N';
     metadata2->is_normalized = false;
     metadata2->is_standardized = false;
+    metadata2->source_column_count = 6;
     metadata2->rows = t2->rowCount();
     metadata2->columns = t2->columnCount();
     metadata2->channels = t2->channelCount();

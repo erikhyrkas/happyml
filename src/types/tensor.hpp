@@ -124,7 +124,7 @@ namespace happyml {
             uint64_t channels = channelCount();
             uint64_t rows = rowCount();
             uint64_t columns = columnCount();
-            if(header) {
+            if (header) {
                 auto portableChannels = portableBytes(channels);
                 stream.write(reinterpret_cast<const char *>(&portableChannels), sizeof(portableChannels));
                 auto portableRows = portableBytes(rows);
@@ -186,14 +186,14 @@ namespace happyml {
 
         virtual float getValue(size_t row, size_t column, size_t channel) = 0;
 
-        virtual vector <size_t> getShape() {
+        virtual vector<size_t> getShape() {
             return {rowCount(), columnCount(), channelCount()};
         }
 
-        vector<float> getRowValues(size_t row, size_t channel=0) {
+        vector<float> getRowValues(size_t row, size_t channel = 0) {
             vector<float> nextRow;
             size_t columnCount1 = columnCount();
-            for(size_t col = 0; col < columnCount1; col++) {
+            for (size_t col = 0; col < columnCount1; col++) {
                 nextRow.push_back(getValue(row, col, 0));
             }
             return nextRow;
@@ -287,7 +287,7 @@ namespace happyml {
             return {minResult, maxResult};
         }
 
-        vector <IndexValue> topIndices(size_t numberOfResults, size_t channel, size_t row) {
+        vector<IndexValue> topIndices(size_t numberOfResults, size_t channel, size_t row) {
             vector<IndexValue> result;
             if (numberOfResults > 0) {
                 multiset<IndexValue> sortedValues;
@@ -336,7 +336,7 @@ namespace happyml {
             return result;
         }
 
-        vector <size_t> maxIndices(size_t channel, size_t row) {
+        vector<size_t> maxIndices(size_t channel, size_t row) {
             vector<size_t> result;
             float current_max = -INFINITY;
             const size_t maxCols = columnCount();
@@ -353,7 +353,7 @@ namespace happyml {
             return result;
         }
 
-        vector <size_t> minIndices(size_t channel, size_t row) {
+        vector<size_t> minIndices(size_t channel, size_t row) {
             vector<size_t> result;
             float currentMin = INFINITY;
             const size_t maxCols = columnCount();
@@ -495,6 +495,68 @@ namespace happyml {
             }
             sum /= index;
             return (float) exp(sum);
+        }
+
+        void prettyPrintRow(ostream &out, size_t row_offset) {
+            std::ios state(nullptr);
+            state.copyfmt(out);
+            out << setprecision(3) << fixed << setw(8);
+            const size_t rows = rowCount();
+            const size_t cols = columnCount();
+            const size_t maxChannels = channelCount();
+            string delim;
+            if( row_offset >= rows) {
+                if( maxChannels == 1) {
+                    for (size_t col = 0; col < cols; col++) {
+                        if( delim.empty() ) {
+                            out << "      ";
+                        } else {
+                            out << delim <<  "      ";
+                        }
+                        delim = "  ";
+                    }
+                } else {
+                    for (size_t col = 0; col < cols; col++) {
+                        string inner_delim;
+                        out << delim << " ";
+                        for( size_t channel = 0; channel < maxChannels; channel++) {
+                            if( inner_delim.empty() ) {
+                                out << "      ";
+                            } else {
+                                out << inner_delim <<  "      ";
+                            }
+                            inner_delim = "  ";
+                        }
+                        out << " ";
+                        delim = "  ";
+                    }
+                }
+            } else if( maxChannels == 1) {
+                for (size_t col = 0; col < cols; col++) {
+                    if(delim.empty()) {
+                        out << std::right << getValue(row_offset, col, 0);
+                    } else {
+                        out << delim << std::right << getValue(row_offset, col, 0);
+                    }
+                    delim = ", ";
+                }
+            } else {
+                for (size_t col = 0; col < cols; col++) {
+                    string inner_delim;
+                    out << delim << "(";
+                    for( size_t channel = 0; channel < maxChannels; channel++) {
+                        if( inner_delim.empty() ) {
+                            out << std::right << getValue(row_offset, col, channel);
+                        } else {
+                            out << inner_delim << std::right << getValue(row_offset, col, channel);
+                        }
+                        inner_delim = ", ";
+                    }
+                    out << ")";
+                    delim = ", ";
+                }
+            }
+            out.copyfmt(state);
         }
 
         void print() {

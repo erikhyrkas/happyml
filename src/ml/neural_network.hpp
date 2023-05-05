@@ -376,7 +376,7 @@ namespace happyml {
                 }
             }
             filesystem::create_directories(modelPath);
-            string modelProperties = modelPath + "/configuration.happyml";
+            string modelProperties = modelPath + "/configuration.hmlprops";
             auto writer = make_unique<DelimitedTextFileWriter>(modelProperties, ':');
             for (const auto& record: networkMetadata) {
                 writer->writeRecord(record);

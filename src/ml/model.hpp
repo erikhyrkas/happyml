@@ -630,30 +630,30 @@ namespace happymldsl {
     shared_ptr<NeuralNetworkForTraining> loadNeuralNetworkForTraining(const string &modelName,
                                                                       const string &repoRootPath = "repo") {
         string modelPath = repoRootPath + "/" + modelName;
-        string configPath = modelPath + "/configuration.happyml";
+        string configPath = modelPath + "/configuration.hmlprops";
         auto configReader = make_shared<DelimitedTextFileReader>(configPath, ':');
 
         auto optimizerRecord = configReader->nextRecord();
         if (optimizerRecord[0] != "optimizer") {
-            throw exception("Invalid configuration.happyml missing optimizer field.");
+            throw exception("Invalid configuration.hmlprops missing optimizer field.");
         }
         const OptimizerType optimizerType = stringToOptimizerType(optimizerRecord[1]);
 
         auto learningRateRecord = configReader->nextRecord();
         if (learningRateRecord[0] != "learningRate") {
-            throw exception("Invalid configuration.happyml missing learningRate field.");
+            throw exception("Invalid configuration.hmlprops missing learningRate field.");
         }
         float learningRate = stof(learningRateRecord[1]);
 
         auto biasLearningRateRecord = configReader->nextRecord();
         if (biasLearningRateRecord[0] != "biasLearningRate") {
-            throw exception("Invalid configuration.happyml missing biasLearningRate field.");
+            throw exception("Invalid configuration.hmlprops missing biasLearningRate field.");
         }
         float biasLearningRate = stof(biasLearningRateRecord[1]);
 
         auto lossRecord = configReader->nextRecord();
         if (lossRecord[0] != "loss") {
-            throw exception("Invalid configuration.happyml missing loss field.");
+            throw exception("Invalid configuration.hmlprops missing loss field.");
         }
         const LossType lossType = stringToLossType(lossRecord[1]);
 

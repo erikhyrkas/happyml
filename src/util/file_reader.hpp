@@ -303,6 +303,21 @@ namespace happyml {
             }
             return expected_metadata_[index];
         }
+
+        vector<string> getExpectedTensorOrderedLabels(int index) {
+            if (index >= expected_metadata_.size()) {
+                throw runtime_error("Index out of bounds");
+            }
+            return expected_metadata_[index]->ordered_labels;
+        }
+
+        vector<string> getGivenTensorOrderedLabels(int index) {
+            if (index >= given_metadata_.size()) {
+                throw runtime_error("Index out of bounds");
+            }
+            return given_metadata_[index]->ordered_labels;
+        }
+
     private:
         ifstream binaryFile_;
         size_t row_size_{};
@@ -357,15 +372,33 @@ namespace happyml {
             binaryFile_.read(reinterpret_cast<char *>(&portableMaxValue), sizeof(uint32_t));
             metadata->max_value = portableFloat(portableMaxValue);
 
-            size_t portableRows;
+            uint64_t portable_source_column_count;
+            binaryFile_.read(reinterpret_cast<char *>(&portable_source_column_count), sizeof(uint64_t));
+            metadata->source_column_count = portableBytes(portable_source_column_count);
+
+            uint64_t portableRows;
             binaryFile_.read(reinterpret_cast<char *>(&portableRows), sizeof(uint64_t));
             metadata->rows = portableBytes(portableRows);
-            size_t portableColumns;
+            uint64_t portableColumns;
             binaryFile_.read(reinterpret_cast<char *>(&portableColumns), sizeof(uint64_t));
             metadata->columns = portableBytes(portableColumns);
-            size_t portableChannels;
+            uint64_t portableChannels;
             binaryFile_.read(reinterpret_cast<char *>(&portableChannels), sizeof(uint64_t));
             metadata->channels = portableBytes(portableChannels);
+
+            uint64_t portable_label_count;
+            binaryFile_.read(reinterpret_cast<char *>(&portable_label_count), sizeof(uint64_t));
+            size_t label_count = portableBytes(portable_label_count);
+            for( size_t next_label = 0; next_label < label_count; next_label++) {
+                uint64_t label_length;
+                binaryFile_.read(reinterpret_cast<char *>(&label_length), sizeof(uint64_t));
+                auto portable_label_length = portableBytes(label_length);
+                auto label_length_streamsize = static_cast<streamsize>(portable_label_length);
+                auto char_array = new char[label_length_streamsize];
+                binaryFile_.read(char_array, label_length_streamsize);
+                metadata->ordered_labels.emplace_back(char_array, label_length_streamsize);
+            }
+
             return metadata;
         }
 

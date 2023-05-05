@@ -5,16 +5,17 @@
 #ifndef HAPPYML_STATEMENTS_HPP
 #define HAPPYML_STATEMENTS_HPP
 
-#define DEFAULT_HAPPYML_REPO_PATH "../happyml_repo/"
 
 #include <string>
 #include <iostream>
 #include <utility>
 #include <vector>
+#include "../util/happyml_paths.hpp"
 #include "execution_context.hpp"
 #include "../training_data/training_dataset.hpp"
 #include "../util/dataset_utils.hpp"
 #include "../util/text_file_sorter.hpp"
+#include "../training_data/data_decoder.hpp"
 
 using namespace std;
 
@@ -22,7 +23,7 @@ namespace happyml {
 
     class ExitStatement : public ExecutableStatement {
     public:
-        shared_ptr<ExecutionResult> execute(const shared_ptr<ExecutionContext> &context) override {
+        shared_ptr <ExecutionResult> execute(const shared_ptr <ExecutionContext> &context) override {
             cout << "Exiting..." << endl;
             return make_shared<ExecutionResult>(true);
         }
@@ -30,40 +31,131 @@ namespace happyml {
 
     class PrintStatement : public ExecutableStatement {
     public:
-        explicit PrintStatement(string dataset_name, int limit = -1) : dataset_name_(std::move(dataset_name)), limit_(limit) {
+        explicit PrintStatement(string dataset_name, bool raw, int limit = -1) : dataset_name_(std::move(dataset_name)), raw_(raw), limit_(limit) {
         }
-        shared_ptr<ExecutionResult> execute(const shared_ptr<ExecutionContext> &context) override {
-            string base_path = DEFAULT_HAPPYML_REPO_PATH;
+
+        void print_display_rows(size_t max_display_rows, vector <vector<string >> &display_values) const {
+            for (size_t display_row = 0; display_row < max_display_rows; display_row++) {
+                string delim;
+                for (auto &display_value: display_values) {
+                    if (!delim.empty()) {
+                        cout << delim;
+                    }
+                    cout << display_value[display_row];
+                    cout << " ";
+                    delim = "|";
+                }
+                cout << endl;
+            }
+        }
+
+        shared_ptr <ExecutionResult> execute(const shared_ptr <ExecutionContext> &context) override {
+            string base_path = DEFAULT_HAPPYML_DATASETS_PATH;
             string result_path = base_path + dataset_name_ + "/dataset.bin";
             BinaryDatasetReader reader(result_path);
             auto row_count = reader.rowCount();
-            auto max_rows = (limit_ == -1) ? reader.rowCount() : min(row_count,(size_t)limit_);
-            for(int i = 0; i < max_rows; i++) {
-                cout << "Row: " << (i+1) << endl;
+            auto max_result_rows = (limit_ == -1) ? reader.rowCount() : min(row_count, (size_t) limit_);
+            cout << "Printing " << max_result_rows << " rows from dataset " << dataset_name_ << endl;
+
+            if (row_count == 0) {
+                cout << "Dataset is empty." << endl;
+                return make_shared<ExecutionResult>(false);
+            }
+            // auto decoder = make_shared<BestTextCategoryDecoder>(categoryLabels);
+            vector < shared_ptr < RawDecoder >> given_decoders;
+            size_t given_column_count = reader.get_given_column_count();
+            for (size_t i = 0; i < given_column_count; i++) {
+                const shared_ptr <BinaryColumnMetadata> &metadata = reader.get_given_metadata(i);
+                shared_ptr < RawDecoder > decoder = build_decoder(metadata);
+                given_decoders.push_back(decoder);
+            }
+            vector < shared_ptr < RawDecoder >> expected_decoders;
+            size_t expected_column_count = reader.get_expected_column_count();
+            for (size_t i = 0; i < expected_column_count; i++) {
+                const shared_ptr <BinaryColumnMetadata> &metadata = reader.get_expected_metadata(i);
+                shared_ptr < RawDecoder > decoder = build_decoder(metadata);
+                expected_decoders.push_back(decoder);
+            }
+
+            for (int i = 0; i < max_result_rows; i++) {
                 auto row = reader.readRow(i);
                 auto given_tensors = row.first;
                 auto expected_tensors = row.second;
-                auto offset = 0;
-                for (auto &given_tensor: given_tensors) {
-                    cout << "Given: " << offset;
-                    auto original_val = unstandardize_and_denormalize(given_tensor, reader.get_given_metadata(offset));
-                    original_val->print();
-                    offset++;
-                }
-                offset = 0;
-                for (auto &expected_tensor: expected_tensors) {
-                    cout << "Expected: " << offset;
-                    auto original_val = unstandardize_and_denormalize(expected_tensor, reader.get_expected_metadata(offset));
-                    original_val->print();
-                    offset++;
-                }
+
+                cout << "Row: " << (i + 1) << " Given: " << endl;
+                size_t given_max_display_rows = 0;
+                vector < vector < string >> given_display_values = calculate_display_values(given_max_display_rows,
+                                                                                            given_tensors,
+                                                                                            given_decoders);
+                print_display_rows(given_max_display_rows, given_display_values);
+                cout << "Row: " << (i + 1) << " Expected: " << endl;
+                size_t expected_max_display_rows = 0;
+                vector < vector < string >> expected_display_values = calculate_display_values(expected_max_display_rows,
+                                                                                               expected_tensors,
+                                                                                               expected_decoders);
+                print_display_rows(expected_max_display_rows, expected_display_values);
             }
 
             return make_shared<ExecutionResult>(false);
         }
+
+        static vector <vector<string>> calculate_display_values(size_t &max_display_rows,
+                                                                vector <shared_ptr<BaseTensor>> &tensors_to_display,
+                                                                vector <shared_ptr<RawDecoder>> &decoders) {
+            vector < vector < string >> display_values;
+            auto outer_offset = 0;
+            for (auto &next_tensor: tensors_to_display) {
+                size_t next_row_count;
+                auto decoder = decoders[outer_offset];
+                vector < string > next_values;
+                if (decoder->isText()) {
+                    next_row_count = 1;
+                    string best = decoder->decodeBest(next_tensor);
+                    next_values.push_back(best);
+                } else {
+                    next_row_count = next_tensor->rowCount();
+                    auto corrected_tensor = decoder->decode(next_tensor);
+                    for (size_t display_row = 0; display_row < next_row_count; display_row++) {
+                        stringstream next_ss;
+                        corrected_tensor->prettyPrintRow(next_ss, display_row);
+                        next_values.push_back(next_ss.str());
+                    }
+                }
+                display_values.push_back(next_values);
+                max_display_rows = max(max_display_rows, next_row_count);
+                outer_offset++;
+            }
+            return display_values;
+        }
+
+        [[nodiscard]] shared_ptr <RawDecoder> build_decoder(const shared_ptr <BinaryColumnMetadata> &metadata) const {
+            shared_ptr < RawDecoder > decoder;
+            if (raw_) {
+                decoder = make_shared<RawDecoder>();
+            } else {
+                auto purpose = metadata->purpose;
+                // purpose: 'I' (image), 'T' (text), 'N' (number), 'L' (label)
+                if ('L' == purpose) {
+                    auto ordered_labels = metadata->ordered_labels;
+                    decoder = make_shared<BestTextCategoryDecoder>(ordered_labels);
+                } else if ('N' == purpose) {
+                    decoder = make_shared<RawDecoder>(metadata->is_normalized,
+                                                      metadata->is_standardized,
+                                                      metadata->min_value,
+                                                      metadata->max_value,
+                                                      metadata->mean,
+                                                      metadata->standard_deviation);
+                } else {
+                    decoder = make_shared<RawDecoder>();
+                }
+            }
+            return decoder;
+        }
+
     private:
         string dataset_name_;
         int limit_;
+        bool raw_;
     };
 
     class HelpStatement : public ExecutableStatement {
@@ -72,7 +164,7 @@ namespace happyml {
 
         }
 
-        shared_ptr<ExecutionResult> execute(const shared_ptr<ExecutionContext> &context) override {
+        shared_ptr <ExecutionResult> execute(const shared_ptr <ExecutionContext> &context) override {
 
             if (help_menu_item_ == "dataset" || help_menu_item_ == "datasets") {
                 cout << "Available dataset commands: " << endl;
@@ -82,7 +174,8 @@ namespace happyml {
                      << "  [with expected <label|number|text|image> [(<rows>, <columns>, <channels>)] at <column> ]*" << endl
                      << "  using <file://path/>" << endl << endl;
 
-                cout << "  print dataset <name> [limit <x>]" << endl << endl;
+                cout << "  print pretty <name> [limit <x>]" << endl << endl;
+                cout << "  print raw <name> [limit <x>]" << endl << endl;
 
             } else if (help_menu_item_ == "task" || help_menu_item_ == "tasks") {
                 cout << "Available task commands: " << endl;
@@ -142,22 +235,25 @@ namespace happyml {
         CreateDatasetStatement(string name,
                                string location,
                                bool has_header,
-                               vector <ColumnGroup> column_groups) :
-                name_(std::move(name)),
-                location_(std::move(location)),
-                has_header_(has_header),
-                column_groups_(std::move(column_groups)) {
+                               vector<shared_ptr < ColumnGroup>>
+
+        column_groups) :
+
+        name_ (std::move(name)),
+        location_(std::move(location)),
+        has_header_(has_header),
+        column_groups_(std::move(column_groups)) {
         }
 
 
-        shared_ptr<ExecutionResult> execute(const shared_ptr<ExecutionContext> &context) override {
+        shared_ptr <ExecutionResult> execute(const shared_ptr <ExecutionContext> &context) override {
             string warning;
 
-            // default to success if there are no children.
             if (location_.find("file://") != 0) {
                 return make_shared<ExecutionResult>(false, false,
                                                     "create dataset only supports file:// location type at the moment.");
             }
+
             if (column_groups_.empty()) {
                 // based on file extension, I could guess the column groups.
                 // a txt file would have a single text column group
@@ -167,23 +263,24 @@ namespace happyml {
                 return make_shared<ExecutionResult>(false, false,
                                                     "create dataset must have at least one given column.");
             }
+
             bool has_text = false;
             for (const auto &columnGroup: column_groups_) {
-                if (columnGroup.data_type != "label" &&
-                    columnGroup.data_type != "number" &&
-                    columnGroup.data_type != "text" &&
-                    columnGroup.data_type != "image") {
-                    if (columnGroup.use == "expected") {
+                if (columnGroup->data_type != "label" &&
+                    columnGroup->data_type != "number" &&
+                    columnGroup->data_type != "text" &&
+                    columnGroup->data_type != "image") {
+                    if (columnGroup->use == "expected") {
                         return make_shared<ExecutionResult>(false, false,
                                                             "create dataset's expected type must be one of: scalar, category, pixel, or text.");
                     } else {
                         return make_shared<ExecutionResult>(false, false,
                                                             "create dataset's given type must be one of: scalar, category, pixel, or text.");
                     }
-                } else if (columnGroup.data_type == "text" && !has_text) {
+                } else if (columnGroup->data_type == "text" && !has_text) {
                     has_text = true;
                 }
-                if (columnGroup.use != "expected" && columnGroup.use != "given") {
+                if (columnGroup->use != "expected" && columnGroup->use != "given") {
                     return make_shared<ExecutionResult>(false, false,
                                                         "create dataset's use must be one of: expected or given.");
                 }
@@ -194,7 +291,7 @@ namespace happyml {
             }
 
             if (has_text) {
-                shared_ptr<BytePairEncoderModel> defaultBytePairEncoder = context->getBpeEncoder();
+                shared_ptr < BytePairEncoderModel > defaultBytePairEncoder = context->getBpeEncoder();
                 if (defaultBytePairEncoder == nullptr) {
                     defaultBytePairEncoder = load_default_byte_pair_encoder(DEFAULT_HAPPYML_REPO_PATH);
                     context->setBpeEncoder(defaultBytePairEncoder);
@@ -229,18 +326,16 @@ namespace happyml {
                 return make_shared<ExecutionResult>(false, false,
                                                     "create dataset only supports .csv, .txt, and .tsv file types at the moment.");
             }
-            // check if current_location exists:
             if (!filesystem::exists(current_location)) {
                 return make_shared<ExecutionResult>(false, false,
                                                     "create dataset could not find the file: " + current_location);
             }
-            // steps:
-            // 1. Map old column order to new column order with givens values first, then expected values second, we'll need this for the following steps
-
-            vector<ColumnGroup> given_column_groups;
-            vector<ColumnGroup> expected_column_groups;
+            vector<shared_ptr < ColumnGroup>>
+            given_column_groups;
+            vector<shared_ptr < ColumnGroup>>
+            expected_column_groups;
             for (const auto &columnGroup: column_groups_) {
-                if (columnGroup.use == "expected") {
+                if (columnGroup->use == "expected") {
                     expected_column_groups.push_back(columnGroup);
                 } else {
                     given_column_groups.push_back(columnGroup);
@@ -250,32 +345,28 @@ namespace happyml {
                 return make_shared<ExecutionResult>(false, false,
                                                     "create dataset must have at least one given column.");
             }
-            vector<ColumnGroup> updatedColumnGroups;
+            vector<shared_ptr < ColumnGroup>>
+            updatedColumnGroups;
             size_t current_index = 0;
             for (const auto &columnGroup: given_column_groups) {
-                ColumnGroup updatedColumnGroup = columnGroup;
-                updatedColumnGroup.start_index = current_index;
-                current_index += (updatedColumnGroup.rows * updatedColumnGroup.columns * updatedColumnGroup.channels);
+                auto updatedColumnGroup = make_shared<ColumnGroup>(columnGroup);
+                updatedColumnGroup->start_index = current_index;
+                current_index += updatedColumnGroup->source_column_count;
                 updatedColumnGroups.push_back(updatedColumnGroup);
             }
             for (const auto &columnGroup: expected_column_groups) {
-                ColumnGroup updatedColumnGroup = columnGroup;
-                updatedColumnGroup.start_index = current_index;
-                current_index += (updatedColumnGroup.rows * updatedColumnGroup.columns * updatedColumnGroup.channels);
+                auto updatedColumnGroup = make_shared<ColumnGroup>(columnGroup);
+                updatedColumnGroup->start_index = current_index;
+                current_index += updatedColumnGroup->source_column_count;
                 updatedColumnGroups.push_back(updatedColumnGroup);
             }
 
-            // 2. Copy the original text file to a new "given-expected" file, arranging given before expected values
-            //    a. Copy the original file to a new file, arranging columns as expected
-            //    b. This also removes the header if it exists
             auto organized_location = base_file_path + ".given-expected.csv";
             if (!update_column_positions(current_location, organized_location, given_column_groups, expected_column_groups, has_header)) {
                 return make_shared<ExecutionResult>(false, false,
                                                     "Empty dataset");
             }
 
-            // 3. Use FileSorter.sort() to sort and dedupe the "given-expected" file as a new "sorted-deduped" file
-            //    NOTE: remove "given-expected" file
             auto sorted_location = base_file_path + ".sorted.csv";
             if (!FileSorter::sort(organized_location, sorted_location, false)) {
                 return make_shared<ExecutionResult>(false, false,
@@ -286,11 +377,7 @@ namespace happyml {
                                                     "Could not remove the given-expected file.");
             }
 
-            // 4. Create new BinaryDataset from "sorted-deduped" file, deduping any givens that are the same, call new binary file "clean dataset"
-            //    NOTE: remove "sorted-deduped" file
-            //    PLUS: Save a properties file that tracks the original given and expected metadata (data types, shapes, and starting column positions) and the new binary order
-            //    NOTE: This is used later when the user creates a task, and the task needs to understand how the user might send requests
-            auto raw_location = create_binary_dataset_from_delimited_values(DEFAULT_HAPPYML_REPO_PATH,
+            auto raw_location = create_binary_dataset_from_delimited_values(DEFAULT_HAPPYML_DATASETS_PATH,
                                                                             name_,
                                                                             sorted_location,
                                                                             ',',
@@ -303,45 +390,28 @@ namespace happyml {
                                                     "Could not remove the sorted-deduped file.");
             }
 
-            // 5. If needed, standarize and normalize the "clean dataset" file, call new binary file "standardized-normalized dataset"
-            //    NOTE: remove "clean dataset" file
             normalize_and_standardize_dataset(raw_location,
-                                              DEFAULT_HAPPYML_REPO_PATH,
+                                              DEFAULT_HAPPYML_DATASETS_PATH,
                                               name_);
             if (!filesystem::remove(raw_location)) {
                 return make_shared<ExecutionResult>(false, false,
                                                     "Could not remove the clean dataset file.");
             }
-
-            //  create dataset <name>
-            //  [with expected <label|number|text|image> [(<rows>, <columns>, <channels>)] at <column> ]*
-            //  [with given <label|number|text|image> [(<rows>, <columns>, <channels>)] at <column> ]*
-            //  using <file://path/>
-
-//            cout << "create dataset " << name
-//                 << " with expected " << expectedType << " at " << expectedTo << " through "
-//                 << expectedFrom
-//                 << " with given " << givenType << " at " << givenTo << " through "
-//                 << givenFrom
-//                 << " using " << location
-//                 << endl;
-
-            // 7. Return a success message
             return make_shared<ExecutionResult>(false, true, "Created.");
         }
 
     private:
         string name_;
         string location_;
-        vector <ColumnGroup> column_groups_;
+        vector<shared_ptr < ColumnGroup>> column_groups_;
         bool has_header_;
     };
 
     class CodeBlock : public ExecutableStatement {
     public:
-        shared_ptr<ExecutionResult> execute(const shared_ptr<ExecutionContext> &context) override {
+        shared_ptr <ExecutionResult> execute(const shared_ptr <ExecutionContext> &context) override {
             // default to success if there are no children.
-            shared_ptr<ExecutionResult> lastResult = make_shared<ExecutionResult>();
+            shared_ptr < ExecutionResult > lastResult = make_shared<ExecutionResult>();
             for (const auto &child: children) {
                 lastResult = child->execute(context);
                 // We are discarding all results but the last one. This is fine for handling errors, but
@@ -353,12 +423,12 @@ namespace happyml {
             return lastResult;
         }
 
-        void addChild(const shared_ptr<ExecutableStatement> &child) {
+        void addChild(const shared_ptr <ExecutableStatement> &child) {
             children.push_back(child);
         }
 
     private:
-        vector <shared_ptr<ExecutableStatement>> children{};
+        vector<shared_ptr < ExecutableStatement>> children{};
     };
 }
 #endif //HAPPYML_STATEMENTS_HPP

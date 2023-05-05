@@ -71,6 +71,9 @@ namespace happyml {
 
         virtual vector<float> embed_token(const vector<float> &one_hot_encoded_token, size_t position) = 0;
 
+        vector<size_t> calculate_result_shape() const {
+            return vector<size_t> {sequence_length_, dimensionality_};
+        }
     protected:
         size_t sequence_length_;
         size_t dimensionality_;

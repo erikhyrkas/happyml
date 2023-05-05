@@ -145,6 +145,10 @@ namespace happyml {
             close();
         }
 
+        bool is_open() {
+            return binaryFile_.is_open();
+        }
+
         void close() {
             if (binaryFile_.is_open()) {
                 binaryFile_.flush();
@@ -152,16 +156,16 @@ namespace happyml {
             }
         }
 
-        void writeRow(const vector<shared_ptr<BaseTensor>> &given_tensors) {
-            writeRow(given_tensors, {});
+        bool writeRow(const vector<shared_ptr<BaseTensor>> &given_tensors) {
+            return writeRow(given_tensors, {});
         }
 
-        void writeRow(const vector<shared_ptr<BaseTensor>> &given_tensors,
+        bool writeRow(const vector<shared_ptr<BaseTensor>> &given_tensors,
                       const vector<shared_ptr<BaseTensor>> &expected_tensors) {
             if (lru_cache_ != nullptr) {
                 size_t given_hash = compute_given_hash(given_tensors);
                 if (lru_cache_->contains(given_hash)) {
-                    return;  // Skip writing the duplicate row
+                    return false;  // Skip writing the duplicate row
                 }
                 lru_cache_->insert(given_hash, true);
             }
@@ -173,6 +177,7 @@ namespace happyml {
             for (const auto &tensor: expected_tensors) {
                 tensor->save(binaryFile_, false);
             }
+            return true;
         }
 
     private:
@@ -212,12 +217,28 @@ namespace happyml {
             auto portableMaxValue = portableBytes(*(uint32_t *) &column_metadata->max_value);
             binaryFile_.write(reinterpret_cast<const char *>(&portableMaxValue), sizeof(float));
 
+            auto portable_source_column_count = portableBytes(column_metadata->source_column_count);
+            binaryFile_.write(reinterpret_cast<const char *>(&portable_source_column_count), sizeof(uint64_t));
+
             auto portableRows = portableBytes(column_metadata->rows);
             binaryFile_.write(reinterpret_cast<const char *>(&portableRows), sizeof(uint64_t));
             auto portableColumns = portableBytes(column_metadata->columns);
             binaryFile_.write(reinterpret_cast<const char *>(&portableColumns), sizeof(uint64_t));
             auto portableChannels = portableBytes(column_metadata->channels);
             binaryFile_.write(reinterpret_cast<const char *>(&portableChannels), sizeof(uint64_t));
+
+            uint64_t label_count = column_metadata->ordered_labels.size();
+            auto portable_label_count = portableBytes(label_count);
+            binaryFile_.write(reinterpret_cast<const char *>(&portable_label_count), sizeof(uint64_t));
+            for (const auto &label: column_metadata->ordered_labels) {
+                // write length of label string
+                uint64_t label_length = label.size();
+                auto portable_label_length = portableBytes(label_length);
+                binaryFile_.write(reinterpret_cast<const char *>(&portable_label_length), sizeof(uint64_t));
+                // write label
+                auto label_length_streamsize = static_cast<streamsize>(label_length);
+                binaryFile_.write(label.c_str(), label_length_streamsize);
+            }
         }
 
         static size_t compute_given_hash(const vector<shared_ptr<BaseTensor>> &given_tensors) {
@@ -237,7 +258,7 @@ namespace happyml {
             filesystem::remove_all(path);
         }
         filesystem::create_directories(path);
-        string modelProperties = path + "/configuration.happyml";
+        string modelProperties = path + "/configuration.hmlprops";
         auto writer = make_unique<DelimitedTextFileWriter>(modelProperties, ':');
         for (const auto &record: metadata) {
             writer->writeRecord(record);

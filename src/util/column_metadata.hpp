@@ -17,9 +17,11 @@ namespace happyml {
         bool is_normalized; // should be true for any scalar if it isn't raw data
         float min_value; // used to denormalize values
         float max_value; // used to denormalize values
+        uint64_t source_column_count;
         uint64_t rows;
         uint64_t columns;
         uint64_t channels;
+        vector<string> ordered_labels;
     };
 
 }

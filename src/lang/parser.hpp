@@ -24,7 +24,7 @@ namespace happyml {
         shared_ptr<ParseResult> parse(const string &text, const string &source = "unknown") {
             auto lexResult = lexer->lex(text, source);
             if (!lexResult->getMatchStream()) {
-                return make_shared<ParseResult>(lexResult->getMessage(), false);
+                return make_shared < ParseResult > (lexResult->getMessage(), false);
             }
 
             // cout << "Lexer: " << lexResult->getMessage() << endl << lexResult->getMatchStream()->render() << endl;
@@ -38,34 +38,36 @@ namespace happyml {
         static shared_ptr<ParseResult> generateError(const string &message, const shared_ptr<Token> &token) {
             stringstream error_message;
             error_message << message << token->render();
-            return make_shared<ParseResult>(error_message.str(), false);
+            return make_shared < ParseResult > (error_message.str(), false);
         }
 
         static shared_ptr<ParseResult> parseHelpStatement(const shared_ptr<TokenStream> &stream) {
             if (!stream->hasNext()) {
-                return make_shared<ParseResult>(make_shared<HelpStatement>());
+                return make_shared < ParseResult > (make_shared < HelpStatement > ());
             }
             auto next = stream->next();
-            return make_shared<ParseResult>(make_shared<HelpStatement>(next->getValue()));
+            return make_shared < ParseResult > (make_shared < HelpStatement > (next->getValue()));
         }
 
         static shared_ptr<ParseResult> parsePrintStatement(const shared_ptr<TokenStream> &stream) {
             if (!stream->hasNext()) {
-                return generateError("usage: print dataset <name> [limit <x>]", stream->previous());
+                return generateError("usage: print <raw|pretty> <name> [limit <x>]", stream->previous());
             }
             auto next = stream->next();
-            if ("_dataset" != next->getLabel()) {
-                return generateError("usage: print dataset <name> [limit <x>]", stream->previous());
+            if ("raw" != next->getValue() && "pretty" != next->getValue()) {
+                return generateError("usage: print <raw|pretty> <name> [limit <x>]", stream->previous());
             }
+            bool raw = "raw" == next->getValue();
             next = stream->next();
             auto dataset_name = next->getValue();
             if (!stream->hasNext() || "_limit" != stream->peek()->getLabel()) {
-                return make_shared<ParseResult>(make_shared<PrintStatement>(dataset_name));
+                return make_shared < ParseResult > (make_shared < PrintStatement > (dataset_name, raw));
             }
             stream->next();
             auto limit = parseNextNumber(stream);
-            return make_shared<ParseResult>(make_shared<PrintStatement>(next->getValue(), limit));
+            return make_shared < ParseResult > (make_shared < PrintStatement > (next->getValue(), raw, limit));
         }
+
         static int parseNextNumber(const shared_ptr<TokenStream> &stream) {
             try {
                 return stoi(stream->next()->getValue());
@@ -76,34 +78,38 @@ namespace happyml {
             }
         }
 
-        static shared_ptr<ParseResult> parseColumnGroup(ColumnGroup &columnGroup,
+        // It's important to note that this will take the rows, columns, channels
+        // as best effort. However, labels will eventually be one-hot encoded and columns
+        // will be updated. With text, it is encoded twice and then embedded, creating a whole
+        // new shape. We still need this original shape, to know the user's intent.
+        static shared_ptr<ParseResult> parseColumnGroup(shared_ptr<ColumnGroup> &columnGroup,
                                                         const shared_ptr<TokenStream> &stream) {
-            columnGroup.data_type = stream->next()->getValue();
+            columnGroup->data_type = stream->next()->getValue();
             auto dim_or_at = stream->next()->getLabel();
             if ("_open_parenthesis" == dim_or_at && stream->hasNext()) {
                 auto next_val = parseNextNumber(stream);
-                if(!stream->hasNext()) {
+                if (!stream->hasNext()) {
                     return generateError("with statement(1) is malformed ", stream->previous());
                 }
                 auto next_token = stream->next()->getLabel();
-                if( "_close_parenthesis" == next_token) {
-                    columnGroup.rows = 1;
-                    columnGroup.columns = next_val;
-                    columnGroup.channels = 1;
+                if ("_close_parenthesis" == next_token) {
+                    columnGroup->rows = 1;
+                    columnGroup->columns = next_val;
+                    columnGroup->channels = 1;
                 } else {
                     if ("_comma" != next_token || !stream->hasNext()) {
                         return generateError("with statement(2) is malformed: ", stream->previous());
                     }
-                    columnGroup.rows = next_val;
-                    columnGroup.columns = parseNextNumber(stream);
+                    columnGroup->rows = next_val;
+                    columnGroup->columns = parseNextNumber(stream);
                     next_token = stream->next()->getLabel();
-                    if( "_close_parenthesis" == next_token) {
-                        columnGroup.channels = 1;
+                    if ("_close_parenthesis" == next_token) {
+                        columnGroup->channels = 1;
                     } else {
                         if ("_comma" != next_token || !stream->hasNext()) {
                             return generateError("with statement(3) is malformed: ", stream->previous());
                         }
-                        columnGroup.channels = parseNextNumber(stream);
+                        columnGroup->channels = parseNextNumber(stream);
                         if ("_close_parenthesis" != stream->next()->getLabel() || !stream->hasNext()) {
                             return generateError("with statement(4) is malformed: ", stream->previous());
                         }
@@ -111,15 +117,16 @@ namespace happyml {
                 }
                 dim_or_at = stream->next()->getLabel();
             } else {
-                columnGroup.rows = 1;
-                columnGroup.columns = 1;
-                columnGroup.channels = 1;
+                columnGroup->rows = 1;
+                columnGroup->columns = 1;
+                columnGroup->channels = 1;
             }
             if ("_at" != dim_or_at || !stream->hasNext()) {
                 return generateError("with statement(5) is malformed: ", stream->previous());
             }
-            columnGroup.start_index = parseNextNumber(stream);
-            return make_shared<ParseResult>("Success", true);
+            columnGroup->start_index = parseNextNumber(stream);
+            columnGroup->source_column_count = columnGroup->rows * columnGroup->columns * columnGroup->channels;
+            return make_shared < ParseResult > ("Success", true);
         }
 
         static string parseLocation(const shared_ptr<TokenStream> &stream) {
@@ -163,23 +170,23 @@ namespace happyml {
                 if (!stream->hasNext(2)) {
                     return generateError("create dataset requires a location: ", datasetName);
                 }
-                vector<ColumnGroup> column_groups;
+                vector<shared_ptr<ColumnGroup>> column_groups;
                 bool has_header = false;
                 while (stream->hasNext() && "_with" == stream->peek()->getLabel()) {
                     stream->consume();
-                    ColumnGroup columnGroup;
+                    auto columnGroup = make_shared < ColumnGroup > ();
                     string withType = stream->next()->getValue();
-                    if( "header" == withType) {
+                    if ("header" == withType) {
                         has_header = true;
                     } else {
                         if ("expected" == withType) {
-                            columnGroup.use = withType;
+                            columnGroup->use = withType;
                         } else if ("given" == withType) {
-                            columnGroup.use = withType;
+                            columnGroup->use = withType;
                         } else {
                             return generateError("with statement (0) is malformed ", stream->previous());
                         }
-                        columnGroup.id_ = column_groups.size() + 1;
+                        columnGroup->id_ = column_groups.size() + 1;
                         auto columnGroupParseResult = parseColumnGroup(columnGroup, stream);
                         if (!columnGroupParseResult->isSuccessful()) {
                             return columnGroupParseResult;
@@ -187,7 +194,7 @@ namespace happyml {
                         column_groups.push_back(columnGroup);
                     }
                 }
-                if(!stream->hasNext()) {
+                if (!stream->hasNext()) {
                     return generateError("missing using statement after: ", stream->previous());
                 }
                 auto usingKeyword = stream->next();
@@ -196,8 +203,8 @@ namespace happyml {
                 }
                 string location = parseLocation(stream);
 
-                auto createDataset = make_shared<CreateDatasetStatement>(name, location, has_header, column_groups);
-                return make_shared<ParseResult>(createDataset);
+                auto createDataset = make_shared < CreateDatasetStatement > (name, location, has_header, column_groups);
+                return make_shared < ParseResult > (createDataset);
 //                return generateError("Unimplemented: Work in progress.", usingKeyword);
             } catch (runtime_error &e) {
                 return generateError(e.what(), stream->previous());
@@ -217,8 +224,8 @@ namespace happyml {
         }
 
         static shared_ptr<ParseResult> parseCodeBlock(const shared_ptr<TokenStream> &stream) {
-            auto codeBlock = make_shared<CodeBlock>();
-            shared_ptr<ParseResult> result = make_shared<ParseResult>(codeBlock);
+            auto codeBlock = make_shared < CodeBlock > ();
+            shared_ptr<ParseResult> result = make_shared < ParseResult > (codeBlock);
             while (stream->hasNext()) {
                 auto next = stream->next();
                 string label = next->getLabel();
@@ -243,7 +250,7 @@ namespace happyml {
                     }
                     codeBlock->addChild(createStatementResult->getExecutable());
                 } else if ("_exit" == label) {
-                    codeBlock->addChild(make_shared<ExitStatement>());
+                    codeBlock->addChild(make_shared < ExitStatement > ());
                 } else {
                     return generateError("Unexpected token: ", next);
                 }

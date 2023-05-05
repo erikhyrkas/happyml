@@ -11,11 +11,11 @@ using namespace happyml;
 
 void test_multi_input_multi_output_create() {
     auto executionContext = make_shared<ExecutionContext>();
-    vector<ColumnGroup> columnGroups;
-    columnGroups.emplace_back(1, 0, "given", "number", 1, 1, 1);
-    columnGroups.emplace_back(2, 1, "given", "number", 1, 1, 1);
-    columnGroups.emplace_back(3, 2, "given", "number", 1, 1, 1);
-    columnGroups.emplace_back(4, 3, "expected", "number", 1, 1, 1);
+    vector<shared_ptr<ColumnGroup>> columnGroups;
+    columnGroups.emplace_back(make_shared<ColumnGroup>(1, 0, 1, "given", "number", 1, 1, 1));
+    columnGroups.emplace_back(make_shared<ColumnGroup>(2, 1, 1, "given", "number", 1, 1, 1));
+    columnGroups.emplace_back(make_shared<ColumnGroup>(3, 2, 1, "given", "number", 1, 1, 1));
+    columnGroups.emplace_back(make_shared<ColumnGroup>(4, 3, 1, "expected", "number", 1, 1, 1));
     CreateDatasetStatement test("test2", "file://../test_data/unit_test_1.csv", true, columnGroups);
     auto result = test.execute(executionContext);
     ASSERT_TRUE(result->isSuccessful());
@@ -37,15 +37,15 @@ void test_multi_input_multi_output_create_2() {
 //     create dataset test with header with given number(1, 1, 1) at 0 with expected number(1, 1, 1) at 1 with given number(1, 1, 1) at 2 with given number(1, 1, 1) at 3 using file://../test_data/unit_test_1.csv
 
     auto executionContext = make_shared<ExecutionContext>();
-    vector<ColumnGroup> columnGroups;
-    columnGroups.emplace_back(1, 0, "given", "number", 1, 1, 1);
-    columnGroups.emplace_back(2, 1, "expected", "number", 1, 1, 1);
-    columnGroups.emplace_back(3, 2, "given", "number", 1, 1, 1);
-    columnGroups.emplace_back(4, 3, "given", "number", 1, 1, 1);
+    vector<shared_ptr<ColumnGroup>> columnGroups;
+    columnGroups.emplace_back(make_shared<ColumnGroup>(1, 0, 1, "given", "number", 1, 1, 1));
+    columnGroups.emplace_back(make_shared<ColumnGroup>(2, 1, 1, "expected", "number", 1, 1, 1));
+    columnGroups.emplace_back(make_shared<ColumnGroup>(3, 2, 1, "given", "number", 1, 1, 1));
+    columnGroups.emplace_back(make_shared<ColumnGroup>(4, 3, 1, "given", "number", 1, 1, 1));
     CreateDatasetStatement test("test", "file://../test_data/unit_test_1.csv", true, columnGroups);
     auto result = test.execute(executionContext);
     ASSERT_TRUE(result->isSuccessful());
-    string base_path = DEFAULT_HAPPYML_REPO_PATH;
+    string base_path = DEFAULT_HAPPYML_DATASETS_PATH;
     string result_path = base_path + "test/dataset.bin";
     BinaryDatasetReader reader(result_path);
     auto given_column_count = reader.get_given_column_count();

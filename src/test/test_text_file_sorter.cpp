@@ -11,8 +11,7 @@ using namespace std;
 using namespace happyml;
 
 void test_file_sort1() {
-    FileSorter fileSorter;
-    if (!fileSorter.sort("../test_data/duplicate_test.txt", "../test_data/duplicate_test_sorted_has_header.txt", true, 5, true)) {
+    if (!FileSorter::sort("../test_data/duplicate_test.txt", "../test_data/duplicate_test_sorted_has_header.txt", true, 5, true)) {
         throw exception("Missing file.");
     }
     // count lines in duplicate_test_sorted_no_header.txt
@@ -29,8 +28,7 @@ void test_file_sort1() {
 }
 
 void test_file_sort2() {
-    FileSorter fileSorter;
-    if (!fileSorter.sort("../test_data/duplicate_test.txt", "../test_data/duplicate_test_sorted_whole_file.txt", false,1, true)) {
+    if (!FileSorter::sort("../test_data/duplicate_test.txt", "../test_data/duplicate_test_sorted_whole_file.txt", false,1, true)) {
         throw exception("Missing file.");
     }
 
@@ -46,8 +44,7 @@ void test_file_sort2() {
     PASS_TEST();
 }
 void test_file_sort3() {
-    FileSorter fileSorter;
-    if (!fileSorter.sort("../test_data/duplicate_test.txt", "../test_data/duplicate_test_sorted_keep_duplicates.txt", true, 5, false)) {
+    if (!FileSorter::sort("../test_data/duplicate_test.txt", "../test_data/duplicate_test_sorted_keep_duplicates.txt", true, 5, false)) {
         throw exception("Missing file.");
     }
     // count lines in duplicate_test_sorted_no_header.txt
@@ -58,7 +55,7 @@ void test_file_sort3() {
         ++line_count;
     }
     file.close();
-    ASSERT_TRUE(line_count == 12);
+    ASSERT_TRUE(line_count == 16);
     filesystem::remove("../test_data/duplicate_test_sorted_keep_duplicates.txt");
     PASS_TEST();
 }

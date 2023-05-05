@@ -53,7 +53,12 @@ namespace happyml {
                 stream.open(filePath, ifstream::in);
                 stringstream fullText;
                 fullText << stream.rdbuf();
-                done = interpretCommands(fullText.str(), filePath);
+                try {
+                    done = interpretCommands(fullText.str(), filePath);
+                } catch (const exception &e) {
+                    cerr << "Failed to interpret: " << filePath << endl << e.what() << endl;
+                    throw e;
+                }
                 stream.close();
             } catch (ofstream::failure &e) {
                 cerr << "Failed to load: " << filePath << endl << e.what() << endl;

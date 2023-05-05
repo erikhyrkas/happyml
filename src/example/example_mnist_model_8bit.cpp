@@ -52,8 +52,8 @@ int main() {
         size_t limit = 50;
         auto nextRecord = testMnistDataSource->nextRecord();
         while (nextRecord && limit > 0) {
-            auto prediction = decoder->decode(neuralNetwork->predictOne(nextRecord->getGiven()[0]));
-            cout << "mnist truth: " << decoder->decode(nextRecord->getExpected()[0]) << " happyml prediction: "
+            auto prediction = decoder->decodeBest(neuralNetwork->predictOne(nextRecord->getGiven()[0]));
+            cout << "mnist truth: " << decoder->decodeBest(nextRecord->getExpected()[0]) << " happyml prediction: "
                  << prediction
                  << endl;
             nextRecord = testMnistDataSource->nextRecord();

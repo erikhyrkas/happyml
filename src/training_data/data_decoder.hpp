@@ -28,54 +28,94 @@ namespace happyml {
     // Noop decoder
     class RawDecoder {
     public:
-        shared_ptr<BaseTensor> decode(shared_ptr<BaseTensor> tensor) {
-            return tensor;
-        }
-    };
-
-    // TODO: add a "minimum confidence" parameter, where it doesn't return values that are
-    //  below a threshold.
-    // TODO: could return the confidence with the text
-    class BestTextCategoryDecoder {
-    public:
-        BestTextCategoryDecoder(const vector<string> &categoryLabels) {
-            this->categoryLabels = categoryLabels;
-        }
-
-        string decode(shared_ptr<BaseTensor> tensor) {
-            const auto categoryIndex = maxIndex(tensor);
-            return categoryLabels[categoryIndex];
+        explicit RawDecoder(bool isNormalized = false,
+                            bool isStandardized = false,
+                            float minValue = 0.0f,
+                            float maxValue = 0.0f,
+                            float mean = 0.0f,
+                            float standardDeviation = 0.0f) :
+                is_normalized(isNormalized),
+                is_standardized(isStandardized),
+                min_value(minValue),
+                max_value(maxValue),
+                mean(mean),
+                standard_deviation(standardDeviation) {
         }
 
-    private:
-        vector<string> categoryLabels;
-    };
-
-    // If you want the top 5 or top 3 results, this would accomplish that by returning those categories
-    // in the order from best to worst.
-    // TODO: add a "minimum confidence" parameter, where it doesn't return values that are
-    //  below a threshold.
-    // TODO: could return the confidence with the text
-    // TODO: test.
-    class TopTextCategoryDecoder {
-    public:
-        explicit TopTextCategoryDecoder(const vector<string> &categoryLabels, const size_t numberOfResults)
-                : categoryLabels(categoryLabels), numberOfResults(numberOfResults) {
-        }
-
-        vector<string> decode(shared_ptr<BaseTensor> tensor) {
-            const auto categoryIndex = tensor->topIndices(numberOfResults, 0, 0);
-            vector<string> result;
-            result.reserve(categoryIndex.size());
-            for (const auto &index: categoryIndex) {
-                result.push_back(categoryLabels[index.getIndex()]);
+        virtual shared_ptr <BaseTensor> decode(const shared_ptr <BaseTensor> &tensor) {
+            shared_ptr < BaseTensor > result = tensor;
+            if (is_normalized) {
+                result = make_shared<TensorDenormalizeView>(result,
+                                                            min_value,
+                                                            max_value);
+            }
+            if (is_standardized) {
+                result = make_shared<TensorUnstandardizeView>(result,
+                                                              mean,
+                                                              standard_deviation);
             }
             return result;
         }
 
+        virtual string decodeBest(const shared_ptr <BaseTensor> &tensor) {
+            stringstream ss;
+            tensor->print(ss);
+            return ss.str();
+        }
+
+        virtual vector<string> decodeTop(const shared_ptr <BaseTensor> &tensor, const size_t numberOfResults) {
+            stringstream ss;
+            tensor->print(ss);
+            return {ss.str()};
+        }
+
+        virtual bool isText() {
+            return false;
+        }
+
     private:
-        const vector<string> categoryLabels;
-        const size_t numberOfResults;
+        bool is_normalized;
+        bool is_standardized;
+        float min_value;
+        float max_value;
+        float mean;
+        float standard_deviation;
+    };
+
+    // TODO: add a "minimum confidence" parameter, where it doesn't return values that are
+    //  below a threshold.
+    // TODO: could return the confidence with the text
+    class BestTextCategoryDecoder : public RawDecoder {
+    public:
+        explicit BestTextCategoryDecoder(const vector<string> &categoryLabels)
+                : categoryLabels_(categoryLabels) {
+        }
+
+        string decodeBest(const shared_ptr<BaseTensor> &tensor) override {
+            const auto categoryIndex = maxIndex(tensor);
+            if(categoryIndex >= categoryLabels_.size()) {
+                string message = "Category index out of bounds: " + to_string(categoryIndex);
+                throw runtime_error(message);
+            }
+            return categoryLabels_[categoryIndex];
+        }
+
+        vector<string> decodeTop(const shared_ptr<BaseTensor> &tensor, const size_t numberOfResults) override {
+            const auto categoryIndex = tensor->topIndices(numberOfResults, 0, 0);
+            vector<string> result;
+            result.reserve(categoryIndex.size());
+            for (const auto &index: categoryIndex) {
+                result.push_back(categoryLabels_[index.getIndex()]);
+            }
+            return result;
+        }
+
+        bool isText() override {
+            return true;
+        }
+
+    private:
+        vector<string> categoryLabels_;
     };
 }
 
