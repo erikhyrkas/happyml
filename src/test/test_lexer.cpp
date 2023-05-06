@@ -6,7 +6,6 @@
 #include <iostream>
 #include "../lang/happyml_script_init.hpp"
 #include "../util/unit_test.hpp"
-#include "../util/timers.hpp"
 
 using namespace std;
 using namespace happyml;

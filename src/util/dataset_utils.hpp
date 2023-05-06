@@ -1,5 +1,6 @@
 //
 // Created by Erik Hyrkas on 4/15/2023.
+// Copyright 2023. Usable under MIT license.
 //
 
 #ifndef HAPPYML_DATASET_UTILS_HPP
@@ -10,6 +11,7 @@
 #include <string>
 #include <regex>
 #include <utility>
+#include <unordered_set>
 #include "../types/tensor_views/tensor_standardize_view.hpp"
 #include "../types/tensor_views/tensor_normalize_view.hpp"
 #include "../training_data/training_dataset.hpp"

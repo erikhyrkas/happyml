@@ -9,6 +9,7 @@
 #include <vector>
 #include <future>
 #include <execution>
+#include "../types/base_tensors.hpp"
 
 namespace happyml {
     template<typename T>

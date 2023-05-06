@@ -2,6 +2,7 @@
 // Created by Erik Hyrkas on 12/26/2022.
 // Copyright 2022. Usable under MIT license.
 //
+
 #ifndef HAPPYML_OPTIMIZER_FACTORY_HPP
 #define HAPPYML_OPTIMIZER_FACTORY_HPP
 

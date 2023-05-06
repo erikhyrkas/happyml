@@ -1,5 +1,6 @@
 //
 // Created by Erik Hyrkas on 4/17/2023.
+// Copyright 2023. Usable under MIT license.
 //
 
 #include "../util/timers.hpp"

@@ -11,7 +11,6 @@
 #include "enums.hpp"
 #include "optimizer_factory.hpp"
 #include "neural_network.hpp"
-#include "../training_data/training_dataset.hpp"
 
 using namespace happyml;
 using namespace std;

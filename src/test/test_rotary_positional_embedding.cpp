@@ -1,12 +1,11 @@
 //
 // Created by Erik Hyrkas on 4/1/2023.
+// Copyright 2023. Usable under MIT license.
 //
 
 #include <iostream>
-#include "../util/unit_test.hpp"
 #include "../util/timers.hpp"
 #include "../util/text_embedder.hpp"
-#include "../ml/rotary_positional_embedding.hpp"
 
 using namespace std;
 using namespace happyml;

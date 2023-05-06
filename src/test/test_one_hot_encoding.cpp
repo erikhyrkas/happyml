@@ -1,5 +1,6 @@
 //
 // Created by Erik Hyrkas on 4/3/2023.
+// Copyright 2023. Usable under MIT license.
 //
 #include <iostream>
 #include "../util/one_hot_encoder.hpp"

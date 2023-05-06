@@ -1,5 +1,6 @@
 //
 // Created by Erik Hyrkas on 4/1/2023.
+// Copyright 2022. Usable under MIT license.
 //
 
 #ifndef HAPPYML_ROTARY_POSITIONAL_EMBEDDING_HPP
@@ -7,10 +8,6 @@
 
 #include <cmath>
 #include <vector>
-#include <iostream>
-#include <cassert>
-#include "../types/base_tensors.hpp"
-#include "../util/tensor_utils.hpp"
 
 using namespace std;
 

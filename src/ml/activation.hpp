@@ -13,7 +13,6 @@
 #include "../types/tensor_views/tensor_diagonal_view.hpp"
 #include "../types/tensor_views/tensor_noop_view.hpp"
 #include "../types/tensor_views/tensor_matrix_multiply_tensor_view.hpp"
-#include "../types/tensor_views/tensor_add_tensor_view.hpp"
 
 // To me, it feels like activation functions are the heart and soul of modern ml.
 // Unfortunately, they can be a little hard to understand without some math background.

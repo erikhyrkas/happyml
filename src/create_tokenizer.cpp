@@ -1,6 +1,8 @@
 //
 // Created by Erik Hyrkas on 4/16/2023.
+// Copyright 2023. Usable under MIT license.
 //
+
 #include <iostream>
 #include "ml\byte_pair_encoder.hpp"
 

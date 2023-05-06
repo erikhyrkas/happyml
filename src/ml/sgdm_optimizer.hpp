@@ -1,5 +1,6 @@
 //
 // Created by Erik Hyrkas on 4/8/2023.
+// Copyright 2023. Usable under MIT license.
 //
 
 #ifndef HAPPYML_SGDM_OPTIMIZER_HPP

@@ -7,7 +7,6 @@
 #include "../util/file_reader.hpp"
 #include "../util/file_writer.hpp"
 #include "../util/unit_test.hpp"
-#include "../util/tensor_utils.hpp"
 #include "../util/dataset_utils.hpp"
 
 using namespace std;

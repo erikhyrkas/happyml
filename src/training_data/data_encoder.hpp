@@ -13,7 +13,6 @@
 #include <locale>
 #include <map>
 #include <utility>
-#include "../types/base_tensors.hpp"
 #include "../util/tensor_utils.hpp"
 #include "../ml/byte_pair_encoder.hpp"
 #include "../ml/rotary_positional_embedding.hpp"

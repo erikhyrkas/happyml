@@ -1,5 +1,6 @@
 //
 // Created by Erik Hyrkas on 5/4/2023.
+// Copyright 2023. Usable under MIT license.
 //
 
 #ifndef HAPPYML_HAPPYML_PATHS_HPP

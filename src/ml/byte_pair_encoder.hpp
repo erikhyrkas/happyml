@@ -1,5 +1,6 @@
 //
 // Created by Erik Hyrkas on 3/26/2023.
+// Copyright 2023. Usable under MIT license.
 //
 
 #ifndef HAPPYML_BYTE_PAIR_ENCODER_HPP
@@ -11,7 +12,6 @@
 #include <string>
 #include <utility>
 #include <sstream>
-#include <regex>
 #include <iomanip>
 #include <filesystem>
 #include <execution>

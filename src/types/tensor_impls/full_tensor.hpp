@@ -9,7 +9,6 @@
 #include <execution>
 #include <vector>
 #include <iomanip>
-#include "../base_tensors.hpp"
 #include "tensor_allocators.hpp"
 
 using namespace std;

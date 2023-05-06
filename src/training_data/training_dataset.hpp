@@ -6,19 +6,13 @@
 #ifndef HAPPYML_TRAINING_DATASET_HPP
 #define HAPPYML_TRAINING_DATASET_HPP
 
-#include <cstdint>
 #include <iostream>
 #include <utility>
 #include <vector>
-#include <random>
-#include <iterator>
 #include <string>
-#include <unordered_set>
-#include "../types/base_tensors.hpp"
 #include "training_pair.hpp"
-#include "data_encoder.hpp"
-#include "../util/file_reader.hpp"
 #include "../util/shuffler.hpp"
+#include "../util/file_reader.hpp"
 #include "../util/file_writer.hpp"
 
 namespace happyml {

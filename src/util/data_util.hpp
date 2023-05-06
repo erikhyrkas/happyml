@@ -1,5 +1,6 @@
 //
 // Created by Erik Hyrkas on 3/27/2023.
+// Copyright 2023. Usable under MIT license.
 //
 
 #ifndef HAPPYML_DATA_UTIL_HPP
@@ -15,7 +16,6 @@
 #include <cctype>
 #include <limits>
 #include <random>
-#include <set>
 #include <functional>
 
 using namespace std;
