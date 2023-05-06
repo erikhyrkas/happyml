@@ -1,5 +1,6 @@
 //
-// Created by Erik Hyrkas on 5/6/2023.
+// Created by Erik Hyrkas on 12/9/2022.
+// Copyright 2022. Usable under MIT license.
 //
 
 #ifndef HAPPYML_TENSOR_FULL_CROSS_CORRELATION_2D_VIEW_HPP
