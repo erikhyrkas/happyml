@@ -17,7 +17,9 @@ namespace happyml {
     };
 
     enum LossType {
-        mse
+        mse,
+        categoricalCrossEntropy,
+        binaryCrossEntropy
     };
 
     enum NodeType {

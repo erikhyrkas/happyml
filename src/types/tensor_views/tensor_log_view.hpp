@@ -25,8 +25,6 @@ namespace happyml {
             const float val = child->getValue(row, column, channel);
             return log(val);
         }
-
-    private:
     };
 }
 

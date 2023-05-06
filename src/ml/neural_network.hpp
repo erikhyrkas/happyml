@@ -8,6 +8,8 @@
 
 #include "neural_network_node.hpp"
 #include "losses/mse_loss.hpp"
+#include "losses/categorical_cross_entropy_loss.hpp"
+#include "losses/binary_cross_entropy.hpp"
 
 namespace happyml {
 
@@ -85,6 +87,12 @@ namespace happyml {
             switch (lossType) {
                 case mse:
                     NeuralNetworkForTraining::lossFunction = make_shared<MeanSquaredErrorLossFunction>();
+                    break;
+                case categoricalCrossEntropy:
+                    NeuralNetworkForTraining::lossFunction = make_shared<CategoricalCrossEntropyLossFunction>();
+                    break;
+                case binaryCrossEntropy:
+                    NeuralNetworkForTraining::lossFunction = make_shared<BinaryCrossEntropyLossFunction>();
                     break;
                 default:
                     NeuralNetworkForTraining::lossFunction = make_shared<MeanSquaredErrorLossFunction>();
@@ -289,13 +297,12 @@ namespace happyml {
 
                     nextRecord = trainingDataset->nextRecord();
                     if (batchOffset >= batchSize || nextRecord == nullptr) {
+
+                        // start update
                         size_t currentBatch = ceil(current_record / batchSize);
                         double totalBatchOutputLoss = 0;
                         for (size_t outputIndex = 0; outputIndex < outputSize; outputIndex++) {
-                            // TODO: materializing the error into a full tensor helps performance at the cost of memory.
-                            //  we should be able to determine the best strategy at runtime. Sometimes, memory is too valuable
-                            //  to use for performance.
-                            auto totalError = make_shared<FullTensor>(
+                            shared_ptr<BaseTensor> totalError = make_shared<FullTensor>(
                                     lossFunction->calculateTotalError(batchTruths[outputIndex],
                                                                       batchPredictions[outputIndex]));
                             auto totalLoss = lossFunction->compute(totalError);
@@ -304,7 +311,6 @@ namespace happyml {
 
                             // batchOffset should be equal to batch_size, unless we are on the last partial batch.
                             shared_ptr<BaseTensor> lossDerivative = make_shared<TensorClipView>(lossFunction->partialDerivative(totalError, (float) batchOffset), 100.0f, -100.0f);
-//                            shared_ptr<BaseTensor> lossDerivative = lossFunction->partialDerivative(totalError, (float) batchOffset);
 
                             // todo: we don't weight loss when there are multiple outputs back propagating. we should, instead of treating them as equals.
                             outputNodes[outputIndex]->backward(lossDerivative);
@@ -314,12 +320,12 @@ namespace happyml {
                             batchTruths[outputIndex].clear();
                             batchPredictions[outputIndex].clear();
                         }
-                        // for each offset:
-                        //   average = average + (val[offset] - average)/(offset+1)
-                        // TODO: this loss assumes that all outputs have the same weight, which may not be true:
+
                         epochTrainingLoss += (float) (
                                 ((totalBatchOutputLoss / (double) outputSize) - epochTrainingLoss) /
                                 (double) currentBatch);
+
+                        // end update
                         auto elapsedTime = batchTimer.peekMilliseconds();
                         logTraining(elapsedTime, epoch, currentBatch,
                                     ceil(total_records / batchSize), batchOffset,
@@ -384,7 +390,7 @@ namespace happyml {
                 auto nextPrediction = predict(nextGiven, false);
                 float totalLoss = 0;
                 for (size_t outputIndex = 0; outputIndex < outputSize; outputIndex++) {
-                    const auto error = make_shared<FullTensor>(
+                    shared_ptr<BaseTensor> error = make_shared<FullTensor>(
                             lossFunction->calculateError(nextTruth[outputIndex],
                                                          nextPrediction[outputIndex]));
                     const auto loss = lossFunction->compute(error);

@@ -15,11 +15,11 @@ namespace happyml {
     // also known as the "cost" function
     class LossFunction {
     public:
-        static shared_ptr<BaseTensor> calculateError(shared_ptr<BaseTensor> &truth, shared_ptr<BaseTensor> &prediction) {
+        virtual shared_ptr<BaseTensor> calculateError(shared_ptr<BaseTensor> &truth, shared_ptr<BaseTensor> &prediction) {
             return make_shared<TensorMinusTensorView>(prediction, truth);
         }
 
-        static shared_ptr<BaseTensor> calculateTotalError(vector<shared_ptr<BaseTensor>> &truths,
+        virtual shared_ptr<BaseTensor> calculateTotalError(vector<shared_ptr<BaseTensor>> &truths,
                                                    vector<shared_ptr<BaseTensor>> &predictions) {
             PROFILE_BLOCK(profileBlock);
             size_t count = truths.size();
@@ -35,10 +35,11 @@ namespace happyml {
         }
 
         // mostly for display, but can be used for early stopping.
-        virtual float compute(shared_ptr<BaseTensor> total_error) = 0;
+        virtual float compute(shared_ptr<BaseTensor> &total_error) = 0;
 
         // what we actually use to learn
-        virtual shared_ptr<BaseTensor> partialDerivative(shared_ptr<BaseTensor> total_error, float batch_size) = 0;
+        virtual shared_ptr<BaseTensor> partialDerivative(shared_ptr<BaseTensor> &total_error, float batch_size) = 0;
+
     };
 
 

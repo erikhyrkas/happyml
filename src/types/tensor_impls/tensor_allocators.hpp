@@ -7,9 +7,8 @@
 #define HAPPYML_TENSOR_ALLOCATORS_HPP
 
 #include <vector>
-#include <future>
 #include <execution>
-#include "../types/base_tensors.hpp"
+#include "../../types/base_tensors.hpp"
 
 namespace happyml {
     template<typename T>
