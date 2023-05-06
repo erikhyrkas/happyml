@@ -6,11 +6,9 @@
 #ifndef HAPPYML_LEXER_PATTERNS_HPP
 #define HAPPYML_LEXER_PATTERNS_HPP
 
-#include <cstring>
 #include <algorithm>
 #include <sstream>
 #include "token.hpp"
-
 
 using namespace std;
 

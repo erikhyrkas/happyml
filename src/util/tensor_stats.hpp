@@ -12,7 +12,7 @@
 #include <array>
 #include <iostream>
 #include <iomanip>
-#include "../types/tensor.hpp"
+#include "../types/base_tensors.hpp"
 
 namespace happyml {
 

@@ -9,8 +9,6 @@
 #include <cmath>
 #include <unordered_map>
 #include "optimizer.hpp"
-#include "../types/tensor_views.hpp"
-#include "../util/tensor_utils.hpp"
 
 using namespace std;
 

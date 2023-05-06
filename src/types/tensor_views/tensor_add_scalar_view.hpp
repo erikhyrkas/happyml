@@ -1,0 +1,38 @@
+//
+// Created by Erik Hyrkas on 5/6/2023.
+//
+
+#ifndef HAPPYML_TENSOR_ADD_SCALAR_VIEW_HPP
+#define HAPPYML_TENSOR_ADD_SCALAR_VIEW_HPP
+
+#include <sstream>
+#include <execution>
+
+namespace happyml {
+// Adds a constant to every value of a matrix through a view
+    class TensorAddScalarView : public happyml::BaseTensorUnaryOperatorView {
+    public:
+        TensorAddScalarView(const shared_ptr<BaseTensor> &tensor, float adjustment)
+                : BaseTensorUnaryOperatorView(tensor) {
+            this->adjustment = adjustment;
+        }
+
+        void printMaterializationPlan() override {
+            cout << "TensorAddScalarView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
+            child->printMaterializationPlan();
+        }
+
+        float getValue(size_t row, size_t column, size_t channel) override {
+            return child->getValue(row, column, channel) + adjustment;
+        }
+
+        [[nodiscard]] float get_adjustment() const {
+            return adjustment;
+        }
+
+    private:
+        float adjustment;
+    };
+}
+
+#endif //HAPPYML_TENSOR_ADD_SCALAR_VIEW_HPP

@@ -7,15 +7,11 @@
 #define HAPPYML_TENSOR_UTILS_HPP
 
 #include "../types/half_float.hpp"
-#include "../types/quarter_float.hpp"
-#include "../types/tensor.hpp"
-#include "../types/tensor_views.hpp"
 #include "../types/materialized_tensors.hpp"
-#include <iomanip>
+#include "../types/tensor_impls/tensor_from_random.hpp"
+#include "../types/tensor_views/tensor_rounded_view.hpp"
 #include <vector>
 #include <utility>
-#include <iterator>
-#include <future>
 #include <execution>
 #include <sstream>
 

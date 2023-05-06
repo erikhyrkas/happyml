@@ -5,7 +5,7 @@
 
 #include <iostream>
 #include <string>
-#include "../types/tensor.hpp"
+#include "../types/base_tensors.hpp"
 #include "../util/unit_test.hpp"
 #include "../util/timers.hpp"
 

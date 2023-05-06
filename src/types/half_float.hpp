@@ -6,7 +6,6 @@
 #ifndef HAPPYML_HALF_HPP
 #define HAPPYML_HALF_HPP
 
-#include <cstdint>
 #include "quarter_float.hpp"
 
 #define HALF_POS_NAN 0b0111111110000001

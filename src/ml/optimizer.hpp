@@ -6,7 +6,7 @@
 #ifndef HAPPYML_OPTIMIZER_HPP
 #define HAPPYML_OPTIMIZER_HPP
 
-#include "../types/tensor.hpp"
+#include "../types/base_tensors.hpp"
 
 namespace happyml {
     class BaseOptimizer {

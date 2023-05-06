@@ -10,7 +10,6 @@
 #include <sstream>
 #include "happyml_script_init.hpp"
 #include "execution_context.hpp"
-#include "../training_data/data_encoder.hpp"
 
 using namespace std;
 

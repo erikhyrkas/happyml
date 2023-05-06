@@ -5,11 +5,19 @@
 
 #include <iostream>
 #include <string>
-#include "../types/tensor.hpp"
+#include "../types/base_tensors.hpp"
 #include "../util/tensor_utils.hpp"
 #include "../util/unit_test.hpp"
 #include "../util/tensor_stats.hpp"
 #include "../util/timers.hpp"
+#include "../types/tensor_impls/tensor_from_function.hpp"
+#include "../types/tensor_impls/uniform_tensor.hpp"
+#include "../types/tensor_impls/identity_tensor.hpp"
+#include "../types/tensor_views/tensor_multiply_by_scalar_view.hpp"
+#include "../types/tensor_views/tensor_reshape_view.hpp"
+#include "../types/tensor_views/tensor_matrix_multiply_tensor_view.hpp"
+#include "../types/tensor_views/tensor_add_tensor_view.hpp"
+#include "../types/tensor_views/tensor_full_convolve_2d_view.hpp"
 
 // Super slow on my machine, but needed to test everything. Probably not useful for day-to-day unit tests.
 //#define FULL_TENSOR_TESTS
@@ -240,7 +248,7 @@ void testSmallStats() {
 // You'll notice that our distribution isn't even. The further we get from 0, the less granularity we have, so the
 // more data that's grouped together in a bucket.
 void testEvenDistributionQuarterMedium() {
-    auto matrixFunc = [](size_t row, size_t col, size_t channel) { return ((float) (row + 1)) / 200.0; };
+    auto matrixFunc = [](size_t row, size_t col, size_t channel) { return ((float) (row + 1)) / 200.0f; };
     auto matrix = make_unique<TensorFromFunction>(matrixFunc, 10000, 10000, 1);
     auto stats = make_unique<TensorStats>(*matrix, FIT_BIAS_FOR_80);
     ASSERT_TRUE(8 == stats->getRecommendedBias());
@@ -248,7 +256,7 @@ void testEvenDistributionQuarterMedium() {
 }
 
 void test_even_distribution_quarter_small() {
-    auto matrixFunc = [](size_t row, size_t col, size_t channel) { return ((float) (row + 1)) / 200.0; };
+    auto matrixFunc = [](size_t row, size_t col, size_t channel) { return ((float) (row + 1)) / 200.0f; };
     auto matrix = make_unique<TensorFromFunction>(matrixFunc, 350, 350, 1);
     auto stats = make_unique<TensorStats>(*matrix, FIT_BIAS_FOR_80);
     ASSERT_TRUE(14 == stats->getRecommendedBias());
@@ -257,7 +265,7 @@ void test_even_distribution_quarter_small() {
 }
 
 void testEvenDistributionQuarterBig() {
-    auto matrixFunc = [](size_t row, size_t col, size_t channel) { return ((float) (row + 1)) / 20000.0; };
+    auto matrixFunc = [](size_t row, size_t col, size_t channel) { return ((float) (row + 1)) / 20000.0f; };
     auto matrix = make_unique<TensorFromFunction>(matrixFunc, 100000000, 1, 1);
     auto stats = make_unique<TensorStats>(*matrix, FIT_BIAS_FOR_80);
     ASSERT_TRUE(1 == stats->getRecommendedBias());
@@ -265,7 +273,7 @@ void testEvenDistributionQuarterBig() {
 }
 
 void testEvenDistributionQuarterHugeNumbers() {
-    auto matrixFunc = [](size_t row, size_t col, size_t channel) { return ((float) (row + 1)) * 500.0; };
+    auto matrixFunc = [](size_t row, size_t col, size_t channel) { return ((float) (row + 1)) * 500.0f; };
     auto matrix = make_unique<TensorFromFunction>(matrixFunc, 1000, 1, 1);
     auto stats = make_unique<TensorStats>(*matrix, FIT_BIAS_FOR_80);
     ASSERT_TRUE(-4 == stats->getRecommendedBias());
@@ -581,7 +589,9 @@ void test_0_1_tensor() {
     auto matrix1 = make_shared<QuarterTensor>(a, 4);
     for(int i = 0; i < 3; i++) {
         for(int j = 0; j < 3; j++) {
-            ASSERT_TRUE(matrix1->getValue(i, j, 0) == (i == j));
+            int val = i == j;
+            int val2 = (int)round(matrix1->getValue(i, j, 0));
+            ASSERT_TRUE(val2 == val);
         }
     }
 //    matrix1->print();

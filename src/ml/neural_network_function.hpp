@@ -8,8 +8,12 @@
 
 #include "activation.hpp"
 #include "optimizer.hpp"
-#include "../util/tensor_utils.hpp"
-#include "../util/basic_profiler.hpp"
+#include "../types/tensor_views/tensor_flatten_to_row_view.hpp"
+#include "../types/tensor_views/tensor_transpose_view.hpp"
+#include "../types/tensor_views/tensor_sum_to_channel_view.hpp"
+#include "../types/tensor_views/tensor_full_convolve_2d_view.hpp"
+#include "../types/tensor_views/tensor_sum_channels_view.hpp"
+#include "../types/tensor_views/tensor_channel_to_tensor_view.hpp"
 
 namespace happyml {
     // side note: I read an article on back propagation I thought was interesting:
@@ -407,7 +411,7 @@ namespace happyml {
             // This may be a mistake.
 //            this->bias = make_shared<UniformTensor>(outputShape[0], outputShape[1], outputShape[2], 0.f);
             // Original code started with a random value between -0.5 and 0.5:
-            this->bias = make_shared<TensorFromRandom>(outputShape[0], outputShape[1],outputShape[2], -0.5f, 0.5f, 42);
+            this->bias = make_shared<TensorFromRandom>(outputShape[0], outputShape[1], outputShape[2], -0.5f, 0.5f, 42);
             this->bits = bits;
             this->optimizer = optimizer;
             // With models that are not fully 32-bit, if you don't scale the loss

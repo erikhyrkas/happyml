@@ -39,49 +39,49 @@
 
 void printBits(const uint64_t x) {
     for (int i = 63; i >= 0; i--) {
-        cout << ((x >> i) & 1);
+        std::cout << ((x >> i) & 1);
         if ((i % 8) == 0) {
-            cout << " ";
+            std::cout << " ";
         }
     }
-    cout << endl;
+    std::cout << std::endl;
 }
 
-string asString(int32_t i) {
-    stringstream ss;
+std::string asString(int32_t i) {
+    std::stringstream ss;
     ss << i;
     return ss.str();
 }
 
-string asString(int64_t i) {
-    stringstream ss;
+std::string asString(int64_t i) {
+    std::stringstream ss;
     ss << i;
     return ss.str();
 }
 
-string asString(uint32_t i) {
-    stringstream ss;
+std::string asString(uint32_t i) {
+    std::stringstream ss;
     ss << i;
     return ss.str();
 }
 
-string asString(uint64_t i) {
-    stringstream ss;
+std::string asString(uint64_t i) {
+    std::stringstream ss;
     ss << i;
     return ss.str();
 }
 
-string asString(double d) {
-    stringstream ss;
-    ss << fixed << setprecision(15) << d;
+std::string asString(double d) {
+    std::stringstream ss;
+    ss << std::fixed << std::setprecision(15) << d;
     return ss.str();
 }
 
-string asString(bool b) {
+std::string asString(bool b) {
     return b ? "true" : "false";
 }
 
-bool asBool(const string &b) {
+bool asBool(const std::string &b) {
     return b == "true";
 }
 

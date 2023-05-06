@@ -6,10 +6,13 @@
 #define HAPPYML_PARSER_HPP
 
 #include <string>
-#include <utility>
 #include <vector>
 #include "token.hpp"
-#include "statements.hpp"
+#include "code_block_statement.hpp"
+#include "exit_statement.hpp"
+#include "print_statement.hpp"
+#include "help_statement.hpp"
+#include "create_dataset_statement.hpp"
 
 using namespace std;
 
@@ -24,7 +27,7 @@ namespace happyml {
         shared_ptr<ParseResult> parse(const string &text, const string &source = "unknown") {
             auto lexResult = lexer->lex(text, source);
             if (!lexResult->getMatchStream()) {
-                return make_shared < ParseResult > (lexResult->getMessage(), false);
+                return make_shared<ParseResult>(lexResult->getMessage(), false);
             }
 
             // cout << "Lexer: " << lexResult->getMessage() << endl << lexResult->getMatchStream()->render() << endl;
@@ -38,15 +41,15 @@ namespace happyml {
         static shared_ptr<ParseResult> generateError(const string &message, const shared_ptr<Token> &token) {
             stringstream error_message;
             error_message << message << token->render();
-            return make_shared < ParseResult > (error_message.str(), false);
+            return make_shared<ParseResult>(error_message.str(), false);
         }
 
         static shared_ptr<ParseResult> parseHelpStatement(const shared_ptr<TokenStream> &stream) {
             if (!stream->hasNext()) {
-                return make_shared < ParseResult > (make_shared < HelpStatement > ());
+                return make_shared<ParseResult>(make_shared<HelpStatement>());
             }
             auto next = stream->next();
-            return make_shared < ParseResult > (make_shared < HelpStatement > (next->getValue()));
+            return make_shared<ParseResult>(make_shared<HelpStatement>(next->getValue()));
         }
 
         static shared_ptr<ParseResult> parsePrintStatement(const shared_ptr<TokenStream> &stream) {
@@ -61,11 +64,11 @@ namespace happyml {
             next = stream->next();
             auto dataset_name = next->getValue();
             if (!stream->hasNext() || "_limit" != stream->peek()->getLabel()) {
-                return make_shared < ParseResult > (make_shared < PrintStatement > (dataset_name, raw));
+                return make_shared<ParseResult>(make_shared<PrintStatement>(dataset_name, raw));
             }
             stream->next();
             auto limit = parseNextNumber(stream);
-            return make_shared < ParseResult > (make_shared < PrintStatement > (next->getValue(), raw, limit));
+            return make_shared<ParseResult>(make_shared<PrintStatement>(next->getValue(), raw, limit));
         }
 
         static int parseNextNumber(const shared_ptr<TokenStream> &stream) {
@@ -126,7 +129,7 @@ namespace happyml {
             }
             columnGroup->start_index = parseNextNumber(stream);
             columnGroup->source_column_count = columnGroup->rows * columnGroup->columns * columnGroup->channels;
-            return make_shared < ParseResult > ("Success", true);
+            return make_shared<ParseResult>("Success", true);
         }
 
         static string parseLocation(const shared_ptr<TokenStream> &stream) {
@@ -174,7 +177,7 @@ namespace happyml {
                 bool has_header = false;
                 while (stream->hasNext() && "_with" == stream->peek()->getLabel()) {
                     stream->consume();
-                    auto columnGroup = make_shared < ColumnGroup > ();
+                    auto columnGroup = make_shared<ColumnGroup>();
                     string withType = stream->next()->getValue();
                     if ("header" == withType) {
                         has_header = true;
@@ -203,8 +206,8 @@ namespace happyml {
                 }
                 string location = parseLocation(stream);
 
-                auto createDataset = make_shared < CreateDatasetStatement > (name, location, has_header, column_groups);
-                return make_shared < ParseResult > (createDataset);
+                auto createDataset = make_shared<CreateDatasetStatement>(name, location, has_header, column_groups);
+                return make_shared<ParseResult>(createDataset);
 //                return generateError("Unimplemented: Work in progress.", usingKeyword);
             } catch (runtime_error &e) {
                 return generateError(e.what(), stream->previous());
@@ -224,8 +227,8 @@ namespace happyml {
         }
 
         static shared_ptr<ParseResult> parseCodeBlock(const shared_ptr<TokenStream> &stream) {
-            auto codeBlock = make_shared < CodeBlock > ();
-            shared_ptr<ParseResult> result = make_shared < ParseResult > (codeBlock);
+            auto codeBlock = make_shared<CodeBlock>();
+            shared_ptr<ParseResult> result = make_shared<ParseResult>(codeBlock);
             while (stream->hasNext()) {
                 auto next = stream->next();
                 string label = next->getLabel();
@@ -250,7 +253,7 @@ namespace happyml {
                     }
                     codeBlock->addChild(createStatementResult->getExecutable());
                 } else if ("_exit" == label) {
-                    codeBlock->addChild(make_shared < ExitStatement > ());
+                    codeBlock->addChild(make_shared<ExitStatement>());
                 } else {
                     return generateError("Unexpected token: ", next);
                 }

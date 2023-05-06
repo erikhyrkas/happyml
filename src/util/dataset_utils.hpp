@@ -10,9 +10,11 @@
 #include <string>
 #include <regex>
 #include <utility>
-#include "../util/file_writer.hpp"
+#include "../types/tensor_views/tensor_standardize_view.hpp"
+#include "../types/tensor_views/tensor_normalize_view.hpp"
 #include "../training_data/training_dataset.hpp"
-#include "../util/text_encoder_decoder.hpp"
+#include "../types/tensor_views/tensor_unstandardize_view.hpp"
+#include "../types/tensor_views/tensor_denormalize_view.hpp"
 
 namespace happyml {
 

@@ -7,17 +7,28 @@
 #define HAPPYML_DATA_DECODER_HPP
 
 #include <string>
-#include <charconv>
-#include <algorithm>
-#include <cctype>
 #include <locale>
-#include <map>
-#include "../types/tensor.hpp"
-#include "../util/tensor_utils.hpp"
+#include "../types/tensor_views/tensor_unstandardize_view.hpp"
+#include "../types/tensor_views/tensor_denormalize_view.hpp"
 
 using namespace std;
 
 namespace happyml {
+
+    // I'm unhappy with the current decoder class hierarchy. Because we
+    // sometimes need to return strings and sometimes return tensors,
+    // it's really clunky. Eventually, we need images and simple numbers
+    // as well.
+    // This needs to be rethought. I think the core issue is that,
+    // when I use it, I try to put all decoders in a single array, but
+    // the decoders are then out-of-context of what they need to return.
+    //
+    // I think that it is generally true that all decoders are used to create
+    // a text representation for the end user, but we'd need a way to specify
+    // the format of the text, and in the case of tensors, I currently print
+    // one row at a time. Maybe I need to make a "TextBlockResponse" class
+    // that has the lines of the response, and then the decoder can return
+    // that and the caller can decide how to print it.
 
 //    template <typename T>
 //    class DataDecoder {

@@ -9,7 +9,7 @@
 #include <vector>
 #include <iostream>
 #include <cassert>
-#include "../types/tensor.hpp"
+#include "../types/base_tensors.hpp"
 #include "../util/tensor_utils.hpp"
 
 using namespace std;

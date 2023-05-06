@@ -6,7 +6,6 @@
 #ifndef HAPPYML_LOSS_HPP
 #define HAPPYML_LOSS_HPP
 
-#include "../types/tensor.hpp"
 #include "../util/basic_profiler.hpp"
 
 using namespace std;

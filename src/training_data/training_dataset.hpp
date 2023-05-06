@@ -14,7 +14,7 @@
 #include <iterator>
 #include <string>
 #include <unordered_set>
-#include "../types/tensor.hpp"
+#include "../types/base_tensors.hpp"
 #include "training_pair.hpp"
 #include "data_encoder.hpp"
 #include "../util/file_reader.hpp"

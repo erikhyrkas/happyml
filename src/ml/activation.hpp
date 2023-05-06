@@ -7,10 +7,13 @@
 #define HAPPYML_ACTIVATION_HPP
 
 #include <iostream>
-#include "../types/quarter_float.hpp"
-#include "../types/tensor.hpp"
-#include "../types/tensor_views.hpp"
-#include "../util/basic_profiler.hpp"
+#include "../types/tensor_views/tensor_value_transform_view.hpp"
+#include "../types/tensor_views/tensor_value_transform_2_view.hpp"
+#include "../types/tensor_views/tensor_reshape_view.hpp"
+#include "../types/tensor_views/tensor_diagonal_view.hpp"
+#include "../types/tensor_views/tensor_noop_view.hpp"
+#include "../types/tensor_views/tensor_matrix_multiply_tensor_view.hpp"
+#include "../types/tensor_views/tensor_add_tensor_view.hpp"
 
 // To me, it feels like activation functions are the heart and soul of modern ml.
 // Unfortunately, they can be a little hard to understand without some math background.
@@ -116,7 +119,7 @@ namespace happyml {
             }
             vector<double> constants{largestValue, sum};
             auto transformFunction = [](float original, vector<double> constants) {
-                return ((double) std::expf(original - (float) constants[0])) / constants[1];
+                return (float) (((double) std::expf(original - (float) constants[0])) / constants[1]);
             };
             return make_shared<TensorValueTransform2View>(input, transformFunction, constants);
         }

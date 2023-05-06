@@ -6,7 +6,6 @@
 #ifndef HAPPYML_NEURAL_NETWORK_HPP
 #define HAPPYML_NEURAL_NETWORK_HPP
 
-#include <set>
 #include <vector>
 #include <filesystem>
 #include "loss.hpp"
@@ -15,13 +14,11 @@
 #include "exit_strategy.hpp"
 #include "optimizer_factory.hpp"
 #include "neural_network_function.hpp"
-#include "../util/basic_profiler.hpp"
-#include "../util/tensor_utils.hpp"
 #include "../util/timers.hpp"
 #include "../util/unit_test.hpp"
 #include "../util/file_writer.hpp"
-#include "../types/tensor.hpp"
 #include "../training_data/training_dataset.hpp"
+#include "../types/tensor_views/tensor_clip_view.hpp"
 
 using namespace std;
 using namespace happyml;
@@ -318,8 +315,8 @@ namespace happyml {
             setExitStrategy(make_shared<DefaultExitStrategy>(10,
                                                              NINETY_DAYS_MS,
                                                              1000000,
-                                                             0.001,
-                                                             0.001,
+                                                             0.001f,
+                                                             0.001f,
                                                              2));
         }
 
@@ -327,8 +324,8 @@ namespace happyml {
             setExitStrategy(make_shared<DefaultExitStrategy>(10,
                                                              NINETY_DAYS_MS,
                                                              1000000,
-                                                             0.00001,
-                                                             0.00001,
+                                                             0.00001f,
+                                                             0.00001f,
                                                              2));
         }
 
@@ -522,7 +519,7 @@ namespace happyml {
                             totalBatchOutputLoss += batchLoss;
 
                             // batchOffset should be equal to batch_size, unless we are on the last partial batch.
-                            shared_ptr<BaseTensor> lossDerivative = make_shared<TensorClipView>(lossFunction->partialDerivative(totalError, (float) batchOffset), 100, -100);
+                            shared_ptr<BaseTensor> lossDerivative = make_shared<TensorClipView>(lossFunction->partialDerivative(totalError, (float) batchOffset), 100.0f, -100.0f);
 //                            shared_ptr<BaseTensor> lossDerivative = lossFunction->partialDerivative(totalError, (float) batchOffset);
 
                             // todo: we don't weight loss when there are multiple outputs back propagating. we should, instead of treating them as equals.

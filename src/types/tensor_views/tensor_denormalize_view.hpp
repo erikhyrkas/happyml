@@ -1,0 +1,36 @@
+//
+// Created by Erik Hyrkas on 5/6/2023.
+//
+
+#ifndef HAPPYML_TENSOR_DENORMALIZE_VIEW_HPP
+#define HAPPYML_TENSOR_DENORMALIZE_VIEW_HPP
+
+#include <sstream>
+#include <execution>
+
+namespace happyml {
+    class TensorDenormalizeView : public BaseTensorUnaryOperatorView {
+    public:
+        explicit TensorDenormalizeView(const std::shared_ptr<BaseTensor> &tensor, float min_val, float max_val)
+                : BaseTensorUnaryOperatorView(tensor), min_val_(min_val), max_val_(max_val) {
+            val_range_ = max_val_ - min_val_;
+        }
+
+        float getValue(size_t row, size_t column, size_t channel) override {
+            const float val = child->getValue(row, column, channel);
+            return (val * val_range_) + min_val_;
+        }
+
+        void printMaterializationPlan() override {
+            cout << "TensorDenormalizeView{" << rowCount() << "," << columnCount() << "," << channelCount()
+                 << "}->";
+            child->printMaterializationPlan();
+        }
+
+    private:
+        float min_val_;
+        float max_val_;
+        float val_range_;
+    };
+}
+#endif //HAPPYML_TENSOR_DENORMALIZE_VIEW_HPP

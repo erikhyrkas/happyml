@@ -7,7 +7,8 @@
 #define HAPPYML_MBGD_OPTIMIZER_HPP
 
 #include "optimizer.hpp"
-#include "../util/tensor_utils.hpp"
+#include "../types/tensor_views/tensor_multiply_by_scalar_view.hpp"
+#include "../types/tensor_views/tensor_minus_tensor_view.hpp"
 
 using namespace std;
 

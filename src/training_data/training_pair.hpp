@@ -6,7 +6,7 @@
 #ifndef HAPPYML_TRAINING_PAIR_HPP
 #define HAPPYML_TRAINING_PAIR_HPP
 
-#include "../types/tensor.hpp"
+#include "../types/base_tensors.hpp"
 #include "../util/tensor_utils.hpp"
 
 using namespace std;
