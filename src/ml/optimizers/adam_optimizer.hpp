@@ -1,6 +1,6 @@
 //
-// Created by Erik Hyrkas on 4/8/2023.
-// Copyright 2023. Usable under MIT license.
+// Created by Erik Hyrkas on 11/5/2022.
+// Copyright 2022. Usable under MIT license.
 //
 
 #ifndef HAPPYML_ADAM_OPTIMIZER_HPP
@@ -9,15 +9,15 @@
 #include <vector>
 #include <cmath>
 #include <unordered_map>
-#include "optimizer.hpp"
-#include "../types/tensor_impls/uniform_tensor.hpp"
-#include "../types/tensor_views/tensor_add_scalar_view.hpp"
-#include "../types/tensor_views/tensor_multiply_tensor_view.hpp"
-#include "../types/tensor_views/tensor_add_tensor_view.hpp"
-#include "../util/tensor_utils.hpp"
-#include "../types/tensor_views/tensor_power_view.hpp"
-#include "../types/tensor_views/tensor_sqrt_view.hpp"
-#include "../types/tensor_views/tensor_inverse_view.hpp"
+#include "../optimizer.hpp"
+#include "../../types/tensor_impls/uniform_tensor.hpp"
+#include "../../types/tensor_views/tensor_add_scalar_view.hpp"
+#include "../../types/tensor_views/tensor_multiply_tensor_view.hpp"
+#include "../../types/tensor_views/tensor_add_tensor_view.hpp"
+#include "../../util/tensor_utils.hpp"
+#include "../../types/tensor_views/tensor_power_view.hpp"
+#include "../../types/tensor_views/tensor_sqrt_view.hpp"
+#include "../../types/tensor_views/tensor_inverse_view.hpp"
 
 using std::vector;
 using std::unordered_map;

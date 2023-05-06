@@ -7,9 +7,9 @@
 #define HAPPYML_OPTIMIZER_FACTORY_HPP
 
 #include "enums.hpp"
-#include "mbgd_optimizer.hpp"
-#include "adam_optimizer.hpp"
-#include "sgdm_optimizer.hpp"
+#include "optimizers/mbgd_optimizer.hpp"
+#include "optimizers/adam_optimizer.hpp"
+#include "optimizers/sgdm_optimizer.hpp"
 
 using namespace happyml;
 

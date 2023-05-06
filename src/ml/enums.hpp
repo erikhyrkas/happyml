@@ -35,7 +35,8 @@ namespace happyml {
         leaky,
         softmax,
         sigmoidApprox,
-        tanhApprox
+        tanhApprox,
+        linear
     };
 
     enum TrainingRetentionPolicy {
@@ -59,6 +60,8 @@ namespace happyml {
                 return "sigmoidApprox";
             case tanhApprox:
                 return "tanhApprox";
+            case linear:
+                return "linear";
         }
         throw exception("Unknown Activation Type");
     }
@@ -84,6 +87,9 @@ namespace happyml {
         }
         if (activationType == "tanhApprox") {
             return tanhApprox;
+        }
+        if (activationType == "linear") {
+            return linear;
         }
         throw exception("Unknown Activation Type");
     }

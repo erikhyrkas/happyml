@@ -3,19 +3,33 @@
 // Copyright 2022. Usable under MIT license.
 //
 
-#ifndef HAPPYML_MODEL_HPP
-#define HAPPYML_MODEL_HPP
+#ifndef HAPPYML_HAPPYML_DSL_HPP
+#define HAPPYML_HAPPYML_DSL_HPP
 
 #include <iostream>
 #include <chrono>
 #include "enums.hpp"
 #include "optimizer_factory.hpp"
+#include "neural_network_node.hpp"
+#include "activators/leaky_relu_activation_function.hpp"
+#include "activators/relu_activation_function.hpp"
+#include "activators/linear_activation_function.hpp"
+#include "activators/tanh_activation_function.hpp"
+#include "activators/tanh_approx_activation_function.hpp"
+#include "activators/softmax_activation_function.hpp"
+#include "activators/sigmoid_approx_activation_function.hpp"
+#include "activators/sigmoid_activation_function.hpp"
 #include "neural_network.hpp"
+#include "layers/activation_layer.hpp"
+#include "layers/flatten_layer.hpp"
+#include "layers/convolution_2d_valid_layer.hpp"
+#include "layers/fully_connected_layer.hpp"
+#include "layers/bias_layer.hpp"
 
 using namespace happyml;
 using namespace std;
 
-namespace happymldsl {
+namespace happyml {
 
     class HappymlDSL : public enable_shared_from_this<HappymlDSL> {
     public:
@@ -293,7 +307,7 @@ namespace happymldsl {
                 shared_ptr<NeuralNetworkNode> last_node = nullptr;
                 if (node_type == NodeType::full) {
                     if (inputShape[0] > 1) {
-                        auto flatten_node = make_shared<NeuralNetworkNode>(make_shared<NeuralNetworkFlattenFunction>());
+                        auto flatten_node = make_shared<NeuralNetworkNode>(make_shared<FlattenLayer>());
                         last_node = appendNode(last_node, flatten_node);
                     }
                     string fullNodeLabel = asString(vertexUniqueId) + "_full";
@@ -320,14 +334,14 @@ namespace happymldsl {
 
                 if (use_bias) {
                     string biasLabel = asString(vertexUniqueId) + "_bias";
-                    auto b = make_shared<BiasNeuron>(biasLabel, outputShape, outputShape, bits, optimizer);
+                    auto b = make_shared<BiasLayer>(biasLabel, outputShape, outputShape, bits, optimizer);
                     auto bias_node = make_shared<NeuralNetworkNode>(b);
                     last_node = appendNode(last_node, bias_node);
                 }
 
                 shared_ptr<ActivationFunction> activationFunction = createActivationFunction();
                 auto activation_node = make_shared<NeuralNetworkOutputNode>(
-                        make_shared<NeuralNetworkActivationFunction>(activationFunction));
+                        make_shared<ActivationLayer>(activationFunction));
                 last_node = appendNode(last_node, activation_node);
 
                 if (producesOutput) {
@@ -367,6 +381,9 @@ namespace happymldsl {
                         break;
                     case softmax:
                         activationFunction = make_shared<SoftmaxActivationFunction>();
+                        break;
+                    case linear:
+                        activationFunction = make_shared<LinearActivationFunction>();
                         break;
                     case leaky:
                         activationFunction = make_shared<LeakyReLUActivationFunction>();
@@ -701,4 +718,4 @@ namespace happymldsl {
 
 }
 
-#endif //HAPPYML_MODEL_HPP
+#endif //HAPPYML_HAPPYML_DSL_HPP

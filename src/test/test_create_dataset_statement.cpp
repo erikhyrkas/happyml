@@ -3,9 +3,9 @@
 //
 
 #include "../util/timers.hpp"
-#include "../lang/code_block_statement.hpp"
+#include "../lang/statements/code_block_statement.hpp"
 #include "../util/unit_test.hpp"
-#include "../lang/create_dataset_statement.hpp"
+#include "../lang/statements/create_dataset_statement.hpp"
 
 using namespace std;
 using namespace happyml;

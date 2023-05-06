@@ -4,11 +4,10 @@
 //
 
 #include <memory>
-#include "../ml/model.hpp"
+#include "../ml/happyml_dsl.hpp"
 
 using namespace std;
 using namespace happyml;
-using namespace happymldsl;
 
 int main() {
     try {

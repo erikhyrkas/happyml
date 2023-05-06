@@ -2,12 +2,11 @@
 // Created by Erik Hyrkas on 4/1/2023.
 //
 #include <memory>
-#include "../ml/model.hpp"
+#include "../ml/happyml_dsl.hpp"
 #include "../training_data/data_decoder.hpp"
 
 using namespace std;
 using namespace happyml;
-using namespace happymldsl;
 
 int main() {
     try {

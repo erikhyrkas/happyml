@@ -6,8 +6,8 @@
 #ifndef HAPPYML_HAPPYML_SCRIPT_INIT_HPP
 #define HAPPYML_HAPPYML_SCRIPT_INIT_HPP
 
-#include "lexer.hpp"
-#include "parser.hpp"
+#include "lexer/lexer.hpp"
+#include "parser/parser.hpp"
 
 using namespace std;
 using namespace happyml;

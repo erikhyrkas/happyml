@@ -4,9 +4,8 @@
 //
 #include <iostream>
 #include "../util/unit_test.hpp"
-#include "../ml/model.hpp"
+#include "../ml/happyml_dsl.hpp"
 
-using namespace happymldsl;
 using namespace happyml;
 using namespace std;
 

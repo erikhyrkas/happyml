@@ -3,13 +3,12 @@
 // Copyright 2022. Usable under MIT license.
 //
 #include <memory>
-#include "../ml/model.hpp"
+#include "../ml/happyml_dsl.hpp"
 #include "../training_data/data_decoder.hpp"
 #include "../util/dataset_utils.hpp"
 
 using namespace std;
 using namespace happyml;
-using namespace happymldsl;
 
 int main() {
     try {

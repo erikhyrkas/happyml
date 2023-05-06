@@ -6,13 +6,13 @@
 #ifndef HAPPYML_PRINT_STATEMENT_HPP
 #define HAPPYML_PRINT_STATEMENT_HPP
 
-#include "execution_context.hpp"
+#include "../execution_context.hpp"
 #include <vector>
 #include <utility>
 #include <iostream>
 #include <string>
-#include "../util/happyml_paths.hpp"
-#include "../training_data/data_decoder.hpp"
+#include "../../util/happyml_paths.hpp"
+#include "../../training_data/data_decoder.hpp"
 
 namespace happyml {
 

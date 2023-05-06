@@ -1,14 +1,14 @@
 //
-// Created by Erik Hyrkas on 11/24/2022.
+// Created by Erik Hyrkas on 11/5/2022.
 // Copyright 2022. Usable under MIT license.
 //
 
 #ifndef HAPPYML_MBGD_OPTIMIZER_HPP
 #define HAPPYML_MBGD_OPTIMIZER_HPP
 
-#include "optimizer.hpp"
-#include "../types/tensor_views/tensor_multiply_by_scalar_view.hpp"
-#include "../types/tensor_views/tensor_minus_tensor_view.hpp"
+#include "../optimizer.hpp"
+#include "../../types/tensor_views/tensor_multiply_by_scalar_view.hpp"
+#include "../../types/tensor_views/tensor_minus_tensor_view.hpp"
 
 using namespace std;
 

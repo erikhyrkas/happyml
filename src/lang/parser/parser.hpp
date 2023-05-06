@@ -8,12 +8,12 @@
 
 #include <string>
 #include <vector>
-#include "token.hpp"
-#include "code_block_statement.hpp"
-#include "exit_statement.hpp"
-#include "print_statement.hpp"
-#include "help_statement.hpp"
-#include "create_dataset_statement.hpp"
+#include "../lexer/token.hpp"
+#include "../statements/code_block_statement.hpp"
+#include "../statements/exit_statement.hpp"
+#include "../statements/print_statement.hpp"
+#include "../statements/help_statement.hpp"
+#include "../statements/create_dataset_statement.hpp"
 
 using namespace std;
 

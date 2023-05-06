@@ -1,6 +1,6 @@
 //
-// Created by Erik Hyrkas on 4/8/2023.
-// Copyright 2023. Usable under MIT license.
+// Created by Erik Hyrkas on 11/5/2022.
+// Copyright 2022. Usable under MIT license.
 //
 
 #ifndef HAPPYML_SGDM_OPTIMIZER_HPP
@@ -9,7 +9,7 @@
 #include <vector>
 #include <cmath>
 #include <unordered_map>
-#include "optimizer.hpp"
+#include "../optimizer.hpp"
 
 using namespace std;
 

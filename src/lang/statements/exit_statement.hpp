@@ -6,7 +6,7 @@
 #ifndef HAPPYML_EXIT_STATEMENT_HPP
 #define HAPPYML_EXIT_STATEMENT_HPP
 
-#include "execution_context.hpp"
+#include "../execution_context.hpp"
 #include <iostream>
 
 namespace happyml {
