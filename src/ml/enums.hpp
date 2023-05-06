@@ -142,7 +142,7 @@ namespace happyml {
         if (optimizerType == "Adam") {
             return adam;
         }
-        if(optimizerType == "SGDM") {
+        if (optimizerType == "SGDM") {
             return sgdm;
         }
         throw exception("Unknown Optimizer Type");

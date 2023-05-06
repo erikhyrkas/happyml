@@ -55,7 +55,7 @@ namespace happyml {
             weight_momentum[registration_id] = materializeTensor(new_momentum);
 
             auto updated_weights = make_shared<TensorMinusTensorView>(weights,
-                                                                                        weight_momentum[registration_id]);
+                                                                      weight_momentum[registration_id]);
 
             if (use_decay_momentum_ && time_step > last_time_step_updated_weights) {
                 last_time_step_updated_weights = time_step;

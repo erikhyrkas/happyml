@@ -73,6 +73,7 @@ namespace happyml {
         void update_time_step() {
             time_step++;
         }
+
     protected:
         float learningRate;
         float biasLearningRate;

@@ -45,21 +45,21 @@ namespace happyml {
         }
 
         [[nodiscard]] virtual vector<float> get_unknown_token_embedding() const {
-            return vector<float> (dimensionality_, 0.0f);
+            return vector<float>(dimensionality_, 0.0f);
         }
 
         [[nodiscard]] virtual vector<float> get_padding_token_embedding() const {
-            return vector<float> (dimensionality_, 0.0f);
+            return vector<float>(dimensionality_, 0.0f);
         }
 
         vector<vector<float>> embed_tokens(const vector<vector<float>> &one_hot_encoded_tokens) {
             vector<vector<float>> embedded_tokens;
             embedded_tokens.reserve(one_hot_encoded_tokens.size());
             size_t position = 0;
-            for (const auto &one_hot_encoded_token : one_hot_encoded_tokens) {
+            for (const auto &one_hot_encoded_token: one_hot_encoded_tokens) {
                 embedded_tokens.push_back(embed_token(one_hot_encoded_token, position));
                 ++position;
-                if( position >= sequence_length_) {
+                if (position >= sequence_length_) {
                     break;
                 }
             }
@@ -69,8 +69,9 @@ namespace happyml {
         virtual vector<float> embed_token(const vector<float> &one_hot_encoded_token, size_t position) = 0;
 
         vector<size_t> calculate_result_shape() const {
-            return vector<size_t> {sequence_length_, dimensionality_};
+            return vector<size_t>{sequence_length_, dimensionality_};
         }
+
     protected:
         size_t sequence_length_;
         size_t dimensionality_;
@@ -110,10 +111,10 @@ namespace happyml {
         }
 
         vector<float> embed_token(const vector<float> &one_hot_encoded_token, const size_t position) override {
-            if(position >= sequence_length_) {
+            if (position >= sequence_length_) {
                 throw exception("Rotary Positional Encoding cannot embed a position beyond it's configured sequence length.");
             }
-            if( one_hot_encoded_token.size() > dimensionality_) {
+            if (one_hot_encoded_token.size() > dimensionality_) {
                 throw exception("The embedding dimension must match the one-hot encoding length.");
             }
 

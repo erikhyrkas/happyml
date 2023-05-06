@@ -20,16 +20,16 @@ namespace happyml {
         // * session variables
         // * debugging/troubleshooting information
     public:
-        [[nodiscard]] const shared_ptr <BytePairEncoderModel> &getBpeEncoder() const {
+        [[nodiscard]] const shared_ptr<BytePairEncoderModel> &getBpeEncoder() const {
             return bpe_encoder;
         }
 
-        void setBpeEncoder(const shared_ptr <BytePairEncoderModel> &bpeEncoder) {
+        void setBpeEncoder(const shared_ptr<BytePairEncoderModel> &bpeEncoder) {
             bpe_encoder = bpeEncoder;
         }
 
     private:
-        shared_ptr <BytePairEncoderModel> bpe_encoder;
+        shared_ptr<BytePairEncoderModel> bpe_encoder;
     };
 
     class ExecutionResult {

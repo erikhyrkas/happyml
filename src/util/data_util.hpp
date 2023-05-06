@@ -57,7 +57,7 @@ namespace happyml {
     void append_character(char current_character,
                           char &previous_character,
                           std::string &current_token,
-                          const std::function<void(const std::string&)>& process_token) {
+                          const std::function<void(const std::string &)> &process_token) {
         if (current_character == '\r') {
             return;
         }
@@ -80,7 +80,7 @@ namespace happyml {
                 }
                 process_token(std::string(1, current_character));
             } else if (!std::isprint(static_cast<unsigned char>(current_character))) {
-                current_token.push_back((char)254);
+                current_token.push_back((char) 254);
             } else {
                 current_token.push_back(current_character);
             }
@@ -97,7 +97,7 @@ namespace happyml {
 //    }
 
     void append_character(char c, char &last_char, std::string &token, std::vector<std::string> &tokens) {
-        if (c == '\r') return;
+        if (c == '\r') { return; }
 
         if (std::isspace(static_cast<unsigned char>(c))) {
             if (c != last_char) {
@@ -147,7 +147,7 @@ namespace happyml {
         std::string token;
         char last_char = 0;
 
-        char buffer[32*1024];
+        char buffer[32 * 1024];
         while (file.read(buffer, sizeof(buffer))) {
             for (int i = 0; i < file.gcount(); ++i) {
                 char c = buffer[i];
@@ -194,7 +194,7 @@ namespace happyml {
     }
 
     vector<string> sampleData(const vector<string> &data,
-                    float validation_ratio = 0.2) {
+                              float validation_ratio = 0.2) {
         auto validation_size = static_cast<size_t>(data.size() * validation_ratio);
         size_t const train_size = data.size() - validation_size;
 
@@ -342,7 +342,6 @@ namespace happyml {
 
 
 }
-
 
 
 #endif //HAPPYML_DATA_UTIL_HPP

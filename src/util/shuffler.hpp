@@ -5,6 +5,7 @@
 
 #ifndef HAPPYML_SHUFFLER_HPP
 #define HAPPYML_SHUFFLER_HPP
+
 #include <vector>
 #include <random>
 #include <algorithm>

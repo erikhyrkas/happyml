@@ -587,10 +587,10 @@ void test_0_1_tensor() {
                                {0, 1, 0},
                                {0, 0, 1}};
     auto matrix1 = make_shared<QuarterTensor>(a, 4);
-    for(int i = 0; i < 3; i++) {
-        for(int j = 0; j < 3; j++) {
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
             int val = i == j;
-            int val2 = (int)round(matrix1->getValue(i, j, 0));
+            int val2 = (int) round(matrix1->getValue(i, j, 0));
             ASSERT_TRUE(val2 == val);
         }
     }

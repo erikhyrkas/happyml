@@ -33,7 +33,7 @@ void test_neg_infinity() {
 
 void test_not_pos_infinity() {
     uint32_t bits = 0b01111111100000000000000000000010;
-    float i = *(float*)&bits;
+    float i = *(float *) &bits;
 //    cout << i << endl;
 //    printBits(i);
     half h = floatToHalf(i);
@@ -46,7 +46,7 @@ void test_not_pos_infinity() {
 
 void test_not_neg_infinity() {
     uint32_t bits = 0b11111111100000000000000000000010;
-    float i = *(float*)&bits;
+    float i = *(float *) &bits;
 //    cout << i << endl;
 //    printBits(i);
     half h = floatToHalf(i);

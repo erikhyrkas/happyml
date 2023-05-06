@@ -108,7 +108,7 @@ void test_encode_decode_of_newlines() {
     auto textFileWriter = make_shared<DelimitedTextFileWriter>("..\\test_data\\unit_test_2_test.csv", ',');
 
     int record_count = 0;
-    while(textFileReader->hasNext()) {
+    while (textFileReader->hasNext()) {
         record_count++;
         auto record = textFileReader->nextRecord();
         cout << "record: [" << record[0] << "], [" << record[1] << "]" << endl;
@@ -121,7 +121,7 @@ void test_encode_decode_of_newlines() {
     ASSERT_TRUE(3 == record_count);
     auto resultVerifier = make_shared<DelimitedTextFileReader>("..\\test_data\\unit_test_2_test.csv", ',');
     int result_record_count = 0;
-    while(resultVerifier->hasNext()) {
+    while (resultVerifier->hasNext()) {
         result_record_count++;
         auto record = resultVerifier->nextRecord();
         cout << "record: [" << record[0] << "], [" << record[1] << "]" << endl;
@@ -137,7 +137,7 @@ void test_escaped_encode_decode_of_newlines() {
     auto textFileWriter = make_shared<DelimitedTextFileWriter>("..\\test_data\\unit_test_3_test.csv", ',');
 
     int record_count = 0;
-    while(textFileReader->hasNext()) {
+    while (textFileReader->hasNext()) {
         record_count++;
         auto record = textFileReader->nextRecord();
         cout << "record: [" << record[0] << "], [" << record[1] << "]" << endl;
@@ -150,7 +150,7 @@ void test_escaped_encode_decode_of_newlines() {
     ASSERT_TRUE(3 == record_count);
     auto resultVerifier = make_shared<DelimitedTextFileReader>("..\\test_data\\unit_test_3_test.csv", ',');
     int result_record_count = 0;
-    while(resultVerifier->hasNext()) {
+    while (resultVerifier->hasNext()) {
         result_record_count++;
         auto record = resultVerifier->nextRecord();
         cout << "record: [" << record[0] << "], [" << record[1] << "]" << endl;

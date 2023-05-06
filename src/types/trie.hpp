@@ -104,14 +104,14 @@ namespace happyml {
             }
 
             // depth-first search
-            std::function<void(std::shared_ptr<TrieNode>, std::string)> dfs =
-                    [&](const std::shared_ptr<TrieNode>& current_node, const std::string& current_prefix) {
+            std::function < void(std::shared_ptr<TrieNode>, std::string) > dfs =
+                    [&](const std::shared_ptr<TrieNode> &current_node, const std::string &current_prefix) {
                         if (current_node->isEnd) {
                             if (current_prefix.size() > result.size()) {
                                 result = current_prefix;
                             }
                         }
-                        for (const auto &child : current_node->children) {
+                        for (const auto &child: current_node->children) {
                             dfs(child.second, current_prefix + child.first);
                         }
                     };

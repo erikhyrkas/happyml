@@ -40,7 +40,7 @@ namespace happyml {
             if (currentOffset >= datasetSize) {
                 return nullptr;
             }
-            auto shuffled_offset = shuffler_ != nullptr? shuffler_->getShuffledIndex(currentOffset):currentOffset;
+            auto shuffled_offset = shuffler_ != nullptr ? shuffler_->getShuffledIndex(currentOffset) : currentOffset;
             shared_ptr<TrainingPair> result = pairs.at(shuffled_offset);
             if (result) {
                 currentOffset++;

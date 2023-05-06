@@ -32,7 +32,7 @@ namespace happyml {
     void printBits(const quarter x) {
         for (int i = 7; i >= 0; i--) {
             cout << ((x >> i) & 1);
-            if (i == 7 || i == 3) cout << " ";
+            if (i == 7 || i == 3) { cout << " "; }
         }
         cout << endl;
     }
@@ -40,7 +40,7 @@ namespace happyml {
     void printBits(const uint32_t x) {
         for (int i = 31; i >= 0; i--) {
             cout << ((x >> i) & 1);
-            if (i == 31 || i == 23) cout << " ";
+            if (i == 31 || i == 23) { cout << " "; }
         }
         cout << endl;
     }

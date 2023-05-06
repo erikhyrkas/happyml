@@ -29,7 +29,7 @@ void test_file_sort1() {
 }
 
 void test_file_sort2() {
-    if (!FileSorter::sort("../test_data/duplicate_test.txt", "../test_data/duplicate_test_sorted_whole_file.txt", false,1, true)) {
+    if (!FileSorter::sort("../test_data/duplicate_test.txt", "../test_data/duplicate_test_sorted_whole_file.txt", false, 1, true)) {
         throw exception("Missing file.");
     }
 
@@ -44,6 +44,7 @@ void test_file_sort2() {
     filesystem::remove("../test_data/duplicate_test_sorted_whole_file.txt");
     PASS_TEST();
 }
+
 void test_file_sort3() {
     if (!FileSorter::sort("../test_data/duplicate_test.txt", "../test_data/duplicate_test_sorted_keep_duplicates.txt", true, 5, false)) {
         throw exception("Missing file.");

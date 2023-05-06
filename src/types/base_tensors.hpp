@@ -503,13 +503,13 @@ namespace happyml {
             const size_t cols = columnCount();
             const size_t maxChannels = channelCount();
             string delim;
-            if( row_offset >= rows) {
-                if( maxChannels == 1) {
+            if (row_offset >= rows) {
+                if (maxChannels == 1) {
                     for (size_t col = 0; col < cols; col++) {
-                        if( delim.empty() ) {
+                        if (delim.empty()) {
                             out << "      ";
                         } else {
-                            out << delim <<  "      ";
+                            out << delim << "      ";
                         }
                         delim = "  ";
                     }
@@ -517,11 +517,11 @@ namespace happyml {
                     for (size_t col = 0; col < cols; col++) {
                         string inner_delim;
                         out << delim << " ";
-                        for( size_t channel = 0; channel < maxChannels; channel++) {
-                            if( inner_delim.empty() ) {
+                        for (size_t channel = 0; channel < maxChannels; channel++) {
+                            if (inner_delim.empty()) {
                                 out << "      ";
                             } else {
-                                out << inner_delim <<  "      ";
+                                out << inner_delim << "      ";
                             }
                             inner_delim = "  ";
                         }
@@ -529,9 +529,9 @@ namespace happyml {
                         delim = "  ";
                     }
                 }
-            } else if( maxChannels == 1) {
+            } else if (maxChannels == 1) {
                 for (size_t col = 0; col < cols; col++) {
-                    if(delim.empty()) {
+                    if (delim.empty()) {
                         out << std::right << getValue(row_offset, col, 0);
                     } else {
                         out << delim << std::right << getValue(row_offset, col, 0);
@@ -542,8 +542,8 @@ namespace happyml {
                 for (size_t col = 0; col < cols; col++) {
                     string inner_delim;
                     out << delim << "(";
-                    for( size_t channel = 0; channel < maxChannels; channel++) {
-                        if( inner_delim.empty() ) {
+                    for (size_t channel = 0; channel < maxChannels; channel++) {
+                        if (inner_delim.empty()) {
                             out << std::right << getValue(row_offset, col, channel);
                         } else {
                             out << inner_delim << std::right << getValue(row_offset, col, channel);

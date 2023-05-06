@@ -221,7 +221,7 @@ namespace happyml {
         }
 
         pair<vector<shared_ptr<BaseTensor>>, vector<shared_ptr<BaseTensor>>> readRow(size_t index) {
-            if( index >= number_of_rows_ ) {
+            if (index >= number_of_rows_) {
                 throw runtime_error("Index out of bounds");
             }
             // advance to the beginning of the row, which is header_size_ + index * row_size_
@@ -269,9 +269,11 @@ namespace happyml {
             }
             return {given_metadata_[index]->rows, given_metadata_[index]->columns, given_metadata_[index]->channels};
         }
+
         size_t get_given_column_count() {
             return given_metadata_.size();
         }
+
         size_t get_expected_column_count() {
             return expected_metadata_.size();
         }
@@ -282,6 +284,7 @@ namespace happyml {
             }
             return expected_metadata_[index]->is_standardized;
         }
+
         bool is_normalized(size_t index) {
             if (index >= expected_metadata_.size()) {
                 throw runtime_error("Index out of bounds");
@@ -295,6 +298,7 @@ namespace happyml {
             }
             return given_metadata_[index];
         }
+
         shared_ptr<BinaryColumnMetadata> get_expected_metadata(size_t index) {
             if (index >= expected_metadata_.size()) {
                 throw runtime_error("Index out of bounds");
@@ -328,7 +332,7 @@ namespace happyml {
         void readHeader() {
             row_size_ = 0;
             uint64_t number_of_given;
-            if(!binaryFile_.read(reinterpret_cast<char *>(&number_of_given), sizeof(uint64_t))) {
+            if (!binaryFile_.read(reinterpret_cast<char *>(&number_of_given), sizeof(uint64_t))) {
                 throw exception("Could not read number of given tensors");
             }
             for (size_t i = 0; i < number_of_given; i++) {
@@ -337,7 +341,7 @@ namespace happyml {
                 given_metadata_.emplace_back(metadata);
             }
             uint64_t number_of_expected;
-            if(!binaryFile_.read(reinterpret_cast<char *>(&number_of_expected), sizeof(uint64_t))) {
+            if (!binaryFile_.read(reinterpret_cast<char *>(&number_of_expected), sizeof(uint64_t))) {
                 throw exception("Could not read number of expected tensors");
             }
             for (size_t i = 0; i < number_of_expected; i++) {
@@ -387,7 +391,7 @@ namespace happyml {
             uint64_t portable_label_count;
             binaryFile_.read(reinterpret_cast<char *>(&portable_label_count), sizeof(uint64_t));
             size_t label_count = portableBytes(portable_label_count);
-            for( size_t next_label = 0; next_label < label_count; next_label++) {
+            for (size_t next_label = 0; next_label < label_count; next_label++) {
                 uint64_t label_length;
                 binaryFile_.read(reinterpret_cast<char *>(&label_length), sizeof(uint64_t));
                 auto portable_label_length = portableBytes(label_length);

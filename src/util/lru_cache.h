@@ -5,6 +5,7 @@
 
 #ifndef HAPPYML_LRU_CACHE_H
 #define HAPPYML_LRU_CACHE_H
+
 #include <list>
 #include <unordered_map>
 #include <stdexcept>
@@ -14,13 +15,13 @@ namespace happyml {
     template<typename Key, typename Value>
     class LruCache {
     public:
-        explicit LruCache(size_t capacity=100000) : capacity_(capacity) {}
+        explicit LruCache(size_t capacity = 100000) : capacity_(capacity) {}
 
-        bool contains(const Key& key) {
+        bool contains(const Key &key) {
             return cache_map_.find(key) != cache_map_.end();
         }
 
-        void insert(const Key& key, const Value& value) {
+        void insert(const Key &key, const Value &value) {
             if (cache_map_.size() >= capacity_) {
                 // Remove the least recently used entry
                 Key least_recent = lru_list_.back();

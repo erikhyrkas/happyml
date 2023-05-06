@@ -264,7 +264,7 @@ namespace happyml {
         ColumnGroup(size_t id, size_t startIndex, size_t source_column_count, string use, string dataType, size_t rows, size_t columns, size_t channels) :
                 id_(id), start_index(startIndex), source_column_count(source_column_count), use(std::move(use)), data_type(std::move(dataType)), rows(rows), columns(columns), channels(channels) {}
 
-        explicit ColumnGroup(const shared_ptr<ColumnGroup>& from) {
+        explicit ColumnGroup(const shared_ptr<ColumnGroup> &from) {
             id_ = from->id_;
             start_index = from->start_index;
             source_column_count = from->source_column_count;
@@ -276,7 +276,7 @@ namespace happyml {
             ordered_distinct_labels_ = from->ordered_distinct_labels_;
         }
 
-        ColumnGroup(const shared_ptr<ColumnGroup>& from, vector<string> ordered_distinct_labels) {
+        ColumnGroup(const shared_ptr<ColumnGroup> &from, vector<string> ordered_distinct_labels) {
             id_ = from->id_;
             start_index = from->start_index;
             source_column_count = from->source_column_count;
@@ -312,7 +312,7 @@ namespace happyml {
             auto record = reader.nextRecord();
             vector<string> new_record;
             for (const auto &column: given_columns) {
-                for(size_t i = 0; i < column->source_column_count; i++) {
+                for (size_t i = 0; i < column->source_column_count; i++) {
                     new_record.push_back(record[column->start_index + i]);
                 }
 //                for (size_t i = 0; i < column.rows; i++) {
@@ -325,7 +325,7 @@ namespace happyml {
 //                }
             }
             for (const auto &column: expected_columns) {
-                for(size_t i = 0; i < column->source_column_count; i++) {
+                for (size_t i = 0; i < column->source_column_count; i++) {
                     new_record.push_back(record[column->start_index + i]);
                 }
 //                for (size_t i = 0; i < column.rows; i++) {

@@ -161,6 +161,7 @@ namespace happyml {
             min_value = numeric_limits<double>::max();
             max_value = numeric_limits<double>::lowest();
         }
+
         double mean_result;
         double standard_deviation;
         double M2;
@@ -169,7 +170,7 @@ namespace happyml {
         double max_value;
     };
 
-    void update_standardization_normalization_values_calculation(shared_ptr<StandardizationAndNormalizationValues> &values, shared_ptr <BaseTensor> &tensor) {
+    void update_standardization_normalization_values_calculation(shared_ptr<StandardizationAndNormalizationValues> &values, shared_ptr<BaseTensor> &tensor) {
         size_t rows = tensor->rowCount();
         size_t cols = tensor->columnCount();
         size_t channels = tensor->channelCount();

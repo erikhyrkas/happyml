@@ -150,7 +150,7 @@ namespace happyml {
                 }
             }
             output.close();
-            for(auto &chunk_file: chunk_files) {
+            for (auto &chunk_file: chunk_files) {
                 chunk_file.close();
             }
         }

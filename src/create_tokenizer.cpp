@@ -35,20 +35,20 @@ using namespace happyml;
 // The tokenizer will be saved to: ../happyml_repo/default_token_encoder
 int main(int argc, char *argv[]) {
     try {
-        if( argc < 2 ) {
+        if (argc < 2) {
             cout << "USAGE: creat_tokenizer path" << endl;
             return 1;
         }
         string path = argv[1];
-        if( path.empty() ) {
+        if (path.empty()) {
             cout << "USAGE: creat_tokenizer path" << endl;
             return 1;
         }
 
         BytePairEncoderModel bpe;
-        if(filesystem::is_directory(path) ) {
+        if (filesystem::is_directory(path)) {
             bpe.train_on_folder(path);
-        } else if(filesystem::is_regular_file(path) ) {
+        } else if (filesystem::is_regular_file(path)) {
             bpe.train_on_file(path);
         } else {
             cout << "USAGE: creat_tokenizer path" << endl;

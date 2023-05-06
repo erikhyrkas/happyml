@@ -375,7 +375,7 @@ namespace happyml {
             filesystem::create_directories(modelPath);
             string modelProperties = modelPath + "/configuration.hmlprops";
             auto writer = make_unique<DelimitedTextFileWriter>(modelProperties, ':');
-            for (const auto& record: networkMetadata) {
+            for (const auto &record: networkMetadata) {
                 writer->writeRecord(record);
             }
             writer->close();
@@ -397,7 +397,7 @@ namespace happyml {
 
         void saveKnowledge(const string &modelFolderPath, const string &knowledgeLabel, bool overwrite) {
             string fullKnowledgePath = initialize_knowledge_path_directory(modelFolderPath, knowledgeLabel, overwrite);
-            for (const auto & headNode : headNodes) {
+            for (const auto &headNode: headNodes) {
                 headNode->markUnsaved();
                 headNode->saveKnowledge(fullKnowledgePath);
             }
@@ -420,7 +420,7 @@ namespace happyml {
 
         void loadKnowledge(const string &modelFolderPath, const string &knowledgeLabel) {
             string fullKnowledgePath = modelFolderPath + "/" + knowledgeLabel;
-            for (const auto & headNode : headNodes) {
+            for (const auto &headNode: headNodes) {
                 headNode->markUnsaved();
                 headNode->loadKnowledge(fullKnowledgePath);
             }
@@ -524,7 +524,7 @@ namespace happyml {
 
                             // todo: we don't weight loss when there are multiple outputs back propagating. we should, instead of treating them as equals.
                             outputNodes[outputIndex]->backward(lossDerivative);
-                            if(::isnan(batchLoss)) {
+                            if (::isnan(batchLoss)) {
                                 throw exception("Error calculating loss.");
                             }
                             batchTruths[outputIndex].clear();

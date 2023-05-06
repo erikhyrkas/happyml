@@ -53,8 +53,8 @@ namespace happyml {
                 standard_deviation(standardDeviation) {
         }
 
-        virtual shared_ptr <BaseTensor> decode(const shared_ptr <BaseTensor> &tensor) {
-            shared_ptr < BaseTensor > result = tensor;
+        virtual shared_ptr<BaseTensor> decode(const shared_ptr<BaseTensor> &tensor) {
+            shared_ptr<BaseTensor> result = tensor;
             if (is_normalized) {
                 result = make_shared<TensorDenormalizeView>(result,
                                                             min_value,
@@ -68,13 +68,13 @@ namespace happyml {
             return result;
         }
 
-        virtual string decodeBest(const shared_ptr <BaseTensor> &tensor) {
+        virtual string decodeBest(const shared_ptr<BaseTensor> &tensor) {
             stringstream ss;
             tensor->print(ss);
             return ss.str();
         }
 
-        virtual vector<string> decodeTop(const shared_ptr <BaseTensor> &tensor, const size_t numberOfResults) {
+        virtual vector<string> decodeTop(const shared_ptr<BaseTensor> &tensor, const size_t numberOfResults) {
             stringstream ss;
             tensor->print(ss);
             return {ss.str()};
@@ -104,7 +104,7 @@ namespace happyml {
 
         string decodeBest(const shared_ptr<BaseTensor> &tensor) override {
             const auto categoryIndex = maxIndex(tensor);
-            if(categoryIndex >= categoryLabels_.size()) {
+            if (categoryIndex >= categoryLabels_.size()) {
                 string message = "Category index out of bounds: " + to_string(categoryIndex);
                 throw runtime_error(message);
             }

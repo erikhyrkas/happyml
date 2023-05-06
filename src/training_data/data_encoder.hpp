@@ -141,7 +141,7 @@ namespace happyml {
 
         }
 
-        explicit TextToUniqueCategoryEncoder(const map <string, size_t> &categoryMapping) {
+        explicit TextToUniqueCategoryEncoder(const map<string, size_t> &categoryMapping) {
             this->categoryMapping = categoryMapping;
         }
 
@@ -193,7 +193,7 @@ namespace happyml {
         }
 
     private:
-        map <string, size_t> categoryMapping;
+        map<string, size_t> categoryMapping;
     };
 
     class TextToEmbeddedTokensEncoder : public DataEncoder {

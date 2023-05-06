@@ -19,7 +19,7 @@ namespace happyml {
     void printBits(const half x) {
         for (int i = 15; i >= 0; i--) {
             cout << ((x >> i) & 1);
-            if (i == 15 || i == 7) cout << " ";
+            if (i == 15 || i == 7) { cout << " "; }
         }
         cout << endl;
     }

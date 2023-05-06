@@ -12,16 +12,20 @@ using namespace std;
 using namespace happyml;
 
 void test_one_hot1() {
-    vector<vector<float>> tokens = {{1.0, 2.0}, {3.0, 4.0}, {5.0, 6.0}};
+    vector<vector<float>> tokens = {{1.0, 2.0},
+                                    {3.0, 4.0},
+                                    {5.0, 6.0}};
     pad_or_truncate_tokens(tokens, 2, 2);
-    vector<vector<float>> expected_tokens = {{1.0, 2.0}, {3.0, 4.0}};
+    vector<vector<float>> expected_tokens = {{1.0, 2.0},
+                                             {3.0, 4.0}};
     ASSERT_TRUE(are_vector_of_vectors_equal(tokens, expected_tokens));
 }
 
 void test_one_hot2() {
     vector<vector<float>> tokens = {{1.0, 2.0}};
     pad_or_truncate_tokens(tokens, 2, 2);
-    vector<vector<float>> expected_tokens = {{1.0, 2.0}, {0.0, 0.0}};
+    vector<vector<float>> expected_tokens = {{1.0, 2.0},
+                                             {0.0, 0.0}};
     ASSERT_TRUE(are_vector_of_vectors_equal(tokens, expected_tokens));
 }
 
@@ -71,6 +75,7 @@ void test_one_hot5() {
     };
     ASSERT_TRUE(are_vector_of_vectors_equal(encoded_tokens, expected_encoded_tokens));
 }
+
 int main() {
     try {
         EvenMoreSimpleTimer timer;

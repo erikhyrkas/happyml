@@ -17,9 +17,9 @@ namespace happyml {
 
     class CodeBlock : public ExecutableStatement {
     public:
-        shared_ptr <ExecutionResult> execute(const shared_ptr <ExecutionContext> &context) override {
+        shared_ptr<ExecutionResult> execute(const shared_ptr<ExecutionContext> &context) override {
             // default to success if there are no children.
-            shared_ptr < ExecutionResult > lastResult = make_shared<ExecutionResult>();
+            shared_ptr<ExecutionResult> lastResult = make_shared<ExecutionResult>();
             for (const auto &child: children) {
                 lastResult = child->execute(context);
                 // We are discarding all results but the last one. This is fine for handling errors, but
@@ -31,12 +31,12 @@ namespace happyml {
             return lastResult;
         }
 
-        void addChild(const shared_ptr <ExecutableStatement> &child) {
+        void addChild(const shared_ptr<ExecutableStatement> &child) {
             children.push_back(child);
         }
 
     private:
-        vector<shared_ptr < ExecutableStatement>> children{};
+        vector<shared_ptr<ExecutableStatement>> children{};
     };
 }
 #endif //HAPPYML_CODE_BLOCK_STATEMENT_HPP
