@@ -88,7 +88,7 @@ namespace happyml {
         shared_ptr<happyml::BaseTensor> forward(const vector<shared_ptr<happyml::BaseTensor>> &input, bool forTraining) override {
             PROFILE_BLOCK(profileBlock);
             if (input.size() > 1) {
-                throw exception("BiasNeuron only supports a single input.");
+                throw runtime_error("BiasNeuron only supports a single input.");
             }
             if (forTraining) {
                 current_batch_size++;

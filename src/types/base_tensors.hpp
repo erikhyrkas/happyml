@@ -184,7 +184,7 @@ namespace happyml {
 
         virtual float getValue(size_t row, size_t column, size_t channel) = 0;
 
-        virtual vector <size_t> getShape() {
+        virtual vector<size_t> getShape() {
             return {rowCount(), columnCount(), channelCount()};
         }
 
@@ -285,7 +285,7 @@ namespace happyml {
             return {minResult, maxResult};
         }
 
-        vector <IndexValue> topIndices(size_t numberOfResults, size_t channel, size_t row) {
+        vector<IndexValue> topIndices(size_t numberOfResults, size_t channel, size_t row) {
             vector<IndexValue> result;
             if (numberOfResults > 0) {
                 multiset<IndexValue> sortedValues;
@@ -306,7 +306,21 @@ namespace happyml {
             return result;
         }
 
-        size_t maxIndex(size_t channel, size_t row) {
+        size_t maxIndexByCol(size_t channel, size_t col) {
+            size_t result = 0;
+            float currentMax = -INFINITY;
+            const size_t maxRows = rowCount();
+            for (size_t row = 0; row < maxRows; row++) {
+                float nextVal = getValue(row, col, channel);
+                if (nextVal > currentMax) {
+                    currentMax = nextVal;
+                    result = row;
+                }
+            }
+            return result;
+        }
+
+        size_t maxIndexByRow(size_t channel, size_t row) {
             size_t result = 0;
             float currentMax = -INFINITY;
             const size_t maxCols = columnCount();
@@ -334,7 +348,7 @@ namespace happyml {
             return result;
         }
 
-        vector <size_t> maxIndices(size_t channel, size_t row) {
+        vector<size_t> maxIndices(size_t channel, size_t row) {
             vector<size_t> result;
             float current_max = -INFINITY;
             const size_t maxCols = columnCount();
@@ -351,7 +365,7 @@ namespace happyml {
             return result;
         }
 
-        vector <size_t> minIndices(size_t channel, size_t row) {
+        vector<size_t> minIndices(size_t channel, size_t row) {
             vector<size_t> result;
             float currentMin = INFINITY;
             const size_t maxCols = columnCount();

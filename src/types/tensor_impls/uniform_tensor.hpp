@@ -10,6 +10,13 @@ namespace happyml {
 // There are cases were we want a tensor of all zeros or all ones.
     class UniformTensor : public happyml::BaseTensor {
     public:
+        UniformTensor(const vector<size_t> &shape, float value) {
+            this->rows = shape[0];
+            this->cols = shape[1];
+            this->channels = shape[2];
+            this->value = value;
+        }
+
         UniformTensor(size_t rows, size_t cols, size_t channels, float value) {
             this->rows = rows;
             this->cols = cols;

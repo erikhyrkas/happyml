@@ -112,10 +112,10 @@ namespace happyml {
 
         vector<float> embed_token(const vector<float> &one_hot_encoded_token, const size_t position) override {
             if (position >= sequence_length_) {
-                throw exception("Rotary Positional Encoding cannot embed a position beyond it's configured sequence length.");
+                throw runtime_error("Rotary Positional Encoding cannot embed a position beyond it's configured sequence length.");
             }
             if (one_hot_encoded_token.size() > dimensionality_) {
-                throw exception("The embedding dimension must match the one-hot encoding length.");
+                throw runtime_error("The embedding dimension must match the one-hot encoding length.");
             }
 
             vector<float> embedded_token(dimensionality_, 0.0f);

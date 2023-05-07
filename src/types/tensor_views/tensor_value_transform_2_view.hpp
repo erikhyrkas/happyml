@@ -9,6 +9,7 @@
 #include <vector>
 #include <utility>
 #include <execution>
+#include "../base_tensors.hpp"
 
 namespace happyml {
     class TensorValueTransform2View : public happyml::BaseTensorUnaryOperatorView {

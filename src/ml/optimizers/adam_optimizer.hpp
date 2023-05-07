@@ -12,12 +12,12 @@
 #include "../optimizer.hpp"
 #include "../../types/tensor_impls/uniform_tensor.hpp"
 #include "../../types/tensor_views/tensor_add_scalar_view.hpp"
-#include "../../types/tensor_views/tensor_multiply_tensor_view.hpp"
+#include "../../types/tensor_views/tensor_element_wise_multiply_by_tensor_view.hpp"
 #include "../../types/tensor_views/tensor_add_tensor_view.hpp"
 #include "../../util/tensor_utils.hpp"
 #include "../../types/tensor_views/tensor_power_view.hpp"
 #include "../../types/tensor_views/tensor_sqrt_view.hpp"
-#include "../../types/tensor_views/tensor_inverse_view.hpp"
+#include "../../types/tensor_views/tensor_element_wise_inverse_view.hpp"
 
 using std::vector;
 using std::unordered_map;
@@ -51,10 +51,7 @@ namespace happyml {
             // Initialize if needed
             if (weight_m.count(registration_id) == 0) {
                 // initialize to tensors of all 0s
-                auto immutable_zero_tensor = make_shared<UniformTensor>(weights->rowCount(),
-                                                                        weights->columnCount(),
-                                                                        weights->channelCount(),
-                                                                        0.0f);
+                auto immutable_zero_tensor = make_shared<UniformTensor>(weights->getShape(), 0.0f);
                 weight_m[registration_id] = immutable_zero_tensor;
                 weight_v[registration_id] = immutable_zero_tensor;
             }
@@ -72,10 +69,7 @@ namespace happyml {
             // Initialize if needed
             if (bias_m.count(registration_id) == 0) {
                 // initialize to tensors of all 0s
-                auto immutable_zero_tensor = make_shared<UniformTensor>(bias->rowCount(),
-                                                                        bias->columnCount(),
-                                                                        bias->channelCount(),
-                                                                        0.0f);
+                auto immutable_zero_tensor = make_shared<UniformTensor>(bias->getShape(), 0.0f);
                 bias_m[registration_id] = immutable_zero_tensor;
                 bias_v[registration_id] = immutable_zero_tensor;
             }
@@ -152,8 +146,8 @@ namespace happyml {
             auto temp_lr_by_m_hat = make_shared<TensorMultiplyByScalarView>(m_hat,
                                                                             -lr); // make negative so we can subtract later
             auto temp_sqrt = make_shared<TensorAddScalarView>(make_shared<TensorSqrtView>(v_hat), epsilon);
-            auto temp_inverse_sqrt = make_shared<TensorInverseView>(temp_sqrt);
-            auto temp_elementwise_product = make_shared<TensorMultiplyTensorView>(temp_lr_by_m_hat, temp_inverse_sqrt);
+            auto temp_inverse_sqrt = make_shared<TensorElementWiseInverseView>(temp_sqrt);
+            auto temp_elementwise_product = make_shared<TensorElementWiseMultiplyByTensorView>(temp_lr_by_m_hat, temp_inverse_sqrt);
             auto updated_params = make_shared<TensorAddTensorView>(params,
                                                                    temp_elementwise_product); // now the negative lr makes sense.
 

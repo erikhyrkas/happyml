@@ -41,8 +41,7 @@ namespace happyml {
                                                       const shared_ptr<BaseTensor> &loss_gradient) override {
             // Initialize if needed
             if (weight_momentum.count(registration_id) == 0) {
-                auto zero_tensor = make_shared<UniformTensor>(weights->rowCount(), weights->columnCount(),
-                                                              weights->channelCount(), 0.0f);
+                auto zero_tensor = make_shared<UniformTensor>(weights->getShape(), 0.0f);
                 weight_momentum[registration_id] = zero_tensor;
             }
 
@@ -54,8 +53,8 @@ namespace happyml {
             new_momentum = make_shared<TensorAddTensorView>(new_momentum, scaled_gradient);
             weight_momentum[registration_id] = materializeTensor(new_momentum);
 
-            auto updated_weights = make_shared<TensorMinusTensorView>(weights,
-                                                                      weight_momentum[registration_id]);
+            auto updated_weights = make_shared<TensorSubtractTensorView>(weights,
+                                                                         weight_momentum[registration_id]);
 
             if (use_decay_momentum_ && time_step > last_time_step_updated_weights) {
                 last_time_step_updated_weights = time_step;
@@ -70,8 +69,7 @@ namespace happyml {
                                                    const shared_ptr<BaseTensor> &loss_gradient) override {
             // Initialize if needed
             if (bias_momentum.count(registration_id) == 0) {
-                auto zero_tensor = make_shared<UniformTensor>(bias->rowCount(), bias->columnCount(),
-                                                              bias->channelCount(), 0.0f);
+                auto zero_tensor = make_shared<UniformTensor>(bias->getShape(), 0.0f);
                 bias_momentum[registration_id] = zero_tensor;
             }
 
@@ -83,7 +81,7 @@ namespace happyml {
             new_momentum = make_shared<TensorAddTensorView>(new_momentum, scaled_gradient);
             bias_momentum[registration_id] = materializeTensor(new_momentum);
 
-            auto updated_bias = make_shared<TensorMinusTensorView>(bias, bias_momentum[registration_id]);
+            auto updated_bias = make_shared<TensorSubtractTensorView>(bias, bias_momentum[registration_id]);
 
             if (use_decay_momentum_ && time_step > last_time_step_updated_bias) {
                 last_time_step_updated_bias = time_step;

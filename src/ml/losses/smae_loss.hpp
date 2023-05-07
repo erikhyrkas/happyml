@@ -18,11 +18,11 @@ namespace happyml {
     public:
         float smoothness = 1.0f; // point where it changes from a quadratic to linear function.
 
-        shared_ptr<BaseTensor> calculateError(shared_ptr<BaseTensor> &truth, shared_ptr<BaseTensor> &prediction) override {
+        shared_ptr<BaseTensor> calculate_error_for_one_prediction(shared_ptr<BaseTensor> &truth, shared_ptr<BaseTensor> &prediction) override {
             // Calculate per-element error as:
             // if |prediction_i - truth_i| < smoothness, 0.5 * (prediction_i - truth_i)^2 / smoothness
             // else, |prediction_i - truth_i| - 0.5 * smoothness
-            auto error_diff = make_shared<TensorMinusTensorView>(prediction, truth);
+            auto error_diff = make_shared<TensorSubtractTensorView>(prediction, truth);
             auto abs_error_diff = make_shared<TensorAbsoluteView>(error_diff);
             auto squared_error_diff = make_shared<TensorPowerView>(error_diff, 2.0f);
 
@@ -34,7 +34,7 @@ namespace happyml {
             return error;
         }
 
-        float compute(shared_ptr<BaseTensor> &total_error) override {
+        float computeBatchLoss(shared_ptr<BaseTensor> &total_error) override {
             // The total_error tensor is precomputed as a combination of smooth and unsmooth parts
             // For a single prediction: smooth mean absolute error = sum(total_error) / number of elements
             // For a batch, we take the average error: avg(sum(total_error) / number of elements)
@@ -42,16 +42,15 @@ namespace happyml {
             return sum_error / (float) total_error->size();
         }
 
-        pair<shared_ptr<BaseTensor>, shared_ptr<BaseTensor>> calculateBatchErrorAndDerivative(vector<shared_ptr<BaseTensor>> &truths,
-                                                                                              vector<shared_ptr<BaseTensor>> &predictions) override {
-            shared_ptr<BaseTensor> totalError = calculateTotalError(truths, predictions);
-
+        shared_ptr<BaseTensor> calculate_batch_loss_derivative(shared_ptr<BaseTensor> &total_batch_error,
+                                                               vector<shared_ptr<BaseTensor>> &truths,
+                                                               vector<shared_ptr<BaseTensor>> &predictions) override {
             shared_ptr<BaseTensor> accumulatedLossDerivative;
             for (size_t i = 0; i < truths.size(); i++) {
                 // Derivative of smooth mean absolute error:
                 // if |prediction_i - truth_i| < smoothness, (prediction_i - truth_i) / smoothness
                 // else, sign(prediction_i - truth_i)
-                shared_ptr<BaseTensor> error_diff = make_shared<TensorMinusTensorView>(predictions[i], truths[i]);
+                shared_ptr<BaseTensor> error_diff = make_shared<TensorSubtractTensorView>(predictions[i], truths[i]);
                 shared_ptr<BaseTensor> abs_error_diff = make_shared<TensorAbsoluteView>(error_diff);
                 shared_ptr<BaseTensor> smooth_derivative = make_shared<TensorMultiplyByScalarView>(error_diff, 1.0f / smoothness);
                 shared_ptr<BaseTensor> unsmooth_derivative = make_shared<TensorMultiplyByScalarView>(error_diff, -1.0f);
@@ -66,7 +65,7 @@ namespace happyml {
                 }
             }
 
-            return make_pair(totalError, accumulatedLossDerivative);
+            return accumulatedLossDerivative;
         }
     };
 }

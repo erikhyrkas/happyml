@@ -18,7 +18,7 @@ int main() {
         orDataSource->addTrainingData(columnVector({1.f, 0.f}), 1.f);
         orDataSource->addTrainingData(columnVector({1.f, 1.f}), 1.f);
 
-        cout << "Test with binaryCrossEntropy" << endl;
+        cout << "Test with binary cross entropy" << endl;
         auto neuralNetwork = neuralNetworkBuilder(OptimizerType::microbatch)
                 ->setModelName("or_example")
                 ->setModelRepo("../repo/")

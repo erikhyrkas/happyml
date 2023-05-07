@@ -20,10 +20,7 @@ namespace happyml {
 
         std::shared_ptr<BaseTensor> derivative(const std::shared_ptr<BaseTensor> &input) override {
             // sent all 1s to output in the same shape as input
-            return std::make_shared<UniformTensor>(input->rowCount(),
-                                                   input->columnCount(),
-                                                   input->channelCount(),
-                                                   1.0f);
+            return std::make_shared<UniformTensor>(input->getShape(), 1.0f);
         }
     };
 }

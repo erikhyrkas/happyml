@@ -39,7 +39,7 @@ namespace happyml {
 
         void setShuffler(const shared_ptr<Shuffler> &shuffler) {
             if (shuffler != nullptr && shuffler->getSize() != recordCount()) {
-                throw exception("Shuffler needs to be sized appropriately for the dataset.");
+                throw runtime_error("Shuffler needs to be sized appropriately for the dataset.");
             }
             shuffler_ = shuffler;
         }
@@ -157,21 +157,21 @@ namespace happyml {
 
         void addTrainingData(const shared_ptr<BaseTensor> &given, float expected) {
             if (shuffler_ != nullptr) {
-                throw exception("Cannot add data after a shuffler has been assigned");
+                throw runtime_error("Cannot add data after a shuffler has been assigned");
             }
             pairs.push_back(make_shared<TrainingPair>(given, columnVector({expected})));
         }
 
         void addTrainingData(const shared_ptr<BaseTensor> &given, const shared_ptr<BaseTensor> &expected) {
             if (shuffler_ != nullptr) {
-                throw exception("Cannot add data after a shuffler has been assigned");
+                throw runtime_error("Cannot add data after a shuffler has been assigned");
             }
             pairs.push_back(make_shared<TrainingPair>(given, expected));
         }
 
         void addTrainingData(const vector<shared_ptr<BaseTensor>> &given, const vector<shared_ptr<BaseTensor>> &expected) {
             if (shuffler_ != nullptr) {
-                throw exception("Cannot add data after a shuffler has been assigned");
+                throw runtime_error("Cannot add data after a shuffler has been assigned");
             }
             pairs.push_back(make_shared<TrainingPair>(given, expected));
         }

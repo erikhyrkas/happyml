@@ -67,7 +67,7 @@ namespace happyml {
             case linear:
                 return "linear";
         }
-        throw exception("Unknown Activation Type");
+        throw runtime_error("Unknown Activation Type");
     }
 
     ActivationType stringToActivationType(const string &activationType) {
@@ -95,7 +95,7 @@ namespace happyml {
         if (activationType == "linear") {
             return linear;
         }
-        throw exception("Unknown Activation Type");
+        throw runtime_error("Unknown Activation Type");
     }
 
     string nodeTypeToString(NodeType nodeType) {
@@ -105,7 +105,7 @@ namespace happyml {
             case convolution2dValid:
                 return "convolution2dValid";
         }
-        throw exception("Unknown Node Type");
+        throw runtime_error("Unknown Node Type");
     }
 
     NodeType stringToNodeType(const string &nodeType) {
@@ -115,7 +115,7 @@ namespace happyml {
         if (nodeType == "convolution2dValid") {
             return convolution2dValid;
         }
-        throw exception("Unknown Node Type");
+        throw runtime_error("Unknown Node Type");
     }
 
     string lossTypeToString(LossType lossType) {
@@ -133,7 +133,7 @@ namespace happyml {
                 return "binaryCrossEntropy";
         }
 
-        throw exception("Unknown Loss Type");
+        throw runtime_error("Unknown Loss Type");
     }
 
     LossType stringToLossType(const string &lossType) {
@@ -152,7 +152,7 @@ namespace happyml {
         if (lossType == "binaryCrossEntropy") {
             return binaryCrossEntropy;
         }
-        throw exception("Unknown Loss Type");
+        throw runtime_error("Unknown Loss Type");
     }
 
     string optimizerTypeToString(OptimizerType optimizerType) {
@@ -164,7 +164,7 @@ namespace happyml {
             case sgdm:
                 return "SGDM";
         }
-        throw exception("Unknown Optimizer Type");
+        throw runtime_error("Unknown Optimizer Type");
     }
 
     OptimizerType stringToOptimizerType(const string &optimizerType) {
@@ -177,7 +177,7 @@ namespace happyml {
         if (optimizerType == "SGDM") {
             return sgdm;
         }
-        throw exception("Unknown Optimizer Type");
+        throw runtime_error("Unknown Optimizer Type");
     }
 }
 

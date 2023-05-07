@@ -8,7 +8,7 @@
 
 #include "../optimizer.hpp"
 #include "../../types/tensor_views/tensor_multiply_by_scalar_view.hpp"
-#include "../../types/tensor_views/tensor_minus_tensor_view.hpp"
+#include "../../types/tensor_views/tensor_subtract_tensor_view.hpp"
 
 using namespace std;
 
@@ -56,8 +56,8 @@ namespace happyml {
 
             const auto adjustedWeightChanges = make_shared<TensorMultiplyByScalarView>(weightChanges,
                                                                                        learningRate);
-            const auto adjustedWeights = make_shared<TensorMinusTensorView>(weights,
-                                                                            adjustedWeightChanges);
+            const auto adjustedWeights = make_shared<TensorSubtractTensorView>(weights,
+                                                                               adjustedWeightChanges);
             return adjustedWeights;
         }
 
@@ -66,7 +66,7 @@ namespace happyml {
                                                    const shared_ptr<BaseTensor> &loss_gradient) override {
             auto bias_error_at_learning_rate = make_shared<TensorMultiplyByScalarView>(loss_gradient,
                                                                                        biasLearningRate);
-            auto adjusted_bias = make_shared<TensorMinusTensorView>(bias, bias_error_at_learning_rate);
+            auto adjusted_bias = make_shared<TensorSubtractTensorView>(bias, bias_error_at_learning_rate);
             return adjusted_bias;
         }
     };

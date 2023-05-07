@@ -13,7 +13,7 @@ namespace happyml {
         shared_ptr<happyml::BaseTensor> forward(const vector<shared_ptr<happyml::BaseTensor>> &input, bool forTraining) override {
             PROFILE_BLOCK(profileBlock);
             if (input.size() != 1) {
-                throw exception("Cannot flatten multiple inputs at the same time. Please merge.");
+                throw runtime_error("Cannot flatten multiple inputs at the same time. Please merge.");
             }
             const auto &nextInput = input[0];
             originalCols = nextInput->columnCount();

@@ -13,7 +13,7 @@ using namespace happyml;
 
 void test_file_sort1() {
     if (!FileSorter::sort("../test_data/duplicate_test.txt", "../test_data/duplicate_test_sorted_has_header.txt", true, 5, true)) {
-        throw exception("Missing file.");
+        throw runtime_error("Missing file.");
     }
     // count lines in duplicate_test_sorted_no_header.txt
     ifstream file("../test_data/duplicate_test_sorted_has_header.txt");
@@ -30,7 +30,7 @@ void test_file_sort1() {
 
 void test_file_sort2() {
     if (!FileSorter::sort("../test_data/duplicate_test.txt", "../test_data/duplicate_test_sorted_whole_file.txt", false, 1, true)) {
-        throw exception("Missing file.");
+        throw runtime_error("Missing file.");
     }
 
     ifstream file("../test_data/duplicate_test_sorted_whole_file.txt");
@@ -47,7 +47,7 @@ void test_file_sort2() {
 
 void test_file_sort3() {
     if (!FileSorter::sort("../test_data/duplicate_test.txt", "../test_data/duplicate_test_sorted_keep_duplicates.txt", true, 5, false)) {
-        throw exception("Missing file.");
+        throw runtime_error("Missing file.");
     }
     // count lines in duplicate_test_sorted_no_header.txt
     ifstream file("../test_data/duplicate_test_sorted_keep_duplicates.txt");

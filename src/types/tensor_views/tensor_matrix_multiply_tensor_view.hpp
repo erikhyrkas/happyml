@@ -19,13 +19,13 @@ namespace happyml {
                                                                                                         tensor2) {
             if (tensor1->columnCount() != tensor2->rowCount()) {
                 cout << "[" << tensor1->rowCount() << ", " << tensor1->columnCount() << ", " << tensor1->channelCount()
-                     << "] dot [";
+                     << "] * [";
                 cout << tensor2->rowCount() << ", " << tensor2->columnCount() << ", " << tensor2->channelCount() << "]"
                      << endl;
-                throw exception("Dot product tensor1.cols must match tensor2.rows in length");
+                throw runtime_error("matmul tensor1.cols must match tensor2.rows in length");
             }
             if (tensor1->channelCount() != tensor2->channelCount()) {
-                throw exception("Dot product tensor1.channels must match tensor2.channels in length");
+                throw runtime_error("matmul tensor1.channels must match tensor2.channels in length");
             }
         }
 
@@ -33,7 +33,7 @@ namespace happyml {
             cout << "TensorMatrixMultiplyTensorView{" << rowCount() << "," << columnCount() << "," << channelCount()
                  << "}->(";
             left_child_->printMaterializationPlan();
-            cout << ") + (";
+            cout << ") * (";
             right_child_->printMaterializationPlan();
             cout << ")";
         }

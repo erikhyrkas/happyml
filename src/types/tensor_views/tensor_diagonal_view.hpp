@@ -8,6 +8,7 @@
 
 #include <sstream>
 #include <execution>
+#include "../base_tensors.hpp"
 
 namespace happyml {
 // In the current implementation, a tensor is a vector of matrices, and our math is frequently
@@ -30,20 +31,10 @@ namespace happyml {
 // and specifically: https://www.youtube.com/watch?v=WTLl03D4TNA
     class TensorDiagonalView : public happyml::BaseTensorUnaryOperatorView {
     public:
-        TensorDiagonalView(const shared_ptr<BaseTensor> &tensor, size_t row_offset) : BaseTensorUnaryOperatorView(
-                tensor) {
-            this->row_offset = row_offset;
-            this->is_1d = tensor->rowCount() == 1;
-            if (!is_1d) {
-                // we only have as many columns as there were rows
-                this->columns = tensor->rowCount() - row_offset;
-                // we either have 0 or 1 result row
-                this->rows = row_offset < tensor->rowCount();
-            } else {
-                this->columns = tensor->columnCount() - row_offset;
-                this->rows = this->columns;
-            }
-
+        TensorDiagonalView(const shared_ptr<BaseTensor> &tensor)
+                : BaseTensorUnaryOperatorView(tensor) {
+            // Assuming the input tensor is 1D or reshaped 1D
+            this->n = tensor->rowCount() * tensor->columnCount();
         }
 
         void printMaterializationPlan() override {
@@ -51,16 +42,12 @@ namespace happyml {
             child->printMaterializationPlan();
         }
 
-        explicit TensorDiagonalView(const shared_ptr<BaseTensor> &tensor)
-                : TensorDiagonalView(tensor, 0) {
-        }
-
         size_t rowCount() override {
-            return rows;
+            return n;
         }
 
         size_t columnCount() override {
-            return columns;
+            return n;
         }
 
         bool readRowsInParallel() override {
@@ -68,21 +55,14 @@ namespace happyml {
         }
 
         float getValue(size_t row, size_t column, size_t channel) override {
-            if (is_1d) {
-                if (row + row_offset == column) {
-                    child->getValue(0, column, channel);
-                }
-                return 0.f;
+            if (row == column && row < child->rowCount() && column < child->columnCount() && channel < child->channelCount()) {
+                return child->getValue(row, column, channel);
             }
-            // we aren't bounds checking, so the caller better make sure that row_count > 0
-            return child->getValue(column + row_offset, column, channel);
+            return 0.f;
         }
 
     private:
-        size_t row_offset;
-        size_t columns;
-        size_t rows;
-        bool is_1d;
+        size_t n;
     };
 }
 #endif //HAPPYML_TENSOR_DIAGONAL_VIEW_HPP

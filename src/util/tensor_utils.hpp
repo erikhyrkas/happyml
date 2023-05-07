@@ -46,7 +46,7 @@ namespace happyml {
     }
 
     size_t maxIndex(const shared_ptr<BaseTensor> &tensor) {
-        return tensor->maxIndex(0, 0);
+        return tensor->maxIndexByRow(0, 0);
     }
 
     int estimateBias(int estimate_min, int estimate_max, const float adj_min, const float adj_max) {
@@ -130,13 +130,13 @@ namespace happyml {
 
     void assertEqual(const shared_ptr<BaseTensor> &t1, const shared_ptr<BaseTensor> &t2) {
         if (t1->channelCount() != t2->channelCount()) {
-            throw exception("Tensors don't have the same number of channels.");
+            throw runtime_error("Tensors don't have the same number of channels.");
         }
         if (t1->rowCount() != t2->rowCount()) {
-            throw exception("Tensors don't have the same number of rows.");
+            throw runtime_error("Tensors don't have the same number of rows.");
         }
         if (t1->columnCount() != t2->columnCount()) {
-            throw exception("Tensors don't have the same number of columns.");
+            throw runtime_error("Tensors don't have the same number of columns.");
         }
         for (size_t channel = 0; channel < t1->channelCount(); channel++) {
             for (size_t row = 0; row < t1->rowCount(); row++) {
@@ -145,7 +145,7 @@ namespace happyml {
                         ostringstream message;
                         message << "Value " << t1->getValue(row, col, channel) << " does not equal "
                                 << t2->getValue(row, col, channel) << " at " << row << ", " << col << ", " << channel;
-                        throw exception(message.str().c_str());
+                        throw runtime_error(message.str().c_str());
                     }
                 }
             }

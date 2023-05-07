@@ -18,18 +18,18 @@ namespace happyml {
                             const shared_ptr<BaseTensor> &tensor2) : BaseTensorBinaryOperatorView(tensor1, tensor2) {
             if (tensor1->rowCount() != 1 || tensor2->rowCount() != 1 ||
                 tensor1->channelCount() != 1 || tensor2->channelCount() != 1) {
-                throw exception("Dot product is only applicable to 1D tensors (vectors)");
+                throw runtime_error("Dot product is only applicable to 1D tensors (vectors)");
             }
             if (tensor1->columnCount() != tensor2->columnCount()) {
-                throw exception("Dot product requires tensors with the same length");
+                throw runtime_error("Dot product requires tensors with the same length");
             }
         }
 
         void printMaterializationPlan() override {
             cout << "TensorDotTensorView{" << rowCount() << "," << columnCount() << "}->(";
-            child1->printMaterializationPlan();
+            left_child_->printMaterializationPlan();
             cout << ") . (";
-            child2->printMaterializationPlan();
+            right_child_->printMaterializationPlan();
             cout << ")";
         }
 
@@ -47,9 +47,9 @@ namespace happyml {
 
         float getValue(size_t row, size_t column, size_t channel) override {
             float dotProduct = 0;
-            size_t N = child1->columnCount();
+            size_t N = left_child_->columnCount();
             for (size_t i = 0; i < N; ++i) {
-                dotProduct += child1->getValue(0, i, 0) * child2->getValue(0, i, 0);
+                dotProduct += left_child_->getValue(0, i, 0) * right_child_->getValue(0, i, 0);
             }
             return dotProduct;
         }

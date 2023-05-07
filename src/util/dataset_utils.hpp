@@ -341,10 +341,10 @@ namespace happyml {
                 //columnGroupEncoders.emplace_back(make_shared<ColumnGroup>(*column_group), make_shared<TextToEmbeddedTokensEncoder>(defaultBytePairEncoder));
                 //TODO: finish this
                 string error = "Unimplemented data type: " + column_group->data_type;
-                throw exception(error.c_str());
+                throw runtime_error(error.c_str());
             } else {
                 string error = "Unknown data type: " + column_group->data_type;
-                throw exception(error.c_str());
+                throw runtime_error(error.c_str());
             }
             auto column_and_encoder = columnGroupEncoders.back();
             vector<size_t> shape = column_and_encoder.second->calculate_output_shape(column_and_encoder.first->rows,
@@ -401,7 +401,7 @@ namespace happyml {
 
         if (!binaryDatasetWriter.is_open()) {
             string error = "Unable to open dataset file for writing: " + dataset_file_path;
-            throw exception(error.c_str());
+            throw runtime_error(error.c_str());
         }
         size_t row_count = 0;
         size_t written_count = 0;

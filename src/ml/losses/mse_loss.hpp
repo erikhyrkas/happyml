@@ -9,7 +9,11 @@
 namespace happyml {
     class MeanSquaredErrorLossFunction : public LossFunction {
     public:
-        float compute(shared_ptr<BaseTensor> &total_error) override {
+        shared_ptr<BaseTensor> calculate_error_for_one_prediction(shared_ptr<BaseTensor> &truth, shared_ptr<BaseTensor> &prediction) override {
+            return make_shared<TensorSubtractTensorView>(prediction, truth);
+        }
+
+        float computeBatchLoss(shared_ptr<BaseTensor> &total_error) override {
             // for a single prediction: mean of squared error = avg( (prediction - truth)^2 )
             // auto error = make_shared<TensorMinusTensorView>(prediction, truth);
             // for batch, we take the average error: avg( avg(prediction - truth)^2 )
@@ -17,13 +21,13 @@ namespace happyml {
             return squared_error->arithmeticMean(); // mean of squared error
         }
 
-        pair<shared_ptr<BaseTensor>, shared_ptr<BaseTensor>> calculateBatchErrorAndDerivative(vector<shared_ptr<BaseTensor>> &truths,
-                                                                                              vector<shared_ptr<BaseTensor>> &predictions) override {
-            shared_ptr<BaseTensor> totalError = calculateTotalError(truths, predictions);
-            auto batchSize =  static_cast<float>(truths.size());
+        shared_ptr<BaseTensor> calculate_batch_loss_derivative(shared_ptr<BaseTensor> &total_batch_error,
+                                                               vector<shared_ptr<BaseTensor>> &truths,
+                                                               vector<shared_ptr<BaseTensor>> &predictions) override {
+            auto batchSize = static_cast<float>(truths.size());
             // derivative of mean squared error = 2 * (prediction - truth);
-            shared_ptr<BaseTensor> result = make_shared<TensorMultiplyByScalarView>(totalError, 2.0f / batchSize);
-            return make_pair(totalError, result);
+            shared_ptr<BaseTensor> result = make_shared<TensorMultiplyByScalarView>(total_batch_error, 2.0f / batchSize);
+            return result;
         }
     };
 }

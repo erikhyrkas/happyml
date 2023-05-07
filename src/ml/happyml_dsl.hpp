@@ -39,7 +39,7 @@ namespace happyml {
             this->modelName = modelName;
             if (!std::all_of(modelName.begin(), modelName.end(),
                              [](int c) { return std::isalnum(c) || c == '_'; })) {
-                throw exception("Model name must contain only alphanumeric characters.");
+                throw runtime_error("Model name must contain only alphanumeric characters.");
             }
             switch (optimizerType) {
                 case microbatch:
@@ -55,7 +55,7 @@ namespace happyml {
                     this->biasLearningRate = 0.001;
                     break;
                 default:
-                    throw exception("Unsupported model type.");
+                    throw runtime_error("Unsupported model type.");
             }
             this->lossType = LossType::mse;
             this->repoRootPath = repoRootPath;
@@ -81,7 +81,7 @@ namespace happyml {
             this->modelName = modelNameValue;
             if (!std::all_of(modelName.begin(), modelName.end(),
                              [](int c) { return std::isalnum(c) || c == '_'; })) {
-                throw exception("Model name must contain only alphanumeric characters.");
+                throw runtime_error("Model name must contain only alphanumeric characters.");
             }
             return shared_from_this();
         }
@@ -206,7 +206,7 @@ namespace happyml {
                                            NodeType nodeType, ActivationType activationType) {
                 // todo: support other types of convolution nodes here
                 if (nodeType != NodeType::convolution2dValid) {
-                    throw exception("Only convolutional nodes have a kernel size.");
+                    throw runtime_error("Only convolutional nodes have a kernel size.");
                 }
                 auto result = addNode(nodeOutputShape[2], outputKernelSize,
                                       nodeType, true,
@@ -221,7 +221,7 @@ namespace happyml {
                        << nodeOutputShape[0] << ", " << nodeOutputShape[1] << ", " << nodeOutputShape[2] << ")";
 
                     // todo: could we have taken other action here to avoid an error and reshape the output?
-                    throw exception(ss.str().c_str());
+                    throw runtime_error(ss.str().c_str());
                 }
                 return result;
             }
@@ -327,7 +327,7 @@ namespace happyml {
                                                                        optimizer);
                     next_node = make_shared<NeuralNetworkNode>(c2d);
                 } else {
-                    throw exception("Unimplemented NodeType");
+                    throw runtime_error("Unimplemented NodeType");
                 }
 
                 last_node = appendNode(last_node, next_node);
@@ -602,7 +602,7 @@ namespace happyml {
             }
         } else {
             if (!parent) {
-                throw exception("missing parent");
+                throw runtime_error("missing parent");
             }
 
             if (filters > 0) {
@@ -613,7 +613,7 @@ namespace happyml {
                                                             activationType);
             } else {
                 if (nodeType != full) {
-                    throw exception("output node type wasn't full");
+                    throw runtime_error("output node type wasn't full");
                 }
                 createdVertexes[vertexId] = parent->addNode(inputShape,
                                                             outputShape,
@@ -630,7 +630,7 @@ namespace happyml {
             auto edges = edgeFromTo[vertexId];
             for (auto nextEdge: edges) {
                 if (vertexes.count(nextEdge) < 1) {
-                    throw exception("Bad model definition. Edge not found!");
+                    throw runtime_error("Bad model definition. Edge not found!");
                 }
                 auto nextVertexMetadata = vertexes[nextEdge];
                 createVertexFromMetadata(dsl,
@@ -651,25 +651,25 @@ namespace happyml {
 
         auto optimizerRecord = configReader->nextRecord();
         if (optimizerRecord[0] != "optimizer") {
-            throw exception("Invalid configuration.hmlprops missing optimizer field.");
+            throw runtime_error("Invalid configuration.hmlprops missing optimizer field.");
         }
         const OptimizerType optimizerType = stringToOptimizerType(optimizerRecord[1]);
 
         auto learningRateRecord = configReader->nextRecord();
         if (learningRateRecord[0] != "learningRate") {
-            throw exception("Invalid configuration.hmlprops missing learningRate field.");
+            throw runtime_error("Invalid configuration.hmlprops missing learningRate field.");
         }
         float learningRate = stof(learningRateRecord[1]);
 
         auto biasLearningRateRecord = configReader->nextRecord();
         if (biasLearningRateRecord[0] != "biasLearningRate") {
-            throw exception("Invalid configuration.hmlprops missing biasLearningRate field.");
+            throw runtime_error("Invalid configuration.hmlprops missing biasLearningRate field.");
         }
         float biasLearningRate = stof(biasLearningRateRecord[1]);
 
         auto lossRecord = configReader->nextRecord();
         if (lossRecord[0] != "loss") {
-            throw exception("Invalid configuration.hmlprops missing loss field.");
+            throw runtime_error("Invalid configuration.hmlprops missing loss field.");
         }
         const LossType lossType = stringToLossType(lossRecord[1]);
 

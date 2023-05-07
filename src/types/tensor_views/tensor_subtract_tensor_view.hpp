@@ -3,25 +3,26 @@
 // Copyright 2022. Usable under MIT license.
 //
 
-#ifndef HAPPYML_TENSOR_MINUS_TENSOR_VIEW_HPP
-#define HAPPYML_TENSOR_MINUS_TENSOR_VIEW_HPP
+#ifndef HAPPYML_TENSOR_SUBTRACT_TENSOR_VIEW_HPP
+#define HAPPYML_TENSOR_SUBTRACT_TENSOR_VIEW_HPP
 
 #include <sstream>
 #include <vector>
 #include <execution>
 
 namespace happyml {
-    class TensorMinusTensorView : public happyml::BaseTensorBinaryOperatorView {
+    // element wise subtraction
+    class TensorSubtractTensorView : public happyml::BaseTensorBinaryOperatorView {
     public:
-        TensorMinusTensorView(const shared_ptr<BaseTensor> &tensor1,
-                              const shared_ptr<BaseTensor> &tensor2) : BaseTensorBinaryOperatorView(tensor1, tensor2) {
+        TensorSubtractTensorView(const shared_ptr<BaseTensor> &tensor1,
+                                 const shared_ptr<BaseTensor> &tensor2) : BaseTensorBinaryOperatorView(tensor1, tensor2) {
             if (tensor1->channelCount() != tensor2->channelCount() || tensor1->rowCount() != tensor2->rowCount() ||
                 tensor1->columnCount() != tensor2->columnCount()) {
-                cout << "[" << tensor1->rowCount() << ", " << tensor1->columnCount() << ", " << tensor1->channelCount()
-                     << "] - [";
-                cout << tensor2->rowCount() << ", " << tensor2->columnCount() << ", " << tensor2->channelCount() << "]"
-                     << endl;
-                throw exception("You can only subtract two tensors of the same dimensions together.");
+                stringstream ss;
+                ss << "Subtract cols, rows, and channels must match in length. Attempted: " << "[" << tensor1->rowCount()
+                   << ", " << tensor1->columnCount() << ", " << tensor1->channelCount() << "] - [";
+                ss << tensor2->rowCount() << ", " << tensor2->columnCount() << ", " << tensor2->channelCount() << "]";
+                throw runtime_error(ss.str().c_str());
             }
         }
 
@@ -47,4 +48,4 @@ namespace happyml {
     };
 }
 
-#endif //HAPPYML_TENSOR_MINUS_TENSOR_VIEW_HPP
+#endif //HAPPYML_TENSOR_SUBTRACT_TENSOR_VIEW_HPP

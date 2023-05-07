@@ -40,7 +40,7 @@ namespace happyml {
 
         void writeLine(const string &line) {
             if (!stream_.is_open()) {
-                throw exception("File is closed.");
+                throw runtime_error("File is closed.");
             }
             stream_ << line << endl;
         }

@@ -46,7 +46,7 @@ namespace happyml {
         // and the meaning is more or less the same.
         vector<shared_ptr<BaseTensor>> predict(const vector<shared_ptr<BaseTensor>> &givenInputs, bool forTraining) {
             if (givenInputs.size() != headNodes.size()) {
-                throw exception("infer requires as many input tensors as there are input nodes");
+                throw runtime_error("infer requires as many input tensors as there are input nodes");
             }
             for (size_t i = 0; i < headNodes.size(); i++) {
                 headNodes[i]->forwardFromInput(givenInputs[i], forTraining);
@@ -256,7 +256,7 @@ namespace happyml {
             //  set. If they are, give a warning.
             auto total_records = trainingDataset->recordCount();
             if (batchSize > total_records) {
-                throw exception("Batch Size cannot be larger than trainingDataset data set.");
+                throw runtime_error("Batch Size cannot be larger than trainingDataset data set.");
             }
 
             auto trainingShuffler = make_shared<Shuffler>(trainingDataset->recordCount());
@@ -303,19 +303,18 @@ namespace happyml {
                         size_t currentBatch = ceil(current_record / batchSize);
                         double totalBatchOutputLoss = 0;
                         for (size_t outputIndex = 0; outputIndex < outputSize; outputIndex++) {
-                            auto error_loss_derivative_pair = lossFunction->calculateBatchErrorAndDerivative(batchTruths[outputIndex],
-                                                                                                             batchPredictions[outputIndex]);
-                            auto batchError = error_loss_derivative_pair.first;
-                            auto batchLoss = lossFunction->compute(batchError);
+                            auto batchError = lossFunction->sum_total_batch_error(batchTruths[outputIndex], batchPredictions[outputIndex]);;
+                            auto batchLoss = lossFunction->computeBatchLoss(batchError);
                             totalBatchOutputLoss += batchLoss;
 
-                            auto lossDerivative = make_shared<TensorClipView>(error_loss_derivative_pair.second,
-                                                                              -100.0f,
-                                                                              100.0f);
+                            auto loss_derivative = lossFunction->calculate_batch_loss_derivative(batchError, batchTruths[outputIndex], batchPredictions[outputIndex]);
+                            auto clipped_loss_derivative = make_shared<TensorClipView>(loss_derivative,
+                                                                                       -100.0f,
+                                                                                       100.0f);
                             // todo: we don't weight loss when there are multiple outputs back propagating. we should, instead of treating them as equals.
-                            outputNodes[outputIndex]->backward(lossDerivative);
+                            outputNodes[outputIndex]->backward(clipped_loss_derivative);
                             if (isnan(batchLoss)) {
-                                throw exception("Error calculating loss.");
+                                throw runtime_error("Error calculating loss.");
                             }
                             batchTruths[outputIndex].clear();
                             batchPredictions[outputIndex].clear();
@@ -391,9 +390,9 @@ namespace happyml {
                 float totalLoss = 0;
                 for (size_t outputIndex = 0; outputIndex < outputSize; outputIndex++) {
                     shared_ptr<BaseTensor> error = make_shared<FullTensor>(
-                            lossFunction->calculateError(nextTruth[outputIndex],
-                                                         nextPrediction[outputIndex]));
-                    const auto loss = lossFunction->compute(error);
+                            lossFunction->calculate_error_for_one_prediction(nextTruth[outputIndex],
+                                                                             nextPrediction[outputIndex]));
+                    const auto loss = lossFunction->computeBatchLoss(error);
                     totalLoss += loss;
                 }
                 currentRecord++;

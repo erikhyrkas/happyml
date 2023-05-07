@@ -51,7 +51,7 @@ namespace happyml {
         shared_ptr<happyml::BaseTensor> forward(const vector<shared_ptr<happyml::BaseTensor>> &input, bool forTraining) override {
             PROFILE_BLOCK(profileBlock);
             if (input.size() > 1) {
-                throw exception("FullyConnectedNeurons only supports a single input.");
+                throw runtime_error("FullyConnectedNeurons only supports a single input.");
             }
 
             auto lastInput = input[0];
@@ -67,7 +67,7 @@ namespace happyml {
             PROFILE_BLOCK(profileBlock);
             size_t lastInputsSize = lastInputs.size();
             if (lastInputsSize < 1) {
-                throw exception("FullyConnectedNeurons.backward() called without previous inputs.");
+                throw runtime_error("FullyConnectedNeurons.backward() called without previous inputs.");
             }
             shared_ptr<happyml::BaseTensor> average_last_inputs = lastInputs.front();
             lastInputs.pop();

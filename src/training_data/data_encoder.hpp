@@ -47,7 +47,7 @@ namespace happyml {
             auto [ptr, error_check] = std::from_chars(text.data(), text.data() + text.size(), value);
             if (error_check != std::errc()) {
                 string message = "Couldn't convert text to float: " + text;
-                throw exception(message.c_str());
+                throw runtime_error(message.c_str());
             }
         }
         return value;
@@ -148,15 +148,15 @@ namespace happyml {
         shared_ptr<BaseTensor> encode(const vector<string> &words,
                                       size_t rows, size_t columns, size_t channels, bool trim) override {
             if (channels != 1) {
-                throw exception("The result tensor must have exactly one channel.");
+                throw runtime_error("The result tensor must have exactly one channel.");
             }
             if (words.size() != rows) {
                 string message = "The result tensor must have exactly the same number of rows as there are words to encode. Expected " + to_string(rows) + " but got " + to_string(words.size());
-                throw exception(message.c_str());
+                throw runtime_error(message.c_str());
             }
             if (columns != categoryMapping.size()) {
                 string message = "The result tensor must have exactly the same number of columns as there are categories. Expected " + to_string(categoryMapping.size()) + " but got " + to_string(columns);
-                throw exception(message.c_str());
+                throw runtime_error(message.c_str());
             }
             vector<vector<vector<float>>> result;
             result.resize(channels);
@@ -176,10 +176,10 @@ namespace happyml {
                     column_offset = categoryMapping.at(word);
                 }
                 if (row_offset >= rows) {
-                    throw exception("mapping returned an out of bounds index for rows.");
+                    throw runtime_error("mapping returned an out of bounds index for rows.");
                 }
                 if (column_offset >= columns) {
-                    throw exception("mapping returned an out of bounds index for columns.");
+                    throw runtime_error("mapping returned an out of bounds index for columns.");
                 }
                 result[0][row_offset][column_offset] = 1.f;
                 row_offset++;
@@ -209,7 +209,7 @@ namespace happyml {
             // it would take a huge amount of memory and not produce good results. It's better to stop
             // the caller now and let them fix their code.
             if (bytePairEncoderModel_ == nullptr || embedder_ == nullptr) {
-                throw exception("BytePairEncoderModel and Embedder must be set.");
+                throw runtime_error("BytePairEncoderModel and Embedder must be set.");
             }
             size_t largest_bpe_code = bytePairEncoderModel_->getLargestCode();
 

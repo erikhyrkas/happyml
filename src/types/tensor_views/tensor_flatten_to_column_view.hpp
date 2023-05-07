@@ -44,7 +44,7 @@ namespace happyml {
 
         float getValue(size_t row, size_t column, size_t channel) override {
             if (column != 0 || channel != 0) {
-                throw exception("Column Vector has only a single column and channel.");
+                throw runtime_error("Column Vector has only a single column and channel.");
             }
             return child->getValue(row);
         }

@@ -23,7 +23,7 @@ namespace happyml {
 
         float getValue(size_t row, size_t column, size_t channel) override {
             const float val = child->getValue(row, column, channel);
-            return log(val);
+            return std::log(val);
         }
     };
 }

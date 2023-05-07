@@ -431,7 +431,7 @@ namespace happyml {
         double q2ToQ3Range() {
             if (quarterValues.size() != 5) {
                 cout << "Mid 50 quarter values size: " << quarterValues.size() << endl;
-                throw exception("Mid 50 range calculation only works after quarter_values are populated.");
+                throw runtime_error("Mid 50 range calculation only works after quarter_values are populated.");
             }
             if (require0ForFit) {
                 return std::abs(std::max(0.0f, quarterValues.at(3)) - std::min(0.0f, quarterValues.at(1)));
@@ -442,7 +442,7 @@ namespace happyml {
         double tenTo90Range() {
             if (eightyValues.size() != 5) {
                 cout << "Mid 80 values size: " << eightyValues.size() << endl;
-                throw exception("Mid 80 range calculation only works after eighty_values are populated.");
+                throw runtime_error("Mid 80 range calculation only works after eighty_values are populated.");
             }
             if (require0ForFit) {
                 return std::abs(std::max(0.0f, eightyValues.at(3)) - std::min(0.0f, eightyValues.at(1)));
@@ -453,7 +453,7 @@ namespace happyml {
         double fullRange() {
             if (quarterValues.size() != 5) {
                 cout << "Full range quarter values size: " << quarterValues.size() << endl;
-                throw exception("full range calculation only works after quarter_values are populated.");
+                throw runtime_error("full range calculation only works after quarter_values are populated.");
             }
             if (require0ForFit) {
                 return std::abs(std::max(0.0f, quarterValues.at(4)) - std::min(0.0f, quarterValues.at(0)));

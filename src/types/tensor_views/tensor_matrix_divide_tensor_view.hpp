@@ -9,31 +9,30 @@
 #include <sstream>
 #include <vector>
 #include <execution>
+#include "tensor_inverse_view.hpp"
 
 namespace happyml {
     // matdiv
     class TensorMatrixDivideTensorView : public happyml::BaseTensorBinaryOperatorView {
     public:
-        TensorMatrixDivideTensorView(const shared_ptr<BaseTensor> &tensor1,
-                                     const shared_ptr<BaseTensor> &tensor2) : BaseTensorBinaryOperatorView(tensor1,
-                                                                                                           tensor2) {
-            if (tensor1->columnCount() != tensor2->rowCount()) {
-                cout << "[" << tensor1->rowCount() << ", " << tensor1->columnCount() << ", " << tensor1->channelCount()
-                     << "] dot [";
-                cout << tensor2->rowCount() << ", " << tensor2->columnCount() << ", " << tensor2->channelCount() << "]"
-                     << endl;
-                throw exception("Dot product tensor1.cols must match tensor2.rows in length");
+        TensorMatrixDivideTensorView(const shared_ptr<BaseTensor> &left_child,
+                                     const shared_ptr<BaseTensor> &right_child) : BaseTensorBinaryOperatorView(left_child,
+                                                                                                               make_shared<TensorInverseView>(right_child)) {
+            if (left_child_->rowCount() != right_child_->rowCount() || left_child_->columnCount() != right_child_->columnCount()) {
+                string error_message = "Matrix dimensions must match for division. Left: " + to_string(left_child_->rowCount()) + "x" + to_string(left_child_->columnCount()) + " Right: " + to_string(right_child_->rowCount()) + "x" + to_string(right_child_->columnCount());
+                throw runtime_error(error_message);
             }
-            if (tensor1->channelCount() != tensor2->channelCount()) {
-                throw exception("Dot product tensor1.channels must match tensor2.channels in length");
+            if (left_child_->channelCount() != right_child_->channelCount()) {
+                string error_message = "Channel count must match for division. Left: " + to_string(left_child_->channelCount()) + " Right: " + to_string(right_child_->channelCount());
+                throw runtime_error(error_message);
             }
         }
 
         void printMaterializationPlan() override {
-            cout << "TensorMatrixMultiplyTensorView{" << rowCount() << "," << columnCount() << "," << channelCount()
+            cout << "TensorMatrixDivideTensorView{" << rowCount() << "," << columnCount() << "," << channelCount()
                  << "}->(";
             left_child_->printMaterializationPlan();
-            cout << ") + (";
+            cout << ") / (";
             right_child_->printMaterializationPlan();
             cout << ")";
         }
@@ -47,11 +46,10 @@ namespace happyml {
         }
 
         float getValue(size_t row, size_t column, size_t channel) override {
+            // Compute the inverse of the right_child_ matrix for the given row, column, channel
             float val = 0;
-            const auto childColumnCount = left_child_->columnCount();
-//#pragma omp for
-            for (long long t1_col = 0; t1_col < childColumnCount; t1_col++) {
-                val += left_child_->getValue(row, t1_col, channel) * right_child_->getValue(t1_col, column, channel);
+            for (size_t col = 0; col < left_child_->columnCount(); col++) {
+                val += left_child_->getValue(row, col, channel) * right_child_->getValue(row, col, channel);
             }
             return val;
         }

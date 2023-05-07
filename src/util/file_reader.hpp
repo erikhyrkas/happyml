@@ -333,7 +333,7 @@ namespace happyml {
             row_size_ = 0;
             uint64_t number_of_given;
             if (!binaryFile_.read(reinterpret_cast<char *>(&number_of_given), sizeof(uint64_t))) {
-                throw exception("Could not read number of given tensors");
+                throw runtime_error("Could not read number of given tensors");
             }
             for (size_t i = 0; i < number_of_given; i++) {
                 shared_ptr<BinaryColumnMetadata> metadata = readColumnMetadata();
@@ -342,7 +342,7 @@ namespace happyml {
             }
             uint64_t number_of_expected;
             if (!binaryFile_.read(reinterpret_cast<char *>(&number_of_expected), sizeof(uint64_t))) {
-                throw exception("Could not read number of expected tensors");
+                throw runtime_error("Could not read number of expected tensors");
             }
             for (size_t i = 0; i < number_of_expected; i++) {
                 shared_ptr<BinaryColumnMetadata> metadata = readColumnMetadata();

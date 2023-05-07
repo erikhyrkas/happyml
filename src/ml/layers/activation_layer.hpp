@@ -18,7 +18,7 @@ namespace happyml {
             // todo: throw error on wrong size input?
             PROFILE_BLOCK(profileBlock);
             if (input.size() != 1) {
-                throw exception("Cannot activate multiple inputs at the same time. Please merge.");
+                throw runtime_error("Cannot activate multiple inputs at the same time. Please merge.");
             }
             const auto &lastInput = input[0];
             if (forTraining) {
@@ -31,7 +31,7 @@ namespace happyml {
             PROFILE_BLOCK(profileBlock);
             size_t lastInputsSize = lastInputs.size();
             if (lastInputsSize < 1) {
-                throw exception("FullyConnectedNeurons.backward() called without previous inputs.");
+                throw runtime_error("FullyConnectedNeurons.backward() called without previous inputs.");
             }
             // TODO: it's really inefficient to calculate the derivative of every previous batch input and average it
             //  but doing an average first and then a derivative isn't right.
@@ -53,8 +53,8 @@ namespace happyml {
             //auto activation_derivative = activationFunction->derivative(average_last_inputs);
             // this really threw me for a loop. I thought that this was supposed to be dot product, rather than
             // an element-wise-multiplication.
-            const auto baseOutputError = make_shared<TensorMultiplyTensorView>(averageActivationDerivative,
-                                                                               outputError);
+            const auto baseOutputError = make_shared<TensorElementWiseMultiplyByTensorView>(averageActivationDerivative,
+                                                                                            outputError);
             return baseOutputError;
         }
 
