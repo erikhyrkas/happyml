@@ -33,18 +33,27 @@ namespace happyml {
             // The total_error tensor is precomputed as: -truth_i * log(prediction_i)
             // For a single prediction: categorical cross-entropy = sum(total_error)
             // For a batch, we take the average error: avg(sum(total_error))
-
-            float sum_error = total_error->sum();
-            return sum_error / total_error->size();
+            return total_error->arithmeticMean();
         }
 
-        shared_ptr<BaseTensor> partialDerivative(shared_ptr<BaseTensor> &total_error, float batch_size) override {
-            // Derivative of categorical cross-entropy = -truth_i / prediction_i
-//            auto negative_truth = make_shared<TensorMultiplyByScalarView>(truth, -1.0f);
-//            auto inverse_prediction = make_shared<TensorInverseView>(prediction);
-//            auto matmul_result = make_shared<TensorMultiplyTensorView>(negative_truth, inverse_prediction);
-//            return matmul_result;
-            throw exception("Not implemented");
+        pair<shared_ptr<BaseTensor>, shared_ptr<BaseTensor>> calculateBatchErrorAndDerivative(vector<shared_ptr<BaseTensor>> &truths,
+                                                                                              vector<shared_ptr<BaseTensor>> &predictions) override {
+            shared_ptr<BaseTensor> totalError = calculateTotalError(truths, predictions);
+
+            shared_ptr<BaseTensor> accumulatedLossDerivative;
+            for (size_t i = 0; i < truths.size(); i++) {
+                // Derivative of categorical cross-entropy = -truth_i / prediction_i
+                shared_ptr<BaseTensor> negativeTruth = make_shared<TensorMultiplyByScalarView>(truths[i], -1.0f);
+                shared_ptr<BaseTensor> inversePrediction = make_shared<TensorInverseView>(predictions[i]);
+                shared_ptr<BaseTensor> currentLossDerivative = make_shared<TensorMultiplyTensorView>(negativeTruth, inversePrediction);
+                if (i == 0) {
+                    accumulatedLossDerivative = currentLossDerivative;
+                } else {
+                    accumulatedLossDerivative = make_shared<TensorAddTensorView>(accumulatedLossDerivative, currentLossDerivative);
+                }
+            }
+
+            return make_pair(totalError, accumulatedLossDerivative);
         }
     };
 

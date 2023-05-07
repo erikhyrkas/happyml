@@ -38,6 +38,8 @@ add_executable(example_mnist_model_full src/example/example_mnist_model_full.cpp
 
 add_executable(example_bpe_model src/example/example_bpe_model.cpp)
 
+add_executable(example_bxe_model src/example/example_or_model.cpp)
+
 # TODO: Need to learn how to use CTest and convert the tests to use it.
 #  https://cmake.org/cmake/help/book/mastering-cmake/chapter/Testing%20With%20CMake%20and%20CTest.html
 #  What you see below is me doing what I knew would work for local testing.

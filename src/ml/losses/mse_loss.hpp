@@ -17,10 +17,13 @@ namespace happyml {
             return squared_error->arithmeticMean(); // mean of squared error
         }
 
-        shared_ptr<BaseTensor> partialDerivative(shared_ptr<BaseTensor> &total_error, float batch_size) override {
+        pair<shared_ptr<BaseTensor>, shared_ptr<BaseTensor>> calculateBatchErrorAndDerivative(vector<shared_ptr<BaseTensor>> &truths,
+                                                                                              vector<shared_ptr<BaseTensor>> &predictions) override {
+            shared_ptr<BaseTensor> totalError = calculateTotalError(truths, predictions);
+            auto batchSize =  static_cast<float>(truths.size());
             // derivative of mean squared error = 2 * (prediction - truth);
-            //const auto error = make_shared<TensorMinusTensorView>(prediction, truth);
-            return make_shared<TensorMultiplyByScalarView>(total_error, 2.0f / batch_size);
+            shared_ptr<BaseTensor> result = make_shared<TensorMultiplyByScalarView>(totalError, 2.0f / batchSize);
+            return make_pair(totalError, result);
         }
     };
 }

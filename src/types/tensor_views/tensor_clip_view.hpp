@@ -14,7 +14,7 @@ namespace happyml {
 // Prevents the tensor's value from being bigger than or less than a value
     class TensorClipView : public BaseTensorUnaryOperatorView {
     public:
-        TensorClipView(const std::shared_ptr<BaseTensor> &tensor, float max_value, float min_value) : BaseTensorUnaryOperatorView(
+        TensorClipView(const std::shared_ptr<BaseTensor> &tensor, float min_value, float max_value) : BaseTensorUnaryOperatorView(
                 tensor) {
             this->max_value = max_value;
             this->min_value = min_value;
@@ -22,7 +22,7 @@ namespace happyml {
 
         float getValue(size_t row, size_t column, size_t channel) override {
             const float val = child->getValue(row, column, channel);
-            return std::max(min_value, std::min(max_value, val));
+            return std::clamp(val, min_value, max_value);
         }
 
         void printMaterializationPlan() override {

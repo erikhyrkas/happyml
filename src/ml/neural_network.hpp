@@ -10,6 +10,8 @@
 #include "losses/mse_loss.hpp"
 #include "losses/categorical_cross_entropy_loss.hpp"
 #include "losses/binary_cross_entropy.hpp"
+#include "losses/mae_loss.hpp"
+#include "losses/smae_loss.hpp"
 
 namespace happyml {
 
@@ -88,6 +90,12 @@ namespace happyml {
                 case mse:
                     NeuralNetworkForTraining::lossFunction = make_shared<MeanSquaredErrorLossFunction>();
                     break;
+                case mae:
+                    NeuralNetworkForTraining::lossFunction = make_shared<MeanAbsoluteErrorLossFunction>();
+                    break;
+                case smae:
+                    NeuralNetworkForTraining::lossFunction = make_shared<SmoothMeanAbsoluteErrorLossFunction>();
+                    break;
                 case categoricalCrossEntropy:
                     NeuralNetworkForTraining::lossFunction = make_shared<CategoricalCrossEntropyLossFunction>();
                     break;
@@ -100,8 +108,6 @@ namespace happyml {
 
             useLowPrecisionExitStrategy();
         }
-
-
 
         void useLowPrecisionExitStrategy() {
             setExitStrategy(make_shared<DefaultExitStrategy>(10,
@@ -289,29 +295,23 @@ namespace happyml {
                     for (size_t outputIndex = 0; outputIndex < outputSize; outputIndex++) {
                         batchPredictions[outputIndex].push_back(nextPrediction[outputIndex]);
                         batchTruths[outputIndex].push_back(nextTruth[outputIndex]);
-//                        if(batch_predictions.size() != batch_truths.size()) {
-//                            throw exception("truths and predictions should be equal");
-//                        }
                     }
                     batchOffset++;
 
                     nextRecord = trainingDataset->nextRecord();
                     if (batchOffset >= batchSize || nextRecord == nullptr) {
-
-                        // start update
                         size_t currentBatch = ceil(current_record / batchSize);
                         double totalBatchOutputLoss = 0;
                         for (size_t outputIndex = 0; outputIndex < outputSize; outputIndex++) {
-                            shared_ptr<BaseTensor> totalError = make_shared<FullTensor>(
-                                    lossFunction->calculateTotalError(batchTruths[outputIndex],
-                                                                      batchPredictions[outputIndex]));
-                            auto totalLoss = lossFunction->compute(totalError);
-                            auto batchLoss = totalLoss / (float) batchOffset;
+                            auto error_loss_derivative_pair = lossFunction->calculateBatchErrorAndDerivative(batchTruths[outputIndex],
+                                                                                                             batchPredictions[outputIndex]);
+                            auto batchError = error_loss_derivative_pair.first;
+                            auto batchLoss = lossFunction->compute(batchError);
                             totalBatchOutputLoss += batchLoss;
 
-                            // batchOffset should be equal to batch_size, unless we are on the last partial batch.
-                            shared_ptr<BaseTensor> lossDerivative = make_shared<TensorClipView>(lossFunction->partialDerivative(totalError, (float) batchOffset), 100.0f, -100.0f);
-
+                            auto lossDerivative = make_shared<TensorClipView>(error_loss_derivative_pair.second,
+                                                                              -100.0f,
+                                                                              100.0f);
                             // todo: we don't weight loss when there are multiple outputs back propagating. we should, instead of treating them as equals.
                             outputNodes[outputIndex]->backward(lossDerivative);
                             if (isnan(batchLoss)) {
@@ -325,7 +325,7 @@ namespace happyml {
                                 ((totalBatchOutputLoss / (double) outputSize) - epochTrainingLoss) /
                                 (double) currentBatch);
 
-                        // end update
+
                         auto elapsedTime = batchTimer.peekMilliseconds();
                         logTraining(elapsedTime, epoch, currentBatch,
                                     ceil(total_records / batchSize), batchOffset,

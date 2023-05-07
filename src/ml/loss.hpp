@@ -26,19 +26,19 @@ namespace happyml {
             if (count == 1) {
                 return calculateError(truths[0], predictions[0]);
             }
-            shared_ptr<BaseTensor> total_error = calculateError(truths[0], predictions[0]);
+            auto total_error = calculateError(truths[0], predictions[0]);
             for (size_t i = 1; i < count; i++) {
                 auto next_error = calculateError(truths[i], predictions[i]);
                 total_error = make_shared<TensorAddTensorView>(total_error, next_error);
             }
-            return total_error;
+            return make_shared<FullTensor>(total_error);
         }
 
         // mostly for display, but can be used for early stopping.
         virtual float compute(shared_ptr<BaseTensor> &total_error) = 0;
 
-        // what we actually use to learn
-        virtual shared_ptr<BaseTensor> partialDerivative(shared_ptr<BaseTensor> &total_error, float batch_size) = 0;
+        virtual pair<shared_ptr<BaseTensor>, shared_ptr<BaseTensor>> calculateBatchErrorAndDerivative(vector<shared_ptr<BaseTensor>> &truths,
+                                                                vector<shared_ptr<BaseTensor>> &predictions) = 0;
 
     };
 

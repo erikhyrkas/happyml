@@ -27,9 +27,9 @@ namespace happyml {
         void printMaterializationPlan() override {
             cout << "TensorFullConvolve2dView{" << rowCount() << "," << columnCount() << "," << channelCount()
                  << "}->(";
-            child1->printMaterializationPlan();
+            left_child_->printMaterializationPlan();
             cout << ") + (";
-            child2->printMaterializationPlan();
+            right_child_->printMaterializationPlan();
             cout << ")";
         }
     };

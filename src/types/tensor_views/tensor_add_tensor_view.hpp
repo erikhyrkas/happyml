@@ -27,22 +27,22 @@ namespace happyml {
 
         void printMaterializationPlan() override {
             cout << "TensorAddTensorView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->(";
-            child1->printMaterializationPlan();
+            left_child_->printMaterializationPlan();
             cout << ") + (";
-            child2->printMaterializationPlan();
+            right_child_->printMaterializationPlan();
             cout << ")";
         }
 
         size_t rowCount() override {
-            return child1->rowCount();
+            return left_child_->rowCount();
         }
 
         size_t columnCount() override {
-            return child1->columnCount();
+            return left_child_->columnCount();
         }
 
         float getValue(size_t row, size_t column, size_t channel) override {
-            return child1->getValue(row, column, channel) + child2->getValue(row, column, channel);
+            return left_child_->getValue(row, column, channel) + right_child_->getValue(row, column, channel);
         }
     };
 }

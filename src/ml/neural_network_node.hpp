@@ -116,7 +116,7 @@ namespace happyml {
 
         // todo: right now, i'm assuming this is a directed acyclic graph, this may not work for everything.
         //  It is possible, I'll have to track visited nodes to avoid infinite cycles.
-        void backward(shared_ptr<BaseTensor> &outputError) {
+        void backward(const shared_ptr<BaseTensor> &outputError) {
             // TODO: for multiple errors, I'm currently averaging the errors as they propagate, but it probably should be a weighted average
             PROFILE_BLOCK(profileBlock);
 

@@ -18,8 +18,10 @@ namespace happyml {
 
     enum LossType {
         mse,
+        mae,
+        smae,
         categoricalCrossEntropy,
-        binaryCrossEntropy
+        binaryCrossEntropy,
     };
 
     enum NodeType {
@@ -117,16 +119,38 @@ namespace happyml {
     }
 
     string lossTypeToString(LossType lossType) {
+
         switch (lossType) {
             case mse:
                 return "mse";
+            case mae:
+                return "mae";
+            case smae:
+                return "smae";
+            case categoricalCrossEntropy:
+                return "categoricalCrossEntropy";
+            case binaryCrossEntropy:
+                return "binaryCrossEntropy";
         }
+
         throw exception("Unknown Loss Type");
     }
 
     LossType stringToLossType(const string &lossType) {
         if (lossType == "mse") {
             return mse;
+        }
+        if (lossType == "mae") {
+            return mae;
+        }
+        if (lossType == "smae") {
+            return smae;
+        }
+        if (lossType == "categoricalCrossEntropy") {
+            return categoricalCrossEntropy;
+        }
+        if (lossType == "binaryCrossEntropy") {
+            return binaryCrossEntropy;
         }
         throw exception("Unknown Loss Type");
     }

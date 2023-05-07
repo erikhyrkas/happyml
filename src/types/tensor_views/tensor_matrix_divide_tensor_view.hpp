@@ -3,20 +3,20 @@
 // Copyright 2022. Usable under MIT license.
 //
 
-#ifndef HAPPYML_TENSOR_MATRIX_MULTIPLY_TENSOR_VIEW_HPP
-#define HAPPYML_TENSOR_MATRIX_MULTIPLY_TENSOR_VIEW_HPP
+#ifndef HAPPYML_TENSOR_MATRIX_DIVIDE_TENSOR_VIEW_HPP
+#define HAPPYML_TENSOR_MATRIX_DIVIDE_TENSOR_VIEW_HPP
 
 #include <sstream>
 #include <vector>
 #include <execution>
 
 namespace happyml {
-    // matmul
-    class TensorMatrixMultiplyTensorView : public happyml::BaseTensorBinaryOperatorView {
+    // matdiv
+    class TensorMatrixDivideTensorView : public happyml::BaseTensorBinaryOperatorView {
     public:
-        TensorMatrixMultiplyTensorView(const shared_ptr<BaseTensor> &tensor1,
-                                       const shared_ptr<BaseTensor> &tensor2) : BaseTensorBinaryOperatorView(tensor1,
-                                                                                                        tensor2) {
+        TensorMatrixDivideTensorView(const shared_ptr<BaseTensor> &tensor1,
+                                     const shared_ptr<BaseTensor> &tensor2) : BaseTensorBinaryOperatorView(tensor1,
+                                                                                                           tensor2) {
             if (tensor1->columnCount() != tensor2->rowCount()) {
                 cout << "[" << tensor1->rowCount() << ", " << tensor1->columnCount() << ", " << tensor1->channelCount()
                      << "] dot [";
@@ -58,4 +58,4 @@ namespace happyml {
     };
 }
 
-#endif //HAPPYML_TENSOR_MATRIX_MULTIPLY_TENSOR_VIEW_HPP
+#endif //HAPPYML_TENSOR_MATRIX_DIVIDE_TENSOR_VIEW_HPP

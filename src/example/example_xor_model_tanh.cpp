@@ -22,6 +22,7 @@ int main() {
         auto neuralNetwork = neuralNetworkBuilder()
                 ->setModelName("xor_example")
                 ->setModelRepo("../repo/")
+                ->setLossFunction(LossType::mse)
                 ->addInput(xorDataSource->getGivenShape(), 3, NodeType::full, ActivationType::tanhApprox)
                 ->addOutput(xorDataSource->getExpectedShape(), ActivationType::tanhApprox)
                 ->build();

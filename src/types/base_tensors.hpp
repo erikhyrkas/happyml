@@ -184,7 +184,7 @@ namespace happyml {
 
         virtual float getValue(size_t row, size_t column, size_t channel) = 0;
 
-        virtual vector<size_t> getShape() {
+        virtual vector <size_t> getShape() {
             return {rowCount(), columnCount(), channelCount()};
         }
 
@@ -285,7 +285,7 @@ namespace happyml {
             return {minResult, maxResult};
         }
 
-        vector<IndexValue> topIndices(size_t numberOfResults, size_t channel, size_t row) {
+        vector <IndexValue> topIndices(size_t numberOfResults, size_t channel, size_t row) {
             vector<IndexValue> result;
             if (numberOfResults > 0) {
                 multiset<IndexValue> sortedValues;
@@ -334,7 +334,7 @@ namespace happyml {
             return result;
         }
 
-        vector<size_t> maxIndices(size_t channel, size_t row) {
+        vector <size_t> maxIndices(size_t channel, size_t row) {
             vector<size_t> result;
             float current_max = -INFINITY;
             const size_t maxCols = columnCount();
@@ -351,7 +351,7 @@ namespace happyml {
             return result;
         }
 
-        vector<size_t> minIndices(size_t channel, size_t row) {
+        vector <size_t> minIndices(size_t channel, size_t row) {
             vector<size_t> result;
             float currentMin = INFINITY;
             const size_t maxCols = columnCount();
@@ -638,23 +638,46 @@ namespace happyml {
     public:
         explicit BaseTensorBinaryOperatorView(const shared_ptr<BaseTensor> &tensor1,
                                               const shared_ptr<BaseTensor> &tensor2) {
-            this->child1 = tensor1;
-            this->child2 = tensor2;
+            this->left_child_ = tensor1;
+            this->right_child_ = tensor2;
         }
 
         bool contains(const shared_ptr<BaseTensor> &other) override {
-            return other == shared_from_this() || child1->contains(other) || child2->contains(other);
+            return other == shared_from_this() || left_child_->contains(other) || right_child_->contains(other);
         }
 
         size_t channelCount() override {
-            return child1->channelCount();
+            return left_child_->channelCount();
         }
 
     protected:
-        shared_ptr<BaseTensor> child1;
-        shared_ptr<BaseTensor> child2;
+        shared_ptr<BaseTensor> left_child_;
+        shared_ptr<BaseTensor> right_child_;
     };
 
+    class BaseTensorTrinaryOperatorView : public BaseTensor {
+    public:
+        explicit BaseTensorTrinaryOperatorView(const shared_ptr<BaseTensor> &tensor1,
+                                               const shared_ptr<BaseTensor> &tensor2,
+                                               const shared_ptr<BaseTensor> &tensor3) {
+            this->left_child_ = tensor1;
+            this->middle_child_ = tensor2;
+            this->right_child_ = tensor2;
+        }
 
+        bool contains(const shared_ptr<BaseTensor> &other) override {
+            return other == shared_from_this() || left_child_->contains(other) || right_child_->contains(other) ||
+                   middle_child_->contains(other);
+        }
+
+        size_t channelCount() override {
+            return left_child_->channelCount();
+        }
+
+    protected:
+        shared_ptr<BaseTensor> left_child_;
+        shared_ptr<BaseTensor> middle_child_;
+        shared_ptr<BaseTensor> right_child_;
+    };
 }
 #endif //HAPPYML_BASE_TENSORS_HPP
