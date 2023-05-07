@@ -23,32 +23,6 @@ namespace happyml {
             //        loss -= y_true[i] * std::log(y_pred[i]) + (1 - y_true[i]) * std::log(1 - y_pred[i]);
             //    }
             //    return loss;
-
-//            //y_true[i] * std::log(y_pred[i])
-////            auto clip_prediction = make_shared<TensorClipView>(prediction, 1e-8, 1.0f);
-//            auto log_prediction = make_shared<TensorLogView>(prediction);
-//            auto truth_matmul_log_prediction = make_shared<TensorMatrixMultiplyTensorView>(truth, log_prediction);
-//
-//            //(1 - y_true[i])
-//            auto negative_truth = make_shared<TensorMultiplyByScalarView>(truth, -1.0f);
-//            auto one_minus_truth = make_shared<TensorAddScalarView>(negative_truth, 1.0f);
-//
-//            // 1-y_pred[i]
-//            auto negative_prediction = make_shared<TensorMultiplyByScalarView>(prediction, -1.0f);
-//            auto one_minus_prediction = make_shared<TensorAddScalarView>(negative_prediction, 1.0f);
-//
-//            //std::log(1 - y_pred[i])
-////            auto clip_one_minus_prediction = make_shared<TensorClipView>(one_minus_prediction, 1e-8, 1.0f);
-//            auto log_one_minus_prediction = make_shared<TensorLogView>(one_minus_prediction);
-//
-//            //(1 - y_true[i]) * std::log(1 - y_pred[i])
-//            auto one_minus_truth_matmul_log_one_minus_prediction = make_shared<TensorMatrixMultiplyTensorView>(one_minus_truth, log_one_minus_prediction);
-//
-//            //y_true[i] * std::log(y_pred[i]) + (1 - y_true[i]) * std::log(1 - y_pred[i])
-//            auto total_error = make_shared<TensorAddTensorView>(truth_matmul_log_prediction, one_minus_truth_matmul_log_one_minus_prediction);
-//
-//            auto negative_total_error = make_shared<TensorMultiplyByScalarView>(total_error, -1.0f);
-//            return negative_total_error;
             auto epsilon = 1e-8f;
             auto clip_prediction = make_shared<TensorClipView>(prediction, epsilon, 1.0f - epsilon);
             auto clip_one_minus_prediction = make_shared<TensorClipView>(make_shared<TensorMinusScalarView>(1.0f, prediction), epsilon, 1.0f - epsilon);
