@@ -11,7 +11,6 @@
 #include "../../types/tensor_views/tensor_element_wise_divide_by_tensor_view.hpp"
 #include "../../types/tensor_views/tensor_exp_view.hpp"
 #include "../../types/tensor_views/tensor_value_transform_view.hpp"
-#include "../../types/tensor_views/tensor_categorical_loss_helper_view.hpp"
 
 // TODO: this code currently assumes that the truth and predictions are both 1D tensors
 //  and that those tensors are 1 row and 1 channel.
