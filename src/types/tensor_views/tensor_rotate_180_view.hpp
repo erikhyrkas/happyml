@@ -12,17 +12,17 @@ namespace happyml {
     class TensorRotate180View : public BaseTensorUnaryOperatorView {
     public:
         explicit TensorRotate180View(const std::shared_ptr<BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
-            row_base_value = child->rowCount() - 1;
-            column_base_value = child->columnCount() - 1;
+            row_base_value = child_->rowCount() - 1;
+            column_base_value = child_->columnCount() - 1;
         }
 
         void printMaterializationPlan() override {
             cout << "TensorRotate180View{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
-            child->printMaterializationPlan();
+            child_->printMaterializationPlan();
         }
 
         float getValue(size_t row, size_t column, size_t channel) override {
-            const float val = child->getValue(row_base_value - row, column_base_value - column, channel);
+            const float val = child_->getValue(row_base_value - row, column_base_value - column, channel);
             return val;
         }
 

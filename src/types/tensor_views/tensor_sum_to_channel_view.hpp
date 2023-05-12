@@ -22,7 +22,7 @@ namespace happyml {
 
         void printMaterializationPlan() override {
             cout << "TensorSumToChannelView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
-            child->printMaterializationPlan();
+            child_->printMaterializationPlan();
         }
 
         size_t channelCount() override {
@@ -34,10 +34,10 @@ namespace happyml {
                 return 0.f;
             }
             float result = 0.f;
-            const size_t channels = child->channelCount();
+            const size_t channels = child_->channelCount();
 //#pragma omp for
             for (long long next_channel = 0; next_channel < channels; next_channel++) {
-                result += child->getValue(row, column, next_channel);
+                result += child_->getValue(row, column, next_channel);
             }
             return result;
         }

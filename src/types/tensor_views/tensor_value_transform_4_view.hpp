@@ -16,8 +16,8 @@ namespace happyml {
     public:
         TensorValueTransform4View(const shared_ptr<BaseTensor> &tensor,
                                   function<float(float, vector<size_t>)> transformFunction,
-                                  vector<size_t> constants) : BaseTensorUnaryOperatorView(
-                tensor) {
+                                  vector<size_t> constants)
+                : BaseTensorUnaryOperatorView(tensor) {
             this->transformFunction = std::move(transformFunction);
             this->constants = std::move(constants);
         }
@@ -25,11 +25,11 @@ namespace happyml {
         void printMaterializationPlan() override {
             cout << "TensorValueTransform4View{" << rowCount() << "," << columnCount() << "," << channelCount()
                  << "}->";
-            child->printMaterializationPlan();
+            child_->printMaterializationPlan();
         }
 
         float getValue(size_t row, size_t column, size_t channel) override {
-            return transformFunction(child->getValue(row, column, channel), constants);
+            return transformFunction(child_->getValue(row, column, channel), constants);
         }
 
     private:

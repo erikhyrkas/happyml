@@ -120,46 +120,57 @@ namespace happyml {
             // TODO: for multiple errors, I'm currently averaging the errors as they propagate, but it probably should be a weighted average
             PROFILE_BLOCK(profileBlock);
 
-            auto priorError = neuralNetworkFunction->backward(outputError);
+            auto prior_errors = neuralNetworkFunction->backward(outputError);
             if (materialized) {
-                priorError = materializeTensor(priorError);
+                vector<shared_ptr<BaseTensor>> new_prior_error;
+                new_prior_error.reserve(prior_errors.size());
+                for (const auto &error: prior_errors) {
+                    new_prior_error.push_back(materializeTensor(error));
+                }
+                prior_errors = new_prior_error;
+            }
+            auto next_error = prior_errors.begin();
+            if (!connectionInputs.empty() && prior_errors.size() != connectionInputs.size()) {
+                throw runtime_error("The number of errors does not match the number of inputs");
             }
             for (const auto &inputConnection: connectionInputs) {
                 PROFILE_BLOCK(backwardBlockLoop);
                 const auto conn = inputConnection.lock();
                 const auto from = conn->from.lock();
                 const auto fromConnectionOutputSize = from->connectionOutputs.size();
+                const auto prior_error = *next_error;
+                next_error++;
                 if (fromConnectionOutputSize == 1) {
                     PROFILE_BLOCK(backwardBlock);
                     // most of the time there is only one from, so, ship it instead of doing extra wasted calculations
-                    from->backward(priorError);
+                    from->backward(prior_error);
                 } else {
                     PROFILE_BLOCK(backwardBlock);
                     // We'll save the error we calculated, because we need to sum the errors from all outputs
                     // and not all outputs may be ready yet.
-                    conn->priorError = priorError;
+                    conn->prior_error = prior_error;
                     bool ready = true;
                     shared_ptr<BaseTensor> sum = nullptr;
                     for (const auto &output_conn: from->connectionOutputs) {
-                        if (output_conn->priorError == nullptr) {
+                        if (output_conn->prior_error == nullptr) {
                             ready = false;
                             break;
                         }
                         if (sum == nullptr) {
-                            sum = make_shared<TensorAddTensorView>(priorError, output_conn->priorError);
+                            sum = make_shared<TensorAddTensorView>(prior_error, output_conn->prior_error);
                         } else {
-                            sum = make_shared<TensorAddTensorView>(sum, output_conn->priorError);
+                            sum = make_shared<TensorAddTensorView>(sum, output_conn->prior_error);
                         }
                     }
                     if (!ready) {
                         continue;
                     }
+                    // TODO: for multiple errors, I'm currently averaging the errors as they propagate, but it probably should be a weighted average
                     shared_ptr<BaseTensor> average_error = make_shared<TensorMultiplyByScalarView>(sum, 1.0f /
                                                                                                         (float) fromConnectionOutputSize);
                     from->backward(average_error);
                     for (const auto &output_conn: from->connectionOutputs) {
-                        output_conn->priorError = nullptr;
-
+                        output_conn->prior_error = nullptr;
                     }
                 }
             }
@@ -183,7 +194,7 @@ namespace happyml {
         // A connection is also known as an "edge" in a graph, but not everybody remembers technical terms
         struct NeuralNetworkConnection {
             shared_ptr<BaseTensor> next_input;
-            shared_ptr<BaseTensor> priorError;
+            shared_ptr<BaseTensor> prior_error;
             weak_ptr<NeuralNetworkNode> from;
             shared_ptr<NeuralNetworkNode> to;
         };

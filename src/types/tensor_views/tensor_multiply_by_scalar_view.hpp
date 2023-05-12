@@ -21,11 +21,11 @@ namespace happyml {
         void printMaterializationPlan() override {
             cout << "TensorMultiplyByScalarView{" << rowCount() << "," << columnCount() << "," << channelCount()
                  << "}->";
-            child->printMaterializationPlan();
+            child_->printMaterializationPlan();
         }
 
         float getValue(size_t row, size_t column, size_t channel) override {
-            return scale * child->getValue(row, column, channel);
+            return scale * child_->getValue(row, column, channel);
         }
 
         [[nodiscard]] float get_scale() const {

@@ -13,6 +13,7 @@
 #include <string>
 #include "../../util/happyml_paths.hpp"
 #include "../../training_data/data_decoder.hpp"
+#include "../../util/encoder_decoder_builder.hpp"
 
 namespace happyml {
 
@@ -49,20 +50,8 @@ namespace happyml {
                 return make_shared<happyml::ExecutionResult>(false);
             }
             // auto decoder = make_shared<BestTextCategoryDecoder>(categoryLabels);
-            vector<shared_ptr<happyml::RawDecoder >> given_decoders;
-            size_t given_column_count = reader.get_given_column_count();
-            for (size_t i = 0; i < given_column_count; i++) {
-                const shared_ptr<happyml::BinaryColumnMetadata> &metadata = reader.get_given_metadata(i);
-                shared_ptr<happyml::RawDecoder> decoder = build_decoder(metadata);
-                given_decoders.push_back(decoder);
-            }
-            vector<shared_ptr<happyml::RawDecoder >> expected_decoders;
-            size_t expected_column_count = reader.get_expected_column_count();
-            for (size_t i = 0; i < expected_column_count; i++) {
-                const shared_ptr<happyml::BinaryColumnMetadata> &metadata = reader.get_expected_metadata(i);
-                shared_ptr<happyml::RawDecoder> decoder = build_decoder(metadata);
-                expected_decoders.push_back(decoder);
-            }
+            vector<shared_ptr<happyml::RawDecoder>> given_decoders = build_given_decoders(raw_, reader);
+            vector<shared_ptr<happyml::RawDecoder >> expected_decoders = build_expected_decoders(raw_, reader);
 
             for (int i = 0; i < max_result_rows; i++) {
                 auto row = reader.readRow(i);
@@ -85,6 +74,8 @@ namespace happyml {
 
             return make_shared<happyml::ExecutionResult>(false);
         }
+
+
 
         static vector<vector<string>> calculate_display_values(size_t &max_display_rows,
                                                                vector<shared_ptr<happyml::BaseTensor>> &tensors_to_display,
@@ -115,29 +106,6 @@ namespace happyml {
             return display_values;
         }
 
-        [[nodiscard]] shared_ptr<happyml::RawDecoder> build_decoder(const shared_ptr<happyml::BinaryColumnMetadata> &metadata) const {
-            shared_ptr<happyml::RawDecoder> decoder;
-            if (raw_) {
-                decoder = make_shared<happyml::RawDecoder>();
-            } else {
-                auto purpose = metadata->purpose;
-                // purpose: 'I' (image), 'T' (text), 'N' (number), 'L' (label)
-                if ('L' == purpose) {
-                    auto ordered_labels = metadata->ordered_labels;
-                    decoder = make_shared<happyml::BestTextCategoryDecoder>(ordered_labels);
-                } else if ('N' == purpose) {
-                    decoder = make_shared<happyml::RawDecoder>(metadata->is_normalized,
-                                                               metadata->is_standardized,
-                                                               metadata->min_value,
-                                                               metadata->max_value,
-                                                               metadata->mean,
-                                                               metadata->standard_deviation);
-                } else {
-                    decoder = make_shared<happyml::RawDecoder>();
-                }
-            }
-            return decoder;
-        }
 
     private:
         string dataset_name_;

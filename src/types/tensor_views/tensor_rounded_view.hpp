@@ -16,11 +16,11 @@ namespace happyml {
 
         void printMaterializationPlan() override {
             cout << "TensorRoundedView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
-            child->printMaterializationPlan();
+            child_->printMaterializationPlan();
         }
 
         float getValue(size_t row, size_t column, size_t channel) override {
-            const float val = child->getValue(row, column, channel);
+            const float val = child_->getValue(row, column, channel);
             return round(val);
         }
 

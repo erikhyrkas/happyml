@@ -20,8 +20,8 @@ int main() {
 
         cout << "Test with reluActivation" << endl;
         auto neuralNetwork = neuralNetworkBuilder()
-                ->addInput(xorDataSource->getGivenShape(), 5, NodeType::full, ActivationType::relu)->setBits(8)
-                ->addOutput(xorDataSource->getExpectedShape(), ActivationType::tanhDefault)
+                ->addInputLayer(xorDataSource->getGivenShape(), 5, LayerType::full, ActivationType::relu)->setBits(8)
+                ->addOutputLayer(xorDataSource->getExpectedShape(), ActivationType::tanhDefault)
                 ->build();
         float loss = neuralNetwork->train(xorDataSource);
 

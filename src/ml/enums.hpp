@@ -24,8 +24,8 @@ namespace happyml {
         binaryCrossEntropy,
     };
 
-    enum NodeType {
-        full, convolution2dValid
+    enum LayerType {
+        full, convolution2dValid, concatenate, flatten
     };
 
     // Added the word "Default" after tanh because
@@ -98,24 +98,32 @@ namespace happyml {
         throw runtime_error("Unknown Activation Type");
     }
 
-    string nodeTypeToString(NodeType nodeType) {
-        switch (nodeType) {
+    string nodeTypeToString(LayerType layerType) {
+        switch (layerType) {
             case full:
                 return "full";
             case convolution2dValid:
                 return "convolution2dValid";
+            case concatenate:
+                return "concatenate";
+            case flatten:
+                return "flatten";
         }
         throw runtime_error("Unknown Node Type");
     }
 
-    NodeType stringToNodeType(const string &nodeType) {
-        if (nodeType == "full") {
+    LayerType stringToNodeType(const string &layerType) {
+        if (layerType == "full") {
             return full;
         }
-        if (nodeType == "convolution2dValid") {
+        if (layerType == "convolution2dValid") {
             return convolution2dValid;
         }
-        throw runtime_error("Unknown Node Type");
+        if (layerType == "concatenate") {
+            return concatenate;
+        }
+        string error = "Unknown Node Type: " + layerType;
+        throw runtime_error(error);
     }
 
     string lossTypeToString(LossType lossType) {

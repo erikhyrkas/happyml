@@ -23,10 +23,10 @@ int main() {
                 ->setModelName("or_example")
                 ->setModelRepo("../repo/")
                 ->setLossFunction(LossType::binaryCrossEntropy)
-                ->addInput(orDataSource->getGivenShape(), 64, NodeType::full, ActivationType::tanhApprox)
-                ->addNode(32, NodeType::full, ActivationType::tanhApprox)
-                ->addNode(8, NodeType::full, ActivationType::tanhApprox)
-                ->addOutput(orDataSource->getExpectedShape(), ActivationType::sigmoid)
+                ->addInputLayer(orDataSource->getGivenShape(), 64, LayerType::full, ActivationType::tanhApprox)
+                ->addLayer(32, LayerType::full, ActivationType::tanhApprox)
+                ->addLayer(8, LayerType::full, ActivationType::tanhApprox)
+                ->addOutputLayer(orDataSource->getExpectedShape(), ActivationType::sigmoid)
                 ->build();
 
 //        neuralNetwork->useHighPrecisionExitStrategy();

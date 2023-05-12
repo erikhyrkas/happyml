@@ -21,13 +21,13 @@ namespace happyml {
         }
 
         float getValue(size_t row, size_t column, size_t channel) override {
-            const float val = child->getValue(row, column, channel);
+            const float val = child_->getValue(row, column, channel);
             return std::clamp(val, min_value, max_value);
         }
 
         void printMaterializationPlan() override {
             cout << "TensorClipView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
-            child->printMaterializationPlan();
+            child_->printMaterializationPlan();
         }
 
     private:

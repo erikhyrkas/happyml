@@ -28,9 +28,9 @@ int main() {
                 ->setLearningRate(0.1f)
                 ->setBiasLearningRate(0.001f)
                 ->setLossFunction(LossType::categoricalCrossEntropy)
-                ->addInput(xorDataSource->getGivenShape(), 8, NodeType::full, ActivationType::tanhDefault)
-                ->addNode(8, NodeType::full, ActivationType::tanhDefault)
-                ->addOutput(xorDataSource->getExpectedShape(), ActivationType::softmax) // softmax
+                ->addInputLayer(xorDataSource->getGivenShape(), 8, LayerType::full, ActivationType::tanhDefault)
+                ->addLayer(8, LayerType::full, ActivationType::tanhDefault)
+                ->addOutputLayer(xorDataSource->getExpectedShape(), ActivationType::softmax) // softmax
                 ->build();
 
         neuralNetwork->useHighPrecisionExitStrategy();

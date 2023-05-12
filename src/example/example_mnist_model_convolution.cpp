@@ -52,10 +52,10 @@ int main() {
         auto neuralNetwork = neuralNetworkBuilder(happyml::adam)
                 ->setModelName("mnist_conv2d_example")
                 ->setModelRepo("../repo/")
-                ->addInput(mnistDataSource->getGivenShape(), 1, 3, convolution2dValid,
-                           ActivationType::relu)->setUseBias(false)
-                ->addNode(100, full, ActivationType::relu)->setUseBias(false)
-                ->addOutput(mnistDataSource->getExpectedShape(), sigmoidApprox)
+                ->addInputLayer(mnistDataSource->getGivenShape(), 1, 3, convolution2dValid,
+                                ActivationType::relu)->setUseBias(false)
+                ->addLayer(100, full, ActivationType::relu)->setUseBias(false)
+                ->addOutputLayer(mnistDataSource->getExpectedShape(), sigmoidApprox)
                 ->build();
 
 //        neuralNetwork->useLowPrecisionExitStrategy();

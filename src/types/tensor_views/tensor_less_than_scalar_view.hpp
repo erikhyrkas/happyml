@@ -13,14 +13,14 @@ namespace happyml {
                 : BaseTensorUnaryOperatorView(tensor), scalar_(scalar) {}
 
         float getValue(size_t row, size_t column, size_t channel) override {
-            const float val = child->getValue(row, column, channel);
+            const float val = child_->getValue(row, column, channel);
             return val < scalar_ ? 1.0f : 0.0f;
         }
 
         void printMaterializationPlan() override {
             std::cout << "TensorLessThanScalarView{" << rowCount() << "," << columnCount() << "," << channelCount()
                       << "}->";
-            child->printMaterializationPlan();
+            child_->printMaterializationPlan();
         }
 
     private:

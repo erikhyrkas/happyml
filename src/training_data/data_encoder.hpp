@@ -196,20 +196,25 @@ namespace happyml {
         map<string, size_t> categoryMapping;
     };
 
-    class TextToEmbeddedTokensEncoder : public DataEncoder {
+    class TextEncoder : public DataEncoder {
     public:
-        explicit TextToEmbeddedTokensEncoder(shared_ptr<BytePairEncoderModel> bytePairEncoderModel,
-                                             shared_ptr<Embedder> embedder) :
-                bytePairEncoderModel_(std::move(bytePairEncoderModel)),
-                embedder_(std::move(embedder)) {}
+        explicit TextEncoder(shared_ptr <BytePairEncoderModel> bytePairEncoderModel) :
+                bytePairEncoderModel_(std::move(bytePairEncoderModel)) {
 
-        shared_ptr<BaseTensor> encode(const vector<string> &columnsOfText,
-                                      size_t rows, size_t columns, size_t channels, bool trim) override {
-            // I considered just doing character-level encoding using one_hot_encode_characters(), but
-            // it would take a huge amount of memory and not produce good results. It's better to stop
-            // the caller now and let them fix their code.
-            if (bytePairEncoderModel_ == nullptr || embedder_ == nullptr) {
-                throw runtime_error("BytePairEncoderModel and Embedder must be set.");
+        }
+
+        // TODO: This isn't right. I don't think the output dimensions and shape are correct.
+        //  While this code will use bpe to make tokens and then one-hot encode them, the
+        //  output shape would not be predictable.
+        //  Also, part of me wonders if I should only use BPE on the tokens, but not one-hot encode
+        //  at this point. By one-hot encoding here, the training set files will be huge.
+        shared_ptr <BaseTensor> encode(const vector<string> &columnsOfText,
+                                       size_t rows, size_t columns, size_t channels, bool trim) override {
+            if (bytePairEncoderModel_ == nullptr) {
+                // I considered just doing character-level encoding using one_hot_encode_characters(), but
+                // it would take a huge amount of memory and not produce good results. It's better to stop
+                // the caller now and let them fix their code.
+                throw runtime_error("BytePairEncoderModel must be set.");
             }
             size_t largest_bpe_code = bytePairEncoderModel_->getLargestCode();
 
@@ -224,11 +229,14 @@ namespace happyml {
 
             size_t channel_offset = 0;
             for (const auto &columnOfText: columnsOfText) {
+                // TODO: I think this needs a fixed dimension where we cut off data that is too long and
+                //  pad data that is too short.
                 vector<string> tokens = trim ? string_to_tokens(strip(columnOfText)) : string_to_tokens(columnOfText);
                 vector<u16string> bpe_encoded_tokens = bytePairEncoderModel_->encode(tokens);
+                // TODO: I don't know that one-hot encoding is the right thing to do here. The result will be huge
+                //  and this code is used for saving the training set to disk.
                 auto one_hot_encoded = one_hot_encode_bpe_tokens(bpe_encoded_tokens, largest_bpe_code);
-                auto embedded_tokens = embedder_->embed_tokens(one_hot_encoded);
-                result[channel_offset] = embedded_tokens;
+                result[channel_offset] = one_hot_encoded;
                 channel_offset++;
                 if (channel_offset >= channels) {
                     break;
@@ -239,13 +247,11 @@ namespace happyml {
         }
 
         vector<size_t> calculate_output_shape(size_t rows, size_t columns, size_t channels) override {
-            auto embedded_shape = embedder_->calculate_result_shape();
-            return {embedded_shape[0], embedded_shape[1], channels};
+            throw runtime_error("TODO: Not implemented.");
         }
 
     private:
-        shared_ptr<BytePairEncoderModel> bytePairEncoderModel_;
-        shared_ptr<Embedder> embedder_;
+        shared_ptr <BytePairEncoderModel> bytePairEncoderModel_;
     };
 
 }

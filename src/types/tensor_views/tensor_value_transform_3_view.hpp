@@ -25,11 +25,11 @@ namespace happyml {
         void printMaterializationPlan() override {
             cout << "TensorValueTransform3View{" << rowCount() << "," << columnCount() << "," << channelCount()
                  << "}->";
-            child->printMaterializationPlan();
+            child_->printMaterializationPlan();
         }
 
         float getValue(size_t row, size_t column, size_t channel) override {
-            return transformFunction(child->getValue(row, column, channel), constant_);
+            return transformFunction(child_->getValue(row, column, channel), constant_);
         }
 
     private:

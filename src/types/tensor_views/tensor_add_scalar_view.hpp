@@ -20,11 +20,11 @@ namespace happyml {
 
         void printMaterializationPlan() override {
             cout << "TensorAddScalarView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
-            child->printMaterializationPlan();
+            child_->printMaterializationPlan();
         }
 
         float getValue(size_t row, size_t column, size_t channel) override {
-            return child->getValue(row, column, channel) + adjustment;
+            return child_->getValue(row, column, channel) + adjustment;
         }
 
         [[nodiscard]] float get_adjustment() const {

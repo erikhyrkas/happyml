@@ -1,3 +1,6 @@
+#
+# Setup Notes:
+#
 # I used the train.csv file from https://www.kaggle.com/datasets/hesh97/titanicdataset-traincsv
 #
 # I stored the raw csv in the data/titanic directory. See below.
@@ -18,15 +21,18 @@
 #      - titanic          <- the destination for the task we'll make, which will include the model we train
 #    - scripts
 #      - titanic.happyml  <- this script
-
-# Here's the header of the train.csv file:
+#
+# Here's the header of the train.csv file, along with the column offsets:
 # PassengerId,Survived,Pclass,Name,Sex,Age,SibSp,Parch,Ticket,Fare,Cabin,Embarked
 #           0,       1,     2,   3,  4,  5,    6,    7,     8,   9,   10,      11
-
+#
 # Valid Date Types can be: image, label, number, text
-
+#
 # One-liner if you wanted to run interactively:
+#
 # create dataset titanic with header with expected label at 1 with given label at 2 with given label at 4 with given number at 5 with given number at 6 with given number at 7 with given number at 9 with given label at 11 using file://../data/titanic/train.csv
+#
+# titanic.happyml :
 
 create dataset titanic
        with header
@@ -41,7 +47,7 @@ create dataset titanic
        using file://../data/titanic/train.csv
 
 
-print raw titanic limit 1
-print pretty titanic limit 1
+print raw titanic limit 5
+print pretty titanic limit 5
 
 

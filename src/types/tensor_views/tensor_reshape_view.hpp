@@ -39,7 +39,7 @@ namespace happyml {
 
         void printMaterializationPlan() override {
             cout << "TensorReshapeView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
-            child->printMaterializationPlan();
+            child_->printMaterializationPlan();
         }
 
         size_t rowCount() override {
@@ -52,7 +52,7 @@ namespace happyml {
 
         float getValue(size_t row, size_t column, size_t channel) override {
             const unsigned long position_offset = ((row * columns) + column) + (channel * elements_per_channel);
-            return child->getValue(position_offset);
+            return child_->getValue(position_offset);
         }
 
 

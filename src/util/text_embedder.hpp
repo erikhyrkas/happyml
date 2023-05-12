@@ -14,6 +14,9 @@ using namespace std;
 
 namespace happyml {
 
+    // TODO: While fun, I don't know how much value this will be. It demonstrates that the embedder is
+    //  compatible with the BytePairEncoderModel, but it's not clear that this is a useful function.
+    //  But I don't think I'd ever call this directly. I'd probably call text_to_tensor_bpe() instead.
     vector<vector<float>> text_to_tensor_bpe_rotary(const string &text,
                                                     const shared_ptr<BytePairEncoderModel> &bpe_encoder,
                                                     const shared_ptr<RotaryPositionalEmbedder> &embedder) {

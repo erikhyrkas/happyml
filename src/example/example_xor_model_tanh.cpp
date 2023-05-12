@@ -23,8 +23,8 @@ int main() {
                 ->setModelName("xor_example")
                 ->setModelRepo("../repo/")
                 ->setLossFunction(LossType::mse)
-                ->addInput(xorDataSource->getGivenShape(), 3, NodeType::full, ActivationType::tanhApprox)
-                ->addOutput(xorDataSource->getExpectedShape(), ActivationType::tanhApprox)
+                ->addInputLayer(xorDataSource->getGivenShape(), 3, LayerType::full, ActivationType::tanhApprox)
+                ->addOutputLayer(xorDataSource->getExpectedShape(), ActivationType::tanhApprox)
                 ->build();
         // For 32-bit: Results are good enough at 500 epochs, gets better with more epochs.
         // For 16-bit: 500 epochs seems good enough

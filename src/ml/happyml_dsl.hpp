@@ -8,6 +8,7 @@
 
 #include <iostream>
 #include <chrono>
+#include <utility>
 #include "enums.hpp"
 #include "optimizer_factory.hpp"
 #include "neural_network_node.hpp"
@@ -23,6 +24,7 @@
 #include "layers/activation_layer.hpp"
 #include "layers/flatten_layer.hpp"
 #include "layers/convolution_2d_valid_layer.hpp"
+#include "layers/concatenate_wide_layer.hpp"
 #include "layers/fully_connected_layer.hpp"
 #include "layers/bias_layer.hpp"
 
@@ -114,7 +116,7 @@ namespace happyml {
             // "edge", from id, to id, to id, to id...
 
             for (const auto &head: inputReceptors) {
-                neuralNetwork->addHeadNode(head->buildNode(neuralNetwork, networkMetadata));
+                neuralNetwork->addHeadNode(head->buildLayer(neuralNetwork, networkMetadata));
             }
 
             neuralNetwork->setNetworkMetadata(networkMetadata);
@@ -134,13 +136,13 @@ namespace happyml {
         class NNVertex : public enable_shared_from_this<NNVertex> {
         public:
             // used for non-convolutional layers
-            NNVertex(const weak_ptr<HappymlDSL> &parent, NodeType nodeType, const vector<size_t> &input_shape,
-                     const vector<size_t> &output_shape, bool for_output, bool givenInput,
-                     ActivationType activation_type, uint32_t vertexUniqueId) {
+            explicit NNVertex(const weak_ptr<HappymlDSL> &parent, LayerType layerType, const vector<size_t> &input_shape,
+                              const vector<size_t> &output_shape, bool for_output, bool givenInput,
+                              ActivationType activation_type, uint32_t vertexUniqueId) {
                 this->parent = parent;
-                this->node_type = nodeType;
+                this->node_type = layerType;
                 this->activation_type = activation_type;
-                this->inputShape = input_shape;
+                this->inputShapes = {input_shape};
                 this->outputShape = output_shape;
                 this->bits = 32;
                 this->use_bias = true;
@@ -154,13 +156,13 @@ namespace happyml {
             }
 
             // used for convolutional layers
-            NNVertex(const weak_ptr<HappymlDSL> &parent, NodeType nodeType, const vector<size_t> &input_shape,
-                     const size_t filters, const size_t kernel_size, bool for_output, bool acceptsInput,
-                     ActivationType activation_type, uint32_t vertexUniqueId) {
+            explicit NNVertex(const weak_ptr<HappymlDSL> &parent, LayerType layerType, const vector<size_t> &input_shape,
+                              const size_t filters, const size_t kernel_size, bool for_output, bool acceptsInput,
+                              ActivationType activation_type, uint32_t vertexUniqueId) {
                 this->parent = parent;
-                this->node_type = nodeType;
+                this->node_type = layerType;
                 this->activation_type = activation_type;
-                this->inputShape = input_shape;
+                this->inputShapes = {input_shape};
                 this->outputShape = {input_shape[0] - kernel_size + 1, input_shape[1] - kernel_size + 1, filters};
                 this->bits = 32;
                 this->use_bias = true;
@@ -171,6 +173,25 @@ namespace happyml {
                 this->producesOutput = for_output;
                 this->vertexUniqueId = vertexUniqueId;
                 this->acceptsInput = acceptsInput;
+            }
+
+            // used for concatenate layers
+            explicit NNVertex(const weak_ptr<HappymlDSL> &parent, LayerType layerType, const vector<vector<size_t>> &input_shapes,
+                              const vector<size_t> &output_shape, uint32_t vertexUniqueId) {
+                this->parent = parent;
+                this->node_type = layerType;
+                this->activation_type = ActivationType::linear;
+                this->inputShapes = input_shapes;
+                this->outputShape = output_shape;
+                this->bits = 32;
+                this->use_bias = false;
+                this->materialized = false;
+                this->first_node = nullptr;
+                this->producesOutput = false;
+                this->kernel_size = 0;
+                this->filters = 0;
+                this->vertexUniqueId = vertexUniqueId;
+                this->acceptsInput = false;
             }
 
             shared_ptr<NNVertex> setUseBias(bool b) {
@@ -195,22 +216,22 @@ namespace happyml {
             };
 
             shared_ptr<NNVertex> addOutput(const size_t nodeOutputShape, ActivationType activationType) {
-                return addNode(this->outputShape, {1, nodeOutputShape, 1}, NodeType::full, true, activationType);
+                return addLayer(this->outputShape, {1, nodeOutputShape, 1}, LayerType::full, true, activationType);
             }
 
-            shared_ptr<NNVertex> addOutput(const vector<size_t> &nodeOutputShape, ActivationType activationType) {
-                return addNode(this->outputShape, nodeOutputShape, NodeType::full, true, activationType);
+            shared_ptr<NNVertex> addOutputLayer(const vector<size_t> &nodeOutputShape, ActivationType activationType) {
+                return addLayer(this->outputShape, nodeOutputShape, LayerType::full, true, activationType);
             }
 
             shared_ptr<NNVertex> addOutput(const vector<size_t> &nodeOutputShape, const size_t outputKernelSize,
-                                           NodeType nodeType, ActivationType activationType) {
+                                           LayerType layerType, ActivationType activationType) {
                 // todo: support other types of convolution nodes here
-                if (nodeType != NodeType::convolution2dValid) {
+                if (layerType != LayerType::convolution2dValid) {
                     throw runtime_error("Only convolutional nodes have a kernel size.");
                 }
-                auto result = addNode(nodeOutputShape[2], outputKernelSize,
-                                      nodeType, true,
-                                      activationType);
+                auto result = addLayer(nodeOutputShape[2], outputKernelSize,
+                                       layerType, true,
+                                       activationType);
                 if (result->outputShape[0] != nodeOutputShape[0] ||
                     result->outputShape[1] != nodeOutputShape[1] ||
                     result->outputShape[2] != nodeOutputShape[2]) {
@@ -226,48 +247,49 @@ namespace happyml {
                 return result;
             }
 
-            shared_ptr<NNVertex> addNode(const size_t nodeOutputShape,
-                                         NodeType nodeType, ActivationType activationType) {
-                return addNode({1, nodeOutputShape, 1}, nodeType, activationType);
+            shared_ptr<NNVertex> addLayer(const size_t nodeOutputShape,
+                                          LayerType layerType, ActivationType activationType) {
+                return addLayer({1, nodeOutputShape, 1}, layerType, activationType);
             }
 
-            shared_ptr<NNVertex> addNode(const vector<size_t> &nodeOutputShape, NodeType nodeType,
-                                         ActivationType activationType) {
-                return addNode(this->outputShape, nodeOutputShape,
-                               nodeType, false, activationType);
+            shared_ptr<NNVertex> addLayer(const vector<size_t> &nodeOutputShape, LayerType layerType,
+                                          ActivationType activationType) {
+                return addLayer(this->outputShape, nodeOutputShape,
+                                layerType, false, activationType);
             }
 
-            shared_ptr<NNVertex> addNode(const size_t next_filters, const size_t next_kernel_size, NodeType nodeType,
-                                         ActivationType activationType) {
-                return addNode(next_filters, next_kernel_size, nodeType, false, activationType);
+            shared_ptr<NNVertex> addLayer(const size_t next_filters, const size_t next_kernel_size, LayerType layerType,
+                                          ActivationType activationType) {
+                return addLayer(next_filters, next_kernel_size, layerType, false, activationType);
             }
 
-            shared_ptr<NNVertex> addNode(const size_t next_filters, const size_t next_kernel_size,
-                                         NodeType nodeType, bool next_for_output, ActivationType activationType) {
+            shared_ptr<NNVertex> addLayer(const size_t next_filters, const size_t next_kernel_size,
+                                          LayerType layerType, bool next_for_output, ActivationType activationType) {
                 auto parentObject = parent.lock();
-                auto nnv = make_shared<NNVertex>(parentObject, nodeType, this->outputShape,
+                auto nnv = make_shared<NNVertex>(parentObject, layerType, this->outputShape,
                                                  next_filters, next_kernel_size,
                                                  next_for_output, false,
                                                  activationType, parentObject->nextVertexId());
-                auto nne = make_shared<NNEdge>();
-                nne->from = shared_from_this();
-                nne->to = nnv;
-                edges.push_back(nne);
+                addEdge(nnv);
                 return nnv;
             }
 
-            shared_ptr<NNVertex> addNode(const vector<size_t> &nodeInputShape,
-                                         const vector<size_t> &nodeOutputShape, NodeType nodeType,
-                                         bool next_for_output, ActivationType activationType) {
+            shared_ptr<NNVertex> addLayer(const vector<size_t> &nodeInputShape,
+                                          const vector<size_t> &nodeOutputShape, LayerType layerType,
+                                          bool next_for_output, ActivationType activationType) {
                 auto parentObject = parent.lock();
-                auto nnv = make_shared<NNVertex>(parentObject, nodeType, nodeInputShape, nodeOutputShape,
+                auto nnv = make_shared<NNVertex>(parentObject, layerType, nodeInputShape, nodeOutputShape,
                                                  next_for_output, false,
                                                  activationType, parentObject->nextVertexId());
+                addEdge(nnv);
+                return nnv;
+            }
+
+            void addEdge(const shared_ptr<NNVertex> &to) {
                 auto nne = make_shared<NNEdge>();
                 nne->from = shared_from_this();
-                nne->to = nnv;
+                nne->to = to;
                 edges.push_back(nne);
-                return nnv;
             }
 
             void reset() {
@@ -278,49 +300,70 @@ namespace happyml {
                 return parent.lock()->build();
             }
 
-            shared_ptr<NeuralNetworkNode> buildNode(const shared_ptr<NeuralNetworkForTraining> &nn,
-                                                    vector<vector<string>> &networkMetadata) {
+            shared_ptr<NeuralNetworkNode> buildLayer(const shared_ptr<NeuralNetworkForTraining> &nn,
+                                                     vector<vector<string>> &networkMetadata) {
                 if (first_node) {
                     // this node has already been built, don't infinitely recurse.
                     return first_node;
                 }
-                networkMetadata.push_back({"vertex",
-                                           asString(getVertexUniqueId()),
-                                           asString(doesAcceptInput()),
-                                           asString(isForOutput()),
-                                           nodeTypeToString(getNodeType()),
-                                           activationTypeToString(getActivationType()),
-                                           asString(isMaterialized()),
-                                           asString(isUseBias()),
-                                           asString(getBits()),
-                                           asString(inputShape[0]),
-                                           asString(inputShape[1]),
-                                           asString(inputShape[2]),
-                                           asString(outputShape[0]),
-                                           asString(outputShape[1]),
-                                           asString(outputShape[2]),
-                                           asString(getFilters()),
-                                           asString(getKernelSize())
-                                          });
+                vector<string> metadata_row;
+                metadata_row.emplace_back("vertex");
+                metadata_row.push_back(asString(getVertexUniqueId()));
+                metadata_row.push_back(asString(doesAcceptInput()));
+                metadata_row.push_back(asString(isForOutput()));
+                metadata_row.push_back(nodeTypeToString(getNodeType()));
+                metadata_row.push_back(activationTypeToString(getActivationType()));
+                metadata_row.push_back(asString(isMaterialized()));
+                metadata_row.push_back(asString(isUseBias()));
+                metadata_row.push_back(asString(getBits()));
+                metadata_row.push_back(asString(inputShapes.size()));
+                for (auto &inputShape: inputShapes) {
+                    metadata_row.push_back(asString(inputShape[0]));
+                    metadata_row.push_back(asString(inputShape[1]));
+                    metadata_row.push_back(asString(inputShape[2]));
+                }
+                metadata_row.push_back(asString(outputShape[0]));
+                metadata_row.push_back(asString(outputShape[1]));
+                metadata_row.push_back(asString(outputShape[2]));
+                metadata_row.push_back(asString(getFilters()));
+                metadata_row.push_back(asString(getKernelSize()));
+                networkMetadata.push_back(metadata_row);
                 shared_ptr<BaseOptimizer> optimizer = nn->getOptimizer();
                 shared_ptr<NeuralNetworkNode> next_node;
                 shared_ptr<NeuralNetworkNode> last_node = nullptr;
-                if (node_type == NodeType::full) {
+                if (node_type == LayerType::full) {
+                    auto inputShape = inputShapes[0];
                     if (inputShape[0] > 1) {
                         auto flatten_node = make_shared<NeuralNetworkNode>(make_shared<FlattenLayer>());
                         last_node = appendNode(last_node, flatten_node);
                     }
                     string fullNodeLabel = asString(vertexUniqueId) + "_full";
-                    const shared_ptr<FullyConnectedNeurons> &fcn = make_shared<FullyConnectedNeurons>(fullNodeLabel,
-                                                                                                      inputShape[0] *
-                                                                                                      inputShape[1] *
-                                                                                                      inputShape[2],
-                                                                                                      outputShape[0] *
-                                                                                                      outputShape[1] *
-                                                                                                      outputShape[2],
-                                                                                                      bits, optimizer);
+                    const shared_ptr<FullyConnectedLayer> &fcn = make_shared<FullyConnectedLayer>(fullNodeLabel,
+                                                                                                  inputShape[0] *
+                                                                                                  inputShape[1] *
+                                                                                                  inputShape[2],
+                                                                                                  outputShape[0] *
+                                                                                                  outputShape[1] *
+                                                                                                  outputShape[2],
+                                                                                                  bits, optimizer);
                     next_node = make_shared<NeuralNetworkNode>(fcn);
-                } else if (node_type == NodeType::convolution2dValid) {
+                } else if (node_type == LayerType::concatenate) {
+                    // TODO: we could probably have a strategy for handling different input shapes.
+                    //  Strategy 1: pad the smaller inputs to match the largest input. (Most memory efficient if there is convolution.)
+                    //  Strategy 2: find the least common multiple (LCM) of the input shapes and repeat the inputs to match. (Best quality if there is convolution.)
+                    //  Strategy 3: flatten all inputs to 1d vectors and concatenate them. (Best option if there is no convolution.)
+
+                    // NOTE: At this point in the code, I think using LCM makes the most sense.
+                    // If we had inputs to the model that were not using convolution layers, they would have been flattened by
+                    // now. If we have inputs that are using convolution layers, we should use the LCM to make sure that the
+                    // inputs will be able to be concatenated.
+                    string concatNodeLabel = asString(vertexUniqueId) + "_concat";
+                    auto concat_node = make_shared<ConcatenateWideLayer>(concatNodeLabel, inputShapes);
+                    next_node = make_shared<NeuralNetworkNode>(concat_node);
+                } else if (node_type == LayerType::flatten) {
+                    next_node = make_shared<NeuralNetworkNode>(make_shared<FlattenLayer>());
+                } else if (node_type == LayerType::convolution2dValid) {
+                    auto inputShape = inputShapes[0];
                     string c2dvLabel = asString(vertexUniqueId) + "_c2dv";
                     auto c2d = make_shared<Convolution2dValidFunction>(c2dvLabel, inputShape, filters, kernel_size,
                                                                        bits,
@@ -352,7 +395,7 @@ namespace happyml {
                 vector<string> edgeMetadata{"edge", asString(getVertexUniqueId())};
                 for (const auto &edge: edges) {
                     edgeMetadata.push_back(asString(edge->to->getVertexUniqueId()));
-                    auto childNode = edge->to->buildNode(nn, networkMetadata);
+                    auto childNode = edge->to->buildLayer(nn, networkMetadata);
                     last_node->add(childNode);
                 }
                 if (edgeMetadata.size() > 2) {
@@ -415,7 +458,7 @@ namespace happyml {
                 return producesOutput;
             }
 
-            NodeType getNodeType() {
+            LayerType getNodeType() {
                 return node_type;
             }
 
@@ -435,8 +478,8 @@ namespace happyml {
                 return bits;
             }
 
-            vector<size_t> getInputShape() {
-                return inputShape;
+            vector<vector<size_t>> getInputShapes() {
+                return inputShapes;
             }
 
             vector<size_t> getOutputShape() {
@@ -454,8 +497,8 @@ namespace happyml {
         private:
             weak_ptr<HappymlDSL> parent;
             vector<shared_ptr<NNEdge>> edges;
-            NodeType node_type;
-            vector<size_t> inputShape;
+            LayerType node_type;
+            vector<vector<size_t>> inputShapes;
             vector<size_t> outputShape;
             ActivationType activation_type;
             bool materialized;
@@ -469,25 +512,25 @@ namespace happyml {
             uint32_t vertexUniqueId;
         };
 
-        shared_ptr<NNVertex> addInput(const size_t input_shape, const size_t output_shape, NodeType nodeType,
-                                      ActivationType activationType) {
-            return addInput({1, input_shape, 1}, {1, output_shape, 1}, nodeType, activationType);
+        shared_ptr<NNVertex> addInputLayer(const size_t input_shape, const size_t output_shape, LayerType layerType,
+                                           ActivationType activationType) {
+            return addInputLayer({1, input_shape, 1}, {1, output_shape, 1}, layerType, activationType);
         }
 
-        shared_ptr<NNVertex> addInput(const vector<size_t> &input_shape,
-                                      const vector<size_t> &output_shape, NodeType nodeType,
-                                      ActivationType activationType) {
-            auto nnv = make_shared<NNVertex>(shared_from_this(), nodeType, input_shape,
+        shared_ptr<NNVertex> addInputLayer(const vector<size_t> &input_shape,
+                                           const vector<size_t> &output_shape, LayerType layerType,
+                                           ActivationType activationType) {
+            auto nnv = make_shared<NNVertex>(shared_from_this(), layerType, input_shape,
                                              output_shape, false, true,
                                              activationType, nextVertexId());
             inputReceptors.push_back(nnv);
             return nnv;
         }
 
-        shared_ptr<NNVertex> addInputOutput(const vector<size_t> &input_shape,
-                                            const vector<size_t> &output_shape, NodeType nodeType,
-                                            ActivationType activationType) {
-            auto nnv = make_shared<NNVertex>(shared_from_this(), nodeType, input_shape,
+        shared_ptr<NNVertex> addInputOutputLayer(const vector<size_t> &input_shape,
+                                                 const vector<size_t> &output_shape, LayerType layerType,
+                                                 ActivationType activationType) {
+            auto nnv = make_shared<NNVertex>(shared_from_this(), layerType, input_shape,
                                              output_shape, true, true,
                                              activationType, nextVertexId());
             inputReceptors.push_back(nnv);
@@ -496,35 +539,80 @@ namespace happyml {
 
         // where kernel_size is the width and height of the convolution window being applied to the input
         // filters is the same as the depth of the output
-        shared_ptr<NNVertex> addInput(const vector<size_t> &input_shape,
-                                      const size_t filters, const size_t kernel_size,
-                                      NodeType nodeType,
-                                      ActivationType activationType) {
-            auto nnv = make_shared<NNVertex>(shared_from_this(), nodeType, input_shape,
+        shared_ptr<NNVertex> addInputLayer(const vector<size_t> &input_shape,
+                                           const size_t filters, const size_t kernel_size,
+                                           LayerType layerType,
+                                           ActivationType activationType) {
+            auto nnv = make_shared<NNVertex>(shared_from_this(), layerType, input_shape,
                                              filters, kernel_size, false, true,
                                              activationType, nextVertexId());
             inputReceptors.push_back(nnv);
             return nnv;
         }
 
-        shared_ptr<NNVertex> addInputOutput(const vector<size_t> &input_shape,
-                                            const size_t filters, const size_t kernel_size,
-                                            NodeType nodeType, ActivationType activationType) {
-            auto nnv = make_shared<NNVertex>(shared_from_this(), nodeType, input_shape,
+        shared_ptr<NNVertex> addInputOutputLayer(const vector<size_t> &input_shape,
+                                                 const size_t filters, const size_t kernel_size,
+                                                 LayerType layerType, ActivationType activationType) {
+            auto nnv = make_shared<NNVertex>(shared_from_this(), layerType, input_shape,
                                              filters, kernel_size, true, true,
                                              activationType, nextVertexId());
             inputReceptors.push_back(nnv);
             return nnv;
         }
 
-        shared_ptr<NNVertex> addInput(const size_t input_shape, const vector<size_t> &output_shape, NodeType nodeType,
-                                      ActivationType activationType) {
-            return addInput({1, input_shape, 1}, output_shape, nodeType, activationType);
+        shared_ptr<NNVertex> addInputLayer(const size_t input_shape, const vector<size_t> &output_shape, LayerType layerType,
+                                           ActivationType activationType) {
+            return addInputLayer({1, input_shape, 1}, output_shape, layerType, activationType);
         }
 
-        shared_ptr<NNVertex> addInput(const vector<size_t> &input_shape, const size_t output_shape, NodeType nodeType,
-                                      ActivationType activationType) {
-            return addInput(input_shape, {1, output_shape, 1}, nodeType, activationType);
+        shared_ptr<NNVertex> addInputLayer(const vector<size_t> &input_shape, const size_t output_shape, LayerType layerType,
+                                           ActivationType activationType) {
+            return addInputLayer(input_shape, {1, output_shape, 1}, layerType, activationType);
+        }
+
+
+        // TODO: all input today immediately feed into a layer of specified type. This worked great for very linear
+        //  models that went from input->layer->layer->output. However, with multiple inputs, this feels a little
+        //  weird. "Wait, so I have 3 inputs and you jammed them together into a dense layer?"
+        //  I'm returning the concatenated layer below rather than making a full layer, but now it is inconsistent
+        //  with the other add_layer methods.
+
+        // flattens the input, concatenates them, and sends them to
+        // a full layer which produces a single output of the specified shape
+        shared_ptr<NNVertex> add_concatenated_input_layer(const vector<vector<size_t>> &input_shapes) {
+            if (input_shapes.size() < 2) {
+                throw runtime_error("add_concatenated_input_layer requires multiple inputs");
+            }
+
+            vector<shared_ptr<NNVertex>> new_input_receptors;
+            new_input_receptors.reserve(input_shapes.size());
+            size_t total_input_width = 0;
+            for (auto &input_shape: input_shapes) {
+                size_t width = input_shape[0] * input_shape[1] * input_shape[2];
+                total_input_width += width;
+                shared_ptr<NNVertex> next_input = addInputLayer(input_shape, width, LayerType::flatten, ActivationType::linear);
+                new_input_receptors.push_back(next_input);
+            }
+            return add_concatenated_layer(new_input_receptors);
+        }
+
+        shared_ptr<NNVertex> add_concatenated_layer(vector<shared_ptr<NNVertex>> previous_layers) {
+            size_t total_input_width = 0;
+            vector<vector<size_t>> input_shapes;
+            for (auto &layer: previous_layers) {
+                total_input_width += layer->getOutputShape()[1];
+                input_shapes.push_back(layer->getOutputShape());
+            }
+            vector<size_t> concat_shape_vector = {1, total_input_width, 1};
+            auto concatenator = make_shared<NNVertex>(shared_from_this(),
+                                                      LayerType::concatenate, input_shapes,
+                                                      concat_shape_vector, nextVertexId());
+            // connect the input receptors to the concatenator:
+            for (auto &inputReceptor: previous_layers) {
+                inputReceptor->addEdge(concatenator);
+            }
+            // add the dense layer (we only support one layer type right now) that the user asked for:
+            return concatenator;
         }
 
     private:
@@ -569,35 +657,47 @@ namespace happyml {
         }
         const auto acceptsInput = asBool(vertexMetadata[2]);
         const bool producesOutput = asBool(vertexMetadata[3]);
-        const NodeType nodeType = stringToNodeType(vertexMetadata[4]);
+        const LayerType layerType = stringToNodeType(vertexMetadata[4]);
         const ActivationType activationType = stringToActivationType(vertexMetadata[5]);
         const bool isMaterialized = asBool(vertexMetadata[6]);
         const bool useBias = asBool(vertexMetadata[7]);
         const uint8_t bits = stoul(vertexMetadata[8]);
-        const vector<size_t> inputShape = {stoull(vertexMetadata[9]),
-                                           stoull(vertexMetadata[10]),
-                                           stoull(vertexMetadata[11])};
-        const vector<size_t> outputShape = {stoull(vertexMetadata[12]),
-                                            stoull(vertexMetadata[13]),
-                                            stoull(vertexMetadata[14])};
-        size_t filters = stoull(vertexMetadata[15]);
-        size_t kernels = stoull(vertexMetadata[16]);
+        const size_t number_of_inputs = stoull(vertexMetadata[9]);
+        size_t current_metadata_offset = 10;
+        vector<vector<size_t>> inputShapes;
+        for (size_t i = 0; i < number_of_inputs; ++i) {
+            const vector<size_t> inputShape = {stoull(vertexMetadata[current_metadata_offset]),
+                                               stoull(vertexMetadata[current_metadata_offset + 1]),
+                                               stoull(vertexMetadata[current_metadata_offset + 2])};
+            inputShapes.push_back(inputShape);
+            current_metadata_offset += 3;
+        }
+        const vector<size_t> outputShape = {stoull(vertexMetadata[current_metadata_offset]),
+                                            stoull(vertexMetadata[current_metadata_offset + 1]),
+                                            stoull(vertexMetadata[current_metadata_offset + 2])};
+        current_metadata_offset += 3;
+        size_t filters = stoull(vertexMetadata[current_metadata_offset]);
+        current_metadata_offset++;
+        size_t kernels = stoull(vertexMetadata[current_metadata_offset]);
         if (acceptsInput) {
+            if (inputShapes.size() > 1) {
+                throw runtime_error("An input layer can't have multiple inputs.");
+            }
             if (producesOutput) {
                 if (filters > 0) {
-                    createdVertexes[vertexId] = dsl->addInputOutput(inputShape, filters, kernels, nodeType,
-                                                                    activationType);
+                    createdVertexes[vertexId] = dsl->addInputOutputLayer(inputShapes[0], filters, kernels, layerType,
+                                                                         activationType);
                 } else {
-                    createdVertexes[vertexId] = dsl->addInputOutput(inputShape, outputShape, nodeType,
-                                                                    activationType);
+                    createdVertexes[vertexId] = dsl->addInputOutputLayer(inputShapes[0], outputShape, layerType,
+                                                                         activationType);
                 }
             } else {
                 if (filters > 0) {
-                    createdVertexes[vertexId] = dsl->addInput(inputShape, filters, kernels, nodeType,
-                                                              activationType);
+                    createdVertexes[vertexId] = dsl->addInputLayer(inputShapes[0], filters, kernels, layerType,
+                                                                   activationType);
                 } else {
-                    createdVertexes[vertexId] = dsl->addInput(inputShape, outputShape, nodeType,
-                                                              activationType);
+                    createdVertexes[vertexId] = dsl->addInputLayer(inputShapes[0], outputShape, layerType,
+                                                                   activationType);
                 }
             }
         } else {
@@ -605,21 +705,38 @@ namespace happyml {
                 throw runtime_error("missing parent");
             }
 
-            if (filters > 0) {
-                createdVertexes[vertexId] = parent->addNode(filters,
-                                                            kernels,
-                                                            nodeType,
-                                                            producesOutput,
-                                                            activationType);
+            if (layerType == concatenate) {
+                // a concatenated layer has multiple parents.
+
+                // because layers are in the order they were originally created and the concatenation
+                // layer is last, if we are at this point, all parents should exist, we just need to find them
+                // I think the parent order should also be maintained
+                vector<shared_ptr<HappymlDSL::NNVertex>> all_parents;
+                for (auto edge_pair: edgeFromTo) {
+                    auto edge_to_ids = edge_pair.second;
+                    // if edge_to_ids contains vertexId, then we need to add the parent to the concatenated layer
+                    if (std::find(edge_to_ids.begin(), edge_to_ids.end(), vertexId) != edge_to_ids.end()) {
+                        auto edge_from_id = edge_pair.first;
+                        auto edge_from_vertex = createdVertexes[edge_from_id];
+                        all_parents.push_back(edge_from_vertex);
+                    }
+                }
+                dsl->add_concatenated_layer(all_parents);
+            } else if (filters > 0) {
+                createdVertexes[vertexId] = parent->addLayer(filters,
+                                                             kernels,
+                                                             layerType,
+                                                             producesOutput,
+                                                             activationType);
             } else {
-                if (nodeType != full) {
+                if (layerType != full) {
                     throw runtime_error("output node type wasn't full");
                 }
-                createdVertexes[vertexId] = parent->addNode(inputShape,
-                                                            outputShape,
-                                                            nodeType,
-                                                            producesOutput,
-                                                            activationType);
+                createdVertexes[vertexId] = parent->addLayer(inputShapes[0],
+                                                             outputShape,
+                                                             layerType,
+                                                             producesOutput,
+                                                             activationType);
             }
         }
         createdVertexes[vertexId]->setMaterialized(isMaterialized);

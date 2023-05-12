@@ -33,6 +33,10 @@ namespace happyml {
             return predict(givenInputs)[0];
         }
 
+        shared_ptr<BaseTensor> predictOne(const vector<shared_ptr<BaseTensor>> &givenInputs) {
+            return predict(givenInputs)[0];
+        }
+
         vector<shared_ptr<BaseTensor>> predict(const shared_ptr<BaseTensor> &givenInputs) {
             return predict(vector<shared_ptr<BaseTensor>>{givenInputs});
         }

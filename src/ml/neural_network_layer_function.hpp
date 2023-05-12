@@ -25,7 +25,7 @@ namespace happyml {
     public:
         virtual shared_ptr<BaseTensor> forward(const vector<shared_ptr<BaseTensor>> &input, bool forTraining) = 0;
 
-        virtual shared_ptr<BaseTensor> backward(const shared_ptr<BaseTensor> &output_error) = 0;
+        virtual vector<shared_ptr<BaseTensor>> backward(const shared_ptr<BaseTensor> &output_error) = 0;
 
         virtual void saveKnowledge(const string &fullKnowledgePath) {
         }

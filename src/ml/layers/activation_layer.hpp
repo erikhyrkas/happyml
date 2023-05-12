@@ -27,7 +27,7 @@ namespace happyml {
             return activationFunction->activate(lastInput);
         }
 
-        shared_ptr<happyml::BaseTensor> backward(const shared_ptr<happyml::BaseTensor> &outputError) override {
+        vector<shared_ptr<BaseTensor>> backward(const shared_ptr<happyml::BaseTensor> &outputError) override {
             PROFILE_BLOCK(profileBlock);
             size_t lastInputsSize = lastInputs.size();
             if (lastInputsSize < 1) {
@@ -55,7 +55,7 @@ namespace happyml {
             // an element-wise-multiplication.
             const auto baseOutputError = make_shared<TensorElementWiseMultiplyByTensorView>(averageActivationDerivative,
                                                                                             outputError);
-            return baseOutputError;
+            return {baseOutputError};
         }
 
     private:

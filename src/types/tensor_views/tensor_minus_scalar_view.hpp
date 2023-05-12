@@ -28,14 +28,14 @@ namespace happyml {
 
         void printMaterializationPlan() override {
             cout << "TensorMinusScalarView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
-            child->printMaterializationPlan();
+            child_->printMaterializationPlan();
         }
 
         float getValue(size_t row, size_t column, size_t channel) override {
             if (inverted) {
-                return adjustment - child->getValue(row, column, channel);
+                return adjustment - child_->getValue(row, column, channel);
             } else {
-                return child->getValue(row, column, channel) - adjustment;
+                return child_->getValue(row, column, channel) - adjustment;
             }
         }
 

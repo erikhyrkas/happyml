@@ -12,6 +12,8 @@ using namespace happyml;
 
 
 void test_text_embedding() {
+    // TODO: Fun, but I don't know how much value this will be. It demonstrates that the embedder is
+    //  compatible with the BytePairEncoderModel, but it's not clear that text_to_tensor_bpe_rotary is a useful function.
     size_t model_max_tokens = 10;
     auto bpe = make_shared<BytePairEncoderModel>();
     auto rpe = make_shared<RotaryPositionalEmbedder>(model_max_tokens, bpe->getLargestCode());

@@ -98,7 +98,7 @@ namespace happyml {
         }
 
         // learning
-        shared_ptr<happyml::BaseTensor> backward(const shared_ptr<happyml::BaseTensor> &output_error) override {
+        vector<shared_ptr<BaseTensor>> backward(const shared_ptr<happyml::BaseTensor> &output_error) override {
             PROFILE_BLOCK(profileBlock);
 
             const auto adjusted_bias_error = make_shared<TensorMultiplyByScalarView>(output_error,
@@ -111,7 +111,7 @@ namespace happyml {
             current_batch_size = 0;
             // TODO: partial derivative of bias would always be 1, so we pass along original error. I'm fairly sure this is right.
             // but I notice that the quarter float doesn't handle big shifts in scale very well
-            return output_error;
+            return {output_error};
         }
 
     private:

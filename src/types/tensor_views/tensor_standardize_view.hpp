@@ -16,14 +16,14 @@ namespace happyml {
         }
 
         float getValue(size_t row, size_t column, size_t channel) override {
-            const float val = child->getValue(row, column, channel);
+            const float val = child_->getValue(row, column, channel);
             return (val - mean_) / std_dev_;
         }
 
         void printMaterializationPlan() override {
             cout << "TensorStandardizeView{" << rowCount() << "," << columnCount() << "," << channelCount()
                  << "}->";
-            child->printMaterializationPlan();
+            child_->printMaterializationPlan();
         }
 
     private:

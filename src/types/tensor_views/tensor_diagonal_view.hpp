@@ -39,7 +39,7 @@ namespace happyml {
 
         void printMaterializationPlan() override {
             cout << "TensorDiagonalView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
-            child->printMaterializationPlan();
+            child_->printMaterializationPlan();
         }
 
         size_t rowCount() override {
@@ -55,8 +55,8 @@ namespace happyml {
         }
 
         float getValue(size_t row, size_t column, size_t channel) override {
-            if (row == column && row < child->rowCount() && column < child->columnCount() && channel < child->channelCount()) {
-                return child->getValue(row, column, channel);
+            if (row == column && row < child_->rowCount() && column < child_->columnCount() && channel < child_->channelCount()) {
+                return child_->getValue(row, column, channel);
             }
             return 0.f;
         }

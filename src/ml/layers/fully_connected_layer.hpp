@@ -9,10 +9,10 @@
 #include "../neural_network_layer_function.hpp"
 
 namespace happyml {
-    class FullyConnectedNeurons : public happyml::NeuralNetworkLayerFunction {
+    class FullyConnectedLayer : public happyml::NeuralNetworkLayerFunction {
     public:
-        FullyConnectedNeurons(const string &label, size_t inputSize, size_t outputSize, uint8_t bits,
-                              const shared_ptr<happyml::BaseOptimizer> &optimizer) {
+        FullyConnectedLayer(const string &label, size_t inputSize, size_t outputSize, uint8_t bits,
+                            const shared_ptr<happyml::BaseOptimizer> &optimizer) {
             this->label = label;
             this->registration_id = optimizer->registerForWeightChanges();
             this->inputShapes = vector<vector<size_t >>{{1, inputSize, 1}};
@@ -63,7 +63,7 @@ namespace happyml {
         }
 
         // learning
-        shared_ptr<happyml::BaseTensor> backward(const shared_ptr<happyml::BaseTensor> &output_error) override {
+        vector<shared_ptr<BaseTensor>> backward(const shared_ptr<happyml::BaseTensor> &output_error) override {
             PROFILE_BLOCK(profileBlock);
             size_t lastInputsSize = lastInputs.size();
             if (lastInputsSize < 1) {
@@ -100,7 +100,7 @@ namespace happyml {
 
             weights = materializeTensor(adjusted_weights, bits);
 
-            return input_error;
+            return {input_error};
         }
 
     private:

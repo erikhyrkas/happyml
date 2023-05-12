@@ -620,31 +620,31 @@ namespace happyml {
     class BaseTensorUnaryOperatorView : public BaseTensor {
     public:
         explicit BaseTensorUnaryOperatorView(const shared_ptr<BaseTensor> &tensor) {
-            this->child = tensor;
+            this->child_ = tensor;
         }
 
         bool contains(const shared_ptr<BaseTensor> &other) override {
-            return other == shared_from_this() || child->contains(other);
+            return other == shared_from_this() || child_->contains(other);
         }
 
         bool readRowsInParallel() override {
-            return child->readRowsInParallel();
+            return child_->readRowsInParallel();
         }
 
         size_t rowCount() override {
-            return child->rowCount();
+            return child_->rowCount();
         }
 
         size_t columnCount() override {
-            return child->columnCount();
+            return child_->columnCount();
         }
 
         size_t channelCount() override {
-            return child->channelCount();
+            return child_->channelCount();
         }
 
     protected:
-        shared_ptr<BaseTensor> child;
+        shared_ptr<BaseTensor> child_;
     };
 
 

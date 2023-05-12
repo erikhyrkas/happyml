@@ -18,13 +18,13 @@ namespace happyml {
         }
 
         float getValue(size_t row, size_t column, size_t channel) override {
-            const float val = child->getValue(row, column, channel);
+            const float val = child_->getValue(row, column, channel);
             return std::abs(val);
         }
 
         void printMaterializationPlan() override {
             std::cout << "TensorAbsoluteView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
-            child->printMaterializationPlan();
+            child_->printMaterializationPlan();
         }
     };
 }

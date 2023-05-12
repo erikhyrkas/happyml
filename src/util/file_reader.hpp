@@ -210,6 +210,10 @@ namespace happyml {
             close();
         }
 
+        bool is_open() {
+            return binaryFile_.is_open();
+        }
+
         void close() {
             if (binaryFile_.is_open()) {
                 binaryFile_.close();

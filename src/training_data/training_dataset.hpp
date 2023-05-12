@@ -68,86 +68,64 @@ namespace happyml {
         }
     };
 
-//
-//    class PagingDataSet : public TrainingDataSet {
-//    public:
-//        PagingDataSet(const std::string& file_path, char delimiter, bool skip_header, bool trim_strings,
-//                      const shared_ptr<DataEncoder>& given_encoder, const shared_ptr<DataEncoder>& expected_encoder,
-//                      const vector<size_t>& given_shape, const vector<size_t>& expected_shape)
-//                : current_offset(0), delimiter(delimiter), skip_header(skip_header), trimStrings(trim_strings),
-//                  given_encoder(given_encoder), expected_encoder(expected_encoder),
-//                  given_shape(given_shape), expected_shape(expected_shape) {
-//            training_data_path = file_path;
-//            total_records = countRecords(file_path);
-//        }
-//
-//        size_t recordCount() override {
-//            return total_records;
-//        }
-//
-//        void restart() override {
-//            current_offset = 0;
-//        }
-//
-//        vector<shared_ptr<TrainingPair>> nextBatch(size_t batch_size) override {
-//            if (current_offset >= recordCount()) {
-//                return vector<shared_ptr<TrainingPair>>{};
-//            }
-//
-//            auto batch = loadBatch(batch_size);
-//            current_offset += batch_size;
-//            return batch;
-//        }
-//
-//    private:
-//        size_t current_offset;
-//        size_t total_records = 0;
-//        string training_data_path;
-//        char delimiter;
-//        bool skip_header;
-//        bool trimStrings;
-//
-//        shared_ptr<DataEncoder> given_encoder;
-//        shared_ptr<DataEncoder> expected_encoder;
-//        vector<size_t> given_shape;
-//        vector<size_t> expected_shape;
-//
-//        [[nodiscard]] size_t countRecords(const std::string& file_path) const {
-//            size_t record_count = 0;
-//            DelimitedTextFileReader reader(file_path, delimiter, skip_header);
-//            while (reader.hasNext()) {
-//                reader.nextRecord();
-//                record_count++;
-//            }
-//            return record_count;
-//        }
-//
-//        vector<shared_ptr<TrainingPair>> loadBatch(size_t batch_size) {
-//            vector<shared_ptr<TrainingPair>> batch;
-//            DelimitedTextFileReader reader(training_data_path, delimiter, skip_header);
-//            size_t counter = 0;
-//
-//            while (reader.hasNext() && counter < current_offset + batch_size) {
-//                auto record = reader.nextRecord();
-//                if (counter >= current_offset) {
-//                    auto middleIter(record.begin());
-//                    std::advance(middleIter, given_shape[1]);
-//                    vector<string> given_part(record.begin(), middleIter);
-//                    auto given_tensor = given_encoder->encode(given_part, given_shape[0], given_shape[1], given_shape[2],
-//                                                              trimStrings);
-//
-//                    vector<string> expected_part(middleIter, record.end());
-//                    auto expected_tensor = expected_encoder->encode(expected_part, expected_shape[0], expected_shape[1], expected_shape[2],
-//                                                                    trimStrings);
-//
-//                    batch.push_back(make_shared<TrainingPair>(given_tensor, expected_tensor));
-//                }
-//                counter++;
-//            }
-//
-//            return batch;
-//        }
-//    };
+    class BinaryDataSet : public TrainingDataSet {
+    public:
+        explicit BinaryDataSet(const std::string &file_path) : reader_(file_path) {
+            if (!reader_.is_open()) {
+                throw std::runtime_error("Could not open file: " + file_path);
+            }
+        }
+
+        size_t recordCount() override {
+            if (!reader_.is_open()) {
+                return 0;
+            }
+            return reader_.rowCount();
+        }
+
+        void restart() override {
+            current_offset_ = 0;
+        }
+
+        shared_ptr<TrainingPair> nextRecord() override {
+            if (current_offset_ >= recordCount()) {
+                return nullptr;
+            }
+            auto shuffled_offset = shuffler_ != nullptr ? shuffler_->getShuffledIndex(current_offset_) : current_offset_;
+            auto pair = reader_.readRow(shuffled_offset);
+            current_offset_++;
+            auto result = make_shared<TrainingPair>(pair.first, pair.second);
+            return result;
+        }
+
+        vector<vector<size_t>> getGivenShapes() override {
+            if (!reader_.is_open()) {
+                throw std::runtime_error("Dataset file is not open");
+            }
+            vector<vector<size_t>> result;
+            size_t given_count = reader_.get_given_column_count();
+            for (size_t i = 0; i < given_count; i++) {
+                result.push_back(reader_.getGivenTensorDims(i));
+            }
+            return result;
+        }
+
+        vector<vector<size_t>> getExpectedShapes() override {
+            if (!reader_.is_open()) {
+                throw std::runtime_error("Dataset file is not open");
+            }
+            vector<vector<size_t>> result;
+            size_t expected_count = reader_.get_expected_column_count();
+            for (size_t i = 0; i < expected_count; i++) {
+                result.push_back(reader_.getExpectedTensorDims(i));
+            }
+            return result;
+        }
+
+    private:
+        BinaryDatasetReader reader_;
+        size_t current_offset_ = 0;
+    };
 
     class InMemoryTrainingDataSet : public TrainingDataSet {
     public:

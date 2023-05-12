@@ -104,7 +104,7 @@ namespace happyml {
             return result;
         }
 
-        shared_ptr<happyml::BaseTensor> backward(const shared_ptr<happyml::BaseTensor> &outputError) override {
+        vector<shared_ptr<BaseTensor>> backward(const shared_ptr<happyml::BaseTensor> &outputError) override {
             size_t lastInputsSize = lastInputs.size();
             if (lastInputsSize < 1) {
                 throw runtime_error("FullyConnectedNeurons.backward() called without previous inputs.");
@@ -164,7 +164,7 @@ namespace happyml {
             }
 
             const auto resultError = make_shared<happyml::TensorSumChannelsView>(inputError);
-            return resultError;
+            return {resultError};
         }
 
     private:

@@ -19,13 +19,13 @@ namespace happyml {
         }
 
         float getValue(size_t row, size_t column, size_t channel) override {
-            const float val = child->getValue(row, column, channel) + epsilon;
+            const float val = child_->getValue(row, column, channel) + epsilon;
             return 1.0f / val;
         }
 
         void printMaterializationPlan() override {
             cout << "TensorElementWiseInverseView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
-            child->printMaterializationPlan();
+            child_->printMaterializationPlan();
         }
 
     private:

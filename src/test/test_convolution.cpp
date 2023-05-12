@@ -16,7 +16,7 @@ void testSimpleConv2DBias() {
     conv2dDataSource->addTrainingData(randomTensor(10, 10, 1, 0.f, 1.f), randomTensor(10, 10, 1, 0.f, 1.f));
 
     auto neuralNetwork = neuralNetworkBuilder()
-            ->addInput(conv2dDataSource->getGivenShape(), 1, 1, convolution2dValid, tanhApprox)->setUseBias(
+            ->addInputLayer(conv2dDataSource->getGivenShape(), 1, 1, convolution2dValid, tanhApprox)->setUseBias(
                     false)
             ->addOutput(conv2dDataSource->getExpectedShape(), 1, convolution2dValid, tanhApprox)
             ->build();
@@ -39,7 +39,7 @@ void testSimpleConv2DNoBias() {
     conv2dDataSource->addTrainingData(randomTensor(10, 10, 1, 0.f, 1.f), randomTensor(10, 10, 1, 0.f, 1.f));
 
     auto neuralNetwork = neuralNetworkBuilder()
-            ->addInput(conv2dDataSource->getGivenShape(), 1, 1, convolution2dValid, tanhApprox)->setUseBias(
+            ->addInputLayer(conv2dDataSource->getGivenShape(), 1, 1, convolution2dValid, tanhApprox)->setUseBias(
                     false)
             ->addOutput(conv2dDataSource->getExpectedShape(), 1, convolution2dValid, tanhApprox)->setUseBias(
                     false)
@@ -64,9 +64,9 @@ void testConv2DWithFilterNoBias() {
     conv2dDataSource->addTrainingData(randomTensor(10, 10, 1, 0.f, 1.f), randomTensor(4, 4, 1, 0.f, 1.f));
 
     auto neuralNetwork = neuralNetworkBuilder()
-            ->addInput(conv2dDataSource->getGivenShape(), 1, 3, convolution2dValid, tanhApprox)->setUseBias(
+            ->addInputLayer(conv2dDataSource->getGivenShape(), 1, 3, convolution2dValid, tanhApprox)->setUseBias(
                     false)
-            ->addNode(1, 3, convolution2dValid, tanhApprox)->setUseBias(false)
+            ->addLayer(1, 3, convolution2dValid, tanhApprox)->setUseBias(false)
             ->addOutput(conv2dDataSource->getExpectedShape(), 3, convolution2dValid, tanhApprox)->setUseBias(
                     false)
             ->build();
@@ -89,9 +89,9 @@ void testConv2DWithFilterBias() {
     conv2dDataSource->addTrainingData(randomTensor(10, 10, 1, 0.f, 1.f), randomTensor(4, 4, 1, 0.f, 1.f));
 
     auto neuralNetwork = neuralNetworkBuilder()
-            ->addInput(conv2dDataSource->getGivenShape(), 1, 3, convolution2dValid, tanhApprox)->setUseBias(
+            ->addInputLayer(conv2dDataSource->getGivenShape(), 1, 3, convolution2dValid, tanhApprox)->setUseBias(
                     false)
-            ->addNode(1, 3, convolution2dValid, tanhApprox)->setUseBias(false)
+            ->addLayer(1, 3, convolution2dValid, tanhApprox)->setUseBias(false)
             ->addOutput(conv2dDataSource->getExpectedShape(), 3, convolution2dValid, tanhApprox)
             ->build();
     float loss = neuralNetwork->train(conv2dDataSource);
@@ -113,9 +113,9 @@ void testConv2DComplexNoBias() {
     conv2dDataSource->addTrainingData(randomTensor(10, 10, 1, 0.f, 1.f), randomTensor(4, 4, 2, 0.f, 1.f));
 
     auto neuralNetwork = neuralNetworkBuilder()->setLearningRate(0.01f)
-            ->addInput(conv2dDataSource->getGivenShape(), 1, 3, convolution2dValid, relu)->setUseBias(
+            ->addInputLayer(conv2dDataSource->getGivenShape(), 1, 3, convolution2dValid, relu)->setUseBias(
                     false)
-            ->addNode(1, 3, convolution2dValid, relu)->setUseBias(false)
+            ->addLayer(1, 3, convolution2dValid, relu)->setUseBias(false)
             ->addOutput(conv2dDataSource->getExpectedShape(), 3, convolution2dValid, sigmoidApprox)->setUseBias(
                     false)
             ->build();
@@ -141,9 +141,9 @@ void testConv2DComplexBias() {
     conv2dDataSource->addTrainingData(randomTensor(10, 10, 1, 0.f, 1.f), randomTensor(4, 4, 2, 0.f, 1.f));
 
     auto neuralNetwork = neuralNetworkBuilder()
-            ->addInput(conv2dDataSource->getGivenShape(), 1, 3, convolution2dValid, relu)->setUseBias(
+            ->addInputLayer(conv2dDataSource->getGivenShape(), 1, 3, convolution2dValid, relu)->setUseBias(
                     false)
-            ->addNode(1, 3, convolution2dValid, relu)->setUseBias(false)
+            ->addLayer(1, 3, convolution2dValid, relu)->setUseBias(false)
             ->addOutput(conv2dDataSource->getExpectedShape(), 3, convolution2dValid, sigmoidApprox)
             ->build();
     float loss = neuralNetwork->train(conv2dDataSource);
@@ -166,9 +166,9 @@ void testConv2DComplexTanhBias() {
     conv2dDataSource->addTrainingData(randomTensor(10, 10, 1, 0.f, 1.f), randomTensor(4, 4, 2, 0.f, 1.f));
 
     auto neuralNetwork = neuralNetworkBuilder()->setLearningRate(0.01)
-            ->addInput(conv2dDataSource->getGivenShape(), 1, 3, convolution2dValid, tanhApprox)->setUseBias(
+            ->addInputLayer(conv2dDataSource->getGivenShape(), 1, 3, convolution2dValid, tanhApprox)->setUseBias(
                     false)
-            ->addNode(1, 3, convolution2dValid, tanhApprox)->setUseBias(false)
+            ->addLayer(1, 3, convolution2dValid, tanhApprox)->setUseBias(false)
             ->addOutput(conv2dDataSource->getExpectedShape(), 3, convolution2dValid, tanhApprox)
             ->build();
     float loss = neuralNetwork->train(conv2dDataSource);

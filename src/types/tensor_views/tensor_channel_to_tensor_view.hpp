@@ -21,7 +21,7 @@ namespace happyml {
 
         void printMaterializationPlan() override {
             cout << "TensorChannelToChannel{" << rowCount() << "," << columnCount() << ",1}->";
-            child->printMaterializationPlan();
+            child_->printMaterializationPlan();
         }
 
         size_t channelCount() override {
@@ -33,7 +33,7 @@ namespace happyml {
                 return 0.f;
             }
 
-            const float val = child->getValue(row, column, channel + channel_offset);
+            const float val = child_->getValue(row, column, channel + channel_offset);
             return val;
         }
 

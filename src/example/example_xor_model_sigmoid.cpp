@@ -21,8 +21,8 @@ int main() {
 
         cout << "Test with sigmoid" << endl;
         auto neuralNetwork = neuralNetworkBuilder(happyml::adam)
-                ->addInput(xorDataSource->getGivenShape(), 5, NodeType::full, ActivationType::tanhDefault)
-                ->addOutput(xorDataSource->getExpectedShape(), ActivationType::sigmoid)
+                ->addInputLayer(xorDataSource->getGivenShape(), 5, LayerType::full, ActivationType::tanhDefault)
+                ->addOutputLayer(xorDataSource->getExpectedShape(), ActivationType::sigmoid)
                 ->build();
 
         // good enough results if you round to 0 or 1:

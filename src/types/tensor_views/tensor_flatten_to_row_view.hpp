@@ -20,7 +20,7 @@ namespace happyml {
 
         void printMaterializationPlan() override {
             cout << "TensorFlattenToRowView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
-            child->printMaterializationPlan();
+            child_->printMaterializationPlan();
         }
 
         size_t rowCount() override {
@@ -43,7 +43,7 @@ namespace happyml {
             if (row != 0 || channel != 0) {
                 throw runtime_error("Row Vector has only a single row and channel.");
             }
-            return child->getValue(column);
+            return child_->getValue(column);
         }
 
 

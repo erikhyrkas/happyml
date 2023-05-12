@@ -75,12 +75,12 @@ namespace happyml {
         }
 
         float getValue(size_t row, size_t column, size_t channel) override {
-            return child->getValue(row, column, channel);
+            return child_->getValue(row, column, channel);
         }
 
         void printMaterializationPlan() override {
             cout << "TensorInverseView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
-            child->printMaterializationPlan();
+            child_->printMaterializationPlan();
         }
     };
 }

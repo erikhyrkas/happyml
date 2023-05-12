@@ -17,7 +17,7 @@ namespace happyml {
 
         void printMaterializationPlan() override {
             std::cout << "TensorSumChannelsView{" << rowCount() << "," << columnCount() << "," << channelCount() << "}->";
-            child->printMaterializationPlan();
+            child_->printMaterializationPlan();
         }
     };
 }
