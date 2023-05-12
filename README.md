@@ -99,7 +99,6 @@ Nice-to-haves for alpha:
   * [ ] create task
   * [ ] list tasks
   * [ ] execute tasks
-* [ ] Dense Layer normalization
 * [ ] Possibly support a decoder-only transformer model.
 
 Issues to address later:
@@ -111,6 +110,8 @@ Issues to address later:
 * I need to fix the build process for Linux and Mac on GitHub.
 
 Future:
+* Dense Layer normalization
+* Batch normalization
 * Flesh out more tasks from the happyml scripting language
   * Encoder-Decoder Transformer Model support
 * Reinforcement Learning from Human Feedback (RLHF) support

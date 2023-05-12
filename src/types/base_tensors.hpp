@@ -184,7 +184,7 @@ namespace happyml {
 
         virtual float getValue(size_t row, size_t column, size_t channel) = 0;
 
-        virtual vector<size_t> getShape() {
+        virtual vector <size_t> getShape() {
             return {rowCount(), columnCount(), channelCount()};
         }
 
@@ -285,7 +285,7 @@ namespace happyml {
             return {minResult, maxResult};
         }
 
-        vector<IndexValue> topIndices(size_t numberOfResults, size_t channel, size_t row) {
+        vector <IndexValue> topIndices(size_t numberOfResults, size_t channel, size_t row) {
             vector<IndexValue> result;
             if (numberOfResults > 0) {
                 multiset<IndexValue> sortedValues;
@@ -348,7 +348,7 @@ namespace happyml {
             return result;
         }
 
-        vector<size_t> maxIndices(size_t channel, size_t row) {
+        vector <size_t> maxIndices(size_t channel, size_t row) {
             vector<size_t> result;
             float current_max = -INFINITY;
             const size_t maxCols = columnCount();
@@ -365,7 +365,7 @@ namespace happyml {
             return result;
         }
 
-        vector<size_t> minIndices(size_t channel, size_t row) {
+        vector <size_t> minIndices(size_t channel, size_t row) {
             vector<size_t> result;
             float currentMin = INFINITY;
             const size_t maxCols = columnCount();
@@ -401,6 +401,22 @@ namespace happyml {
             }
 
             return static_cast<float>(sqrt(variance));
+        }
+
+        float variance_point(float point) {
+            double sumSquareDiff = 0;
+            size_t elements = size();
+            for (size_t index = 0; index < elements; index++) {
+                float val = getValue(index);
+                float diff = val - point;
+                sumSquareDiff += diff * diff;
+            }
+            return (float) (sumSquareDiff / (double) elements);
+        }
+
+        float variance() {
+            float mean = arithmeticMean();
+            return variance_point(mean);
         }
 
         float arithmeticMean() {
