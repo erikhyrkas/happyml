@@ -11,8 +11,8 @@
 
 namespace happyml {
     // The BinaryCrossEntropyLossFunction class implements the binary cross-entropy loss function for
-// binary classification problems. It computes the loss and its derivative with respect to the
-// model's predictions.
+    // binary classification problems. It computes the loss and its derivative with respect to the
+    // model's predictions.
     class BinaryCrossEntropyLossFunction : public LossFunction {
     public:
         // calculate_error_for_one_prediction computes the element-wise error for a single prediction
@@ -28,8 +28,8 @@ namespace happyml {
 
             auto one_minus_truth = make_shared<TensorMinusScalarView>(1.0f, truth);
 
-            auto truth_matmul_log_prediction = make_shared<TensorMatrixMultiplyTensorView>(truth, log_prediction);
-            auto one_minus_truth_matmul_log_one_minus_prediction = make_shared<TensorMatrixMultiplyTensorView>(one_minus_truth, log_one_minus_prediction);
+            auto truth_matmul_log_prediction = make_shared<TensorElementWiseMultiplyByTensorView>(truth, log_prediction);
+            auto one_minus_truth_matmul_log_one_minus_prediction = make_shared<TensorElementWiseMultiplyByTensorView>(one_minus_truth, log_one_minus_prediction);
 
             auto total_error = make_shared<TensorAddTensorView>(truth_matmul_log_prediction, one_minus_truth_matmul_log_one_minus_prediction);
             auto negative_total_error = make_shared<TensorMultiplyByScalarView>(total_error, -1.0f);
@@ -48,7 +48,7 @@ namespace happyml {
         }
 
         // calculate_batch_loss_derivative computes the derivative of the binary cross-entropy loss
-        // with respect to the predictions for a batch of examples
+// with respect to the predictions for a batch of examples
         shared_ptr<BaseTensor> calculate_batch_loss_derivative(shared_ptr<BaseTensor> &total_batch_error,
                                                                vector<shared_ptr<BaseTensor>> &truths,
                                                                vector<shared_ptr<BaseTensor>> &predictions) override {
@@ -57,19 +57,24 @@ namespace happyml {
 
             shared_ptr<BaseTensor> accumulatedLossDerivative;
             for (size_t i = 0; i < truths.size(); i++) {
-                // Derivative of binary cross-entropy = (prediction - truth) / (prediction * (1 - prediction)) / batch_size
+                // Derivative of binary cross-entropy = -(truth/prediction - (1 - truth) / (1 - prediction)) / batch_size
 
-                // prediction - truth
-                auto error_diff = make_shared<TensorSubtractTensorView>(predictions[i], truths[i]);
+                // truth / prediction
+                auto truth_div_prediction = make_shared<TensorElementWiseDivideByTensorView>(truths[i], predictions[i]);
 
+                // 1 - truth
+                auto one_minus_truth = make_shared<TensorMinusScalarView>(1.0f, truths[i]);
                 // 1 - prediction
-                auto negative_prediction = make_shared<TensorMinusScalarView>(1.0f, predictions[i]);
-                // prediction * (1 - prediction)
-                auto inverse_denominator = make_shared<TensorElementWiseMultiplyByTensorView>(predictions[i], negative_prediction);
-// (prediction - truth) / (prediction * (1 - prediction))
-                auto unscaled_derivative = make_shared<TensorMatrixDivideTensorView>(error_diff, inverse_denominator);
-// (prediction - truth) / (prediction * (1 - prediction)) / batch_size
-                auto scaled_derivative = make_shared<TensorMultiplyByScalarView>(unscaled_derivative, 1.0f / batch_size);
+                auto one_minus_prediction = make_shared<TensorMinusScalarView>(1.0f, predictions[i]);
+
+                // (1 - truth) / (1 - prediction)
+                auto one_minus_truth_div_one_minus_prediction = make_shared<TensorElementWiseDivideByTensorView>(one_minus_truth, one_minus_prediction);
+
+                // truth/prediction - (1 - truth) / (1 - prediction)
+                auto unscaled_derivative = make_shared<TensorSubtractTensorView>(truth_div_prediction, one_minus_truth_div_one_minus_prediction);
+
+                // -(truth/prediction - (1 - truth) / (1 - prediction)) / batch_size
+                auto scaled_derivative = make_shared<TensorMultiplyByScalarView>(unscaled_derivative, -1.0f / batch_size);
                 if (i == 0) {
                     accumulatedLossDerivative = scaled_derivative;
                 } else {
@@ -78,6 +83,7 @@ namespace happyml {
             }
             return accumulatedLossDerivative;
         }
+
     };
 }
 #endif //HAPPYML_BINARY_CROSS_ENTROPY_HPP

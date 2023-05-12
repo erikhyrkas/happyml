@@ -122,6 +122,9 @@ namespace happyml {
         if (layerType == "concatenate") {
             return concatenate;
         }
+        if(layerType == "flatten") {
+            return flatten;
+        }
         string error = "Unknown Node Type: " + layerType;
         throw runtime_error(error);
     }

@@ -645,16 +645,6 @@ namespace happyml {
         // "vertex", id, is input, is output, node type, activation type, materialized, uses bias, bits,
         // input rows, input columns, input channels, output rows, output columns, output channels, filters, kernels
         const uint32_t vertexId = stoul(vertexMetadata[1]);
-        if (createdVertexes.count(vertexId) > 0) {
-            // todo: need to add node combine functionality, so it is possible to concatenate,
-            //  add, multiply, etc. inputs. When we make that functionality, this code will then need to
-            //  be updated to support it. At the point I typed this, model dsl only supports a very linear
-            //  approach of one node following another node.
-
-            // might need to be something like:
-            // parent->addMergeNode(NodeType::add, otherParentNode)
-            return;
-        }
         const auto acceptsInput = asBool(vertexMetadata[2]);
         const bool producesOutput = asBool(vertexMetadata[3]);
         const LayerType layerType = stringToNodeType(vertexMetadata[4]);
@@ -711,17 +701,25 @@ namespace happyml {
                 // because layers are in the order they were originally created and the concatenation
                 // layer is last, if we are at this point, all parents should exist, we just need to find them
                 // I think the parent order should also be maintained
+                bool all_parents_exist = true;
                 vector<shared_ptr<HappymlDSL::NNVertex>> all_parents;
                 for (auto edge_pair: edgeFromTo) {
                     auto edge_to_ids = edge_pair.second;
                     // if edge_to_ids contains vertexId, then we need to add the parent to the concatenated layer
                     if (std::find(edge_to_ids.begin(), edge_to_ids.end(), vertexId) != edge_to_ids.end()) {
                         auto edge_from_id = edge_pair.first;
+                        if (createdVertexes.count(edge_from_id) == 0) {
+                            all_parents_exist = false;
+                            break;
+                        }
                         auto edge_from_vertex = createdVertexes[edge_from_id];
                         all_parents.push_back(edge_from_vertex);
                     }
                 }
-                dsl->add_concatenated_layer(all_parents);
+                if (!all_parents_exist) {
+                    return;
+                }
+                createdVertexes[vertexId] = dsl->add_concatenated_layer(all_parents);
             } else if (filters > 0) {
                 createdVertexes[vertexId] = parent->addLayer(filters,
                                                              kernels,

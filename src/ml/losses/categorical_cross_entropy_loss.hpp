@@ -17,8 +17,8 @@
 
 namespace happyml {
     // The CategoricalCrossEntropyLossFunction class implements the categorical cross-entropy loss function for
-// multi-class classification problems. It computes the loss and its derivative with respect to the
-// model's predictions.
+    // multi-class classification problems. It computes the loss and its derivative with respect to the
+    // model's predictions.
     class CategoricalCrossEntropyLossFunction : public LossFunction {
     public:
         // calculate_error_for_one_prediction computes the element-wise error for a single prediction

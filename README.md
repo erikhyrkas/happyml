@@ -66,6 +66,7 @@ based on the [CMakeLists.txt](CMakeLists.txt).
 This project is pre-alpha.
 
 Recent Notable additions:
+* Xavier weight initialization (5/2023)
 * C++ Example using Titanic dataset (5/2023)
 * Support for multiple inputs when creating and training models (5/2023)
 * New Concatenate Layer (5/2023)
@@ -99,7 +100,6 @@ Nice-to-haves for alpha:
   * [ ] list tasks
   * [ ] execute tasks
 * [ ] Dense Layer normalization
-* [ ] Fix for binary cross entropy loss function
 * [ ] Possibly support a decoder-only transformer model.
 
 Issues to address later:

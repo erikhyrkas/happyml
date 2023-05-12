@@ -37,6 +37,11 @@ int main() {
         //       with given number   at 9     # Fare
         //       with given label    at 11    # Embarked
         //       using file://../data/titanic/train.csv
+
+        // NOTE: If we were doing better data science, we'd split the data set up into a training and test set.
+        // For now, we'll use our training set to test. This is not a good practice for real life because it
+        // will over fit the model to the training data and not generalize well to new data,
+        // but this is fine just to show how to use the library.
         string base_path = DEFAULT_HAPPYML_DATASETS_PATH;
         string result_path = base_path + "titanic/dataset.bin";
         cout << "Loading training data..." << endl;
@@ -44,14 +49,16 @@ int main() {
         auto titanicDataSource = make_shared<BinaryDataSet>(result_path);
 
         auto neuralNetwork = neuralNetworkBuilder()
+                ->setModelName("titanic_example")
+                ->setModelRepo("../repo/")
                 ->add_concatenated_input_layer(titanicDataSource->getGivenShapes())
                 ->addLayer(64, LayerType::full, ActivationType::relu)->setUseBias(false)
                 ->addLayer(64, LayerType::full, ActivationType::relu)->setUseBias(false)
                 ->addLayer(8, LayerType::full, ActivationType::relu)->setUseBias(false)
-                ->addOutputLayer(titanicDataSource->getExpectedShape(), ActivationType::sigmoidApprox)
+                ->addOutputLayer(titanicDataSource->getExpectedShape(), ActivationType::sigmoid)
                 ->build();
         neuralNetwork->useHighPrecisionExitStrategy();
-        float loss = neuralNetwork->train(titanicDataSource, 1);
+        float loss = neuralNetwork->train(titanicDataSource);
 
         cout << fixed << setprecision(2);
         titanicDataSource->restart();
@@ -71,6 +78,12 @@ int main() {
             limit--;
         }
         cout << fixed << setprecision(4) << "Loss: " << loss;
+        neuralNetwork->saveWithOverwrite();
+        auto loadedNeuralNetwork = loadNeuralNetworkForTraining("titanic_example",
+                                                                "../repo/");
+
+        float testLoss = loadedNeuralNetwork->test(titanicDataSource);
+        cout << fixed << setprecision(2) << "Result testLoss: " << testLoss << endl;
     } catch (const exception &e) {
         cout << e.what() << endl;
     }

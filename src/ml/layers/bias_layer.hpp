@@ -20,7 +20,7 @@ namespace happyml {
             // This may be a mistake.
 //            this->bias = make_shared<UniformTensor>(outputShape[0], outputShape[1], outputShape[2], 0.f);
             // Original code started with a random value between -0.5 and 0.5:
-            this->bias = make_shared<TensorFromRandom>(outputShape[0], outputShape[1], outputShape[2], -0.5f, 0.5f, 42);
+            this->bias = make_shared<TensorFromXavier>(outputShape[0], outputShape[1], outputShape[2], 42);
             this->bits = bits;
             this->optimizer = optimizer;
             // With models that are not fully 32-bit, if you don't scale the loss

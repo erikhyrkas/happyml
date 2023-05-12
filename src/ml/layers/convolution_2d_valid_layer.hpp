@@ -6,6 +6,8 @@
 #ifndef HAPPYML_CONVOLUTION_2D_VALID_LAYER_HPP
 #define HAPPYML_CONVOLUTION_2D_VALID_LAYER_HPP
 
+#include "../../types/tensor_impls/tensor_from_xavier.hpp"
+
 namespace happyml {
 // Here's an interesting, related read:
 // https://towardsdatascience.com/convolution-vs-correlation-af868b6b4fb5
@@ -24,8 +26,7 @@ namespace happyml {
             this->bits = bits;
             this->weights = {};
             for (size_t next_weight_layer = 0; next_weight_layer < filters; next_weight_layer++) {
-                this->weights.push_back(
-                        make_shared<TensorFromRandom>(kernelSize, kernelSize, inputShape[2], -0.5f, 0.5f, 42));
+                this->weights.push_back(make_shared<TensorFromXavier>(kernelSize, kernelSize, inputShape[2], 42));
             }
             this->optimizer = optimizer;
             if (bits == 32) {

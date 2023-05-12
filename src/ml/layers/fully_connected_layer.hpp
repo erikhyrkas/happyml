@@ -7,6 +7,7 @@
 #define HAPPYML_FULLY_CONNECTED_LAYER_HPP
 
 #include "../neural_network_layer_function.hpp"
+#include "../../types/tensor_impls/tensor_from_xavier.hpp"
 
 namespace happyml {
     class FullyConnectedLayer : public happyml::NeuralNetworkLayerFunction {
@@ -17,7 +18,7 @@ namespace happyml {
             this->registration_id = optimizer->registerForWeightChanges();
             this->inputShapes = vector<vector<size_t >>{{1, inputSize, 1}};
             this->outputShape = vector<size_t>{1, outputSize, 1};
-            this->weights = make_shared<TensorFromRandom>(inputSize, outputSize, 1, -0.5f, 0.5f, 42);
+            this->weights = make_shared<TensorFromXavier>(inputSize, outputSize, 1, 42);
             this->bits = bits;
             this->optimizer = optimizer;
             if (bits == 32) {
