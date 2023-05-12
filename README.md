@@ -66,6 +66,12 @@ based on the [CMakeLists.txt](CMakeLists.txt).
 This project is pre-alpha.
 
 Recent Notable additions:
+* C++ Example using Titanic dataset (5/2023)
+* Support for multiple inputs when creating and training models (5/2023)
+* New Concatenate Layer (5/2023)
+* Support for creating and using binary datasets from happyml scripting language (5/2023)
+* Categorical Cross Entropy and other Functions (5/2023)
+* Softmax Activation Function (5/2023)
 * Default Trained Byte Pair Encoding Model for happyml scripting language (4/2023)
 * New program "create_tokenizer" to train default BPE model from a file (4/2023)
 * Edge cases for Half float and tests (4/2023)
@@ -84,12 +90,20 @@ Recent Notable additions:
 * Working Lexer (1/2023)
 
 Nice-to-haves for alpha:
-* Finish interpreter commands to handle interfacing with happyml through a dsl. 
-* Possibly support a decoder-only transformer model.
+* [ ] Finish interpreter commands to handle interfacing with happyml through a dsl.
+  * [x] exit
+  * [x] help
+  * [x] create dataset
+  * [x] print dataset
+  * [ ] create task
+  * [ ] list tasks
+  * [ ] execute tasks
+* [ ] Dense Layer normalization
+* [ ] Fix for binary cross entropy loss function
+* [ ] Possibly support a decoder-only transformer model.
 
 Issues to address later:
 * The save format could be more efficient and compact. (The file support utilities exist as of 3/23, but the models aren't using it.)
-* I need to create an example that uses multiple inputs. The train() function doesn't take in multiple data sets and there will need to be some other small improvements.
 * OpenMP is not helping performance, if anything it is hurting it. I will likely remove it and rewrite concurrency to use std::thread and pick better places to use concurrency.
 * Apply the style guide. I'm all over the place. I'll try to do better.
 * I need to adopt CMAKE tests and add more tests.
