@@ -29,7 +29,7 @@ namespace happyml {
 // Personally, my linear algebra class was ~25 years ago, and I found this refresher
 // useful: https://www.youtube.com/playlist?list=PLybg94GvOJ9En46TNCXL2n6SiqRc_iMB8
 // and specifically: https://www.youtube.com/watch?v=WTLl03D4TNA
-    class DiagonalTensorView : public happyml::BaseTensorUnaryOperatorView {
+    class DiagonalTensorView : public BaseTensorUnaryOperatorView {
     public:
         DiagonalTensorView(const shared_ptr<BaseTensor> &tensor)
                 : BaseTensorUnaryOperatorView(tensor) {

@@ -9,7 +9,7 @@
 #include <execution>
 
 namespace happyml {
-    class TransposeTensorView : public happyml::BaseTensorUnaryOperatorView {
+    class TransposeTensorView : public BaseTensorUnaryOperatorView {
     public:
         explicit TransposeTensorView(const shared_ptr<BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
         }

@@ -45,7 +45,7 @@ int main() {
         string base_path = DEFAULT_HAPPYML_DATASETS_PATH;
         string result_path = base_path + "titanic/dataset.bin";
         cout << "Loading training data..." << endl;
-        happyml::BinaryDatasetReader reader(result_path);
+        BinaryDatasetReader reader(result_path);
         auto titanicDataSource = make_shared<BinaryDataSet>(result_path);
 
         auto neuralNetwork = neuralNetworkBuilder()
@@ -62,8 +62,8 @@ int main() {
 
         cout << fixed << setprecision(2);
         titanicDataSource->restart();
-//        vector<shared_ptr<happyml::RawDecoder>> given_decoders = build_given_decoders(false, reader);
-        vector<shared_ptr<happyml::RawDecoder >> expected_decoders = build_expected_decoders(false, reader);
+//        vector<shared_ptr<RawDecoder>> given_decoders = build_given_decoders(false, reader);
+        vector<shared_ptr<RawDecoder >> expected_decoders = build_expected_decoders(false, reader);
         auto first_decoder = expected_decoders[0];
 
         size_t limit = 50;

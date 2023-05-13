@@ -10,7 +10,7 @@
 #include <execution>
 
 namespace happyml {
-    class NormalizeTensorView : public happyml::BaseTensorUnaryOperatorView {
+    class NormalizeTensorView : public BaseTensorUnaryOperatorView {
     public:
         explicit NormalizeTensorView(const shared_ptr<BaseTensor> &tensor, float min_val, float max_val)
                 : BaseTensorUnaryOperatorView(tensor), min_val_(min_val), max_val_(max_val) {

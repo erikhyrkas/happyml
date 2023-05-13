@@ -11,7 +11,7 @@
 
 namespace happyml {
 // Adds a constant to every value of a matrix through a view
-    class ScalarAddTensorView : public happyml::BaseTensorUnaryOperatorView {
+    class ScalarAddTensorView : public BaseTensorUnaryOperatorView {
     public:
         ScalarAddTensorView(const shared_ptr<BaseTensor> &tensor, float adjustment)
                 : BaseTensorUnaryOperatorView(tensor) {

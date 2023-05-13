@@ -10,7 +10,7 @@
 #include <execution>
 
 namespace happyml {
-    class PowerTensorView : public happyml::BaseTensorUnaryOperatorView {
+    class PowerTensorView : public BaseTensorUnaryOperatorView {
     public:
         PowerTensorView(const shared_ptr<BaseTensor> &tensor, const float power) : BaseTensorUnaryOperatorView(
                 tensor) {

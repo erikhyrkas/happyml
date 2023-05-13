@@ -26,7 +26,7 @@ namespace happyml {
 //
 // So, the solution below is a very rough pseudo random generator. It's not really random, in the sense that
 // the numbers aren't easily predictable. It's mostly simple (and fast) math that stays within the boundaries given.
-    class TensorFromRandom : public happyml::BaseTensor {
+    class TensorFromRandom : public BaseTensor {
     public:
         TensorFromRandom(size_t rows, size_t cols, size_t channels, float min_value, float max_value, uint32_t seed) {
             this->rows = rows;
@@ -42,13 +42,13 @@ namespace happyml {
         }
 
         TensorFromRandom(size_t rows, size_t cols, size_t channels, int bias) :
-                TensorFromRandom(rows, cols, channels, happyml::quarterToFloat(QUARTER_MIN, bias),
-                                 happyml::quarterToFloat(QUARTER_MAX, bias), 42) {
+                TensorFromRandom(rows, cols, channels, quarterToFloat(QUARTER_MIN, bias),
+                                 quarterToFloat(QUARTER_MAX, bias), 42) {
         }
 
         TensorFromRandom(size_t rows, size_t cols, size_t channels, int bias, uint32_t seed) :
-                TensorFromRandom(rows, cols, channels, happyml::quarterToFloat(QUARTER_MIN, bias),
-                                 happyml::quarterToFloat(QUARTER_MAX, bias), seed) {
+                TensorFromRandom(rows, cols, channels, quarterToFloat(QUARTER_MIN, bias),
+                                 quarterToFloat(QUARTER_MAX, bias), seed) {
         }
 
         void printMaterializationPlan() override {

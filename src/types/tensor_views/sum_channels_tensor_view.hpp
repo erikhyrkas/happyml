@@ -10,7 +10,7 @@
 #include <execution>
 
 namespace happyml {
-    class SumChannelsTensorView : public happyml::SumToChannelTensorView {
+    class SumChannelsTensorView : public SumToChannelTensorView {
     public:
         explicit SumChannelsTensorView(const std::shared_ptr<BaseTensor> &tensor) : SumToChannelTensorView(tensor, 0, 1) {
         }

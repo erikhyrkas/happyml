@@ -12,7 +12,7 @@
 
 namespace happyml {
     // matmul
-    class MatrixMultiplyTensorView : public happyml::BaseTensorBinaryOperatorView {
+    class MatrixMultiplyTensorView : public BaseTensorBinaryOperatorView {
     public:
         MatrixMultiplyTensorView(const shared_ptr<BaseTensor> &tensor1,
                                  const shared_ptr<BaseTensor> &tensor2) : BaseTensorBinaryOperatorView(tensor1,

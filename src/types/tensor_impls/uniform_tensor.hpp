@@ -8,7 +8,7 @@
 
 namespace happyml {
 // There are cases were we want a tensor of all zeros or all ones.
-    class UniformTensor : public happyml::BaseTensor {
+    class UniformTensor : public BaseTensor {
     public:
         UniformTensor(const vector<size_t> &shape, float value) {
             this->rows = shape[0];

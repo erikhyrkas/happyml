@@ -9,7 +9,7 @@
 #include <execution>
 
 namespace happyml {
-    class Valid2DCrossCorrelationTensorView : public happyml::BaseTensorBinaryOperatorView {
+    class Valid2DCrossCorrelationTensorView : public BaseTensorBinaryOperatorView {
     public:
         Valid2DCrossCorrelationTensorView(const shared_ptr<BaseTensor> &tensor, const shared_ptr<BaseTensor> &kernel)
                 : BaseTensorBinaryOperatorView(tensor, kernel) {

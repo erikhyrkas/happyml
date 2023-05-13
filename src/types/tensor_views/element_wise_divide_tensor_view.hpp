@@ -12,7 +12,7 @@
 
 namespace happyml {
     // element-wise division (form of Hadamard product/entry-wise product, with the element-wise inverse)
-    class ElementWiseDivideTensorView : public happyml::BaseTensorBinaryOperatorView {
+    class ElementWiseDivideTensorView : public BaseTensorBinaryOperatorView {
     public:
         ElementWiseDivideTensorView(const shared_ptr<BaseTensor> &tensor1,
                                     const shared_ptr<BaseTensor> &tensor2) : BaseTensorBinaryOperatorView(tensor1,

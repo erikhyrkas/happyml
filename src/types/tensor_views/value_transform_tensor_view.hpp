@@ -10,7 +10,7 @@
 #include <execution>
 
 namespace happyml {
-    class ValueTransformTensorView : public happyml::BaseTensorUnaryOperatorView {
+    class ValueTransformTensorView : public BaseTensorUnaryOperatorView {
     public:
         ValueTransformTensorView(const shared_ptr<BaseTensor> &tensor, function<float(float)> transformFunction)
                 : BaseTensorUnaryOperatorView(

@@ -8,13 +8,13 @@
 
 
 namespace happyml {
-    class ActivationLayer : public happyml::NeuralNetworkLayerFunction {
+    class ActivationLayer : public NeuralNetworkLayerFunction {
     public:
-        explicit ActivationLayer(const shared_ptr<happyml::ActivationFunction> &activationFunction) {
+        explicit ActivationLayer(const shared_ptr<ActivationFunction> &activationFunction) {
             this->activationFunction = activationFunction;
         }
 
-        shared_ptr<happyml::BaseTensor> forward(const vector<shared_ptr<happyml::BaseTensor>> &input, bool forTraining) override {
+        shared_ptr<BaseTensor> forward(const vector<shared_ptr<BaseTensor>> &input, bool forTraining) override {
             // todo: throw error on wrong size input?
             PROFILE_BLOCK(profileBlock);
             if (input.size() != 1) {
@@ -27,7 +27,7 @@ namespace happyml {
             return activationFunction->activate(lastInput);
         }
 
-        vector<shared_ptr<BaseTensor>> backward(const shared_ptr<happyml::BaseTensor> &outputError) override {
+        vector<shared_ptr<BaseTensor>> backward(const shared_ptr<BaseTensor> &outputError) override {
             PROFILE_BLOCK(profileBlock);
             size_t lastInputsSize = lastInputs.size();
             if (lastInputsSize < 1) {
@@ -36,7 +36,7 @@ namespace happyml {
             // TODO: it's really inefficient to calculate the derivative of every previous batch input and average it
             //  but doing an average first and then a derivative isn't right.
             //  I think I'm doing the back propagation incorrectly for mini-batch here.
-            shared_ptr<happyml::BaseTensor> averageActivationDerivative = activationFunction->derivative(lastInputs.front());
+            shared_ptr<BaseTensor> averageActivationDerivative = activationFunction->derivative(lastInputs.front());
             lastInputs.pop();
             while (!lastInputs.empty()) {
                 auto nextLastInput = activationFunction->derivative(lastInputs.front());
@@ -59,8 +59,8 @@ namespace happyml {
         }
 
     private:
-        shared_ptr<happyml::ActivationFunction> activationFunction;
-        queue<shared_ptr<happyml::BaseTensor>> lastInputs; // each input in a batch will queue in order during forward, and deque properly when back-propagating
+        shared_ptr<ActivationFunction> activationFunction;
+        queue<shared_ptr<BaseTensor>> lastInputs; // each input in a batch will queue in order during forward, and deque properly when back-propagating
     };
 }
 #endif //HAPPYML_ACTIVATION_LAYER_HPP

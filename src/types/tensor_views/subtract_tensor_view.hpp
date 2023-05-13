@@ -12,7 +12,7 @@
 
 namespace happyml {
     // element wise subtraction
-    class SubtractTensorView : public happyml::BaseTensorBinaryOperatorView {
+    class SubtractTensorView : public BaseTensorBinaryOperatorView {
     public:
         SubtractTensorView(const shared_ptr<BaseTensor> &tensor1,
                            const shared_ptr<BaseTensor> &tensor2) : BaseTensorBinaryOperatorView(tensor1, tensor2) {

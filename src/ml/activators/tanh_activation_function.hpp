@@ -11,7 +11,7 @@
 namespace happyml {
 // Generally used for classification
 // -1 to 1
-    class TanhActivationFunction : public happyml::ActivationFunction {
+    class TanhActivationFunction : public ActivationFunction {
     public:
         std::shared_ptr<BaseTensor> activate(const std::shared_ptr<BaseTensor> &input) override {
             auto transformFunction = [](float original) {
@@ -22,7 +22,7 @@ namespace happyml {
 //            return (2 * sigmoid) - 1;
                 return tanh(original);
             };
-            return std::make_shared<happyml::ValueTransformTensorView>(input, transformFunction);
+            return std::make_shared<ValueTransformTensorView>(input, transformFunction);
         }
 
         std::shared_ptr<BaseTensor> derivative(const std::shared_ptr<BaseTensor> &input) override {
@@ -31,7 +31,7 @@ namespace happyml {
                 const float th = tanh(original);
                 return 1 - (th * th);
             };
-            return std::make_shared<happyml::ValueTransformTensorView>(input, transformFunction);
+            return std::make_shared<ValueTransformTensorView>(input, transformFunction);
         }
     };
 }

@@ -13,7 +13,7 @@
 
 namespace happyml {
 // Converts a 3d tensor into a column vector
-    class ColumnFlattenTensorView : public happyml::BaseTensorUnaryOperatorView {
+    class ColumnFlattenTensorView : public BaseTensorUnaryOperatorView {
     public:
         explicit ColumnFlattenTensorView(const shared_ptr<BaseTensor> &tensor) : BaseTensorUnaryOperatorView(
                 tensor) {

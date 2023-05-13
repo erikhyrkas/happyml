@@ -13,11 +13,11 @@ namespace happyml {
 // https://towardsdatascience.com/convolution-vs-correlation-af868b6b4fb5
 // also:
 // https://medium.com/@2017csm1006/forward-and-backpropagation-in-convolutional-neural-network-4dfa96d7b37e
-    class Convolution2dValidFunction : public happyml::NeuralNetworkLayerFunction {
+    class Convolution2dValidFunction : public NeuralNetworkLayerFunction {
     public:
         Convolution2dValidFunction(const string &label,
                                    vector<size_t> inputShape, size_t filters, size_t kernelSize, uint8_t bits,
-                                   const shared_ptr<happyml::BaseOptimizer> &optimizer) {
+                                   const shared_ptr<BaseOptimizer> &optimizer) {
             this->label = label;
             this->registration_id = optimizer->registerForWeightChanges();
             this->inputShape = inputShape;
@@ -57,7 +57,7 @@ namespace happyml {
             }
         }
 
-        shared_ptr<happyml::BaseTensor> forward(const vector<shared_ptr<happyml::BaseTensor>> &input, bool forTraining) override {
+        shared_ptr<BaseTensor> forward(const vector<shared_ptr<BaseTensor>> &input, bool forTraining) override {
             PROFILE_BLOCK(profileBlock);
             if (input.size() > 1) {
                 throw runtime_error("Convolution2dValidFunction only supports a single input.");
@@ -71,14 +71,14 @@ namespace happyml {
             // filters are the number of output channels we have
             const size_t filters = outputShape[2];
             const size_t inputDepth = inputShape[2];
-            shared_ptr<happyml::BaseTensor> result = nullptr;
+            shared_ptr<BaseTensor> result = nullptr;
             for (size_t outputLayer = 0; outputLayer < filters; outputLayer++) {
-                shared_ptr<happyml::BaseTensor> outputTensor = nullptr;
+                shared_ptr<BaseTensor> outputTensor = nullptr;
                 for (size_t inputLayer = 0; inputLayer < inputDepth; inputLayer++) {
-                    const auto weightForInputLayer = make_shared<happyml::ChannelToTensorView>(weights[outputLayer],
+                    const auto weightForInputLayer = make_shared<ChannelToTensorView>(weights[outputLayer],
                                                                                                inputLayer);
-                    const auto inputChannel = make_shared<happyml::ChannelToTensorView>(lastInput, inputLayer);
-                    const auto correlation2d = make_shared<happyml::Valid2DCrossCorrelationTensorView>(inputChannel,
+                    const auto inputChannel = make_shared<ChannelToTensorView>(lastInput, inputLayer);
+                    const auto correlation2d = make_shared<Valid2DCrossCorrelationTensorView>(inputChannel,
                                                                                                        weightForInputLayer);
                     if (outputTensor) {
                         outputTensor = make_shared<AddTensorView>(outputTensor, correlation2d);
@@ -86,7 +86,7 @@ namespace happyml {
                         outputTensor = correlation2d;
                     }
                 }
-                const shared_ptr<happyml::BaseTensor> summedCorrelation2d = make_shared<happyml::SumToChannelTensorView>(outputTensor,
+                const shared_ptr<BaseTensor> summedCorrelation2d = make_shared<SumToChannelTensorView>(outputTensor,
                                                                                                                          outputLayer,
                                                                                                                          filters);
                 if (!result) {
@@ -105,12 +105,12 @@ namespace happyml {
             return result;
         }
 
-        vector<shared_ptr<BaseTensor>> backward(const shared_ptr<happyml::BaseTensor> &outputError) override {
+        vector<shared_ptr<BaseTensor>> backward(const shared_ptr<BaseTensor> &outputError) override {
             size_t lastInputsSize = lastInputs.size();
             if (lastInputsSize < 1) {
                 throw runtime_error("FullyConnectedNeurons.backward() called without previous inputs.");
             }
-            shared_ptr<happyml::BaseTensor> averageLastInputs = lastInputs.front();
+            shared_ptr<BaseTensor> averageLastInputs = lastInputs.front();
             lastInputs.pop();
             while (!lastInputs.empty()) {
                 auto nextLastInput = lastInputs.front();
@@ -127,27 +127,27 @@ namespace happyml {
             // filters are the number of output channels we have
             const size_t filters = outputShape[2];
             const size_t inputDepth = inputShape[2];
-            shared_ptr<happyml::BaseTensor> inputError = nullptr;
+            shared_ptr<BaseTensor> inputError = nullptr;
             for (size_t outputLayer = 0; outputLayer < filters; outputLayer++) {
-                const auto outputErrorForLayer = make_shared<happyml::ChannelToTensorView>(outputError, outputLayer);
-                shared_ptr<happyml::BaseTensor> weightChanges = nullptr;
+                const auto outputErrorForLayer = make_shared<ChannelToTensorView>(outputError, outputLayer);
+                shared_ptr<BaseTensor> weightChanges = nullptr;
                 for (size_t inputLayer = 0; inputLayer < inputDepth; inputLayer++) {
-                    const auto weightForInputLayer = make_shared<happyml::ChannelToTensorView>(weights[outputLayer],
+                    const auto weightForInputLayer = make_shared<ChannelToTensorView>(weights[outputLayer],
                                                                                                inputLayer);
-                    const auto nextInputError = make_shared<happyml::Full2DConvolveTensorView>(outputErrorForLayer,
+                    const auto nextInputError = make_shared<Full2DConvolveTensorView>(outputErrorForLayer,
                                                                                                weightForInputLayer);
-                    const auto inputErrorToInputChannel = make_shared<happyml::SumToChannelTensorView>(nextInputError,
+                    const auto inputErrorToInputChannel = make_shared<SumToChannelTensorView>(nextInputError,
                                                                                                        inputLayer, inputDepth);
                     if (inputError) {
                         inputError = make_shared<AddTensorView>(inputError, inputErrorToInputChannel);
                     } else {
                         inputError = inputErrorToInputChannel;
                     }
-                    const auto inputLayerChannel = make_shared<happyml::ChannelToTensorView>(averageLastInputs,
+                    const auto inputLayerChannel = make_shared<ChannelToTensorView>(averageLastInputs,
                                                                                              inputLayer);
-                    const auto nextWeightError = make_shared<happyml::Valid2DCrossCorrelationTensorView>(inputLayerChannel,
+                    const auto nextWeightError = make_shared<Valid2DCrossCorrelationTensorView>(inputLayerChannel,
                                                                                                          outputErrorForLayer);
-                    const auto nextWeightToInputChannel = make_shared<happyml::SumToChannelTensorView>(nextWeightError,
+                    const auto nextWeightToInputChannel = make_shared<SumToChannelTensorView>(nextWeightError,
                                                                                                        inputLayer, inputDepth);
                     if (weightChanges) {
                         weightChanges = make_shared<AddTensorView>(weightChanges, nextWeightToInputChannel);
@@ -164,20 +164,20 @@ namespace happyml {
                 weights[outputLayer] = materializeTensor(adjustedWeights, bits);
             }
 
-            const auto resultError = make_shared<happyml::SumChannelsTensorView>(inputError);
+            const auto resultError = make_shared<SumChannelsTensorView>(inputError);
             return {resultError};
         }
 
     private:
         int registration_id;
-        queue<shared_ptr<happyml::BaseTensor>> lastInputs; // each input in a batch will queue in order during forward, and deque properly when back-propagating
-        vector<shared_ptr<happyml::BaseTensor>> weights;
+        queue<shared_ptr<BaseTensor>> lastInputs; // each input in a batch will queue in order during forward, and deque properly when back-propagating
+        vector<shared_ptr<BaseTensor>> weights;
         uint8_t bits;
         float mixedPrecisionScale;
         vector<size_t> inputShape;
         vector<size_t> outputShape;
         size_t kernelSize;
-        shared_ptr<happyml::BaseOptimizer> optimizer;
+        shared_ptr<BaseOptimizer> optimizer;
         string label;
     };
 }

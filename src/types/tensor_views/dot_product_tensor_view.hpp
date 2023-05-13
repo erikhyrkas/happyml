@@ -12,7 +12,7 @@
 #include <execution>
 
 namespace happyml {
-    class DotProductTensorView : public happyml::BaseTensorBinaryOperatorView {
+    class DotProductTensorView : public BaseTensorBinaryOperatorView {
     public:
         DotProductTensorView(const shared_ptr<BaseTensor> &tensor1,
                              const shared_ptr<BaseTensor> &tensor2) : BaseTensorBinaryOperatorView(tensor1, tensor2) {

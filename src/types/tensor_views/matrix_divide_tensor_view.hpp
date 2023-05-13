@@ -13,7 +13,7 @@
 
 namespace happyml {
     // matdiv
-    class MatrixDivideTensorView : public happyml::BaseTensorBinaryOperatorView {
+    class MatrixDivideTensorView : public BaseTensorBinaryOperatorView {
     public:
         MatrixDivideTensorView(const shared_ptr<BaseTensor> &left_child,
                                const shared_ptr<BaseTensor> &right_child) : BaseTensorBinaryOperatorView(left_child,

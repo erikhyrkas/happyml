@@ -13,7 +13,7 @@
 namespace happyml {
 // approximate tanhActivation
 // I read about this here: https://www.ipol.im/pub/art/2015/137/article_lr.pdf
-    class TanhApproximationActivationFunction : public happyml::ActivationFunction {
+    class TanhApproximationActivationFunction : public ActivationFunction {
     public:
         std::shared_ptr<BaseTensor> activate(const std::shared_ptr<BaseTensor> &input) override {
             PROFILE_BLOCK(profileBlock);
@@ -24,7 +24,7 @@ namespace happyml {
 //                auto sigmoid = 0.5f * ((original / (1.0f + std::abs(original))) + 1); //super approx
                 return (2 * sigmoid) - 1;
             };
-            return std::make_shared<happyml::ValueTransformTensorView>(input, transformFunction);
+            return std::make_shared<ValueTransformTensorView>(input, transformFunction);
         }
 
         std::shared_ptr<BaseTensor> derivative(const std::shared_ptr<BaseTensor> &input) override {
@@ -39,7 +39,7 @@ namespace happyml {
                 const float th = (2 * sigmoid) - 1;
                 return 1 - (th * th);
             };
-            return std::make_shared<happyml::ValueTransformTensorView>(input, transformFunction);
+            return std::make_shared<ValueTransformTensorView>(input, transformFunction);
         }
     };
 }

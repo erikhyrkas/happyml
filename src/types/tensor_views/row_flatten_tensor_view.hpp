@@ -12,7 +12,7 @@
 
 namespace happyml {
 // Converts a 3d tensor into a row vector
-    class RowFlattenTensorView : public happyml::BaseTensorUnaryOperatorView {
+    class RowFlattenTensorView : public BaseTensorUnaryOperatorView {
     public:
         explicit RowFlattenTensorView(const shared_ptr<BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {
             this->columns = tensor->size();

@@ -10,7 +10,7 @@
 
 namespace happyml {
 
-    class SqrtTensorView : public happyml::BaseTensorUnaryOperatorView {
+    class SqrtTensorView : public BaseTensorUnaryOperatorView {
     public:
         explicit SqrtTensorView(const shared_ptr<BaseTensor> &tensor) : BaseTensorUnaryOperatorView(
                 tensor) {

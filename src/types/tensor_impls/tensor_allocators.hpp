@@ -41,7 +41,7 @@ namespace happyml {
     template<typename T>
     void allocateTensorVector(vector<vector<vector<T>>> &data,
                               const size_t rows, const size_t columns, const size_t channels,
-                              const shared_ptr<happyml::BaseTensor> &original,
+                              const shared_ptr<BaseTensor> &original,
                               function<T(float)> conversionFunction) {
         allocateTensorVector<T>(data, rows,
                                 columns,

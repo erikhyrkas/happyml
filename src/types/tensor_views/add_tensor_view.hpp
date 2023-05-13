@@ -11,7 +11,7 @@
 #include <execution>
 
 namespace happyml {
-    class AddTensorView : public happyml::BaseTensorBinaryOperatorView {
+    class AddTensorView : public BaseTensorBinaryOperatorView {
     public:
         AddTensorView(const shared_ptr<BaseTensor> &tensor1,
                       const shared_ptr<BaseTensor> &tensor2) : BaseTensorBinaryOperatorView(tensor1, tensor2) {

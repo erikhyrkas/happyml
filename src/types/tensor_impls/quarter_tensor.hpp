@@ -12,7 +12,7 @@
 #include <execution>
 
 namespace happyml {
-    class QuarterTensor : public happyml::BaseAssignableTensor {
+    class QuarterTensor : public BaseAssignableTensor {
     public:
         explicit QuarterTensor(const shared_ptr<BaseTensor> &original, const int bias) {
             this->bias = bias;
@@ -20,7 +20,7 @@ namespace happyml {
             const size_t rows = original->rowCount();
             const size_t channels = original->channelCount();
 
-            happyml::allocateTensorVector<happyml::quarter>(data, rows,
+            allocateTensorVector<quarter>(data, rows,
                                                             columns,
                                                             channels);
 
@@ -36,7 +36,7 @@ namespace happyml {
 
         QuarterTensor(const vector<float> &values, const int bias) {
             this->bias = bias;
-            happyml::allocateTensorVector<happyml::quarter>(data, 1, values.size(), 1);
+            allocateTensorVector<quarter>(data, 1, values.size(), 1);
             size_t col = 0;
             for (float const &val: values) {
                 setVal(0, col, 0, val);
@@ -46,7 +46,7 @@ namespace happyml {
 
         QuarterTensor(const vector<vector<float>> &values, const int bias) {
             this->bias = bias;
-            happyml::allocateTensorVector<happyml::quarter>(data, values.size(), values.at(0).size(), 1);
+            allocateTensorVector<quarter>(data, values.size(), values.at(0).size(), 1);
             for (size_t row = 0; row < values.size(); row++) {
                 for (size_t col = 0; col < values[row].size(); col++) {
                     const float val = values.at(row).at(col);
@@ -97,7 +97,7 @@ namespace happyml {
         }
 
         float getValue(size_t row, size_t column, size_t channel) override {
-            return happyml::quarterToFloat(data.at(channel).at(row).at(column), bias);
+            return quarterToFloat(data.at(channel).at(row).at(column), bias);
         }
 
         [[nodiscard]] int get_bias() const {
@@ -110,7 +110,7 @@ namespace happyml {
         }
 
     private:
-        vector<vector<vector<happyml::quarter>>> data;
+        vector<vector<vector<quarter>>> data;
         int bias;
 
         void assignFromStream(ifstream &stream) {
@@ -150,7 +150,7 @@ namespace happyml {
         // a lot of memory for a full tensor that you will then do other math on. Wait to use memory
         // for the final result.
         inline void setVal(size_t row, size_t column, size_t channel, float val) {
-            data.at(channel).at(row).at(column) = happyml::floatToQuarter(val, bias);
+            data.at(channel).at(row).at(column) = floatToQuarter(val, bias);
         }
     };
 }

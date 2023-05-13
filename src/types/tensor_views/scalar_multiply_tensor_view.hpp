@@ -11,7 +11,7 @@
 
 namespace happyml {
 // Multiply each element of the tensor by a constant.
-    class ScalarMultiplyTensorView : public happyml::BaseTensorUnaryOperatorView {
+    class ScalarMultiplyTensorView : public BaseTensorUnaryOperatorView {
     public:
         ScalarMultiplyTensorView(const shared_ptr<BaseTensor> &tensor, float scale) : BaseTensorUnaryOperatorView(
                 tensor) {

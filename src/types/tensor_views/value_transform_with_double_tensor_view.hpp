@@ -12,7 +12,7 @@
 #include "../base_tensors.hpp"
 
 namespace happyml {
-    class ValueTransformWithDoubleTensorView : public happyml::BaseTensorUnaryOperatorView {
+    class ValueTransformWithDoubleTensorView : public BaseTensorUnaryOperatorView {
     public:
         ValueTransformWithDoubleTensorView(const shared_ptr<BaseTensor> &tensor,
                                   function<float(float, double)> transformFunction,

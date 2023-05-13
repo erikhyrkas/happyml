@@ -21,7 +21,7 @@ namespace happyml {
 // The quarter tensor with a bias of 14 is capable of a similar representation, but the distribution of values isn't
 // even. This Tensor is also faster than the quarter tensor because far less math needs to happen to map between
 // float and 8-bits.
-    class PixelTensor : public happyml::BaseAssignableTensor {
+    class PixelTensor : public BaseAssignableTensor {
     public:
 
         explicit PixelTensor(const shared_ptr<BaseTensor> &original) {
@@ -29,7 +29,7 @@ namespace happyml {
             const size_t rows = original->rowCount();
             const size_t channels = original->channelCount();
 
-            happyml::allocateTensorVector<uint8_t>(data, rows,
+            allocateTensorVector<uint8_t>(data, rows,
                                                    columns,
                                                    channels);
 
@@ -47,7 +47,7 @@ namespace happyml {
         // If you use this constructor, you've already wasted a lot of memory.
         // Maybe you can just use a full tensor?
         explicit PixelTensor(const vector<float> &values) {
-            happyml::allocateTensorVector<uint8_t>(data, 1, values.size(), 1);
+            allocateTensorVector<uint8_t>(data, 1, values.size(), 1);
             size_t col = 0;
             for (float const &val: values) {
                 setVal(0, col, 0, val);
@@ -59,7 +59,7 @@ namespace happyml {
         // If you use this constructor, you've already wasted a lot of memory.
         // Maybe you can just use a full tensor?
         explicit PixelTensor(const vector<vector<vector<float>>> &values) {
-            happyml::allocateTensorVector<uint8_t>(data, values[0].size(), values[0][0].size(), values.size());
+            allocateTensorVector<uint8_t>(data, values[0].size(), values[0][0].size(), values.size());
             size_t channel_index = 0;
             for (const auto &next_channel: values) {
                 size_t row_index = 0;

@@ -10,7 +10,7 @@
 
 namespace happyml {
 
-    class WindowTensorView : public happyml::BaseTensorUnaryOperatorView {
+    class WindowTensorView : public BaseTensorUnaryOperatorView {
     public:
         WindowTensorView(const shared_ptr<BaseTensor> &tensor, size_t start_column, size_t end_column)
                 : BaseTensorUnaryOperatorView(tensor), start_column_(start_column), end_column_(end_column) {

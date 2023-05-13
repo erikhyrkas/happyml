@@ -11,7 +11,7 @@
 #include "../base_tensors.hpp"
 
 namespace happyml {
-    class TensorNoOpView : public happyml::BaseTensorUnaryOperatorView {
+    class TensorNoOpView : public BaseTensorUnaryOperatorView {
     public:
         explicit TensorNoOpView(const shared_ptr<BaseTensor> &tensor) : BaseTensorUnaryOperatorView(tensor) {}
 

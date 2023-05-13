@@ -9,7 +9,7 @@
 namespace happyml {
 // If you can represent a tensor as a function, we don't have to allocate gigabytes of memory
 // to hold it. You already have a compact representation of it.
-    class TensorFromFunction : public happyml::BaseTensor {
+    class TensorFromFunction : public BaseTensor {
     public:
         TensorFromFunction(function<float(size_t, size_t, size_t)> tensorFunction, size_t rows, size_t cols,
                            size_t channels) {

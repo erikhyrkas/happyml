@@ -10,7 +10,7 @@
 #include <execution>
 
 namespace happyml {
-    class ExponentialTensorView : public happyml::BaseTensorUnaryOperatorView {
+    class ExponentialTensorView : public BaseTensorUnaryOperatorView {
     public:
         explicit ExponentialTensorView(const shared_ptr <BaseTensor> &tensor)
                 : BaseTensorUnaryOperatorView(tensor) {

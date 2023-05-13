@@ -12,7 +12,7 @@
 namespace happyml {
 // Change the number of rows and columns, but maintain the same number of elements per channel.
 // You cannot change the number of channels in the current implementation.
-    class ReshapeTensorView : public happyml::BaseTensorUnaryOperatorView {
+    class ReshapeTensorView : public BaseTensorUnaryOperatorView {
     public:
         ReshapeTensorView(const shared_ptr<BaseTensor> &tensor, const size_t rows,
                           const size_t columns, const size_t channels) : BaseTensorUnaryOperatorView(tensor) {

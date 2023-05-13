@@ -8,7 +8,7 @@
 
 namespace happyml {
 
-    class TensorFromXavier : public happyml::BaseTensor {
+    class TensorFromXavier : public BaseTensor {
     public:
         TensorFromXavier(size_t rows, size_t cols, size_t channels, uint32_t seed) {
             this->rows = rows;

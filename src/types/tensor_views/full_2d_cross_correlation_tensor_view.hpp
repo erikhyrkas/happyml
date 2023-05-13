@@ -20,11 +20,11 @@ namespace happyml {
 // I think most filters are odd numbers because even filters don't make much sense,
 // but I wanted the code to work. The center of your filter is at a halfway point,
 // which is why it's weird.
-    class Full2DCrossCorrelationTensorView : public happyml::Valid2DCrossCorrelationTensorView {
+    class Full2DCrossCorrelationTensorView : public Valid2DCrossCorrelationTensorView {
     public:
         Full2DCrossCorrelationTensorView(const shared_ptr<BaseTensor> &tensor, const shared_ptr<BaseTensor> &kernel)
                 : Valid2DCrossCorrelationTensorView(
-                make_shared<happyml::ZeroPadTensorView>(tensor,
+                make_shared<ZeroPadTensorView>(tensor,
                                                            (kernel->rowCount() > 1) *
                                                            (size_t) std::round(((double) kernel->rowCount()) / 2.0),
                                                            (kernel->rowCount() > 1) *

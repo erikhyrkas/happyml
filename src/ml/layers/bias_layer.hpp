@@ -7,11 +7,11 @@
 #define HAPPYML_BIAS_LAYER_HPP
 
 namespace happyml {
-    class BiasLayer : public happyml::NeuralNetworkLayerFunction {
+    class BiasLayer : public NeuralNetworkLayerFunction {
     public:
         BiasLayer(const string &label, const vector<size_t> &inputShape, const vector<size_t> &outputShape,
                   uint8_t bits,
-                  const shared_ptr<happyml::BaseOptimizer> &optimizer) {
+                  const shared_ptr<BaseOptimizer> &optimizer) {
             this->label = label;
             this->registration_id = optimizer->registerForBiasChanges();
             this->inputShapes = vector<vector<size_t >>{inputShape};
@@ -85,7 +85,7 @@ namespace happyml {
         }
 
         // predicting
-        shared_ptr<happyml::BaseTensor> forward(const vector<shared_ptr<happyml::BaseTensor>> &input, bool forTraining) override {
+        shared_ptr<BaseTensor> forward(const vector<shared_ptr<BaseTensor>> &input, bool forTraining) override {
             PROFILE_BLOCK(profileBlock);
             if (input.size() > 1) {
                 throw runtime_error("BiasNeuron only supports a single input.");
@@ -98,7 +98,7 @@ namespace happyml {
         }
 
         // learning
-        vector<shared_ptr<BaseTensor>> backward(const shared_ptr<happyml::BaseTensor> &output_error) override {
+        vector<shared_ptr<BaseTensor>> backward(const shared_ptr<BaseTensor> &output_error) override {
             PROFILE_BLOCK(profileBlock);
 
             const auto adjusted_bias_error = make_shared<ScalarMultiplyTensorView>(output_error,
@@ -116,13 +116,13 @@ namespace happyml {
 
     private:
         int registration_id;
-        shared_ptr<happyml::BaseTensor> bias;
+        shared_ptr<BaseTensor> bias;
         int current_batch_size;
         uint8_t bits;
         float mixedPrecisionLearningRateScale;
         vector<vector<size_t>> inputShapes;
         vector<size_t> outputShape;
-        shared_ptr<happyml::BaseOptimizer> optimizer;
+        shared_ptr<BaseOptimizer> optimizer;
         string label;
     };
 }

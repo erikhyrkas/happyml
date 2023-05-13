@@ -9,7 +9,7 @@
 #include "../base_tensors.hpp"
 
 namespace happyml {
-    class ConcatWideTensorView : public happyml::BaseTensorBinaryOperatorView {
+    class ConcatWideTensorView : public BaseTensorBinaryOperatorView {
     public:
         ConcatWideTensorView(const shared_ptr<BaseTensor> &tensor1,
                              const shared_ptr<BaseTensor> &tensor2) : BaseTensorBinaryOperatorView(tensor1, tensor2) {

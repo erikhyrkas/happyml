@@ -11,13 +11,13 @@
 namespace happyml {
 // Useful in the hidden layers of a neural network, especially deep neural networks and convolutional neural networks.
 // 0 to infinity
-    class ReLUActivationFunction : public happyml::ActivationFunction {
+    class ReLUActivationFunction : public ActivationFunction {
     public:
         std::shared_ptr<BaseTensor> activate(const std::shared_ptr<BaseTensor> &input) override {
             auto transformFunction = [](float original) {
                 return std::max(original, 0.0f);
             };
-            return std::make_shared<happyml::ValueTransformTensorView>(input, transformFunction);
+            return std::make_shared<ValueTransformTensorView>(input, transformFunction);
         }
 
         std::shared_ptr<BaseTensor> derivative(const std::shared_ptr<BaseTensor> &input) override {
@@ -28,7 +28,7 @@ namespace happyml {
                 }
                 return 0.f;
             };
-            return std::make_shared<happyml::ValueTransformTensorView>(input, transformFunction);
+            return std::make_shared<ValueTransformTensorView>(input, transformFunction);
         }
     };
 }

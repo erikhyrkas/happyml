@@ -12,7 +12,7 @@
 
 namespace happyml {
     // Divide each element of the tensor by a constant.
-    class ScalarDivideTensorView : public happyml::BaseTensorUnaryOperatorView {
+    class ScalarDivideTensorView : public BaseTensorUnaryOperatorView {
     public:
         ScalarDivideTensorView(const shared_ptr<BaseTensor> &tensor, float denominator)
                 : BaseTensorUnaryOperatorView(tensor) {

@@ -9,7 +9,7 @@
 #include <execution>
 
 namespace happyml {
-    class UnstandardizeTensorView : public happyml::BaseTensorUnaryOperatorView {
+    class UnstandardizeTensorView : public BaseTensorUnaryOperatorView {
     public:
         explicit UnstandardizeTensorView(const shared_ptr<BaseTensor> &tensor, float mean, float std_dev)
                 : BaseTensorUnaryOperatorView(tensor), mean_(mean), std_dev_(std_dev) {

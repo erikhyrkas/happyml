@@ -20,7 +20,7 @@ int main() {
         xorDataSource->addTrainingData(columnVector({1.f, 1.f}), 0.f);
 
         cout << "Test with sigmoid" << endl;
-        auto neuralNetwork = neuralNetworkBuilder(happyml::adam)
+        auto neuralNetwork = neuralNetworkBuilder(OptimizerType::adam)
                 ->addInputLayer(xorDataSource->getGivenShape(), 5, LayerType::full, ActivationType::tanhDefault)
                 ->addOutputLayer(xorDataSource->getExpectedShape(), ActivationType::sigmoid)
                 ->build();

@@ -13,14 +13,14 @@
 #include <execution>
 
 namespace happyml {
-    class HalfTensor : public happyml::BaseAssignableTensor {
+    class HalfTensor : public BaseAssignableTensor {
     public:
         explicit HalfTensor(const shared_ptr<BaseTensor> &original) {
             const size_t columns = original->columnCount();
             const size_t rows = original->rowCount();
             const size_t channels = original->channelCount();
 
-            happyml::allocateTensorVector<uint16_t>(data, rows,
+            allocateTensorVector<uint16_t>(data, rows,
                                                     columns,
                                                     channels);
 
@@ -35,7 +35,7 @@ namespace happyml {
         }
 
         explicit HalfTensor(const vector<float> &values) {
-            happyml::allocateTensorVector<uint16_t>(data, 1, values.size(), 1);
+            allocateTensorVector<uint16_t>(data, 1, values.size(), 1);
             size_t col = 0;
             for (float const &val: values) {
                 setVal(0, col, 0, val);
@@ -44,7 +44,7 @@ namespace happyml {
         }
 
         explicit HalfTensor(const vector<vector<float>> &values) {
-            happyml::allocateTensorVector<uint16_t>(data, values.size(), values.at(0).size(), 1);
+            allocateTensorVector<uint16_t>(data, values.size(), values.at(0).size(), 1);
             for (size_t row = 0; row < values.size(); row++) {
                 for (size_t col = 0; col < values[row].size(); col++) {
                     const float val = values.at(row).at(col);
@@ -88,7 +88,7 @@ namespace happyml {
         }
 
         float getValue(size_t row, size_t column, size_t channel) override {
-            return happyml::halfToFloat(data.at(channel).at(row).at(column));
+            return halfToFloat(data.at(channel).at(row).at(column));
         }
 
         void printMaterializationPlan() override {
@@ -96,7 +96,7 @@ namespace happyml {
         }
 
     private:
-        vector<vector<vector<happyml::half>>> data;
+        vector<vector<vector<half>>> data;
 
         void assignFromStream(ifstream &stream) {
             uint64_t channels;
@@ -131,7 +131,7 @@ namespace happyml {
         // a lot of memory for a full tensor that you will then do other math on. Wait to use memory
         // for the final result.
         inline void setVal(size_t row, size_t column, size_t channel, float val) {
-            data.at(channel).at(row).at(column) = happyml::floatToHalf(val);
+            data.at(channel).at(row).at(column) = floatToHalf(val);
         }
     };
 }

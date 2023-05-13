@@ -12,7 +12,7 @@
 
 namespace happyml {
     // element-wise multiplication (Hadamard product/entry-wise product)
-    class ElementWiseMultiplyTensorView : public happyml::BaseTensorBinaryOperatorView {
+    class ElementWiseMultiplyTensorView : public BaseTensorBinaryOperatorView {
     public:
         ElementWiseMultiplyTensorView(const shared_ptr<BaseTensor> &tensor1,
                                       const shared_ptr<BaseTensor> &tensor2)

@@ -12,7 +12,7 @@
 namespace happyml {
 
     // Subtracts a constant to every value of a matrix through a view
-    class ScalarSubtractTensorView : public happyml::BaseTensorUnaryOperatorView {
+    class ScalarSubtractTensorView : public BaseTensorUnaryOperatorView {
     public:
         ScalarSubtractTensorView(float adjustment, const shared_ptr<BaseTensor> &tensor)
                 : BaseTensorUnaryOperatorView(tensor) {

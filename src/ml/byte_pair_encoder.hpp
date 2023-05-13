@@ -493,7 +493,7 @@ namespace happyml {
             if (total_validation_length < 1) {
                 return 0.0;
             }
-            happyml::BytePairEncoderModel bpe;
+            BytePairEncoderModel bpe;
             bpe.configure(bpe_codes, delimiter);
             return bpe.validate_compression_rate(validation_data, total_validation_length);
         }

@@ -10,11 +10,11 @@
 #include <iostream>
 
 namespace happyml {
-    class ExitStatement : public happyml::ExecutableStatement {
+    class ExitStatement : public ExecutableStatement {
     public:
-        shared_ptr<happyml::ExecutionResult> execute(const shared_ptr<happyml::ExecutionContext> &context) override {
+        shared_ptr<ExecutionResult> execute(const shared_ptr<ExecutionContext> &context) override {
             cout << "Exiting..." << endl;
-            return make_shared<happyml::ExecutionResult>(true);
+            return make_shared<ExecutionResult>(true);
         }
     };
 

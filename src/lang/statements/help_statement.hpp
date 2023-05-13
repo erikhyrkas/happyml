@@ -13,13 +13,13 @@
 
 namespace happyml {
 
-    class HelpStatement : public happyml::ExecutableStatement {
+    class HelpStatement : public ExecutableStatement {
     public:
         explicit HelpStatement(string help_menu_item = "default") : help_menu_item_(std::move(help_menu_item)) {
 
         }
 
-        shared_ptr<happyml::ExecutionResult> execute(const shared_ptr<happyml::ExecutionContext> &context) override {
+        shared_ptr<ExecutionResult> execute(const shared_ptr<ExecutionContext> &context) override {
 
             if (help_menu_item_ == "dataset" || help_menu_item_ == "datasets") {
                 cout << "Available dataset commands: " << endl;
@@ -76,7 +76,7 @@ namespace happyml {
                 cout << "  help [dataset|task|future]" << endl << endl;
             }
 
-            return make_shared<happyml::ExecutionResult>(false);
+            return make_shared<ExecutionResult>(false);
         }
 
     private:

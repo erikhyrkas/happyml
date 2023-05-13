@@ -13,31 +13,31 @@
 
 namespace happyml {
 
-    shared_ptr<happyml::RawDecoder> build_decoder(bool raw, const shared_ptr<happyml::BinaryColumnMetadata> &metadata) {
-        shared_ptr<happyml::RawDecoder> decoder;
+    shared_ptr<RawDecoder> build_decoder(bool raw, const shared_ptr<BinaryColumnMetadata> &metadata) {
+        shared_ptr<RawDecoder> decoder;
         if (raw) {
-            decoder = make_shared<happyml::RawDecoder>();
+            decoder = make_shared<RawDecoder>();
         } else {
             auto purpose = metadata->purpose;
             // purpose: 'I' (image), 'T' (text), 'N' (number), 'L' (label)
             if ('L' == purpose) {
                 auto ordered_labels = metadata->ordered_labels;
-                decoder = make_shared<happyml::BestTextCategoryDecoder>(ordered_labels);
+                decoder = make_shared<BestTextCategoryDecoder>(ordered_labels);
             } else if ('N' == purpose) {
-                decoder = make_shared<happyml::RawDecoder>(metadata->is_normalized,
+                decoder = make_shared<RawDecoder>(metadata->is_normalized,
                                                            metadata->is_standardized,
                                                            metadata->min_value,
                                                            metadata->max_value,
                                                            metadata->mean,
                                                            metadata->standard_deviation);
             } else {
-                decoder = make_shared<happyml::RawDecoder>();
+                decoder = make_shared<RawDecoder>();
             }
         }
         return decoder;
     }
 
-    vector<shared_ptr<happyml::RawDecoder>> build_given_decoders(bool raw, BinaryDatasetReader &reader) {
+    vector<shared_ptr<RawDecoder>> build_given_decoders(bool raw, BinaryDatasetReader &reader) {
         vector<shared_ptr<RawDecoder >> given_decoders;
         size_t given_column_count = reader.get_given_column_count();
         for (size_t i = 0; i < given_column_count; i++) {
@@ -48,7 +48,7 @@ namespace happyml {
         return given_decoders;
     }
 
-    vector<shared_ptr<happyml::RawDecoder>> build_expected_decoders(bool raw, BinaryDatasetReader &reader) {
+    vector<shared_ptr<RawDecoder>> build_expected_decoders(bool raw, BinaryDatasetReader &reader) {
         vector<shared_ptr<RawDecoder >> expected_decoders;
         size_t expected_column_count = reader.get_expected_column_count();
         for (size_t i = 0; i < expected_column_count; i++) {

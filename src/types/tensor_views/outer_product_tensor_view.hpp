@@ -9,7 +9,7 @@
 #include "../base_tensors.hpp"
 
 namespace happyml {
-    class OuterProductTensorView : public happyml::BaseTensorBinaryOperatorView {
+    class OuterProductTensorView : public BaseTensorBinaryOperatorView {
     public:
         OuterProductTensorView(const shared_ptr<BaseTensor> &left, const shared_ptr<BaseTensor> &right)
                 : BaseTensorBinaryOperatorView(left, right) {}

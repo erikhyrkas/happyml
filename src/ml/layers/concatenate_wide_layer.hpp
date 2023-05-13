@@ -13,7 +13,7 @@
 #include "../../types/tensor_views/window_tensor_view.hpp"
 
 namespace happyml {
-    class ConcatenateWideLayer : public happyml::NeuralNetworkLayerFunction {
+    class ConcatenateWideLayer : public NeuralNetworkLayerFunction {
     public:
         explicit ConcatenateWideLayer(string label, vector<vector<size_t>> input_shapes) : label_(std::move(label)), input_shapes_(input_shapes) {
             // vector of shapes (rows, columns, channels)

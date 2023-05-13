@@ -17,7 +17,7 @@
 
 namespace happyml {
 
-    class PrintStatement : public happyml::ExecutableStatement {
+    class PrintStatement : public ExecutableStatement {
     public:
         explicit PrintStatement(string dataset_name, bool raw, int limit = -1) : dataset_name_(std::move(dataset_name)), raw_(raw), limit_(limit) {
         }
@@ -37,21 +37,21 @@ namespace happyml {
             }
         }
 
-        shared_ptr<happyml::ExecutionResult> execute(const shared_ptr<happyml::ExecutionContext> &context) override {
+        shared_ptr<ExecutionResult> execute(const shared_ptr<ExecutionContext> &context) override {
             string base_path = DEFAULT_HAPPYML_DATASETS_PATH;
             string result_path = base_path + dataset_name_ + "/dataset.bin";
-            happyml::BinaryDatasetReader reader(result_path);
+            BinaryDatasetReader reader(result_path);
             auto row_count = reader.rowCount();
             auto max_result_rows = (limit_ == -1) ? reader.rowCount() : min(row_count, (size_t) limit_);
             cout << "Printing " << max_result_rows << " rows from dataset " << dataset_name_ << endl;
 
             if (row_count == 0) {
                 cout << "Dataset is empty." << endl;
-                return make_shared<happyml::ExecutionResult>(false);
+                return make_shared<ExecutionResult>(false);
             }
             // auto decoder = make_shared<BestTextCategoryDecoder>(categoryLabels);
-            vector<shared_ptr<happyml::RawDecoder>> given_decoders = build_given_decoders(raw_, reader);
-            vector<shared_ptr<happyml::RawDecoder >> expected_decoders = build_expected_decoders(raw_, reader);
+            vector<shared_ptr<RawDecoder>> given_decoders = build_given_decoders(raw_, reader);
+            vector<shared_ptr<RawDecoder >> expected_decoders = build_expected_decoders(raw_, reader);
 
             for (int i = 0; i < max_result_rows; i++) {
                 auto row = reader.readRow(i);
@@ -72,14 +72,14 @@ namespace happyml {
                 print_display_rows(expected_max_display_rows, expected_display_values);
             }
 
-            return make_shared<happyml::ExecutionResult>(false);
+            return make_shared<ExecutionResult>(false);
         }
 
 
 
         static vector<vector<string>> calculate_display_values(size_t &max_display_rows,
-                                                               vector<shared_ptr<happyml::BaseTensor>> &tensors_to_display,
-                                                               vector<shared_ptr<happyml::RawDecoder>> &decoders) {
+                                                               vector<shared_ptr<BaseTensor>> &tensors_to_display,
+                                                               vector<shared_ptr<RawDecoder>> &decoders) {
             vector<vector<string >> display_values;
             auto outer_offset = 0;
             for (auto &next_tensor: tensors_to_display) {

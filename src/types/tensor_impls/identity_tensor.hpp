@@ -7,7 +7,7 @@
 #define HAPPYML_IDENTITY_TENSOR_HPP
 
 namespace happyml {
-    class IdentityTensor : public happyml::BaseTensor {
+    class IdentityTensor : public BaseTensor {
     public:
         IdentityTensor(size_t rows, size_t cols, size_t channels) {
             this->rows = rows;

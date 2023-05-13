@@ -8,9 +8,9 @@
 
 
 namespace happyml {
-    class FlattenLayer : public happyml::NeuralNetworkLayerFunction {
+    class FlattenLayer : public NeuralNetworkLayerFunction {
     public:
-        shared_ptr<happyml::BaseTensor> forward(const vector<shared_ptr<happyml::BaseTensor>> &input, bool forTraining) override {
+        shared_ptr<BaseTensor> forward(const vector<shared_ptr<BaseTensor>> &input, bool forTraining) override {
             PROFILE_BLOCK(profileBlock);
             if (input.size() != 1) {
                 throw runtime_error("Cannot flatten multiple inputs at the same time. Please merge.");
@@ -22,16 +22,16 @@ namespace happyml {
                 // This flatten function was added unnecessarily. We could throw an exception.
                 return nextInput;
             }
-            return make_shared<happyml::RowFlattenTensorView>(nextInput);
+            return make_shared<RowFlattenTensorView>(nextInput);
         }
 
-        vector<shared_ptr<BaseTensor>> backward(const shared_ptr<happyml::BaseTensor> &output_error) override {
+        vector<shared_ptr<BaseTensor>> backward(const shared_ptr<BaseTensor> &output_error) override {
             PROFILE_BLOCK(profileBlock);
             if (originalRows == output_error->rowCount() && originalCols == output_error->columnCount()) {
                 // This flatten function was added unnecessarily. We could throw an exception.
                 return {output_error};
             }
-            return {make_shared<happyml::ReshapeTensorView>(output_error, originalRows, originalCols)};
+            return {make_shared<ReshapeTensorView>(output_error, originalRows, originalCols)};
         }
 
     private:
