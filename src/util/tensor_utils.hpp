@@ -9,7 +9,7 @@
 #include "../types/half_float.hpp"
 #include "../types/tensor_impls/full_tensor.hpp"
 #include "../types/tensor_impls/tensor_from_random.hpp"
-#include "../types/tensor_views/tensor_rounded_view.hpp"
+#include "../types/tensor_views/round_tensor_view.hpp"
 #include "../types/tensor_impls/pixel_tensor.hpp"
 #include "../types/tensor_impls/quarter_tensor.hpp"
 #include "../types/tensor_impls/half_tensor.hpp"
@@ -42,7 +42,7 @@ namespace happyml {
     }
 
     shared_ptr<BaseTensor> round(const shared_ptr<BaseTensor> &tensor) {
-        return make_shared<TensorRoundedView>(tensor);
+        return make_shared<RoundTensorView>(tensor);
     }
 
     size_t maxIndex(const shared_ptr<BaseTensor> &tensor) {

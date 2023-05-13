@@ -41,20 +41,20 @@ namespace happyml {
             while (!lastInputs.empty()) {
                 auto nextLastInput = activationFunction->derivative(lastInputs.front());
                 lastInputs.pop();
-                averageActivationDerivative = make_shared<TensorAddTensorView>(averageActivationDerivative,
-                                                                               nextLastInput);
+                averageActivationDerivative = make_shared<AddTensorView>(averageActivationDerivative,
+                                                                         nextLastInput);
             }
             if (lastInputsSize > 1) {
                 averageActivationDerivative = materializeTensor(
-                        make_shared<TensorMultiplyByScalarView>(averageActivationDerivative,
+                        make_shared<ScalarMultiplyTensorView>(averageActivationDerivative,
                                                                 1.f / (float) lastInputsSize));
             }
 
             //auto activation_derivative = activationFunction->derivative(average_last_inputs);
             // this really threw me for a loop. I thought that this was supposed to be dot product, rather than
             // an element-wise-multiplication.
-            const auto baseOutputError = make_shared<TensorElementWiseMultiplyByTensorView>(averageActivationDerivative,
-                                                                                            outputError);
+            const auto baseOutputError = make_shared<ElementWiseMultiplyTensorView>(averageActivationDerivative,
+                                                                                    outputError);
             return {baseOutputError};
         }
 

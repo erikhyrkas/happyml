@@ -8,14 +8,14 @@
 
 #include "activation.hpp"
 #include "optimizer.hpp"
-#include "../types/tensor_views/tensor_flatten_to_row_view.hpp"
-#include "../types/tensor_views/tensor_transpose_view.hpp"
-#include "../types/tensor_views/tensor_sum_to_channel_view.hpp"
-#include "../types/tensor_views/tensor_full_convolve_2d_view.hpp"
-#include "../types/tensor_views/tensor_sum_channels_view.hpp"
-#include "../types/tensor_views/tensor_channel_to_tensor_view.hpp"
-#include "../types/tensor_views/tensor_reshape_view.hpp"
-#include "../types/tensor_views/tensor_matrix_multiply_tensor_view.hpp"
+#include "../types/tensor_views/row_flatten_tensor_view.hpp"
+#include "../types/tensor_views/transpose_tensor_view.hpp"
+#include "../types/tensor_views/sum_to_channel_tensor_view.hpp"
+#include "../types/tensor_views/full_2d_convolve_tensor_view.hpp"
+#include "../types/tensor_views/sum_channels_tensor_view.hpp"
+#include "../types/tensor_views/channel_to_tensor_view.hpp"
+#include "../types/tensor_views/reshape_tensor_view.hpp"
+#include "../types/tensor_views/matrix_multiply_tensor_view.hpp"
 
 namespace happyml {
     // side note: I read an article on back propagation I thought was interesting:

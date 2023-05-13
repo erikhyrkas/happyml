@@ -12,11 +12,11 @@
 #include <regex>
 #include <utility>
 #include <unordered_set>
-#include "../types/tensor_views/tensor_standardize_view.hpp"
-#include "../types/tensor_views/tensor_normalize_view.hpp"
+#include "../types/tensor_views/standardize_tensor_view.hpp"
+#include "../types/tensor_views/normalize_tensor_view.hpp"
 #include "../training_data/training_dataset.hpp"
-#include "../types/tensor_views/tensor_unstandardize_view.hpp"
-#include "../types/tensor_views/tensor_denormalize_view.hpp"
+#include "../types/tensor_views/unstandardize_tensor_view.hpp"
+#include "../types/tensor_views/denormalize_tensor_view.hpp"
 
 namespace happyml {
 
@@ -127,12 +127,12 @@ namespace happyml {
                                                       const shared_ptr<BinaryColumnMetadata> &current_metadata
     ) {
         if (current_metadata->is_standardized) {
-            standardized_normalized_given_tensor = make_shared<TensorStandardizeView>(standardized_normalized_given_tensor,
+            standardized_normalized_given_tensor = make_shared<StandardizeTensorView>(standardized_normalized_given_tensor,
                                                                                       current_metadata->mean,
                                                                                       current_metadata->standard_deviation);
         }
         if (current_metadata->is_normalized) {
-            standardized_normalized_given_tensor = make_shared<TensorNormalizeView>(standardized_normalized_given_tensor,
+            standardized_normalized_given_tensor = make_shared<NormalizeTensorView>(standardized_normalized_given_tensor,
                                                                                     current_metadata->min_value,
                                                                                     current_metadata->max_value);
         }
@@ -142,12 +142,12 @@ namespace happyml {
 
     shared_ptr<BaseTensor> &unstandardize_and_denormalize(shared_ptr<BaseTensor> &unstandardized_denormalized_given_tensor, const shared_ptr<BinaryColumnMetadata> &current_metadata) {
         if (current_metadata->is_normalized) {
-            unstandardized_denormalized_given_tensor = make_shared<TensorDenormalizeView>(unstandardized_denormalized_given_tensor,
+            unstandardized_denormalized_given_tensor = make_shared<DenormalizeTensorView>(unstandardized_denormalized_given_tensor,
                                                                                           current_metadata->min_value,
                                                                                           current_metadata->max_value);
         }
         if (current_metadata->is_standardized) {
-            unstandardized_denormalized_given_tensor = make_shared<TensorUnstandardizeView>(unstandardized_denormalized_given_tensor,
+            unstandardized_denormalized_given_tensor = make_shared<UnstandardizeTensorView>(unstandardized_denormalized_given_tensor,
                                                                                             current_metadata->mean,
                                                                                             current_metadata->standard_deviation);
         }

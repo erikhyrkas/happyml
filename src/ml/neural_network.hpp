@@ -312,7 +312,7 @@ namespace happyml {
                             totalBatchOutputLoss += batchLoss;
 
                             auto loss_derivative = lossFunction->calculate_batch_loss_derivative(batchError, batchTruths[outputIndex], batchPredictions[outputIndex]);
-                            auto clipped_loss_derivative = make_shared<TensorClipView>(loss_derivative,
+                            auto clipped_loss_derivative = make_shared<ClipTensorView>(loss_derivative,
                                                                                        -100.0f,
                                                                                        100.0f);
                             // todo: we don't weight loss when there are multiple outputs back propagating. we should, instead of treating them as equals.

@@ -60,7 +60,7 @@ namespace happyml {
                 lastInputs.push(lastInput);
             }
 
-            return make_shared<happyml::TensorMatrixMultiplyTensorView>(lastInput, weights);
+            return make_shared<happyml::MatrixMultiplyTensorView>(lastInput, weights);
         }
 
         // learning
@@ -75,27 +75,27 @@ namespace happyml {
             while (!lastInputs.empty()) {
                 auto nextLastInput = lastInputs.front();
                 lastInputs.pop();
-                average_last_inputs = make_shared<TensorAddTensorView>(average_last_inputs, nextLastInput);
+                average_last_inputs = make_shared<AddTensorView>(average_last_inputs, nextLastInput);
             }
             if (lastInputsSize > 1) {
                 average_last_inputs = materializeTensor(
-                        make_shared<TensorMultiplyByScalarView>(average_last_inputs, 1.f / (float) lastInputsSize));
+                        make_shared<ScalarMultiplyTensorView>(average_last_inputs, 1.f / (float) lastInputsSize));
             }
 
             // find the error
-            auto weights_transposed = make_shared<happyml::TensorTransposeView>(weights);
+            auto weights_transposed = make_shared<happyml::TransposeTensorView>(weights);
             // TODO: we greatly improve performance by materializing the tensor into a FullTensor here, but sometimes this will use
             //  considerably more memory than we need. Part of me thinks that all dot product tensors should be materialized,
             //  and part of me thinks that there are situations of simple dot products don't need to be.
             shared_ptr<happyml::BaseTensor> input_error = make_shared<FullTensor>(
-                    make_shared<happyml::TensorMatrixMultiplyTensorView>(output_error, weights_transposed));
+                    make_shared<happyml::MatrixMultiplyTensorView>(output_error, weights_transposed));
 
             // update weights
-            auto input_transposed = make_shared<happyml::TensorTransposeView>(average_last_inputs);
-            auto weights_error = make_shared<happyml::TensorMatrixMultiplyTensorView>(input_transposed, output_error);
+            auto input_transposed = make_shared<happyml::TransposeTensorView>(average_last_inputs);
+            auto weights_error = make_shared<happyml::MatrixMultiplyTensorView>(input_transposed, output_error);
 
-            const auto adjusted_weights_error = make_shared<TensorMultiplyByScalarView>(weights_error,
-                                                                                        mixedPrecisionScale);
+            const auto adjusted_weights_error = make_shared<ScalarMultiplyTensorView>(weights_error,
+                                                                                      mixedPrecisionScale);
             const auto adjusted_weights = optimizer->calculateWeightsChange(
                     registration_id, weights, adjusted_weights_error);
 

@@ -22,7 +22,7 @@ namespace happyml {
                 // This flatten function was added unnecessarily. We could throw an exception.
                 return nextInput;
             }
-            return make_shared<happyml::TensorFlattenToRowView>(nextInput);
+            return make_shared<happyml::RowFlattenTensorView>(nextInput);
         }
 
         vector<shared_ptr<BaseTensor>> backward(const shared_ptr<happyml::BaseTensor> &output_error) override {
@@ -31,7 +31,7 @@ namespace happyml {
                 // This flatten function was added unnecessarily. We could throw an exception.
                 return {output_error};
             }
-            return {make_shared<happyml::TensorReshapeView>(output_error, originalRows, originalCols)};
+            return {make_shared<happyml::ReshapeTensorView>(output_error, originalRows, originalCols)};
         }
 
     private:

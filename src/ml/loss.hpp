@@ -25,7 +25,7 @@ namespace happyml {
             auto total_error = calculate_error_for_one_prediction(truths[0], predictions[0]);
             for (size_t i = 1; i < count; i++) {
                 auto next_error = calculate_error_for_one_prediction(truths[i], predictions[i]);
-                total_error = make_shared<TensorAddTensorView>(total_error, next_error);
+                total_error = make_shared<AddTensorView>(total_error, next_error);
             }
             return make_shared<FullTensor>(total_error);
         }

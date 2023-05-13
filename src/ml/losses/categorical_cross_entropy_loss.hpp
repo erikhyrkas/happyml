@@ -7,10 +7,10 @@
 #define HAPPYML_CATEGORICAL_CROSS_ENTROPY_LOSS_HPP
 
 #include <cmath>
-#include "../../types/tensor_views/tensor_log_view.hpp"
-#include "../../types/tensor_views/tensor_element_wise_divide_by_tensor_view.hpp"
-#include "../../types/tensor_views/tensor_exp_view.hpp"
-#include "../../types/tensor_views/tensor_value_transform_view.hpp"
+#include "../../types/tensor_views/log_tensor_view.hpp"
+#include "../../types/tensor_views/element_wise_divide_tensor_view.hpp"
+#include "../../types/tensor_views/exponential_tensor_view.hpp"
+#include "../../types/tensor_views/value_transform_tensor_view.hpp"
 
 // TODO: this code currently assumes that the truth and predictions are both 1D tensors
 //  and that those tensors are 1 row and 1 channel.
@@ -26,16 +26,16 @@ namespace happyml {
         shared_ptr<BaseTensor> calculate_error_for_one_prediction(shared_ptr<BaseTensor> &truth, shared_ptr<BaseTensor> &prediction) override {
             // Clip the prediction tensor to avoid log(0) and log(1) edge cases
             auto epsilon = 1e-8f;
-            auto clip_prediction = make_shared<TensorClipView>(prediction, epsilon, 1.0f - epsilon);
+            auto clip_prediction = make_shared<ClipTensorView>(prediction, epsilon, 1.0f - epsilon);
 
             // Compute -truth
-            auto negative_truth = make_shared<TensorMultiplyByScalarView>(truth, -1.0f);
+            auto negative_truth = make_shared<ScalarMultiplyTensorView>(truth, -1.0f);
 
             // Compute log(prediction)
-            auto log_pred = make_shared<TensorLogView>(clip_prediction);
+            auto log_pred = make_shared<LogTensorView>(clip_prediction);
 
             // Compute -truth * log(prediction)
-            auto neg_truth_by_log_pred = make_shared<TensorElementWiseMultiplyByTensorView>(negative_truth, log_pred);
+            auto neg_truth_by_log_pred = make_shared<ElementWiseMultiplyTensorView>(negative_truth, log_pred);
 
             return neg_truth_by_log_pred;
         }
@@ -59,14 +59,14 @@ namespace happyml {
 
             for (size_t i = 0; i < batch_size; i++) {
                 // Compute the loss derivative for the current example: prediction_i - truth_i
-                shared_ptr<BaseTensor> currentLossDerivative = make_shared<TensorSubtractTensorView>(predictions[i], truths[i]);
+                shared_ptr<BaseTensor> currentLossDerivative = make_shared<SubtractTensorView>(predictions[i], truths[i]);
 
                 // Accumulate the loss derivatives for all examples in the batch
-                accumulatedLossDerivative = make_shared<TensorAddTensorView>(accumulatedLossDerivative, currentLossDerivative);
+                accumulatedLossDerivative = make_shared<AddTensorView>(accumulatedLossDerivative, currentLossDerivative);
             }
 
             // Average the accumulated loss derivative over the batch size
-            auto result = make_shared<TensorMultiplyByScalarView>(accumulatedLossDerivative, 1.0f / (float) batch_size);
+            auto result = make_shared<ScalarMultiplyTensorView>(accumulatedLossDerivative, 1.0f / (float) batch_size);
 
             return result;
         }

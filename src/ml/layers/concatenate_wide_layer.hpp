@@ -9,8 +9,8 @@
 #include <utility>
 
 #include "../neural_network_layer_function.hpp"
-#include "../../types/tensor_views/tensor_concat_wide_view.h"
-#include "../../types/tensor_views/tensor_window_view.h"
+#include "../../types/tensor_views/concat_wide_tensor_view.h"
+#include "../../types/tensor_views/window_tensor_view.hpp"
 
 namespace happyml {
     class ConcatenateWideLayer : public happyml::NeuralNetworkLayerFunction {
@@ -45,10 +45,10 @@ namespace happyml {
                 throw runtime_error("You need at least two tensors to concatenate.");
             }
 
-            shared_ptr<BaseTensor> result = make_shared<TensorConcatWideView>(input[0], input[1]);
+            shared_ptr<BaseTensor> result = make_shared<ConcatWideTensorView>(input[0], input[1]);
 
             for (size_t i = 2; i < input.size(); ++i) {
-                result = make_shared<TensorConcatWideView>(result, input[i]);
+                result = make_shared<ConcatWideTensorView>(result, input[i]);
             }
 
             return result;
@@ -60,7 +60,7 @@ namespace happyml {
 
             for (const auto& shape : input_shapes_) {
                 size_t input_column_count = shape[1];
-                auto error_view = make_shared<TensorWindowView>(output_error, start_column, start_column + input_column_count);
+                auto error_view = make_shared<WindowTensorView>(output_error, start_column, start_column + input_column_count);
                 errors.push_back(error_view);
                 start_column += input_column_count;
             }

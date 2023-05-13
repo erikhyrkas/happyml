@@ -94,14 +94,14 @@ namespace happyml {
                 current_batch_size++;
             }
 
-            return make_shared<TensorAddTensorView>(input[0], bias);
+            return make_shared<AddTensorView>(input[0], bias);
         }
 
         // learning
         vector<shared_ptr<BaseTensor>> backward(const shared_ptr<happyml::BaseTensor> &output_error) override {
             PROFILE_BLOCK(profileBlock);
 
-            const auto adjusted_bias_error = make_shared<TensorMultiplyByScalarView>(output_error,
+            const auto adjusted_bias_error = make_shared<ScalarMultiplyTensorView>(output_error,
                                                                                      mixedPrecisionLearningRateScale / (float) current_batch_size);
             auto adjusted_bias = optimizer->calculateBiasChange(registration_id,
                                                                 bias,

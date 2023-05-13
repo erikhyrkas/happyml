@@ -18,7 +18,7 @@
 #include "../util/unit_test.hpp"
 #include "../util/file_writer.hpp"
 #include "../training_data/training_dataset.hpp"
-#include "../types/tensor_views/tensor_clip_view.hpp"
+#include "../types/tensor_views/clip_tensor_view.hpp"
 
 using namespace std;
 using namespace happyml;
@@ -157,17 +157,17 @@ namespace happyml {
                             break;
                         }
                         if (sum == nullptr) {
-                            sum = make_shared<TensorAddTensorView>(prior_error, output_conn->prior_error);
+                            sum = make_shared<AddTensorView>(prior_error, output_conn->prior_error);
                         } else {
-                            sum = make_shared<TensorAddTensorView>(sum, output_conn->prior_error);
+                            sum = make_shared<AddTensorView>(sum, output_conn->prior_error);
                         }
                     }
                     if (!ready) {
                         continue;
                     }
                     // TODO: for multiple errors, I'm currently averaging the errors as they propagate, but it probably should be a weighted average
-                    shared_ptr<BaseTensor> average_error = make_shared<TensorMultiplyByScalarView>(sum, 1.0f /
-                                                                                                        (float) fromConnectionOutputSize);
+                    shared_ptr<BaseTensor> average_error = make_shared<ScalarMultiplyTensorView>(sum, 1.0f /
+                                                                                                      (float) fromConnectionOutputSize);
                     from->backward(average_error);
                     for (const auto &output_conn: from->connectionOutputs) {
                         output_conn->prior_error = nullptr;

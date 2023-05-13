@@ -17,7 +17,7 @@ namespace happyml {
             auto transformFunction = [](float original) {
                 return std::max(original, 0.0f);
             };
-            return std::make_shared<happyml::TensorValueTransformView>(input, transformFunction);
+            return std::make_shared<happyml::ValueTransformTensorView>(input, transformFunction);
         }
 
         std::shared_ptr<BaseTensor> derivative(const std::shared_ptr<BaseTensor> &input) override {
@@ -28,7 +28,7 @@ namespace happyml {
                 }
                 return 0.f;
             };
-            return std::make_shared<happyml::TensorValueTransformView>(input, transformFunction);
+            return std::make_shared<happyml::ValueTransformTensorView>(input, transformFunction);
         }
     };
 }

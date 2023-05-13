@@ -11,13 +11,13 @@
 #include <unordered_map>
 #include "../optimizer.hpp"
 #include "../../types/tensor_impls/uniform_tensor.hpp"
-#include "../../types/tensor_views/tensor_add_scalar_view.hpp"
-#include "../../types/tensor_views/tensor_element_wise_multiply_by_tensor_view.hpp"
-#include "../../types/tensor_views/tensor_add_tensor_view.hpp"
+#include "../../types/tensor_views/scalar_add_tensor_view.hpp"
+#include "../../types/tensor_views/element_wise_multiply_tensor_view.hpp"
+#include "../../types/tensor_views/add_tensor_view.hpp"
 #include "../../util/tensor_utils.hpp"
-#include "../../types/tensor_views/tensor_power_view.hpp"
-#include "../../types/tensor_views/tensor_sqrt_view.hpp"
-#include "../../types/tensor_views/tensor_element_wise_inverse_view.hpp"
+#include "../../types/tensor_views/power_tensor_view.hpp"
+#include "../../types/tensor_views/sqrt_tensor_view.hpp"
+#include "../../types/tensor_views/element_wise_inverse_tensor_view.hpp"
 
 using std::vector;
 using std::unordered_map;
@@ -125,17 +125,17 @@ namespace happyml {
                                            float lr) {
 
             // Update biased first moment estimate
-            auto temp_m_by_beta1 = make_shared<TensorMultiplyByScalarView>(m_map[registration_id], beta1);
-            auto temp_beta_complement_value = make_shared<TensorMultiplyByScalarView>(loss_gradient, 1 - beta1);
-            auto biased_first_moment_estimate = make_shared<TensorAddTensorView>(temp_m_by_beta1,
-                                                                                 temp_beta_complement_value);
+            auto temp_m_by_beta1 = make_shared<ScalarMultiplyTensorView>(m_map[registration_id], beta1);
+            auto temp_beta_complement_value = make_shared<ScalarMultiplyTensorView>(loss_gradient, 1 - beta1);
+            auto biased_first_moment_estimate = make_shared<AddTensorView>(temp_m_by_beta1,
+                                                                           temp_beta_complement_value);
 
             // Update biased second raw moment estimate
-            auto temp_v_by_beta2 = make_shared<TensorMultiplyByScalarView>(v_map[registration_id], beta2);
-            auto temp_loss_pow_value = make_shared<TensorPowerView>(loss_gradient, 2.0f);
-            auto temp_beta2_complement_value = make_shared<TensorMultiplyByScalarView>(temp_loss_pow_value, 1 - beta2);
-            auto biased_second_moment_estimate = make_shared<TensorAddTensorView>(temp_v_by_beta2,
-                                                                                  temp_beta2_complement_value);
+            auto temp_v_by_beta2 = make_shared<ScalarMultiplyTensorView>(v_map[registration_id], beta2);
+            auto temp_loss_pow_value = make_shared<PowerTensorView>(loss_gradient, 2.0f);
+            auto temp_beta2_complement_value = make_shared<ScalarMultiplyTensorView>(temp_loss_pow_value, 1 - beta2);
+            auto biased_second_moment_estimate = make_shared<AddTensorView>(temp_v_by_beta2,
+                                                                            temp_beta2_complement_value);
 
             shared_ptr<BaseTensor> m_hat = materializeTensor(biased_first_moment_estimate);
             shared_ptr<BaseTensor> v_hat = materializeTensor(biased_second_moment_estimate);
@@ -143,13 +143,13 @@ namespace happyml {
             v_map[registration_id] = v_hat;
 
             // Update parameters
-            auto temp_lr_by_m_hat = make_shared<TensorMultiplyByScalarView>(m_hat,
-                                                                            -lr); // make negative so we can subtract later
-            auto temp_sqrt = make_shared<TensorAddScalarView>(make_shared<TensorSqrtView>(v_hat), epsilon);
-            auto temp_inverse_sqrt = make_shared<TensorElementWiseInverseView>(temp_sqrt);
-            auto temp_elementwise_product = make_shared<TensorElementWiseMultiplyByTensorView>(temp_lr_by_m_hat, temp_inverse_sqrt);
-            auto updated_params = make_shared<TensorAddTensorView>(params,
-                                                                   temp_elementwise_product); // now the negative lr makes sense.
+            auto temp_lr_by_m_hat = make_shared<ScalarMultiplyTensorView>(m_hat,
+                                                                          -lr); // make negative so we can subtract later
+            auto temp_sqrt = make_shared<ScalarAddTensorView>(make_shared<SqrtTensorView>(v_hat), epsilon);
+            auto temp_inverse_sqrt = make_shared<ElementWiseInverseTensorView>(temp_sqrt);
+            auto temp_elementwise_product = make_shared<ElementWiseMultiplyTensorView>(temp_lr_by_m_hat, temp_inverse_sqrt);
+            auto updated_params = make_shared<AddTensorView>(params,
+                                                             temp_elementwise_product); // now the negative lr makes sense.
 
             return updated_params;
         }

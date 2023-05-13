@@ -7,7 +7,7 @@
 #define HAPPYML_ACTIVATION_HPP
 
 #include <iostream>
-#include "../types/tensor_views/tensor_value_transform_view.hpp"
+#include "../types/tensor_views/value_transform_tensor_view.hpp"
 
 
 // To me, it feels like activation functions are the heart and soul of modern ml.

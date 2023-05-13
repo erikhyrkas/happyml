@@ -13,11 +13,11 @@
 #include "../types/tensor_impls/tensor_from_function.hpp"
 #include "../types/tensor_impls/uniform_tensor.hpp"
 #include "../types/tensor_impls/identity_tensor.hpp"
-#include "../types/tensor_views/tensor_multiply_by_scalar_view.hpp"
-#include "../types/tensor_views/tensor_reshape_view.hpp"
-#include "../types/tensor_views/tensor_matrix_multiply_tensor_view.hpp"
-#include "../types/tensor_views/tensor_add_tensor_view.hpp"
-#include "../types/tensor_views/tensor_full_convolve_2d_view.hpp"
+#include "../types/tensor_views/scalar_multiply_tensor_view.hpp"
+#include "../types/tensor_views/reshape_tensor_view.hpp"
+#include "../types/tensor_views/matrix_multiply_tensor_view.hpp"
+#include "../types/tensor_views/add_tensor_view.hpp"
+#include "../types/tensor_views/full_2d_convolve_tensor_view.hpp"
 
 // Super slow on my machine, but needed to test everything. Probably not useful for day-to-day unit tests.
 //#define FULL_TENSOR_TESTS
@@ -132,14 +132,14 @@ void assignLargeTest() {
 void reshapeTest() {
     auto matrixRandom = make_shared<TensorFromRandom>(1, 5, 1, 4);
     auto matrix = make_shared<QuarterTensor>(matrixRandom, 4);
-    auto reshape = make_shared<TensorReshapeView>(matrixRandom, 5, 1);
+    auto reshape = make_shared<ReshapeTensorView>(matrixRandom, 5, 1);
     auto other = make_unique<QuarterTensor>(reshape, 4);
     ASSERT_TRUE(matrix->getValue(0, 0, 0) == other->getValue(0, 0, 0));
     ASSERT_TRUE(matrix->getValue(0, 1, 0) == other->getValue(1, 0, 0));
     ASSERT_TRUE(matrix->getValue(0, 2, 0) == other->getValue(2, 0, 0));
     ASSERT_TRUE(matrix->getValue(0, 3, 0) == other->getValue(3, 0, 0));
     ASSERT_TRUE(matrix->getValue(0, 4, 0) == other->getValue(4, 0, 0));
-    auto otherView = make_unique<TensorReshapeView>(matrix, 5, 1);
+    auto otherView = make_unique<ReshapeTensorView>(matrix, 5, 1);
     ASSERT_TRUE(otherView->getValue(0, 0, 0) == other->getValue(0, 0, 0));
     ASSERT_TRUE(otherView->getValue(1, 0, 0) == other->getValue(1, 0, 0));
     ASSERT_TRUE(otherView->getValue(2, 0, 0) == other->getValue(2, 0, 0));
@@ -150,7 +150,7 @@ void reshapeTest() {
 void testScalarMultiplication() {
     auto matrixFunc = [](size_t row, size_t col, size_t channel) { return (float) row; };
     auto matrix = make_shared<TensorFromFunction>(matrixFunc, 5, 5, 1);
-    auto scaledMatrix = make_unique<TensorMultiplyByScalarView>(matrix, 6.0f);
+    auto scaledMatrix = make_unique<ScalarMultiplyTensorView>(matrix, 6.0f);
     ASSERT_TRUE(0 == scaledMatrix->getValue(0, 0, 0));
     ASSERT_TRUE(0 == scaledMatrix->getValue(0, 2, 0));
     ASSERT_TRUE(0 == scaledMatrix->getValue(0, 4, 0));
@@ -167,8 +167,8 @@ void testStackingMultiplyViews() {
         return (float) (((float) row * 10.f) + (float) col);
     };
     auto matrix = make_shared<TensorFromFunction>(matrix_func, 5, 5, 1);
-    auto times2 = make_shared<TensorMultiplyByScalarView>(matrix, 2.f);
-    auto timesHalf = make_shared<TensorMultiplyByScalarView>(times2, 0.5f);
+    auto times2 = make_shared<ScalarMultiplyTensorView>(matrix, 2.f);
+    auto timesHalf = make_shared<ScalarMultiplyTensorView>(times2, 0.5f);
     for (size_t r = 0; r < 5; r++) {
         for (size_t c = 0; c < 5; c++) {
             ASSERT_TRUE(roughlyEqual(matrix->getValue(r, c, 0), timesHalf->getValue(r, c, 0)));
@@ -307,7 +307,7 @@ void testDotProduct() {
     auto matrixFunc = [](size_t row, size_t col, size_t channel) { return ((float) (row + col)); };
     auto matrix1 = make_shared<TensorFromFunction>(matrixFunc, 2, 2, 1);
     auto matrix2 = make_shared<TensorFromFunction>(matrixFunc, 2, 2, 1);
-    auto dotProductView = make_shared<TensorMatrixMultiplyTensorView>(matrix1, matrix2);
+    auto dotProductView = make_shared<MatrixMultiplyTensorView>(matrix1, matrix2);
     ASSERT_TRUE(1.0f == dotProductView->getValue(0, 0, 0));
     ASSERT_TRUE(2.0f == dotProductView->getValue(0, 1, 0));
     ASSERT_TRUE(2.0f == dotProductView->getValue(1, 0, 0));
@@ -321,7 +321,7 @@ void testDotProduct2() {
     vector<vector<float>> b = {{4, 0},
                                {1, 4}};
     auto matrix2 = make_shared<QuarterTensor>(b, 8);
-    auto dotProductView = make_shared<TensorMatrixMultiplyTensorView>(matrix1, matrix2);
+    auto dotProductView = make_shared<MatrixMultiplyTensorView>(matrix1, matrix2);
     ASSERT_TRUE(18.0f == dotProductView->getValue(0, 0, 0));
     ASSERT_TRUE(8.0f == dotProductView->getValue(0, 1, 0));
     ASSERT_TRUE(3.0f == dotProductView->getValue(1, 0, 0));
@@ -336,7 +336,7 @@ void testDotProduct3() {
     vector<vector<float>> b = {{2, 1, 2},
                                {3, 2, 4}};
     auto matrix2 = make_shared<QuarterTensor>(b, 8);
-    auto dotProductView = make_shared<TensorMatrixMultiplyTensorView>(matrix1, matrix2);
+    auto dotProductView = make_shared<MatrixMultiplyTensorView>(matrix1, matrix2);
     ASSERT_TRUE(10.0f == dotProductView->getValue(0, 0, 0));
     ASSERT_TRUE(6.0f == dotProductView->getValue(0, 1, 0));
     ASSERT_TRUE(12.0f == dotProductView->getValue(0, 2, 0));
@@ -356,7 +356,7 @@ void testDotProduct4() {
                                {9,  10},
                                {11, 12}};
     auto matrix2 = make_shared<QuarterTensor>(b, 8);
-    auto dotProductView = make_shared<TensorMatrixMultiplyTensorView>(matrix1, matrix2);
+    auto dotProductView = make_shared<MatrixMultiplyTensorView>(matrix1, matrix2);
     ASSERT_TRUE(58.0f == dotProductView->getValue(0, 0, 0));
     ASSERT_TRUE(64.0f == dotProductView->getValue(0, 1, 0));
     ASSERT_TRUE(139.0f == dotProductView->getValue(1, 0, 0));
@@ -372,7 +372,7 @@ void testMatrixAddition() {
                                {1, 0,  3},
                                {2, -1, 0}};
     auto matrix2 = make_shared<QuarterTensor>(b, 8);
-    auto addView = make_shared<TensorAddTensorView>(matrix1, matrix2);
+    auto addView = make_shared<AddTensorView>(matrix1, matrix2);
     ASSERT_TRUE(2.0f == addView->getValue(0, 0, 0));
     ASSERT_TRUE(1.0f == addView->getValue(0, 1, 0));
     ASSERT_TRUE(5.0f == addView->getValue(0, 2, 0));
@@ -394,7 +394,7 @@ void testPixel() {
 
 void testZeroPaddedView() {
     auto matrix = make_shared<UniformTensor>(1, 1, 1, 5.f);
-    auto padded = make_shared<TensorZeroPaddedView>(matrix, 2, 2, 2, 2);
+    auto padded = make_shared<ZeroPadTensorView>(matrix, 2, 2, 2, 2);
     ASSERT_TRUE(5 == padded->rowCount());
     ASSERT_TRUE(5 == padded->columnCount());
     ASSERT_TRUE(1 == padded->channelCount());
@@ -405,7 +405,7 @@ void testZeroPaddedView() {
 
 void testZeroPaddedView2() {
     auto matrix = make_shared<UniformTensor>(2, 3, 1, 5.f);
-    auto padded = make_shared<TensorZeroPaddedView>(matrix, 1, 1, 2, 2);
+    auto padded = make_shared<ZeroPadTensorView>(matrix, 1, 1, 2, 2);
     ASSERT_TRUE(4 == padded->rowCount());
     ASSERT_TRUE(7 == padded->columnCount());
     ASSERT_TRUE(1 == padded->channelCount());
@@ -417,7 +417,7 @@ void testZeroPaddedView2() {
 void testFullConvolve2dView() {
     auto matrix1 = make_shared<UniformTensor>(3, 3, 1, 1.f);
     auto matrix2 = make_shared<UniformTensor>(3, 3, 1, 1.f);
-    auto conv2d = make_shared<TensorFullConvolve2dView>(matrix1, matrix2);
+    auto conv2d = make_shared<Full2DConvolveTensorView>(matrix1, matrix2);
     ASSERT_TRUE(conv2d->columnCount() == 5);
     ASSERT_TRUE(conv2d->rowCount() == 5);
     ASSERT_TRUE(conv2d->channelCount() == 1);
@@ -447,7 +447,7 @@ void test2FullConvolve2dView() {
                                         {13, 14, 15},
                                         {16, 17, 18}}};
     auto matrix2 = make_shared<FullTensor>(b);
-    auto conv2d = make_shared<TensorFullConvolve2dView>(matrix1, matrix2);
+    auto conv2d = make_shared<Full2DConvolveTensorView>(matrix1, matrix2);
     ASSERT_TRUE(conv2d->columnCount() == 5);
     ASSERT_TRUE(conv2d->rowCount() == 5);
     ASSERT_TRUE(conv2d->channelCount() == 1);
@@ -471,7 +471,7 @@ void testFullCrossCorrelation2d() {
     auto matrix2 = make_shared<UniformTensor>(3, 3, 1, 1.f);
     auto padding = (size_t) round(((double) matrix1->rowCount()) / 2.0);
     ASSERT_TRUE(2 == padding);
-    auto conv2d = make_shared<TensorFullCrossCorrelation2dView>(matrix1, matrix2);
+    auto conv2d = make_shared<Full2DCrossCorrelationTensorView>(matrix1, matrix2);
     ASSERT_TRUE(conv2d->columnCount() == 5);
     ASSERT_TRUE(conv2d->rowCount() == 5);
     ASSERT_TRUE(conv2d->channelCount() == 1);
@@ -494,7 +494,7 @@ void testFullCrossCorrelation2d() {
 void testValidCrossCorrelation2d() {
     auto matrix1 = make_shared<UniformTensor>(3, 3, 1, 1.f);
     auto matrix2 = make_shared<UniformTensor>(3, 3, 1, 1.f);
-    auto validCrossCorrelation2DView = make_shared<TensorValidCrossCorrelation2dView>(matrix1, matrix2);
+    auto validCrossCorrelation2DView = make_shared<Valid2DCrossCorrelationTensorView>(matrix1, matrix2);
     //Expected
     //[[9]]
     ASSERT_TRUE(validCrossCorrelation2DView->columnCount() == 1);
@@ -516,7 +516,7 @@ void test2ValidCrossCorrelation2d() {
                                         {-1.094, -1.010, -0.761, -1.337},
                                         {-1.720, -0.312, 0.060, -0.343}}};
     auto matrix2 = make_shared<FullTensor>(b);
-    auto validCrossCorrelation2DView = make_shared<TensorValidCrossCorrelation2dView>(matrix1, matrix2);
+    auto validCrossCorrelation2DView = make_shared<Valid2DCrossCorrelationTensorView>(matrix1, matrix2);
     //Expected
     // [[-1.299014 -3.235515 -2.408694]
     // [-1.356435  0.487984  1.401795]
@@ -540,7 +540,7 @@ void testTensorRotate180() {
                                         {4, 5, 6},
                                         {7, 8, 9}}};
     auto matrix1 = make_shared<FullTensor>(a);
-    auto rotated = make_shared<TensorRotate180View>(matrix1);
+    auto rotated = make_shared<Rotate180TensorView>(matrix1);
     vector<vector<vector<float>>> b = {{{9, 8, 7},
                                         {6, 5, 4},
                                         {3, 2, 1}}};
@@ -554,7 +554,7 @@ void testTensorRotate2() {
                                         {13, 14, 15},
                                         {16, 17, 18}}};
     auto matrix1 = make_shared<FullTensor>(a);
-    auto rotated = make_shared<TensorRotate180View>(matrix1);
+    auto rotated = make_shared<Rotate180TensorView>(matrix1);
     vector<vector<vector<float>>> b = {{{18, 17, 16},
                                         {15, 14, 13},
                                         {12, 11, 10}}};

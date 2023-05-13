@@ -8,8 +8,8 @@
 
 #include <string>
 #include <locale>
-#include "../types/tensor_views/tensor_unstandardize_view.hpp"
-#include "../types/tensor_views/tensor_denormalize_view.hpp"
+#include "../types/tensor_views/unstandardize_tensor_view.hpp"
+#include "../types/tensor_views/denormalize_tensor_view.hpp"
 
 using namespace std;
 
@@ -56,12 +56,12 @@ namespace happyml {
         virtual shared_ptr<BaseTensor> decode(const shared_ptr<BaseTensor> &tensor) {
             shared_ptr<BaseTensor> result = tensor;
             if (is_normalized) {
-                result = make_shared<TensorDenormalizeView>(result,
+                result = make_shared<DenormalizeTensorView>(result,
                                                             min_value,
                                                             max_value);
             }
             if (is_standardized) {
-                result = make_shared<TensorUnstandardizeView>(result,
+                result = make_shared<UnstandardizeTensorView>(result,
                                                               mean,
                                                               standard_deviation);
             }

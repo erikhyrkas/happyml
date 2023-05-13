@@ -6,8 +6,8 @@
 #ifndef HAPPYML_BINARY_CROSS_ENTROPY_HPP
 #define HAPPYML_BINARY_CROSS_ENTROPY_HPP
 
-#include "../../types/tensor_views/tensor_minus_scalar_view.hpp"
-#include "../../types/tensor_views/tensor_matrix_divide_tensor_view.hpp"
+#include "../../types/tensor_views/scalar_subtract_tensor_view.hpp"
+#include "../../types/tensor_views/matrix_divide_tensor_view.hpp"
 
 namespace happyml {
     // The BinaryCrossEntropyLossFunction class implements the binary cross-entropy loss function for
@@ -20,19 +20,19 @@ namespace happyml {
         // -truth * log(prediction) - (1 - truth) * log(1 - prediction)
         shared_ptr<BaseTensor> calculate_error_for_one_prediction(shared_ptr<BaseTensor> &truth, shared_ptr<BaseTensor> &prediction) override {
             auto epsilon = 1e-8f;
-            auto clip_prediction = make_shared<TensorClipView>(prediction, epsilon, 1.0f - epsilon);
-            auto clip_one_minus_prediction = make_shared<TensorClipView>(make_shared<TensorMinusScalarView>(1.0f, prediction), epsilon, 1.0f - epsilon);
+            auto clip_prediction = make_shared<ClipTensorView>(prediction, epsilon, 1.0f - epsilon);
+            auto clip_one_minus_prediction = make_shared<ClipTensorView>(make_shared<ScalarSubtractTensorView>(1.0f, prediction), epsilon, 1.0f - epsilon);
 
-            auto log_prediction = make_shared<TensorLogView>(clip_prediction);
-            auto log_one_minus_prediction = make_shared<TensorLogView>(clip_one_minus_prediction);
+            auto log_prediction = make_shared<LogTensorView>(clip_prediction);
+            auto log_one_minus_prediction = make_shared<LogTensorView>(clip_one_minus_prediction);
 
-            auto one_minus_truth = make_shared<TensorMinusScalarView>(1.0f, truth);
+            auto one_minus_truth = make_shared<ScalarSubtractTensorView>(1.0f, truth);
 
-            auto truth_matmul_log_prediction = make_shared<TensorElementWiseMultiplyByTensorView>(truth, log_prediction);
-            auto one_minus_truth_matmul_log_one_minus_prediction = make_shared<TensorElementWiseMultiplyByTensorView>(one_minus_truth, log_one_minus_prediction);
+            auto truth_matmul_log_prediction = make_shared<ElementWiseMultiplyTensorView>(truth, log_prediction);
+            auto one_minus_truth_matmul_log_one_minus_prediction = make_shared<ElementWiseMultiplyTensorView>(one_minus_truth, log_one_minus_prediction);
 
-            auto total_error = make_shared<TensorAddTensorView>(truth_matmul_log_prediction, one_minus_truth_matmul_log_one_minus_prediction);
-            auto negative_total_error = make_shared<TensorMultiplyByScalarView>(total_error, -1.0f);
+            auto total_error = make_shared<AddTensorView>(truth_matmul_log_prediction, one_minus_truth_matmul_log_one_minus_prediction);
+            auto negative_total_error = make_shared<ScalarMultiplyTensorView>(total_error, -1.0f);
             return negative_total_error;
         }
 
@@ -60,25 +60,25 @@ namespace happyml {
                 // Derivative of binary cross-entropy = -(truth/prediction - (1 - truth) / (1 - prediction)) / batch_size
 
                 // truth / prediction
-                auto truth_div_prediction = make_shared<TensorElementWiseDivideByTensorView>(truths[i], predictions[i]);
+                auto truth_div_prediction = make_shared<ElementWiseDivideTensorView>(truths[i], predictions[i]);
 
                 // 1 - truth
-                auto one_minus_truth = make_shared<TensorMinusScalarView>(1.0f, truths[i]);
+                auto one_minus_truth = make_shared<ScalarSubtractTensorView>(1.0f, truths[i]);
                 // 1 - prediction
-                auto one_minus_prediction = make_shared<TensorMinusScalarView>(1.0f, predictions[i]);
+                auto one_minus_prediction = make_shared<ScalarSubtractTensorView>(1.0f, predictions[i]);
 
                 // (1 - truth) / (1 - prediction)
-                auto one_minus_truth_div_one_minus_prediction = make_shared<TensorElementWiseDivideByTensorView>(one_minus_truth, one_minus_prediction);
+                auto one_minus_truth_div_one_minus_prediction = make_shared<ElementWiseDivideTensorView>(one_minus_truth, one_minus_prediction);
 
                 // truth/prediction - (1 - truth) / (1 - prediction)
-                auto unscaled_derivative = make_shared<TensorSubtractTensorView>(truth_div_prediction, one_minus_truth_div_one_minus_prediction);
+                auto unscaled_derivative = make_shared<SubtractTensorView>(truth_div_prediction, one_minus_truth_div_one_minus_prediction);
 
                 // -(truth/prediction - (1 - truth) / (1 - prediction)) / batch_size
-                auto scaled_derivative = make_shared<TensorMultiplyByScalarView>(unscaled_derivative, -1.0f / batch_size);
+                auto scaled_derivative = make_shared<ScalarMultiplyTensorView>(unscaled_derivative, -1.0f / batch_size);
                 if (i == 0) {
                     accumulatedLossDerivative = scaled_derivative;
                 } else {
-                    accumulatedLossDerivative = make_shared<TensorAddTensorView>(accumulatedLossDerivative, scaled_derivative);
+                    accumulatedLossDerivative = make_shared<AddTensorView>(accumulatedLossDerivative, scaled_derivative);
                 }
             }
             return accumulatedLossDerivative;

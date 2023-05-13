@@ -22,7 +22,7 @@ namespace happyml {
 //            return (2 * sigmoid) - 1;
                 return tanh(original);
             };
-            return std::make_shared<happyml::TensorValueTransformView>(input, transformFunction);
+            return std::make_shared<happyml::ValueTransformTensorView>(input, transformFunction);
         }
 
         std::shared_ptr<BaseTensor> derivative(const std::shared_ptr<BaseTensor> &input) override {
@@ -31,7 +31,7 @@ namespace happyml {
                 const float th = tanh(original);
                 return 1 - (th * th);
             };
-            return std::make_shared<happyml::TensorValueTransformView>(input, transformFunction);
+            return std::make_shared<happyml::ValueTransformTensorView>(input, transformFunction);
         }
     };
 }

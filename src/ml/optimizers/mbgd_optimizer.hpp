@@ -7,8 +7,8 @@
 #define HAPPYML_MBGD_OPTIMIZER_HPP
 
 #include "../optimizer.hpp"
-#include "../../types/tensor_views/tensor_multiply_by_scalar_view.hpp"
-#include "../../types/tensor_views/tensor_subtract_tensor_view.hpp"
+#include "../../types/tensor_views/scalar_multiply_tensor_view.hpp"
+#include "../../types/tensor_views/subtract_tensor_view.hpp"
 
 using namespace std;
 
@@ -54,19 +54,19 @@ namespace happyml {
                                                       const shared_ptr<BaseTensor> &weights,
                                                       const shared_ptr<BaseTensor> &weightChanges) override {
 
-            const auto adjustedWeightChanges = make_shared<TensorMultiplyByScalarView>(weightChanges,
-                                                                                       learningRate);
-            const auto adjustedWeights = make_shared<TensorSubtractTensorView>(weights,
-                                                                               adjustedWeightChanges);
+            const auto adjustedWeightChanges = make_shared<ScalarMultiplyTensorView>(weightChanges,
+                                                                                     learningRate);
+            const auto adjustedWeights = make_shared<SubtractTensorView>(weights,
+                                                                         adjustedWeightChanges);
             return adjustedWeights;
         }
 
         shared_ptr<BaseTensor> calculateBiasChange(int registration_id,
                                                    const shared_ptr<BaseTensor> &bias,
                                                    const shared_ptr<BaseTensor> &loss_gradient) override {
-            auto bias_error_at_learning_rate = make_shared<TensorMultiplyByScalarView>(loss_gradient,
-                                                                                       biasLearningRate);
-            auto adjusted_bias = make_shared<TensorSubtractTensorView>(bias, bias_error_at_learning_rate);
+            auto bias_error_at_learning_rate = make_shared<ScalarMultiplyTensorView>(loss_gradient,
+                                                                                     biasLearningRate);
+            auto adjusted_bias = make_shared<SubtractTensorView>(bias, bias_error_at_learning_rate);
             return adjusted_bias;
         }
     };
