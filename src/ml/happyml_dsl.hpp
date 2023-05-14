@@ -761,30 +761,30 @@ namespace happyml {
     shared_ptr<NeuralNetworkForTraining> loadNeuralNetworkForTraining(const string &modelName,
                                                                       const string &repoRootPath = "repo") {
         string modelPath = repoRootPath + "/" + modelName;
-        string configPath = modelPath + "/configuration.hmlprops";
+        string configPath = modelPath + "/dataset.config";
         auto configReader = make_shared<DelimitedTextFileReader>(configPath, ':');
 
         auto optimizerRecord = configReader->nextRecord();
         if (optimizerRecord[0] != "optimizer") {
-            throw runtime_error("Invalid configuration.hmlprops missing optimizer field.");
+            throw runtime_error("Invalid dataset.config missing optimizer field.");
         }
         const OptimizerType optimizerType = stringToOptimizerType(optimizerRecord[1]);
 
         auto learningRateRecord = configReader->nextRecord();
         if (learningRateRecord[0] != "learningRate") {
-            throw runtime_error("Invalid configuration.hmlprops missing learningRate field.");
+            throw runtime_error("Invalid dataset.config missing learningRate field.");
         }
         float learningRate = stof(learningRateRecord[1]);
 
         auto biasLearningRateRecord = configReader->nextRecord();
         if (biasLearningRateRecord[0] != "biasLearningRate") {
-            throw runtime_error("Invalid configuration.hmlprops missing biasLearningRate field.");
+            throw runtime_error("Invalid dataset.config missing biasLearningRate field.");
         }
         float biasLearningRate = stof(biasLearningRateRecord[1]);
 
         auto lossRecord = configReader->nextRecord();
         if (lossRecord[0] != "loss") {
-            throw runtime_error("Invalid configuration.hmlprops missing loss field.");
+            throw runtime_error("Invalid dataset.config missing loss field.");
         }
         const LossType lossType = stringToLossType(lossRecord[1]);
 

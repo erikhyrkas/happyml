@@ -6,14 +6,13 @@
 #ifndef HAPPYML_CREATE_DATASET_STATEMENT_HPP
 #define HAPPYML_CREATE_DATASET_STATEMENT_HPP
 
-#include "../execution_context.hpp"
 #include <vector>
 #include <utility>
 #include <iostream>
 #include <string>
+#include "../execution_context.hpp"
 #include "../../util/dataset_utils.hpp"
 #include "../../util/text_file_sorter.hpp"
-#include "../../util/happyml_paths.hpp"
 
 namespace happyml {
 
@@ -33,9 +32,16 @@ namespace happyml {
         shared_ptr<ExecutionResult> execute(const shared_ptr<ExecutionContext> &context) override {
             string warning;
 
+            if (context->dataset_exists(name_)) {
+                string message = "Dataset " + name_ + " already exists.";
+                cout << message << endl;
+                return make_shared<ExecutionResult>(false, true,
+                                                    message);
+            }
+
             if (location_.find("file://") != 0) {
                 return make_shared<ExecutionResult>(false, false,
-                                                             "create dataset only supports file:// location type at the moment.");
+                                                    "create dataset only supports file:// location type at the moment.");
             }
 
             if (column_groups_.empty()) {
@@ -45,33 +51,33 @@ namespace happyml {
                 // but that would be a guess. We'd also have to guess the data types. Expected might be a label, given might be a number.
                 // for the moment, we'll make the caller be explicit.
                 return make_shared<ExecutionResult>(false, false,
-                                                             "create dataset must have at least one given column.");
+                                                    "create dataset must have at least one given column.");
             }
 
             bool has_text = false;
             for (const auto &columnGroup: column_groups_) {
-                if (columnGroup->data_type != "label" &&
-                    columnGroup->data_type != "number" &&
-                    columnGroup->data_type != "text" &&
-                    columnGroup->data_type != "image") {
-                    if (columnGroup->use == "expected") {
+                if (columnGroup->data_type_ != "label" &&
+                    columnGroup->data_type_ != "number" &&
+                    columnGroup->data_type_ != "text" &&
+                    columnGroup->data_type_ != "image") {
+                    if (columnGroup->use_ == "expected") {
                         return make_shared<ExecutionResult>(false, false,
-                                                                     "create dataset's expected type must be one of: scalar, category, pixel, or text.");
+                                                            "create dataset's expected type must be one of: scalar, category, pixel, or text.");
                     } else {
                         return make_shared<ExecutionResult>(false, false,
-                                                                     "create dataset's given type must be one of: scalar, category, pixel, or text.");
+                                                            "create dataset's given type must be one of: scalar, category, pixel, or text.");
                     }
-                } else if (columnGroup->data_type == "text" && !has_text) {
+                } else if (columnGroup->data_type_ == "text" && !has_text) {
                     has_text = true;
                 }
-                if (columnGroup->use != "expected" && columnGroup->use != "given") {
+                if (columnGroup->use_ != "expected" && columnGroup->use_ != "given") {
                     return make_shared<ExecutionResult>(false, false,
-                                                                 "create dataset's use must be one of: expected or given.");
+                                                        "create dataset's use must be one of: expected or given.");
                 }
             }
             if (sort_and_check_overlaps(column_groups_)) {
                 return make_shared<ExecutionResult>(false, false,
-                                                             "create dataset's utilize columns that overlap.");
+                                                    "create dataset's utilize columns that overlap.");
             }
 
             if (has_text) {
@@ -99,27 +105,27 @@ namespace happyml {
                 has_header = false;
                 if (!convert_txt_to_csv(location_, current_location, 4000)) {
                     return make_shared<ExecutionResult>(false, false,
-                                                                 "Could not open source or destination file to convert text to csv.");
+                                                        "Could not open source or destination file to convert text to csv.");
                 }
             } else if (file_extension == "tsv") {
                 if (!convert_tsv_to_csv(location_, current_location)) {
                     return make_shared<ExecutionResult>(false, false,
-                                                                 "Could not open source or destination file to convert tsv to csv.");
+                                                        "Could not open source or destination file to convert tsv to csv.");
                 }
             } else if (file_extension != "csv") {
                 return make_shared<ExecutionResult>(false, false,
-                                                             "create dataset only supports .csv, .txt, and .tsv file types at the moment.");
+                                                    "create dataset only supports .csv, .txt, and .tsv file types at the moment.");
             }
             if (!filesystem::exists(current_location)) {
                 return make_shared<ExecutionResult>(false, false,
-                                                             "create dataset could not find the file: " + current_location);
+                                                    "create dataset could not find the file: " + current_location);
             }
             vector<shared_ptr<ColumnGroup>>
                     given_column_groups;
             vector<shared_ptr<ColumnGroup>>
                     expected_column_groups;
             for (const auto &columnGroup: column_groups_) {
-                if (columnGroup->use == "expected") {
+                if (columnGroup->use_ == "expected") {
                     expected_column_groups.push_back(columnGroup);
                 } else {
                     given_column_groups.push_back(columnGroup);
@@ -127,42 +133,43 @@ namespace happyml {
             }
             if (given_column_groups.empty()) {
                 return make_shared<ExecutionResult>(false, false,
-                                                             "create dataset must have at least one given column.");
+                                                    "create dataset must have at least one given column.");
             }
             vector<shared_ptr<ColumnGroup>>
                     updatedColumnGroups;
             size_t current_index = 0;
             for (const auto &columnGroup: given_column_groups) {
                 auto updatedColumnGroup = make_shared<ColumnGroup>(columnGroup);
-                updatedColumnGroup->start_index = current_index;
-                current_index += updatedColumnGroup->source_column_count;
+                updatedColumnGroup->start_index_ = current_index;
+                current_index += updatedColumnGroup->source_column_count_;
                 updatedColumnGroups.push_back(updatedColumnGroup);
             }
             for (const auto &columnGroup: expected_column_groups) {
                 auto updatedColumnGroup = make_shared<ColumnGroup>(columnGroup);
-                updatedColumnGroup->start_index = current_index;
-                current_index += updatedColumnGroup->source_column_count;
+                updatedColumnGroup->start_index_ = current_index;
+                current_index += updatedColumnGroup->source_column_count_;
                 updatedColumnGroups.push_back(updatedColumnGroup);
             }
 
             auto organized_location = base_file_path + ".given-expected.csv";
             if (!update_column_positions(current_location, organized_location, given_column_groups, expected_column_groups, has_header)) {
                 return make_shared<ExecutionResult>(false, false,
-                                                             "Empty dataset");
+                                                    "Empty dataset");
             }
 
             auto sorted_location = base_file_path + ".sorted.csv";
             if (!FileSorter::sort(organized_location, sorted_location, false)) {
                 return make_shared<ExecutionResult>(false, false,
-                                                             "Could not sort the given-expected file.");
+                                                    "Could not sort the given-expected file.");
             }
             if (!filesystem::remove(organized_location)) {
                 return make_shared<ExecutionResult>(false, false,
-                                                             "Could not remove the given-expected file.");
+                                                    "Could not remove the given-expected file.");
             }
 
-            auto raw_location = create_binary_dataset_from_delimited_values(DEFAULT_HAPPYML_DATASETS_PATH,
-                                                                            name_,
+            string new_dataset_path = context->get_dataset_path(name_);
+
+            auto raw_location = create_binary_dataset_from_delimited_values(new_dataset_path,
                                                                             sorted_location,
                                                                             ',',
                                                                             false,
@@ -171,15 +178,14 @@ namespace happyml {
                                                                             context->getBpeEncoder());
             if (!filesystem::remove(sorted_location)) {
                 return make_shared<ExecutionResult>(false, false,
-                                                             "Could not remove the sorted-deduped file.");
+                                                    "Could not remove the sorted-deduped file.");
             }
 
             normalize_and_standardize_dataset(raw_location,
-                                                       DEFAULT_HAPPYML_DATASETS_PATH,
-                                                       name_);
+                                              new_dataset_path);
             if (!filesystem::remove(raw_location)) {
                 return make_shared<ExecutionResult>(false, false,
-                                                             "Could not remove the clean dataset file.");
+                                                    "Could not remove the clean dataset file.");
             }
             return make_shared<ExecutionResult>(false, true, "Created.");
         }

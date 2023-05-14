@@ -8,12 +8,12 @@
 
 #include <string>
 #include <vector>
-#include "../lexer/token.hpp"
 #include "../statements/code_block_statement.hpp"
 #include "../statements/exit_statement.hpp"
 #include "../statements/print_statement.hpp"
 #include "../statements/help_statement.hpp"
 #include "../statements/create_dataset_statement.hpp"
+#include "../statements/create_task_statement.hpp"
 
 using namespace std;
 
@@ -88,48 +88,55 @@ namespace happyml {
         // new shape. We still need this original shape, to know the user's intent.
         static shared_ptr<ParseResult> parseColumnGroup(shared_ptr<ColumnGroup> &columnGroup,
                                                         const shared_ptr<TokenStream> &stream) {
-            columnGroup->data_type = stream->next()->getValue();
+            if (!stream->hasNext()) {
+                return generateError("with statement data type missing ", stream->previous());
+            }
+            columnGroup->data_type_ = stream->next()->getValue();
+            if (!stream->hasNext()) {
+                return generateError("with statement label missing ", stream->previous());
+            }
+            columnGroup->label_ = stream->next()->getValue();
             auto dim_or_at = stream->next()->getLabel();
             if ("_open_parenthesis" == dim_or_at && stream->hasNext()) {
                 auto next_val = parseNextNumber(stream);
                 if (!stream->hasNext()) {
-                    return generateError("with statement(1) is malformed ", stream->previous());
+                    return generateError("with statement data type dimensions is incomplete: ", stream->previous());
                 }
                 auto next_token = stream->next()->getLabel();
                 if ("_close_parenthesis" == next_token) {
-                    columnGroup->rows = 1;
-                    columnGroup->columns = next_val;
-                    columnGroup->channels = 1;
+                    columnGroup->rows_ = 1;
+                    columnGroup->columns_ = next_val;
+                    columnGroup->channels_ = 1;
                 } else {
                     if ("_comma" != next_token || !stream->hasNext()) {
-                        return generateError("with statement(2) is malformed: ", stream->previous());
+                        return generateError("with statement data type dimensions expected a comma after: ", stream->previous());
                     }
-                    columnGroup->rows = next_val;
-                    columnGroup->columns = parseNextNumber(stream);
+                    columnGroup->rows_ = next_val;
+                    columnGroup->columns_ = parseNextNumber(stream);
                     next_token = stream->next()->getLabel();
                     if ("_close_parenthesis" == next_token) {
-                        columnGroup->channels = 1;
+                        columnGroup->channels_ = 1;
                     } else {
                         if ("_comma" != next_token || !stream->hasNext()) {
-                            return generateError("with statement(3) is malformed: ", stream->previous());
+                            return generateError("with statement data type dimensions expected a comma after: ", stream->previous());
                         }
-                        columnGroup->channels = parseNextNumber(stream);
+                        columnGroup->channels_ = parseNextNumber(stream);
                         if ("_close_parenthesis" != stream->next()->getLabel() || !stream->hasNext()) {
-                            return generateError("with statement(4) is malformed: ", stream->previous());
+                            return generateError("with statement data type dimensions expected a closing parenthesis after: ", stream->previous());
                         }
                     }
                 }
                 dim_or_at = stream->next()->getLabel();
             } else {
-                columnGroup->rows = 1;
-                columnGroup->columns = 1;
-                columnGroup->channels = 1;
+                columnGroup->rows_ = 1;
+                columnGroup->columns_ = 1;
+                columnGroup->channels_ = 1;
             }
             if ("_at" != dim_or_at || !stream->hasNext()) {
-                return generateError("with statement(5) is malformed: ", stream->previous());
+                return generateError("with statement expected \"at\" after: ", stream->previous());
             }
-            columnGroup->start_index = parseNextNumber(stream);
-            columnGroup->source_column_count = columnGroup->rows * columnGroup->columns * columnGroup->channels;
+            columnGroup->start_index_ = parseNextNumber(stream);
+            columnGroup->source_column_count_ = columnGroup->rows_ * columnGroup->columns_ * columnGroup->channels_;
             return make_shared<ParseResult>("Success", true);
         }
 
@@ -160,9 +167,9 @@ namespace happyml {
             try {
                 //  create dataset <name>
                 //  [with header]
-                //  [with given [<label|number|text|image>] at <column> [through <column>] ]+
-                //  [with expected [<label|number|text|image>] at <column> [through <column>] ]*
-                //  using <local file or folder|url>
+                //  [with given <label|number|text|image> <name> [(<rows>, <columns>, <channels>)] at <column> ]+
+                //  [with expected <label|number|text|image> <name> [(<rows>, <columns>, <channels>)] at <column> ]*
+                //  using <file://path/>
                 if (!stream->hasNext()) {
                     return generateError("create dataset requires a name: ", next);
                 }
@@ -179,18 +186,21 @@ namespace happyml {
                 while (stream->hasNext() && "_with" == stream->peek()->getLabel()) {
                     stream->consume();
                     auto columnGroup = make_shared<ColumnGroup>();
+                    if(!stream->hasNext()) {
+                        return generateError("with statement is incomplete ", stream->previous());
+                    }
                     string withType = stream->next()->getValue();
                     if ("header" == withType) {
                         has_header = true;
                     } else {
-                        if ("expected" == withType) {
-                            columnGroup->use = withType;
-                        } else if ("given" == withType) {
-                            columnGroup->use = withType;
+                        if ("expected" == withType || "given" == withType) {
+                            columnGroup->use_ = withType;
                         } else {
-                            return generateError("with statement (0) is malformed ", stream->previous());
+                            string message = "Unknown with type: " + withType;
+                            return generateError(message, stream->previous());
                         }
                         columnGroup->id_ = column_groups.size() + 1;
+
                         auto columnGroupParseResult = parseColumnGroup(columnGroup, stream);
                         if (!columnGroupParseResult->isSuccessful()) {
                             return columnGroupParseResult;

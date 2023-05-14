@@ -30,24 +30,26 @@
 #
 # One-liner if you wanted to run interactively:
 #
-# create dataset titanic with header with expected label at 1 with given label at 2 with given label at 4 with given number at 5 with given number at 6 with given number at 7 with given number at 9 with given label at 11 using file://../data/titanic/train.csv
+# create dataset titanic with header with expected label Survived at 1 with given label Pclass at 2 with given label Sex at 4 with given number Age at 5 with given number SibSp at 6 with given number Parch at 7 with given number Fare at 9 with given label Embarked at 11 using file://../data/titanic/train.csv
+
+
 #
 # titanic.happyml :
 
 create dataset titanic
        with header
-       with expected label at 1     # Survived
-       with given label    at 2     # Pclass
-       with given label    at 4     # Sex
-       with given number   at 5     # Age
-       with given number   at 6     # SibSp
-       with given number   at 7     # Parch
-       with given number   at 9     # Fare
-       with given label    at 11    # Embarked
+       with expected label Survived at 1
+       with given label    Pclass   at 2
+       with given label    Sex      at 4
+       with given number   Age      at 5
+       with given number   SibSp    at 6
+       with given number   Parch    at 7
+       with given number   Fare     at 9
+       with given label    Embarked at 11
        using file://../data/titanic/train.csv
 
 
-print raw titanic limit 5
-print pretty titanic limit 5
+print raw titanic limit 1
+print pretty titanic limit 1
 
 

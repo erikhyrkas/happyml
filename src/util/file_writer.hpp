@@ -239,6 +239,12 @@ namespace happyml {
                 auto label_length_streamsize = static_cast<streamsize>(label_length);
                 binaryFile_.write(label.c_str(), label_length_streamsize);
             }
+            uint64_t label_length = column_metadata->name.size();
+            auto portable_label_length = portableBytes(label_length);
+            binaryFile_.write(reinterpret_cast<const char *>(&portable_label_length), sizeof(uint64_t));
+            // write label
+            auto label_length_streamsize = static_cast<streamsize>(label_length);
+            binaryFile_.write(column_metadata->name.c_str(), label_length_streamsize);
         }
 
         static size_t compute_given_hash(const vector<shared_ptr<BaseTensor>> &given_tensors) {
@@ -253,18 +259,19 @@ namespace happyml {
         }
     };
 
-    void save_config(const string &path, vector<vector<string>> &metadata) {
-        if (filesystem::is_directory(path)) {
-            filesystem::remove_all(path);
+    void save_config(const string &directory, const string &filename, vector <vector<string>> &metadata) {
+        if (filesystem::is_directory(directory)) {
+            filesystem::remove_all(directory);
         }
-        filesystem::create_directories(path);
-        string modelProperties = path + "/configuration.hmlprops";
+        filesystem::create_directories(directory);
+        string modelProperties = directory + "/" + filename;
         auto writer = make_unique<DelimitedTextFileWriter>(modelProperties, ':');
         for (const auto &record: metadata) {
             writer->writeRecord(record);
         }
         writer->close();
     }
+
 
 }
 #endif //HAPPYML_FILE_WRITER_HPP

@@ -13,10 +13,10 @@ using namespace happyml;
 void test_multi_input_multi_output_create() {
     auto executionContext = make_shared<ExecutionContext>();
     vector<shared_ptr<ColumnGroup>> columnGroups;
-    columnGroups.emplace_back(make_shared<ColumnGroup>(1, 0, 1, "given", "number", 1, 1, 1));
-    columnGroups.emplace_back(make_shared<ColumnGroup>(2, 1, 1, "given", "number", 1, 1, 1));
-    columnGroups.emplace_back(make_shared<ColumnGroup>(3, 2, 1, "given", "number", 1, 1, 1));
-    columnGroups.emplace_back(make_shared<ColumnGroup>(4, 3, 1, "expected", "number", 1, 1, 1));
+    columnGroups.emplace_back(make_shared<ColumnGroup>(1, 0, 1, "given", "number", "val1", 1, 1, 1));
+    columnGroups.emplace_back(make_shared<ColumnGroup>(2, 1, 1, "given", "number", "val2", 1, 1, 1));
+    columnGroups.emplace_back(make_shared<ColumnGroup>(3, 2, 1, "given", "number", "val3", 1, 1, 1));
+    columnGroups.emplace_back(make_shared<ColumnGroup>(4, 3, 1, "expected", "number", "val4", 1, 1, 1));
     CreateDatasetStatement test("test2", "file://../test_data/unit_test_1.csv", true, columnGroups);
     auto result = test.execute(executionContext);
     ASSERT_TRUE(result->isSuccessful());
@@ -39,10 +39,10 @@ void test_multi_input_multi_output_create_2() {
 
     auto executionContext = make_shared<ExecutionContext>();
     vector<shared_ptr<ColumnGroup>> columnGroups;
-    columnGroups.emplace_back(make_shared<ColumnGroup>(1, 0, 1, "given", "number", 1, 1, 1));
-    columnGroups.emplace_back(make_shared<ColumnGroup>(2, 1, 1, "expected", "number", 1, 1, 1));
-    columnGroups.emplace_back(make_shared<ColumnGroup>(3, 2, 1, "given", "number", 1, 1, 1));
-    columnGroups.emplace_back(make_shared<ColumnGroup>(4, 3, 1, "given", "number", 1, 1, 1));
+    columnGroups.emplace_back(make_shared<ColumnGroup>(1, 0, 1, "given", "number", "val1", 1, 1, 1));
+    columnGroups.emplace_back(make_shared<ColumnGroup>(2, 1, 1, "expected", "number", "val2", 1, 1, 1));
+    columnGroups.emplace_back(make_shared<ColumnGroup>(3, 2, 1, "given", "number", "val3", 1, 1, 1));
+    columnGroups.emplace_back(make_shared<ColumnGroup>(4, 3, 1, "given", "number", "val4", 1, 1, 1));
     CreateDatasetStatement test("test", "file://../test_data/unit_test_1.csv", true, columnGroups);
     auto result = test.execute(executionContext);
     ASSERT_TRUE(result->isSuccessful());

@@ -237,43 +237,47 @@ namespace happyml {
     };
 
     struct ColumnGroup {
-        ColumnGroup() : id_(0), start_index(0), source_column_count(0), rows(0), columns(0), channels(0) {}
+        ColumnGroup() : id_(0), start_index_(0), source_column_count_(0), label_(), rows_(0), columns_(0), channels_(0) {}
 
-        ColumnGroup(size_t id, size_t startIndex, size_t source_column_count, string use, string dataType, size_t rows, size_t columns, size_t channels) :
-                id_(id), start_index(startIndex), source_column_count(source_column_count), use(std::move(use)), data_type(std::move(dataType)), rows(rows), columns(columns), channels(channels) {}
+        ColumnGroup(size_t id, size_t startIndex, size_t source_column_count, string use, string dataType, string label, size_t rows, size_t columns, size_t channels) :
+                id_(id), start_index_(startIndex), source_column_count_(source_column_count), use_(std::move(use)), data_type_(std::move(dataType)),
+                label_(std::move(label)), rows_(rows), columns_(columns), channels_(channels) {}
 
         explicit ColumnGroup(const shared_ptr<ColumnGroup> &from) {
             id_ = from->id_;
-            start_index = from->start_index;
-            source_column_count = from->source_column_count;
-            use = from->use;
-            data_type = from->data_type;
-            rows = from->rows;
-            columns = from->columns;
-            channels = from->channels;
+            start_index_ = from->start_index_;
+            source_column_count_ = from->source_column_count_;
+            use_ = from->use_;
+            data_type_ = from->data_type_;
+            rows_ = from->rows_;
+            columns_ = from->columns_;
+            channels_ = from->channels_;
+            label_ = from->label_;
             ordered_distinct_labels_ = from->ordered_distinct_labels_;
         }
 
         ColumnGroup(const shared_ptr<ColumnGroup> &from, vector<string> ordered_distinct_labels) {
             id_ = from->id_;
-            start_index = from->start_index;
-            source_column_count = from->source_column_count;
-            use = from->use;
-            data_type = from->data_type;
-            rows = from->rows;
-            columns = from->columns;
-            channels = from->channels;
+            start_index_ = from->start_index_;
+            source_column_count_ = from->source_column_count_;
+            use_ = from->use_;
+            data_type_ = from->data_type_;
+            rows_ = from->rows_;
+            columns_ = from->columns_;
+            channels_ = from->channels_;
+            label_ = from->label_;
             ordered_distinct_labels_ = std::move(ordered_distinct_labels);
         }
 
-        size_t start_index;
-        size_t source_column_count;
-        string use; // given or expected
-        string data_type; // image, label, number, text
-        size_t rows;
-        size_t columns;
-        size_t channels;
+        size_t start_index_;
+        size_t source_column_count_;
+        string use_; // given or expected
+        string data_type_; // image, label, number, text
+        size_t rows_;
+        size_t columns_;
+        size_t channels_;
         size_t id_;
+        string label_;
         vector<string> ordered_distinct_labels_;
     };
 
@@ -290,8 +294,8 @@ namespace happyml {
             auto record = reader.nextRecord();
             vector<string> new_record;
             for (const auto &column: given_columns) {
-                for (size_t i = 0; i < column->source_column_count; i++) {
-                    new_record.push_back(record[column->start_index + i]);
+                for (size_t i = 0; i < column->source_column_count_; i++) {
+                    new_record.push_back(record[column->start_index_ + i]);
                 }
 //                for (size_t i = 0; i < column.rows; i++) {
 //                    for (size_t j = 0; j < column.columns; j++) {
@@ -303,8 +307,8 @@ namespace happyml {
 //                }
             }
             for (const auto &column: expected_columns) {
-                for (size_t i = 0; i < column->source_column_count; i++) {
-                    new_record.push_back(record[column->start_index + i]);
+                for (size_t i = 0; i < column->source_column_count_; i++) {
+                    new_record.push_back(record[column->start_index_ + i]);
                 }
 //                for (size_t i = 0; i < column.rows; i++) {
 //                    for (size_t j = 0; j < column.columns; j++) {

@@ -21,7 +21,7 @@
 namespace happyml {
 
     bool compare_startIndex(const shared_ptr<ColumnGroup> &a, const shared_ptr<ColumnGroup> &b) {
-        return a->start_index < b->start_index;
+        return a->start_index_ < b->start_index_;
     }
 
     bool has_overlap(const std::vector<shared_ptr<ColumnGroup>> &sorted_groups) {
@@ -29,9 +29,9 @@ namespace happyml {
             const shared_ptr<ColumnGroup> &prev = sorted_groups[i - 1];
             const shared_ptr<ColumnGroup> &curr = sorted_groups[i];
 
-            size_t prev_endIndex = prev->start_index + prev->source_column_count - 1;
+            size_t prev_endIndex = prev->start_index_ + prev->source_column_count_ - 1;
 
-            if (prev_endIndex > curr->start_index) {
+            if (prev_endIndex > curr->start_index_) {
                 return true;
             }
         }
@@ -124,8 +124,7 @@ namespace happyml {
 
 
     shared_ptr<BaseTensor> &standardize_and_normalize(shared_ptr<BaseTensor> &standardized_normalized_given_tensor,
-                                                      const shared_ptr<BinaryColumnMetadata> &current_metadata
-    ) {
+                                                      const shared_ptr<BinaryColumnMetadata> &current_metadata) {
         if (current_metadata->is_standardized) {
             standardized_normalized_given_tensor = make_shared<StandardizeTensorView>(standardized_normalized_given_tensor,
                                                                                       current_metadata->mean,
@@ -156,7 +155,8 @@ namespace happyml {
 
     shared_ptr<BinaryColumnMetadata> initialize_column_metadata(const vector<size_t> &dims,
                                                                 char purpose,
-                                                                vector<string> ordered_labels) {
+                                                                vector<string> ordered_labels,
+                                                                string name) {
         auto next_metadata = make_shared<BinaryColumnMetadata>();
         next_metadata->purpose = purpose;
         next_metadata->rows = dims[0];
@@ -169,12 +169,12 @@ namespace happyml {
         next_metadata->min_value = 0.0;
         next_metadata->max_value = 0.0;
         next_metadata->ordered_labels = std::move(ordered_labels);
+        next_metadata->name = std::move(name);
         return next_metadata;
     }
 
     void normalize_and_standardize_dataset(const string &raw_binary_file,
-                                           const string &repo_path,
-                                           const string &name) {
+                                           const string &dataset_path) {
 
         BinaryDatasetReader binaryDatasetReader(raw_binary_file);
 
@@ -185,7 +185,8 @@ namespace happyml {
         for (int i = 0; i < given_count; ++i) {
             shared_ptr<BinaryColumnMetadata> next_metadata = initialize_column_metadata(binaryDatasetReader.getGivenTensorDims(i),
                                                                                         binaryDatasetReader.getGivenTensorPurpose(i),
-                                                                                        binaryDatasetReader.getGivenTensorOrderedLabels(i));
+                                                                                        binaryDatasetReader.getGivenTensorOrderedLabels(i),
+                                                                                        binaryDatasetReader.get_given_name(i));
             given_metadata.emplace_back(next_metadata);
             given_standardization_values.emplace_back(make_shared<StandardizationAndNormalizationValues>());
             if (given_metadata[i]->purpose == 'N') {
@@ -199,7 +200,8 @@ namespace happyml {
         for (int i = 0; i < expected_count; ++i) {
             shared_ptr<BinaryColumnMetadata> next_metadata = initialize_column_metadata(binaryDatasetReader.getExpectedTensorDims(i),
                                                                                         binaryDatasetReader.getExpectedTensorPurpose(i),
-                                                                                        binaryDatasetReader.getExpectedTensorOrderedLabels(i));
+                                                                                        binaryDatasetReader.getExpectedTensorOrderedLabels(i),
+                                                                                        binaryDatasetReader.get_expected_name(i));
             expected_metadata.emplace_back(next_metadata);
             expected_standardization_values.emplace_back(make_shared<StandardizationAndNormalizationValues>());
             if (expected_metadata[i]->purpose == 'N') {
@@ -252,7 +254,7 @@ namespace happyml {
             }
         }
 
-        auto new_dataset_path = repo_path + name + "/dataset.bin";
+        auto new_dataset_path = dataset_path + "/dataset.bin";
         BinaryDatasetWriter binaryDatasetWriter(new_dataset_path, given_metadata, expected_metadata, 0);
         size_t row_count = binaryDatasetReader.rowCount();
         for (size_t index = 0; index < row_count; ++index) {
@@ -276,40 +278,77 @@ namespace happyml {
     }
 
 
-    void saveColumnMetadata(vector<pair<shared_ptr<ColumnGroup>, shared_ptr<DataEncoder>>> &columnGroupEncoders,
-                            vector<shared_ptr<ColumnGroup>> &originalColumnGroups,
-                            const string &new_dataset_path) {
+    vector<string> build_column_group_metadata(const shared_ptr<ColumnGroup> &column_group, const string &metadata_label) {
+        vector<string> column_group_metadata = {metadata_label,
+                                                to_string(column_group->id_),
+                                                to_string(column_group->start_index_),
+                                                to_string(column_group->source_column_count_),
+                                                column_group->use_,
+                                                column_group->data_type_,
+                                                column_group->label_,
+                                                to_string(column_group->rows_),
+                                                to_string(column_group->columns_),
+                                                to_string(column_group->channels_)};
+        return column_group_metadata;
+    }
+
+    void save_column_metadata(vector<pair<shared_ptr<ColumnGroup>, shared_ptr<DataEncoder>>> &columnGroupEncoders,
+                              vector<shared_ptr<ColumnGroup>> &originalColumnGroups,
+                              const string &new_dataset_path) {
         vector<vector<string>> dataset_metadata;
         for (const auto &column_group_encoders: columnGroupEncoders) {
             auto column_group = column_group_encoders.first;
-            vector<string> column_group_metadata = {"column_group",
-                                                    to_string(column_group->id_),
-                                                    to_string(column_group->start_index),
-                                                    to_string(column_group->source_column_count),
-                                                    column_group->use,
-                                                    column_group->data_type,
-                                                    to_string(column_group->rows),
-                                                    to_string(column_group->columns),
-                                                    to_string(column_group->channels)};
+            vector<string> column_group_metadata = build_column_group_metadata(column_group, "column_group");
             dataset_metadata.push_back(column_group_metadata);
         }
         for (const auto &column_group: originalColumnGroups) {
-            vector<string> column_group_metadata = {"original_column_group",
-                                                    to_string(column_group->id_),
-                                                    to_string(column_group->start_index),
-                                                    to_string(column_group->source_column_count),
-                                                    column_group->use,
-                                                    column_group->data_type,
-                                                    to_string(column_group->rows),
-                                                    to_string(column_group->columns),
-                                                    to_string(column_group->channels)};
+            vector<string> column_group_metadata = build_column_group_metadata(column_group, "original_column_group");
             dataset_metadata.push_back(column_group_metadata);
         }
-        save_config(new_dataset_path, dataset_metadata);
+        save_config(new_dataset_path, "dataset.config", dataset_metadata);
     }
 
-    string create_binary_dataset_from_delimited_values(const string &repo_path,
-                                                       const string &dataset_name,
+    void save_column_metadata(vector<shared_ptr<ColumnGroup>> &columnGroups,
+                              vector<shared_ptr<ColumnGroup>> &originalColumnGroups,
+                              const string &new_dataset_path) {
+        vector<vector<string>> dataset_metadata;
+        for (const auto &column_group: columnGroups) {
+            vector<string> column_group_metadata = build_column_group_metadata(column_group, "column_group");
+            dataset_metadata.push_back(column_group_metadata);
+        }
+        for (const auto &column_group: originalColumnGroups) {
+            vector<string> column_group_metadata = build_column_group_metadata(column_group, "original_column_group");
+            dataset_metadata.push_back(column_group_metadata);
+        }
+        save_config(new_dataset_path, "dataset.config", dataset_metadata);
+    }
+
+    pair<vector<shared_ptr<ColumnGroup>>, vector<shared_ptr<ColumnGroup>>> read_column_metadata(const string &dataset_path) {
+        auto dataset_metadata = read_config(dataset_path, "dataset.config");
+        vector<shared_ptr<ColumnGroup>> sortedColumnGroups;
+        vector<shared_ptr<ColumnGroup>> originalColumnGroups;
+        for (const auto &column_group_metadata: dataset_metadata) {
+            auto column_group = make_shared<ColumnGroup>();
+            column_group->id_ = stoi(column_group_metadata[1]);
+            column_group->start_index_ = stoi(column_group_metadata[2]);
+            column_group->source_column_count_ = stoi(column_group_metadata[3]);
+            column_group->use_ = column_group_metadata[4];
+            column_group->data_type_ = column_group_metadata[5];
+            column_group->label_ = column_group_metadata[6];
+            column_group->rows_ = stoi(column_group_metadata[7]);
+            column_group->columns_ = stoi(column_group_metadata[8]);
+            column_group->channels_ = stoi(column_group_metadata[9]);
+            if ("column_group" == column_group_metadata[0]) {
+                sortedColumnGroups.emplace_back(column_group);
+            } else if ("original_column_group" == column_group_metadata[0]) {
+                originalColumnGroups.emplace_back(column_group);
+            }
+        }
+        return make_pair(sortedColumnGroups, originalColumnGroups);
+
+    }
+
+    string create_binary_dataset_from_delimited_values(const string &new_dataset_path,
                                                        const string &delimited_file_path,
                                                        char delimiter,
                                                        bool header_row,
@@ -325,61 +364,60 @@ namespace happyml {
         // For text, we need to use byte pair encoding.
         vector<pair<shared_ptr<ColumnGroup>, shared_ptr<DataEncoder>>> columnGroupEncoders;
         for (auto &column_group: sortedColumnGroups) {
-            if ("image" == column_group->data_type) {
+            if ("image" == column_group->data_type_) {
                 columnGroupEncoders.emplace_back(make_shared<ColumnGroup>(*column_group), make_shared<TextToPixelEncoder>());
-            } else if ("number" == column_group->data_type) {
+            } else if ("number" == column_group->data_type_) {
                 columnGroupEncoders.emplace_back(make_shared<ColumnGroup>(*column_group), make_shared<TextToScalarEncoder>());
-            } else if ("label" == column_group->data_type) {
+            } else if ("label" == column_group->data_type_) {
                 auto distinctValues = get_distinct_values(delimited_file_path,
                                                           delimiter,
-                                                          column_group->start_index,
+                                                          column_group->start_index_,
                                                           header_row,
                                                           true);
                 vector<string> distinctValuesVector(distinctValues.begin(), distinctValues.end());
                 columnGroupEncoders.emplace_back(make_shared<ColumnGroup>(column_group, distinctValuesVector), make_shared<TextToUniqueCategoryEncoder>(distinctValuesVector));
-            } else if ("text" == column_group->data_type) {
+            } else if ("text" == column_group->data_type_) {
                 //columnGroupEncoders.emplace_back(make_shared<ColumnGroup>(*column_group), make_shared<TextToEmbeddedTokensEncoder>(defaultBytePairEncoder));
                 //TODO: finish this
-                string error = "Unimplemented data type: " + column_group->data_type;
+                string error = "Unimplemented data type: " + column_group->data_type_;
                 throw runtime_error(error.c_str());
             } else {
-                string error = "Unknown data type: " + column_group->data_type;
+                string error = "Unknown data type: " + column_group->data_type_;
                 throw runtime_error(error.c_str());
             }
             auto column_and_encoder = columnGroupEncoders.back();
-            vector<size_t> shape = column_and_encoder.second->calculate_output_shape(column_and_encoder.first->rows,
-                                                                                     column_and_encoder.first->columns,
-                                                                                     column_and_encoder.first->channels);
+            vector<size_t> shape = column_and_encoder.second->calculate_output_shape(column_and_encoder.first->rows_,
+                                                                                     column_and_encoder.first->columns_,
+                                                                                     column_and_encoder.first->channels_);
             // update the original shape, since it is wrong:
-            column_and_encoder.first->rows = shape[0];
-            column_and_encoder.first->columns = shape[1];
-            column_and_encoder.first->channels = shape[2];
+            column_and_encoder.first->rows_ = shape[0];
+            column_and_encoder.first->columns_ = shape[1];
+            column_and_encoder.first->channels_ = shape[2];
         }
 
 
         DelimitedTextFileReader delimitedTextFileReader(delimited_file_path, delimiter, header_row);
-        string new_dataset_path = repo_path + dataset_name;
 
         vector<shared_ptr<BinaryColumnMetadata>> given_metadata;
         vector<shared_ptr<BinaryColumnMetadata>> expected_metadata;
         for (auto &column_group_plus_encoder: columnGroupEncoders) {
             auto next_column_metadata = make_shared<BinaryColumnMetadata>();
             // 'I' (image), 'T' (text), 'N' (number), 'L' (label)
-            if (column_group_plus_encoder.first->data_type == "image") {
+            if (column_group_plus_encoder.first->data_type_ == "image") {
                 next_column_metadata->purpose = 'I';
-            } else if (column_group_plus_encoder.first->data_type == "text") {
+            } else if (column_group_plus_encoder.first->data_type_ == "text") {
                 next_column_metadata->purpose = 'T';
-            } else if (column_group_plus_encoder.first->data_type == "number") {
+            } else if (column_group_plus_encoder.first->data_type_ == "number") {
                 next_column_metadata->purpose = 'N';
-            } else if (column_group_plus_encoder.first->data_type == "label") {
+            } else if (column_group_plus_encoder.first->data_type_ == "label") {
                 next_column_metadata->purpose = 'L';
             } else {
-                throw std::runtime_error("Unknown data type: " + column_group_plus_encoder.first->data_type);
+                throw std::runtime_error("Unknown data type: " + column_group_plus_encoder.first->data_type_);
             }
-            next_column_metadata->source_column_count = column_group_plus_encoder.first->source_column_count;
-            next_column_metadata->rows = column_group_plus_encoder.first->rows;
-            next_column_metadata->columns = column_group_plus_encoder.first->columns;
-            next_column_metadata->channels = column_group_plus_encoder.first->channels;
+            next_column_metadata->source_column_count = column_group_plus_encoder.first->source_column_count_;
+            next_column_metadata->rows = column_group_plus_encoder.first->rows_;
+            next_column_metadata->columns = column_group_plus_encoder.first->columns_;
+            next_column_metadata->channels = column_group_plus_encoder.first->channels_;
             next_column_metadata->is_normalized = false;
             next_column_metadata->min_value = 0.0;
             next_column_metadata->max_value = 0.0;
@@ -387,14 +425,15 @@ namespace happyml {
             next_column_metadata->mean = 0.0;
             next_column_metadata->standard_deviation = 0.0;
             next_column_metadata->ordered_labels = column_group_plus_encoder.first->ordered_distinct_labels_;
-            if (column_group_plus_encoder.first->use == "given") {
+            next_column_metadata->name = column_group_plus_encoder.first->label_;
+            if (column_group_plus_encoder.first->use_ == "given") {
                 given_metadata.push_back(next_column_metadata);
             } else {
                 expected_metadata.push_back(next_column_metadata);
             }
         }
 
-        saveColumnMetadata(columnGroupEncoders, originalColumnGroups, new_dataset_path);
+        save_column_metadata(columnGroupEncoders, originalColumnGroups, new_dataset_path);
 
         auto dataset_file_path = new_dataset_path + "/raw.bin";
         BinaryDatasetWriter binaryDatasetWriter(dataset_file_path, given_metadata, expected_metadata);
@@ -415,9 +454,9 @@ namespace happyml {
             for (const auto &column_group_and_encoder: columnGroupEncoders) {
                 auto column_group_metadata = column_group_and_encoder.first;
                 auto encoder = column_group_and_encoder.second;
-                string data_type = column_group_metadata->data_type;
-                auto index_to_read_from = static_cast<vector<string>::difference_type>(column_group_metadata->start_index);
-                auto width = static_cast<vector<string>::difference_type>(index_to_read_from + (column_group_metadata->source_column_count));
+                string data_type = column_group_metadata->data_type_;
+                auto index_to_read_from = static_cast<vector<string>::difference_type>(column_group_metadata->start_index_);
+                auto width = static_cast<vector<string>::difference_type>(index_to_read_from + (column_group_metadata->source_column_count_));
                 size_t record_length = record.size();
                 if (index_to_read_from >= record_length) {
                     throw std::runtime_error("Index to read from is greater than record length.  Index: " + to_string(index_to_read_from) + " Record Length: " + to_string(record_length));
@@ -435,12 +474,12 @@ namespace happyml {
                 }
                 vector<string> column_data(start_iterator, last_iterator);
                 auto tensor_value = encoder->encode(column_data,
-                                                    column_group_metadata->rows,
-                                                    column_group_metadata->columns,
-                                                    column_group_metadata->channels,
+                                                    column_group_metadata->rows_,
+                                                    column_group_metadata->columns_,
+                                                    column_group_metadata->channels_,
                                                     true);
                 // because columnGroupEncoders are in order, this should work
-                if (column_group_metadata->use == "given") {
+                if (column_group_metadata->use_ == "given") {
                     result_row_givens.push_back(tensor_value);
                 } else {
                     result_row_expecteds.push_back(tensor_value);

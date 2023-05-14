@@ -224,7 +224,9 @@ namespace happyml {
             return number_of_rows_;
         }
 
-        pair<vector<shared_ptr<BaseTensor>>, vector<shared_ptr<BaseTensor>>> readRow(size_t index) {
+        pair<vector < shared_ptr<BaseTensor>>, vector <shared_ptr<BaseTensor>>>
+        readRow(size_t
+        index) {
             if (index >= number_of_rows_) {
                 throw runtime_error("Index out of bounds");
             }
@@ -232,12 +234,12 @@ namespace happyml {
             std::streamoff offset = static_cast<std::streamoff>(index) * static_cast<std::streamoff>(row_size_);
             binaryFile_.seekg(header_size_ + offset, ios::beg);
 
-            vector<shared_ptr<BaseTensor>> given_tensors;
+            vector <shared_ptr<BaseTensor>> given_tensors;
             for (const auto &metadata: given_metadata_) {
                 shared_ptr<BaseTensor> next_tensor = loadTensor(metadata);
                 given_tensors.push_back(next_tensor);
             }
-            vector<shared_ptr<BaseTensor>> expected_tensors;
+            vector <shared_ptr<BaseTensor>> expected_tensors;
             for (const auto &metadata: expected_metadata_) {
                 shared_ptr<BaseTensor> next_tensor = loadTensor(metadata);
                 expected_tensors.push_back(next_tensor);
@@ -260,14 +262,14 @@ namespace happyml {
             return given_metadata_[index]->purpose;
         }
 
-        vector<size_t> getExpectedTensorDims(size_t index) {
+        vector <size_t> getExpectedTensorDims(size_t index) {
             if (index >= expected_metadata_.size()) {
                 throw runtime_error("Index out of bounds");
             }
             return {expected_metadata_[index]->rows, expected_metadata_[index]->columns, expected_metadata_[index]->channels};
         }
 
-        vector<size_t> getGivenTensorDims(size_t index) {
+        vector <size_t> getGivenTensorDims(size_t index) {
             if (index >= given_metadata_.size()) {
                 throw runtime_error("Index out of bounds");
             }
@@ -310,26 +312,58 @@ namespace happyml {
             return expected_metadata_[index];
         }
 
-        vector<string> getExpectedTensorOrderedLabels(int index) {
+        vector <string> getExpectedTensorOrderedLabels(int index) {
             if (index >= expected_metadata_.size()) {
                 throw runtime_error("Index out of bounds");
             }
             return expected_metadata_[index]->ordered_labels;
         }
 
-        vector<string> getGivenTensorOrderedLabels(int index) {
+        vector <string> getGivenTensorOrderedLabels(int index) {
             if (index >= given_metadata_.size()) {
                 throw runtime_error("Index out of bounds");
             }
             return given_metadata_[index]->ordered_labels;
         }
 
+        string get_given_name(int index) {
+            if (index >= given_metadata_.size()) {
+                throw runtime_error("Index out of bounds");
+            }
+            return given_metadata_[index]->name;
+        }
+
+        string get_expected_name(int index) {
+            if (index >= expected_metadata_.size()) {
+                throw runtime_error("Index out of bounds");
+            }
+            return expected_metadata_[index]->name;
+        }
+
+        vector <string> get_given_names() {
+            vector < string > names;
+            names.reserve(given_metadata_.size());
+            for (const auto &metadata: given_metadata_) {
+                names.push_back(metadata->name);
+            }
+            return names;
+        }
+
+        vector <string> get_expected_names() {
+            vector < string > names;
+            names.reserve(expected_metadata_.size());
+            for (const auto &metadata: expected_metadata_) {
+                names.push_back(metadata->name);
+            }
+            return names;
+        }
+
     private:
         ifstream binaryFile_;
         size_t row_size_{};
         streampos header_size_;
-        vector<shared_ptr<BinaryColumnMetadata>> given_metadata_;
-        vector<shared_ptr<BinaryColumnMetadata>> expected_metadata_;
+        vector <shared_ptr<BinaryColumnMetadata>> given_metadata_;
+        vector <shared_ptr<BinaryColumnMetadata>> expected_metadata_;
         size_t number_of_rows_{};
         string path_;
 
@@ -400,10 +434,20 @@ namespace happyml {
                 binaryFile_.read(reinterpret_cast<char *>(&label_length), sizeof(uint64_t));
                 auto portable_label_length = portableBytes(label_length);
                 auto label_length_streamsize = static_cast<streamsize>(portable_label_length);
-                auto char_array = new char[label_length_streamsize];
-                binaryFile_.read(char_array, label_length_streamsize);
-                metadata->ordered_labels.emplace_back(char_array, label_length_streamsize);
+                vector<char> char_array(label_length_streamsize, 0);
+                binaryFile_.read(char_array.data(), label_length_streamsize);
+                string label(char_array.data(), label_length_streamsize);
+                metadata->ordered_labels.push_back(label);
             }
+
+            uint64_t column_name_length;
+            binaryFile_.read(reinterpret_cast<char *>(&column_name_length), sizeof(uint64_t));
+            auto portable_column_name_length = portableBytes(column_name_length);
+            auto column_name_length_streamsize = static_cast<streamsize>(portable_column_name_length);
+            std::vector<char> column_name_char_array(column_name_length_streamsize, 0);
+            binaryFile_.read(column_name_char_array.data(), column_name_length_streamsize);
+            string column_name(column_name_char_array.begin(), column_name_char_array.end());
+            metadata->name = column_name;
 
             return metadata;
         }
@@ -424,5 +468,15 @@ namespace happyml {
             return next_tensor;
         }
     };
+
+    vector<vector<string>> read_config(const string &directory, const string &file_name) {
+        string modelProperties = directory + "/" + file_name;
+        auto reader = make_unique<DelimitedTextFileReader>(modelProperties, ':');
+        vector<vector<string>> metadata;
+        while (reader->hasNext()) {
+            metadata.push_back(reader->nextRecord());
+        }
+        return metadata;
+    }
 }
 #endif //HAPPYML_FILE_READER_HPP

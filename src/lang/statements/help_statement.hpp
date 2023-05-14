@@ -25,8 +25,8 @@ namespace happyml {
                 cout << "Available dataset commands: " << endl;
                 cout << "  create dataset <name>" << endl
                      << "  [with header]" << endl
-                     << "  [with given <label|number|text|image> [(<rows>, <columns>, <channels>)] at <column> ]+ " << endl
-                     << "  [with expected <label|number|text|image> [(<rows>, <columns>, <channels>)] at <column> ]*" << endl
+                     << "  [with given <label|number|text|image> <name> [(<rows>, <columns>, <channels>)] at <column> ]+ " << endl
+                     << "  [with expected <label|number|text|image> <name> [(<rows>, <columns>, <channels>)] at <column> ]*" << endl
                      << "  using <file://path/>" << endl << endl;
 
                 cout << "  print pretty <name> [limit <x>]" << endl << endl;

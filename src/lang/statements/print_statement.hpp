@@ -6,12 +6,11 @@
 #ifndef HAPPYML_PRINT_STATEMENT_HPP
 #define HAPPYML_PRINT_STATEMENT_HPP
 
-#include "../execution_context.hpp"
 #include <vector>
 #include <utility>
 #include <iostream>
 #include <string>
-#include "../../util/happyml_paths.hpp"
+#include "../execution_context.hpp"
 #include "../../training_data/data_decoder.hpp"
 #include "../../util/encoder_decoder_builder.hpp"
 
@@ -22,7 +21,7 @@ namespace happyml {
         explicit PrintStatement(string dataset_name, bool raw, int limit = -1) : dataset_name_(std::move(dataset_name)), raw_(raw), limit_(limit) {
         }
 
-        static void print_display_rows(size_t max_display_rows, vector<vector<string >> &display_values) {
+        static void print_display_rows(size_t max_display_rows, vector<vector<string>> &display_values) {
             for (size_t display_row = 0; display_row < max_display_rows; display_row++) {
                 string delim;
                 for (auto &display_value: display_values) {
@@ -38,12 +37,35 @@ namespace happyml {
         }
 
         shared_ptr<ExecutionResult> execute(const shared_ptr<ExecutionContext> &context) override {
-            string base_path = DEFAULT_HAPPYML_DATASETS_PATH;
-            string result_path = base_path + dataset_name_ + "/dataset.bin";
+            string result_path = context->get_dataset_path(dataset_name_) + "/dataset.bin";
             BinaryDatasetReader reader(result_path);
             auto row_count = reader.rowCount();
             auto max_result_rows = (limit_ == -1) ? reader.rowCount() : min(row_count, (size_t) limit_);
             cout << "Printing " << max_result_rows << " rows from dataset " << dataset_name_ << endl;
+
+            vector<string> given_column_names = reader.get_given_names();
+            vector<string> expected_column_names = reader.get_expected_names();
+            //print given and expected column names
+            cout << "Given: ";
+            string delim;
+            for (auto &given_column_name: given_column_names) {
+                if (!delim.empty()) {
+                    cout << delim;
+                }
+                cout << given_column_name;
+                delim = "|";
+            }
+            cout << endl;
+            cout << "Expected: ";
+            delim = "";
+            for (auto &expected_column_name: expected_column_names) {
+                if (!delim.empty()) {
+                    cout << delim;
+                }
+                cout << expected_column_name;
+                delim = "|";
+            }
+            cout << endl;
 
             if (row_count == 0) {
                 cout << "Dataset is empty." << endl;
@@ -74,7 +96,6 @@ namespace happyml {
 
             return make_shared<ExecutionResult>(false);
         }
-
 
 
         static vector<vector<string>> calculate_display_values(size_t &max_display_rows,

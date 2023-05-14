@@ -6,8 +6,8 @@
 #include "../ml/happyml_dsl.hpp"
 #include "../training_data/data_decoder.hpp"
 #include "../util/dataset_utils.hpp"
-#include "../util/happyml_paths.hpp"
 #include "../util/encoder_decoder_builder.hpp"
+#include "../lang/execution_context.hpp"
 
 using namespace std;
 using namespace happyml;

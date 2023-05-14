@@ -23,6 +23,7 @@ namespace happyml {
         uint64_t columns;
         uint64_t channels;
         vector<string> ordered_labels;
+        string name;
     };
 
 }

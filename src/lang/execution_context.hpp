@@ -10,6 +10,11 @@
 #include <memory>
 #include "../ml/byte_pair_encoder.hpp"
 
+#define DEFAULT_HAPPYML_REPO_PATH "../happyml_repo/"
+#define DEFAULT_HAPPYML_DATASETS_PATH "../happyml_repo/datasets/"
+#define DEFAULT_HAPPYML_TASKS_PATH "../happyml_repo/tasks/"
+#define DEFAULT_HAPPYML_SCRIPTS_PATH "../happyml_repo/scripts/"
+
 using namespace std;
 
 namespace happyml {
@@ -26,6 +31,29 @@ namespace happyml {
 
         void setBpeEncoder(const shared_ptr<BytePairEncoderModel> &bpeEncoder) {
             bpe_encoder = bpeEncoder;
+        }
+
+        static string get_dataset_path(const string &dataset_name) {
+            return DEFAULT_HAPPYML_DATASETS_PATH + dataset_name;
+        }
+
+        static string get_task_folder_path(const string &task_name) {
+            return DEFAULT_HAPPYML_TASKS_PATH + task_name;
+        }
+
+        static bool dataset_exists(const string &dataset_name) {
+            string bin_path = get_dataset_path(dataset_name) + "/dataset.bin";
+            ifstream f(bin_path.c_str());
+            if (f.good()) {
+                f.close();
+                string config_path = get_dataset_path(dataset_name) + "/dataset.config";
+                ifstream f2(config_path.c_str());
+                if (f2.good()) {
+                    f2.close();
+                    return true;
+                }
+            }
+            return false;
         }
 
     private:
