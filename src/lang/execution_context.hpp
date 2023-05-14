@@ -46,12 +46,7 @@ namespace happyml {
             ifstream f(bin_path.c_str());
             if (f.good()) {
                 f.close();
-                string config_path = get_dataset_path(dataset_name) + "/dataset.config";
-                ifstream f2(config_path.c_str());
-                if (f2.good()) {
-                    f2.close();
-                    return true;
-                }
+                return true;
             }
             return false;
         }

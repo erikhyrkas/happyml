@@ -49,7 +49,7 @@ create dataset titanic
        using file://../data/titanic/train.csv
 
 
-print raw titanic limit 1
-print pretty titanic limit 1
+print raw titanic limit 5
+print pretty titanic limit 5
 
 

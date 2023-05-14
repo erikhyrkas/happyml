@@ -292,62 +292,6 @@ namespace happyml {
         return column_group_metadata;
     }
 
-    void save_column_metadata(vector<pair<shared_ptr<ColumnGroup>, shared_ptr<DataEncoder>>> &columnGroupEncoders,
-                              vector<shared_ptr<ColumnGroup>> &originalColumnGroups,
-                              const string &new_dataset_path) {
-        vector<vector<string>> dataset_metadata;
-        for (const auto &column_group_encoders: columnGroupEncoders) {
-            auto column_group = column_group_encoders.first;
-            vector<string> column_group_metadata = build_column_group_metadata(column_group, "column_group");
-            dataset_metadata.push_back(column_group_metadata);
-        }
-        for (const auto &column_group: originalColumnGroups) {
-            vector<string> column_group_metadata = build_column_group_metadata(column_group, "original_column_group");
-            dataset_metadata.push_back(column_group_metadata);
-        }
-        save_config(new_dataset_path, "dataset.config", dataset_metadata);
-    }
-
-    void save_column_metadata(vector<shared_ptr<ColumnGroup>> &columnGroups,
-                              vector<shared_ptr<ColumnGroup>> &originalColumnGroups,
-                              const string &new_dataset_path) {
-        vector<vector<string>> dataset_metadata;
-        for (const auto &column_group: columnGroups) {
-            vector<string> column_group_metadata = build_column_group_metadata(column_group, "column_group");
-            dataset_metadata.push_back(column_group_metadata);
-        }
-        for (const auto &column_group: originalColumnGroups) {
-            vector<string> column_group_metadata = build_column_group_metadata(column_group, "original_column_group");
-            dataset_metadata.push_back(column_group_metadata);
-        }
-        save_config(new_dataset_path, "dataset.config", dataset_metadata);
-    }
-
-    pair<vector<shared_ptr<ColumnGroup>>, vector<shared_ptr<ColumnGroup>>> read_column_metadata(const string &dataset_path) {
-        auto dataset_metadata = read_config(dataset_path, "dataset.config");
-        vector<shared_ptr<ColumnGroup>> sortedColumnGroups;
-        vector<shared_ptr<ColumnGroup>> originalColumnGroups;
-        for (const auto &column_group_metadata: dataset_metadata) {
-            auto column_group = make_shared<ColumnGroup>();
-            column_group->id_ = stoi(column_group_metadata[1]);
-            column_group->start_index_ = stoi(column_group_metadata[2]);
-            column_group->source_column_count_ = stoi(column_group_metadata[3]);
-            column_group->use_ = column_group_metadata[4];
-            column_group->data_type_ = column_group_metadata[5];
-            column_group->label_ = column_group_metadata[6];
-            column_group->rows_ = stoi(column_group_metadata[7]);
-            column_group->columns_ = stoi(column_group_metadata[8]);
-            column_group->channels_ = stoi(column_group_metadata[9]);
-            if ("column_group" == column_group_metadata[0]) {
-                sortedColumnGroups.emplace_back(column_group);
-            } else if ("original_column_group" == column_group_metadata[0]) {
-                originalColumnGroups.emplace_back(column_group);
-            }
-        }
-        return make_pair(sortedColumnGroups, originalColumnGroups);
-
-    }
-
     string create_binary_dataset_from_delimited_values(const string &new_dataset_path,
                                                        const string &delimited_file_path,
                                                        char delimiter,
@@ -357,6 +301,9 @@ namespace happyml {
                                                        const shared_ptr<BytePairEncoderModel> &defaultBytePairEncoder) {
 
 
+        if (!filesystem::exists(new_dataset_path)) {
+            filesystem::create_directories(new_dataset_path);
+        }
 
         // image and number have simple encoders, but text and label need to be handled differently.
         // For labels, we need to create a unique category encoder for each column because
@@ -432,8 +379,6 @@ namespace happyml {
                 expected_metadata.push_back(next_column_metadata);
             }
         }
-
-        save_column_metadata(columnGroupEncoders, originalColumnGroups, new_dataset_path);
 
         auto dataset_file_path = new_dataset_path + "/raw.bin";
         BinaryDatasetWriter binaryDatasetWriter(dataset_file_path, given_metadata, expected_metadata);

@@ -13,9 +13,6 @@ namespace happyml {
     bool create_label_task(const string &task_name, const string &goal, const string &dataset_name, const string &dataset_file_path, const string &task_folder_path) {
         cout << "Creating label task " << task_name << " with goal " << goal << " using dataset " << dataset_name << endl;
 
-        auto metadata = read_column_metadata(dataset_file_path);
-        save_column_metadata(metadata.first, metadata.second, task_folder_path);
-
         //auto dataset = BinaryDatasetReader(dataset_file_path);
         return true;
     }
