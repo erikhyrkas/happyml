@@ -53,8 +53,15 @@ namespace happyml {
                                                                vector<shared_ptr<BaseTensor>> &predictions) override {
             // we can take a shortcut here
             size_t batch_size = truths.size();
-            const shared_ptr<ScalarDivideTensorView> &average_error = make_shared<ScalarDivideTensorView>(total_batch_error, (float) batch_size);
-            return average_error;
+            shared_ptr<BaseTensor> accumulated_error = make_shared<UniformTensor>(predictions[0]->getShape(), 0.0f);
+            for (size_t i = 0; i < batch_size; i++) {
+                auto truth = truths[i];
+                auto prediction = predictions[i];
+                auto error = make_shared<SubtractTensorView>(truth, prediction);
+                accumulated_error = make_shared<AddTensorView>(accumulated_error, error);
+            }
+            const shared_ptr<ScalarDivideTensorView> &average_error = make_shared<ScalarDivideTensorView>(accumulated_error, (float) batch_size);
+            return make_shared<FullTensor>(average_error);
         }
     };
 }
