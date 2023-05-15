@@ -12,6 +12,7 @@
 #include "losses/binary_cross_entropy.hpp"
 #include "losses/mae_loss.hpp"
 #include "losses/smae_loss.hpp"
+#include "../training_data/data_decoder.hpp"
 
 namespace happyml {
 
@@ -228,6 +229,34 @@ namespace happyml {
             }
         }
 
+        float compute_categorical_accuracy(const shared_ptr<TrainingDataSet> &testDataset, vector<shared_ptr<RawDecoder >> expected_decoders, int limit = -1) {
+            float accuracy = 0;
+            float total = 0;
+            auto nextRecord = testDataset->nextRecord();
+            while (nextRecord != nullptr && (limit < 0 || total < limit)) {
+                auto prediction = predict(nextRecord->getGiven());
+                auto actual = nextRecord->getExpected();
+
+                bool matched_all = true;
+                for (int i = 0; i < expected_decoders.size(); i++) {
+                    auto decoder = expected_decoders[i];
+                    auto best_prediction = decoder->decodeBest(prediction[i]);
+                    auto best_actual = decoder->decodeBest(actual[i]);
+                    if (best_prediction != best_actual) {
+                        matched_all = false;
+                        break;
+                    }
+                }
+                if (matched_all) {
+                    accuracy++;
+                }
+
+                total++;
+                nextRecord = testDataset->nextRecord();
+            }
+            return accuracy / total;
+        }
+
         float train(const shared_ptr<TrainingDataSet> &trainingDataset,
                     int batchSize = 1,
                     TrainingRetentionPolicy trainingRetentionPolicy = best,
@@ -307,9 +336,12 @@ namespace happyml {
                         size_t currentBatch = ceil(current_record / batchSize);
                         double totalBatchOutputLoss = 0;
                         for (size_t outputIndex = 0; outputIndex < outputSize; outputIndex++) {
-                            auto batchError = lossFunction->sum_total_batch_error(batchTruths[outputIndex], batchPredictions[outputIndex]);;
+                            auto batchError = lossFunction->sum_total_batch_error(batchTruths[outputIndex], batchPredictions[outputIndex]);
                             auto batchLoss = lossFunction->computeBatchLoss(batchError);
-                            totalBatchOutputLoss += batchLoss;
+                            if (isnan(batchLoss)) {
+                                throw runtime_error("Error calculating loss.");
+                            }
+                            totalBatchOutputLoss += batchLoss / (float) batchOffset;
 
                             auto loss_derivative = lossFunction->calculate_batch_loss_derivative(batchError, batchTruths[outputIndex], batchPredictions[outputIndex]);
                             auto clipped_loss_derivative = make_shared<ClipTensorView>(loss_derivative,
@@ -317,9 +349,7 @@ namespace happyml {
                                                                                        100.0f);
                             // todo: we don't weight loss when there are multiple outputs back propagating. we should, instead of treating them as equals.
                             outputNodes[outputIndex]->backward(clipped_loss_derivative);
-                            if (isnan(batchLoss)) {
-                                throw runtime_error("Error calculating loss.");
-                            }
+
                             batchTruths[outputIndex].clear();
                             batchPredictions[outputIndex].clear();
                         }

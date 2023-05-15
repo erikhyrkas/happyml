@@ -15,19 +15,22 @@ namespace happyml {
     class SoftmaxActivationFunction : public ActivationFunction {
     public:
         std::shared_ptr<BaseTensor> activate(const std::shared_ptr<BaseTensor> &input) override {
+            double max_input = input->max();
             double normalization_constant = 0.0;
             size_t records = input->size();
             for (size_t next_record = 0; next_record < records; next_record++) {
-                normalization_constant += std::exp(input->getValue(next_record));
+                normalization_constant += std::exp(input->getValue(next_record) - max_input);
             }
-            auto transformFunction = [](float original, double constant) {
-                return (float) (std::exp(original) / constant);
+            auto transformFunction = [max_input](float original, double constant) {
+                return (float) (std::exp(original - max_input) / constant);
             };
-            return std::make_shared<ValueTransformWithDoubleTensorView>(input, transformFunction, normalization_constant);
+            auto result = std::make_shared<ValueTransformWithDoubleTensorView>(input, transformFunction, normalization_constant);
+            return result;
         }
 
         std::shared_ptr<BaseTensor> derivative(const std::shared_ptr<BaseTensor> &input) override {
-            return activate(input);
+            // shortcut
+            return input;
         }
     };
 }

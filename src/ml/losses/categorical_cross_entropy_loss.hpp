@@ -11,6 +11,7 @@
 #include "../../types/tensor_views/element_wise_divide_tensor_view.hpp"
 #include "../../types/tensor_views/exponential_tensor_view.hpp"
 #include "../../types/tensor_views/value_transform_tensor_view.hpp"
+#include "../../types/tensor_views/scalar_divide_tensor_view.hpp"
 
 // TODO: this code currently assumes that the truth and predictions are both 1D tensors
 //  and that those tensors are 1 row and 1 channel.
@@ -24,15 +25,12 @@ namespace happyml {
         // calculate_error_for_one_prediction computes the element-wise error for a single prediction
         // using the categorical cross-entropy formula: -truth_i * log(prediction_i)
         shared_ptr<BaseTensor> calculate_error_for_one_prediction(shared_ptr<BaseTensor> &truth, shared_ptr<BaseTensor> &prediction) override {
-            // Clip the prediction tensor to avoid log(0) and log(1) edge cases
-            auto epsilon = 1e-8f;
-            auto clip_prediction = make_shared<ClipTensorView>(prediction, epsilon, 1.0f - epsilon);
-
             // Compute -truth
             auto negative_truth = make_shared<ScalarMultiplyTensorView>(truth, -1.0f);
 
             // Compute log(prediction)
-            auto log_pred = make_shared<LogTensorView>(clip_prediction);
+            // note that LogTensorView clips the prediction to the range [1e-8, 1.0 - 1e-8]
+            auto log_pred = make_shared<LogTensorView>(prediction);
 
             // Compute -truth * log(prediction)
             auto neg_truth_by_log_pred = make_shared<ElementWiseMultiplyTensorView>(negative_truth, log_pred);
@@ -45,7 +43,7 @@ namespace happyml {
             // The total_error tensor is precomputed as: -truth_i * log(prediction_i)
             // For a single prediction: categorical cross-entropy = sum(total_error)
             // For a batch, we take the average error: avg(sum(total_error))
-            return total_error->arithmeticMean();
+            return (float) total_error->sum();
         }
 
         // calculate_batch_loss_derivative computes the derivative of the categorical cross-entropy loss
@@ -53,22 +51,10 @@ namespace happyml {
         shared_ptr<BaseTensor> calculate_batch_loss_derivative(shared_ptr<BaseTensor> &total_batch_error,
                                                                vector<shared_ptr<BaseTensor>> &truths,
                                                                vector<shared_ptr<BaseTensor>> &predictions) override {
+            // we can take a shortcut here
             size_t batch_size = truths.size();
-            // Initialize the accumulated loss derivative tensor to zero
-            shared_ptr<BaseTensor> accumulatedLossDerivative = make_shared<UniformTensor>(predictions[0]->getShape(), 0.0f);
-
-            for (size_t i = 0; i < batch_size; i++) {
-                // Compute the loss derivative for the current example: prediction_i - truth_i
-                shared_ptr<BaseTensor> currentLossDerivative = make_shared<SubtractTensorView>(predictions[i], truths[i]);
-
-                // Accumulate the loss derivatives for all examples in the batch
-                accumulatedLossDerivative = make_shared<AddTensorView>(accumulatedLossDerivative, currentLossDerivative);
-            }
-
-            // Average the accumulated loss derivative over the batch size
-            auto result = make_shared<ScalarMultiplyTensorView>(accumulatedLossDerivative, 1.0f / (float) batch_size);
-
-            return result;
+            const shared_ptr<ScalarDivideTensorView> &average_error = make_shared<ScalarDivideTensorView>(total_batch_error, (float) batch_size);
+            return average_error;
         }
     };
 }

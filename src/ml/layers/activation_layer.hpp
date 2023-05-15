@@ -31,23 +31,20 @@ namespace happyml {
             PROFILE_BLOCK(profileBlock);
             size_t lastInputsSize = lastInputs.size();
             if (lastInputsSize < 1) {
-                throw runtime_error("FullyConnectedNeurons.backward() called without previous inputs.");
+                throw runtime_error("backward() called without previous inputs.");
             }
-            // TODO: it's really inefficient to calculate the derivative of every previous batch input and average it
-            //  but doing an average first and then a derivative isn't right.
-            //  I think I'm doing the back propagation incorrectly for mini-batch here.
+
             shared_ptr<BaseTensor> averageActivationDerivative = activationFunction->derivative(lastInputs.front());
             lastInputs.pop();
-            while (!lastInputs.empty()) {
-                auto nextLastInput = activationFunction->derivative(lastInputs.front());
-                lastInputs.pop();
-                averageActivationDerivative = make_shared<AddTensorView>(averageActivationDerivative,
-                                                                         nextLastInput);
-            }
             if (lastInputsSize > 1) {
+                while (!lastInputs.empty()) {
+                    auto nextLastInput = activationFunction->derivative(lastInputs.front());
+                    lastInputs.pop();
+                    averageActivationDerivative = make_shared<AddTensorView>(averageActivationDerivative,
+                                                                             nextLastInput);
+                }
                 averageActivationDerivative = materializeTensor(
-                        make_shared<ScalarMultiplyTensorView>(averageActivationDerivative,
-                                                                1.f / (float) lastInputsSize));
+                        make_shared<ScalarDivideTensorView>(averageActivationDerivative, (float) lastInputsSize));
             }
 
             //auto activation_derivative = activationFunction->derivative(average_last_inputs);

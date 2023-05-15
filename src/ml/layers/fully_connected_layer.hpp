@@ -72,14 +72,14 @@ namespace happyml {
             }
             shared_ptr<BaseTensor> average_last_inputs = lastInputs.front();
             lastInputs.pop();
-            while (!lastInputs.empty()) {
-                auto nextLastInput = lastInputs.front();
-                lastInputs.pop();
-                average_last_inputs = make_shared<AddTensorView>(average_last_inputs, nextLastInput);
-            }
             if (lastInputsSize > 1) {
+                while (!lastInputs.empty()) {
+                    auto nextLastInput = lastInputs.front();
+                    lastInputs.pop();
+                    average_last_inputs = make_shared<AddTensorView>(average_last_inputs, nextLastInput);
+                }
                 average_last_inputs = materializeTensor(
-                        make_shared<ScalarMultiplyTensorView>(average_last_inputs, 1.f / (float) lastInputsSize));
+                        make_shared<ScalarDivideTensorView>(average_last_inputs, (float) lastInputsSize));
             }
 
             // find the error

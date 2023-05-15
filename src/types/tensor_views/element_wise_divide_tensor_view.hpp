@@ -54,8 +54,11 @@ namespace happyml {
         }
 
         float getValue(size_t row, size_t column, size_t channel) override {
-//        cout << "getting val: " << row << ", " << column << endl;
-            return left_child_->getValue(row, column, channel) / (right_child_->getValue(row, column, channel) + 1e-8f);
+            float denominator = right_child_->getValue(row, column, channel);
+            if (denominator == 0.0f) {
+                denominator = 1e-8f;
+            }
+            return left_child_->getValue(row, column, channel) / denominator;
         }
     };
 }

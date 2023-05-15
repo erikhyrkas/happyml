@@ -51,11 +51,10 @@ int main() {
         auto neuralNetwork = neuralNetworkBuilder()
                 ->setModelName("titanic_example")
                 ->setModelRepo("../repo/")
+                ->setLossFunction(LossType::categoricalCrossEntropy)
                 ->add_concatenated_input_layer(titanicDataSource->getGivenShapes())
-                ->addLayer(64, LayerType::full, ActivationType::relu)->setUseBias(false)
-                ->addLayer(64, LayerType::full, ActivationType::relu)->setUseBias(false)
                 ->addLayer(8, LayerType::full, ActivationType::relu)->setUseBias(false)
-                ->addOutputLayer(titanicDataSource->getExpectedShape(), ActivationType::sigmoid)
+                ->addOutputLayer(titanicDataSource->getExpectedShape(), ActivationType::softmax)->setUseBias(false)
                 ->build();
         neuralNetwork->useHighPrecisionExitStrategy();
         float loss = neuralNetwork->train(titanicDataSource);
@@ -66,7 +65,7 @@ int main() {
         vector<shared_ptr<RawDecoder >> expected_decoders = build_expected_decoders(false, reader);
         auto first_decoder = expected_decoders[0];
 
-        size_t limit = 50;
+        size_t limit = 5;
         auto nextRecord = titanicDataSource->nextRecord();
         while (nextRecord && limit > 0) {
             auto prediction = first_decoder->decodeBest(neuralNetwork->predictOne(nextRecord->getGiven()));
@@ -84,6 +83,10 @@ int main() {
 
         float testLoss = loadedNeuralNetwork->test(titanicDataSource);
         cout << fixed << setprecision(2) << "Result testLoss: " << testLoss << endl;
+
+        titanicDataSource->restart();
+        float accuracy = neuralNetwork->compute_categorical_accuracy(titanicDataSource, expected_decoders);
+        cout << "Accuracy: " << fixed << setprecision(4) << accuracy << endl;
     } catch (const exception &e) {
         cout << e.what() << endl;
     }
