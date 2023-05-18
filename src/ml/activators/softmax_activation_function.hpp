@@ -19,7 +19,19 @@ namespace happyml {
             double normalization_constant = 0.0;
             size_t records = input->size();
             for (size_t next_record = 0; next_record < records; next_record++) {
-                normalization_constant += std::exp(input->getValue(next_record) - max_input);
+                double exp_val = std::exp(input->getValue(next_record) - max_input);
+#ifdef DEBUG_TRAIN_NAN
+                if (isnan(exp_val)) {
+                    input->print();
+                    throw std::runtime_error("SoftmaxActivationFunction::activate: exp_val is NaN");
+                }
+#endif
+                normalization_constant += exp_val;
+            }
+            if (normalization_constant == 0) {
+                normalization_constant = 1e-8;
+            } else if (std::isnan(normalization_constant)) {
+                normalization_constant = 1;
             }
             auto transformFunction = [max_input](float original, double constant) {
                 return (float) (std::exp(original - max_input) / constant);

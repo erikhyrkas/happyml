@@ -119,8 +119,9 @@ namespace happyml {
                                                              NINETY_DAYS_MS,
                                                              1000000,
                                                              0.001f,
-                                                             0.001f,
-                                                             2));
+                                                             1e-5,
+                                                             2,
+                                                             0.05f));
         }
 
         void useHighPrecisionExitStrategy() {
@@ -128,8 +129,9 @@ namespace happyml {
                                                              NINETY_DAYS_MS,
                                                              1000000,
                                                              0.00001f,
-                                                             0.00001f,
-                                                             2));
+                                                             1e-8,
+                                                             5,
+                                                             0.05f));
         }
 
         void setExitStrategy(const shared_ptr<ExitStrategy> &updatedExitStrategy) {
@@ -272,21 +274,38 @@ namespace happyml {
         // a sample is a single record
         // a batch is the number of samples (records) to look at before updating weights
         // train/fit
-        // todo: we need support multiple for inputs. Now that we have the shuffler, we have
-        //  a way to properly manage those multiple inputs, but this train method only has a single
-        //  trainingDataset and testDataset for input.
         float train(const shared_ptr<TrainingDataSet> &trainingDataset,
                     const shared_ptr<TrainingDataSet> &testDataset,
                     int batchSize = 1,
                     TrainingRetentionPolicy trainingRetentionPolicy = best,
                     bool overwriteOutputLines = true) {
             ElapsedTimer totalTimer;
+            // TODO: we save the best checkpoint, but we don't save any other checkpoints
+            //  we should save the last N checkpoints + best checkpoint and then delete the rest
             string knowledgeCheckpointLabel = "checkpoint_" + std::to_string(
                     chrono::duration_cast<chrono::milliseconds>(
                             chrono::system_clock::now().time_since_epoch()).count());
             bool useTestDataset = testDataset->recordCount() > 0;
-            // TODO: take in a test set and then validate that the records aren't in the training
-            //  set. If they are, give a warning.
+            if (useTestDataset) {
+                if (testDataset->getExpectedShapes().size() != trainingDataset->getExpectedShapes().size()) {
+                    throw runtime_error("Test dataset has a different number of output nodes than the training dataset.");
+                }
+                for (int i = 0; i < testDataset->getExpectedShapes().size(); i++) {
+                    if (testDataset->getExpectedShapes()[i] != trainingDataset->getExpectedShapes()[i]) {
+                        throw runtime_error("Test dataset has a different number of output nodes than the training dataset.");
+                    }
+                }
+                if (testDataset->getGivenShapes().size() != trainingDataset->getGivenShapes().size()) {
+                    throw runtime_error("Test dataset has a different number of input nodes than the training dataset.");
+                }
+                for (int i = 0; i < testDataset->getGivenShapes().size(); i++) {
+                    if (testDataset->getGivenShapes()[i] != trainingDataset->getGivenShapes()[i]) {
+                        throw runtime_error("Test dataset has a different number of input nodes than the training dataset.");
+                    }
+                }
+                // TODO: take in a test set and then validate that the records aren't in the training
+                //  set. If they are, give a warning.
+            }
             auto total_records = trainingDataset->recordCount();
             if (batchSize > total_records) {
                 throw runtime_error("Batch Size cannot be larger than trainingDataset data set.");
@@ -304,6 +323,7 @@ namespace happyml {
             ElapsedTimer epochTimer;
             float epochTrainingLoss;
             float epochTestingLoss;
+            int64_t trainingElapsedTimeInMilliseconds = 0;
             do {
                 ElapsedTimer batchTimer;
                 trainingShuffler->shuffle();
@@ -313,10 +333,7 @@ namespace happyml {
 
                 epochTrainingLoss = 0.f;
                 int batchOffset = 0;
-                vector<vector<shared_ptr<BaseTensor>>> batchPredictions;
-                vector<vector<shared_ptr<BaseTensor>>> batchTruths;
-                batchPredictions.resize(outputSize);
-                batchTruths.resize(outputSize);
+                float batchLoss = 0.f;
 
                 size_t current_record = 0;
                 auto nextRecord = trainingDataset->nextRecord();
@@ -325,39 +342,31 @@ namespace happyml {
                     auto nextGiven = nextRecord->getGiven();
                     auto nextTruth = nextRecord->getExpected();
                     auto nextPrediction = predict(nextGiven, true);
-                    for (size_t outputIndex = 0; outputIndex < outputSize; outputIndex++) {
-                        batchPredictions[outputIndex].push_back(nextPrediction[outputIndex]);
-                        batchTruths[outputIndex].push_back(nextTruth[outputIndex]);
-                    }
                     batchOffset++;
+                    float single_prediction_loss = 0.f;
+                    for (size_t outputIndex = 0; outputIndex < outputSize; outputIndex++) {
+                        auto nextError = lossFunction->compute_error(nextTruth[outputIndex], nextPrediction[outputIndex]);
+                        nextError = make_shared<FullTensor>(nextError);
+                        auto nextLoss = lossFunction->compute_loss(nextError);
+                        if (isnan(nextLoss)) {
+                            throw runtime_error("Error calculating loss.");
+                        }
+                        single_prediction_loss += nextLoss;
+                        auto loss_derivative = lossFunction->compute_loss_derivative(nextError, nextTruth[outputIndex], nextPrediction[outputIndex]);
+                        outputNodes[outputIndex]->backward(loss_derivative);
+                    }
+                    single_prediction_loss /= (float) outputSize;
+                    batchLoss += single_prediction_loss;
 
                     nextRecord = trainingDataset->nextRecord();
                     if (batchOffset >= batchSize || nextRecord == nullptr) {
                         size_t currentBatch = ceil(current_record / batchSize);
-                        double totalBatchOutputLoss = 0;
                         for (size_t outputIndex = 0; outputIndex < outputSize; outputIndex++) {
-                            auto batchError = lossFunction->sum_total_batch_error(batchTruths[outputIndex], batchPredictions[outputIndex]);
-                            auto batchLoss = lossFunction->computeBatchLoss(batchError);
-                            if (isnan(batchLoss)) {
-                                throw runtime_error("Error calculating loss.");
-                            }
-                            totalBatchOutputLoss += batchLoss / (float) batchOffset;
-
-                            auto loss_derivative = lossFunction->calculate_batch_loss_derivative(batchError, batchTruths[outputIndex], batchPredictions[outputIndex]);
-                            auto clipped_loss_derivative = make_shared<ClipTensorView>(loss_derivative,
-                                                                                       -100.0f,
-                                                                                       100.0f);
-                            // todo: we don't weight loss when there are multiple outputs back propagating. we should, instead of treating them as equals.
-                            outputNodes[outputIndex]->backward(clipped_loss_derivative);
-
-                            batchTruths[outputIndex].clear();
-                            batchPredictions[outputIndex].clear();
+                            outputNodes[outputIndex]->apply(optimizer);
                         }
-
-                        epochTrainingLoss += (float) (
-                                ((totalBatchOutputLoss / (double) outputSize) - epochTrainingLoss) /
-                                (double) currentBatch);
-
+                        batchLoss /= (float) batchOffset;
+                        epochTrainingLoss += (batchLoss - epochTrainingLoss) / (float) currentBatch;
+                        batchLoss = 0.f;
 
                         auto elapsedTime = batchTimer.peekMilliseconds();
                         logTraining(elapsedTime, epoch, currentBatch,
@@ -388,7 +397,9 @@ namespace happyml {
                 }
                 trainingDataset->restart();
                 epoch++;
-            } while (!exitStrategy->isDone(epoch, epochTestingLoss, epochTimer.getMilliseconds()));
+                trainingElapsedTimeInMilliseconds = epochTimer.getMilliseconds();
+            } while (!exitStrategy->isDone(epoch, epochTestingLoss, trainingElapsedTimeInMilliseconds));
+            cout << endl << "Exiting training because " << exitStrategy->whyDone(epoch, epochTestingLoss, trainingElapsedTimeInMilliseconds) << endl;
             int64_t elapsed = totalTimer.getMilliseconds();
             cout << endl << "Finished training in ";
             if (elapsed < 2000) {
@@ -424,9 +435,9 @@ namespace happyml {
                 float totalLoss = 0;
                 for (size_t outputIndex = 0; outputIndex < outputSize; outputIndex++) {
                     shared_ptr<BaseTensor> error = make_shared<FullTensor>(
-                            lossFunction->calculate_error_for_one_prediction(nextTruth[outputIndex],
-                                                                             nextPrediction[outputIndex]));
-                    const auto loss = lossFunction->computeBatchLoss(error);
+                            lossFunction->compute_error(nextTruth[outputIndex],
+                                                        nextPrediction[outputIndex]));
+                    const auto loss = lossFunction->compute_loss(error);
                     totalLoss += loss;
                 }
                 currentRecord++;

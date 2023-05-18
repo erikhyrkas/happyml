@@ -66,6 +66,11 @@ based on the [CMakeLists.txt](CMakeLists.txt).
 This project is pre-alpha.
 
 Recent Notable additions:
+* L2 Regularization (5/2023)
+* Layer Normalization (5/2023)
+* Improved Profiling (5/2023)
+* Improved Exit Strategy (5/2023)
+* Improved Batch handling (5/2023)
 * Xavier weight initialization (5/2023)
 * C++ Example using Titanic dataset (5/2023)
 * Support for multiple inputs when creating and training models (5/2023)
@@ -110,7 +115,6 @@ Issues to address later:
 * I need to fix the build process for Linux and Mac on GitHub.
 
 Future:
-* Dense Layer normalization
 * Batch normalization
 * Flesh out more tasks from the happyml scripting language
   * Encoder-Decoder Transformer Model support

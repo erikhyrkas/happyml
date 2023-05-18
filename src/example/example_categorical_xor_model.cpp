@@ -22,19 +22,20 @@ int main() {
         xorDataSource->addTrainingData(columnVector({1.f, 1.f}), columnVector({1.f, 0.f}));
 
         cout << "Test with categorical cross entropy" << endl;
-        auto neuralNetwork = neuralNetworkBuilder(OptimizerType::microbatch)
+        auto neuralNetwork = neuralNetworkBuilder(OptimizerType::adam)
                 ->setModelName("cat_xor_example")
                 ->setModelRepo("../repo/")
-                ->setLearningRate(0.1f)
-                ->setBiasLearningRate(0.001f)
+//                ->setLearningRate(0.005f)
+//                ->setBiasLearningRate(0.0001f)
                 ->setLossFunction(LossType::categoricalCrossEntropy)
-                ->addInputLayer(xorDataSource->getGivenShape(), 8, LayerType::full, ActivationType::tanhDefault)
-                ->addLayer(8, LayerType::full, ActivationType::tanhDefault)
-                ->addOutputLayer(xorDataSource->getExpectedShape(), ActivationType::softmax) // softmax
+                ->addInputLayer(xorDataSource->getGivenShape(), 32, LayerType::full, ActivationType::leaky)->setUseBias(false)
+                ->addLayer(16, LayerType::full, ActivationType::leaky)->setUseBias(false)
+                ->addLayer(8, LayerType::full, ActivationType::sigmoid)->setUseBias(false)
+                ->addOutputLayer(xorDataSource->getExpectedShape(), ActivationType::softmax)->setUseBias(false) // softmax
                 ->build();
 
         neuralNetwork->useHighPrecisionExitStrategy();
-        float loss = neuralNetwork->train(xorDataSource);
+        float loss = neuralNetwork->train(xorDataSource, 4);
 
         cout << fixed << setprecision(2);
         cout << "Result loss: " << loss << endl;

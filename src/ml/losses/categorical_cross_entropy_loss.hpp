@@ -24,7 +24,7 @@ namespace happyml {
     public:
         // calculate_error_for_one_prediction computes the element-wise error for a single prediction
         // using the categorical cross-entropy formula: -truth_i * log(prediction_i)
-        shared_ptr<BaseTensor> calculate_error_for_one_prediction(shared_ptr<BaseTensor> &truth, shared_ptr<BaseTensor> &prediction) override {
+        shared_ptr<BaseTensor> compute_error(shared_ptr<BaseTensor> &truth, shared_ptr<BaseTensor> &prediction) override {
             // Compute -truth
             auto negative_truth = make_shared<ScalarMultiplyTensorView>(truth, -1.0f);
 
@@ -39,7 +39,7 @@ namespace happyml {
         }
 
         // computeBatchLoss computes the average loss for a batch of predictions
-        float computeBatchLoss(shared_ptr<BaseTensor> &total_error) override {
+        float compute_loss(shared_ptr<BaseTensor> &total_error) override {
             // The total_error tensor is precomputed as: -truth_i * log(prediction_i)
             // For a single prediction: categorical cross-entropy = sum(total_error)
             // For a batch, we take the average error: avg(sum(total_error))
@@ -48,20 +48,12 @@ namespace happyml {
 
         // calculate_batch_loss_derivative computes the derivative of the categorical cross-entropy loss
         // with respect to the predictions for a batch of examples
-        shared_ptr<BaseTensor> calculate_batch_loss_derivative(shared_ptr<BaseTensor> &total_batch_error,
-                                                               vector<shared_ptr<BaseTensor>> &truths,
-                                                               vector<shared_ptr<BaseTensor>> &predictions) override {
+        shared_ptr<BaseTensor> compute_loss_derivative(shared_ptr<BaseTensor> &total_batch_error,
+                                                       shared_ptr<BaseTensor> &truth,
+                                                       shared_ptr<BaseTensor> &prediction) override {
             // we can take a shortcut here
-            size_t batch_size = truths.size();
-            shared_ptr<BaseTensor> accumulated_error = make_shared<UniformTensor>(predictions[0]->getShape(), 0.0f);
-            for (size_t i = 0; i < batch_size; i++) {
-                auto truth = truths[i];
-                auto prediction = predictions[i];
-                auto error = make_shared<SubtractTensorView>(truth, prediction);
-                accumulated_error = make_shared<AddTensorView>(accumulated_error, error);
-            }
-            const shared_ptr<ScalarDivideTensorView> &average_error = make_shared<ScalarDivideTensorView>(accumulated_error, (float) batch_size);
-            return make_shared<FullTensor>(average_error);
+            auto error = make_shared<SubtractTensorView>(truth, prediction);
+            return error;
         }
     };
 }

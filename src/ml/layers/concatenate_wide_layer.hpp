@@ -8,12 +8,12 @@
 
 #include <utility>
 
-#include "../neural_network_layer_function.hpp"
+#include "../base_layer.hpp"
 #include "../../types/tensor_views/concat_wide_tensor_view.h"
 #include "../../types/tensor_views/window_tensor_view.hpp"
 
 namespace happyml {
-    class ConcatenateWideLayer : public NeuralNetworkLayerFunction {
+    class ConcatenateWideLayer : public BaseLayer {
     public:
         explicit ConcatenateWideLayer(string label, vector<vector<size_t>> input_shapes) : label_(std::move(label)), input_shapes_(input_shapes) {
             // vector of shapes (rows, columns, channels)
@@ -41,6 +41,8 @@ namespace happyml {
         }
 
         shared_ptr<BaseTensor> forward(const vector<shared_ptr<BaseTensor>> &input, bool forTraining) override {
+            PROFILE_BLOCK(profileBlock);
+
             if (input.size() < 2) {
                 throw runtime_error("You need at least two tensors to concatenate.");
             }
@@ -55,6 +57,8 @@ namespace happyml {
         }
 
         vector<shared_ptr<BaseTensor>> backward(const shared_ptr<BaseTensor> &output_error) override {
+            PROFILE_BLOCK(profileBlock);
+
             vector<shared_ptr<BaseTensor>> errors;
             size_t start_column = 0;
 

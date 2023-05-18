@@ -26,6 +26,8 @@ namespace happyml {
     class ExitStrategy {
     public:
         virtual bool isDone(size_t currentEpoch, float loss, int64_t trainingElapsedTimeInMilliseconds) = 0;
+
+        virtual string whyDone(size_t currentEpoch, float loss, int64_t trainingElapsedTimeInMilliseconds) = 0;
     };
 
     class DefaultExitStrategy : public ExitStrategy {
@@ -35,7 +37,8 @@ namespace happyml {
                                      const size_t maxEpochs,
                                      const float zeroPrecisionTolerance,
                                      const float improvementTolerance,
-                                     const size_t minEpochs) {
+                                     const size_t minEpochs,
+                                     const float maxDegradationTolerance) {
             this->patience = patience;
             this->maxEpochs = maxEpochs;
             this->maxElapsedTime = maxElapsedTime;
@@ -50,6 +53,7 @@ namespace happyml {
             // improvement we need to show in an epoch before giving up.
             this->improvementTolerance = improvementTolerance;
             this->minEpochs = minEpochs;
+            this->maxDegradationTolerance = maxDegradationTolerance;
 
             lowestLossEpoch = 0;
             lowestLoss = INFINITY;
@@ -60,14 +64,56 @@ namespace happyml {
                 lowestLoss = min(loss, lowestLoss);
                 lowestLossEpoch = currentEpoch;
             }
-
+            // If we're not improving, we're degrading. If we're degrading too fast, we're done.
+            const auto degradation = (loss - lowestLoss) / lowestLoss;
             const auto elapsedEpochsSinceLowestEpoch = currentEpoch - lowestLossEpoch;
             const auto done = (currentEpoch >= minEpochs) &&
                               (currentEpoch >= maxEpochs ||
+                               degradation >= maxDegradationTolerance ||
                                trainingElapsedTimeInMilliseconds >= maxElapsedTime ||
                                elapsedEpochsSinceLowestEpoch >= patience ||
                                loss <= zeroPrecisionTolerance);
             return done;
+        }
+
+        string whyDone(size_t currentEpoch, float loss, int64_t trainingElapsedTimeInMilliseconds) override {
+            if (currentEpoch < minEpochs) {
+                stringstream ss;
+                ss << "Should not be done yet: Current Epoch (" << currentEpoch << ") < Minimum Epochs (" << minEpochs << ")";
+                return ss.str();
+            }
+            if (currentEpoch >= maxEpochs) {
+                stringstream ss;
+                ss << "Current Epoch (" << currentEpoch << ") >= Maximum Epochs (" << maxEpochs << ")";
+                return ss.str();
+            }
+            const auto degradation = (loss - lowestLoss) / lowestLoss;
+            if(degradation >= maxDegradationTolerance) {
+                stringstream ss;
+                ss << std::fixed << std::setprecision(15);
+                ss << "Degradation (" << degradation << ") >= Maximum Degradation Tolerance (" << maxDegradationTolerance << ")";
+                return ss.str();
+            }
+            if (trainingElapsedTimeInMilliseconds >= maxElapsedTime) {
+                stringstream ss;
+                ss << "Training Elapsed Time In Milliseconds (" << trainingElapsedTimeInMilliseconds << ") >= Maximum Elapsed Time (" << maxElapsedTime << ")";
+                return ss.str();
+            }
+            const auto elapsedEpochsSinceLowestEpoch = currentEpoch - lowestLossEpoch;
+            if (elapsedEpochsSinceLowestEpoch >= patience) {
+                stringstream ss;
+                ss << std::fixed << std::setprecision(15);
+                ss << "Elapsed Epochs Since Lowest Epoch (" << currentEpoch << "-" << lowestLossEpoch
+                   << "=" << elapsedEpochsSinceLowestEpoch << ") >= Patience (" << patience << "); Lowest Loss is " << lowestLoss
+                   << " and Improvement Tolerance is " << improvementTolerance;
+                return ss.str();
+            }
+            if (loss <= zeroPrecisionTolerance) {
+                stringstream ss;
+                ss << "Loss (" << loss << ") <= Zero Precision Tolerance (" << zeroPrecisionTolerance << ")";
+                return ss.str();
+            }
+            return "Unknown";
         }
 
     private:
@@ -79,6 +125,7 @@ namespace happyml {
         float lowestLoss;
         size_t lowestLossEpoch;
         size_t minEpochs;
+        float maxDegradationTolerance;
     };
 }
 #endif // HAPPYML_EXIT_STRATEGY_HPP

@@ -13,6 +13,7 @@
 #include "../types/tensor_impls/pixel_tensor.hpp"
 #include "../types/tensor_impls/quarter_tensor.hpp"
 #include "../types/tensor_impls/half_tensor.hpp"
+#include "../util/basic_profiler.hpp"
 #include <vector>
 #include <utility>
 #include <execution>
@@ -80,6 +81,7 @@ namespace happyml {
 
 // channels, rows, columns
     shared_ptr<BaseTensor> materializeTensor(const shared_ptr<BaseTensor> &other) {
+        PROFILE_BLOCK(profileBlock);
         if (other->isMaterialized()) {
             return other;
         }

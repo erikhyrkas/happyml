@@ -8,7 +8,7 @@
 
 
 namespace happyml {
-    class ActivationLayer : public NeuralNetworkLayerFunction {
+    class ActivationLayer : public BaseLayer {
     public:
         explicit ActivationLayer(const shared_ptr<ActivationFunction> &activationFunction) {
             this->activationFunction = activationFunction;

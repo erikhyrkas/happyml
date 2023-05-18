@@ -26,6 +26,7 @@ int main() {
                 ->addInputLayer(xorDataSource->getGivenShape(), 3, LayerType::full, ActivationType::tanhApprox)
                 ->addOutputLayer(xorDataSource->getExpectedShape(), ActivationType::tanhApprox)
                 ->build();
+//        neuralNetwork->useHighPrecisionExitStrategy();
         // For 32-bit: Results are good enough at 500 epochs, gets better with more epochs.
         // For 16-bit: 500 epochs seems good enough
         // For 8-bit: 2000 epochs seems good enough

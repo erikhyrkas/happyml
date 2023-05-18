@@ -48,6 +48,8 @@ namespace happyml {
         shared_ptr<BaseTensor> calculateWeightsChange(int registration_id,
                                                       const shared_ptr<BaseTensor> &weights,
                                                       const shared_ptr<BaseTensor> &loss_gradient) override {
+            PROFILE_BLOCK(profileBlock);
+
             // Initialize if needed
             if (weight_m.count(registration_id) == 0) {
                 // initialize to tensors of all 0s
@@ -66,6 +68,8 @@ namespace happyml {
 
         shared_ptr<BaseTensor> calculateBiasChange(int registration_id, const shared_ptr<BaseTensor> &bias,
                                                    const shared_ptr<BaseTensor> &loss_gradient) override {
+            PROFILE_BLOCK(profileBlock);
+
             // Initialize if needed
             if (bias_m.count(registration_id) == 0) {
                 // initialize to tensors of all 0s
@@ -96,6 +100,8 @@ namespace happyml {
 
         float calculateDemonAdjustedLearnRate(const unordered_map<int, shared_ptr<BaseTensor>> &m_map,
                                               const unordered_map<int, shared_ptr<BaseTensor>> &v_map) {
+            PROFILE_BLOCK(profileBlock);
+
             // time_step changes once per epoch
             // DEMON
             float m_average = average(m_map);
@@ -123,6 +129,7 @@ namespace happyml {
                                            unordered_map<int, shared_ptr<BaseTensor>> &m_map,
                                            unordered_map<int, shared_ptr<BaseTensor>> &v_map,
                                            float lr) {
+            PROFILE_BLOCK(profileBlock);
 
             // Update biased first moment estimate
             auto temp_m_by_beta1 = make_shared<ScalarMultiplyTensorView>(m_map[registration_id], beta1);
@@ -155,6 +162,7 @@ namespace happyml {
         }
 
         static float average(const unordered_map<int, shared_ptr<BaseTensor>> &tensors) {
+            PROFILE_BLOCK(profileBlock);
             float sum_of_averages = 0;
 
             for (const auto &[key, tensor]: tensors) {

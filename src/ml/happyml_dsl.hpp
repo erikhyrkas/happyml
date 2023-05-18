@@ -23,6 +23,7 @@
 #include "neural_network.hpp"
 #include "layers/activation_layer.hpp"
 #include "layers/flatten_layer.hpp"
+#include "layers/normalization_layer.hpp"
 #include "layers/convolution_2d_valid_layer.hpp"
 #include "layers/concatenate_wide_layer.hpp"
 #include "layers/fully_connected_layer.hpp"
@@ -45,19 +46,12 @@ namespace happyml {
             }
             switch (optimizerType) {
                 case microbatch:
-                    this->learningRate = 0.1;
-                    this->biasLearningRate = 0.01;
-                    break;
-                case adam:
-                    this->learningRate = 0.01;
-                    this->biasLearningRate = 0.001;
-                    break;
-                case sgdm:
-                    this->learningRate = 0.01;
+                    this->learningRate = 0.005;
                     this->biasLearningRate = 0.001;
                     break;
                 default:
-                    throw runtime_error("Unsupported model type.");
+                    this->learningRate = 0.001;
+                    this->biasLearningRate = 0.001;
             }
             this->lossType = LossType::mse;
             this->repoRootPath = repoRootPath;
@@ -345,7 +339,8 @@ namespace happyml {
                                                                                                   outputShape[0] *
                                                                                                   outputShape[1] *
                                                                                                   outputShape[2],
-                                                                                                  bits, optimizer);
+                                                                                                  bits,
+                                                                                                  optimizer->registerForWeightChanges());
                     next_node = make_shared<NeuralNetworkNode>(fcn);
                 } else if (node_type == LayerType::concatenate) {
                     // TODO: we could probably have a strategy for handling different input shapes.
@@ -362,12 +357,14 @@ namespace happyml {
                     next_node = make_shared<NeuralNetworkNode>(concat_node);
                 } else if (node_type == LayerType::flatten) {
                     next_node = make_shared<NeuralNetworkNode>(make_shared<FlattenLayer>());
+                } else if (node_type == LayerType::normalize) {
+                    next_node = make_shared<NeuralNetworkNode>(make_shared<NormalizationLayer>());
                 } else if (node_type == LayerType::convolution2dValid) {
                     auto inputShape = inputShapes[0];
                     string c2dvLabel = asString(vertexUniqueId) + "_c2dv";
                     auto c2d = make_shared<Convolution2dValidFunction>(c2dvLabel, inputShape, filters, kernel_size,
                                                                        bits,
-                                                                       optimizer);
+                                                                       optimizer->registerForWeightChanges());
                     next_node = make_shared<NeuralNetworkNode>(c2d);
                 } else {
                     throw runtime_error("Unimplemented NodeType");
@@ -377,7 +374,7 @@ namespace happyml {
 
                 if (use_bias) {
                     string biasLabel = asString(vertexUniqueId) + "_bias";
-                    auto b = make_shared<BiasLayer>(biasLabel, outputShape, outputShape, bits, optimizer);
+                    auto b = make_shared<BiasLayer>(biasLabel, outputShape, outputShape, bits, optimizer->registerForBiasChanges());
                     auto bias_node = make_shared<NeuralNetworkNode>(b);
                     last_node = appendNode(last_node, bias_node);
                 }
@@ -596,7 +593,7 @@ namespace happyml {
             return add_concatenated_layer(new_input_receptors);
         }
 
-        shared_ptr<NNVertex> add_concatenated_layer(vector<shared_ptr<NNVertex>> previous_layers) {
+        shared_ptr<NNVertex> add_concatenated_layer(const vector<shared_ptr<NNVertex>> &previous_layers) {
             size_t total_input_width = 0;
             vector<vector<size_t>> input_shapes;
             for (auto &layer: previous_layers) {
@@ -703,7 +700,7 @@ namespace happyml {
                 // I think the parent order should also be maintained
                 bool all_parents_exist = true;
                 vector<shared_ptr<HappymlDSL::NNVertex>> all_parents;
-                for (auto edge_pair: edgeFromTo) {
+                for (const auto &edge_pair: edgeFromTo) {
                     auto edge_to_ids = edge_pair.second;
                     // if edge_to_ids contains vertexId, then we need to add the parent to the concatenated layer
                     if (std::find(edge_to_ids.begin(), edge_to_ids.end(), vertexId) != edge_to_ids.end()) {
@@ -727,7 +724,7 @@ namespace happyml {
                                                              producesOutput,
                                                              activationType);
             } else {
-                if (layerType != full) {
+                if (producesOutput && layerType != full) {
                     throw runtime_error("output node type wasn't full");
                 }
                 createdVertexes[vertexId] = parent->addLayer(inputShapes[0],

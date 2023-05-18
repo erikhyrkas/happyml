@@ -12,6 +12,14 @@
 namespace happyml {
     class NormalizeTensorView : public BaseTensorUnaryOperatorView {
     public:
+        explicit NormalizeTensorView(const shared_ptr<BaseTensor> &tensor)
+                : BaseTensorUnaryOperatorView(tensor) {
+            pair<float, float> range = tensor->range();
+            min_val_ = range.first;
+            max_val_ = range.second;
+            val_range_ = max_val_ - min_val_;
+        }
+
         explicit NormalizeTensorView(const shared_ptr<BaseTensor> &tensor, float min_val, float max_val)
                 : BaseTensorUnaryOperatorView(tensor), min_val_(min_val), max_val_(max_val) {
             val_range_ = max_val_ - min_val_;

@@ -13,12 +13,13 @@
 #include "enums.hpp"
 #include "exit_strategy.hpp"
 #include "optimizer_factory.hpp"
-#include "neural_network_layer_function.hpp"
+#include "base_layer.hpp"
 #include "../util/timers.hpp"
 #include "../util/unit_test.hpp"
 #include "../util/file_writer.hpp"
 #include "../training_data/training_dataset.hpp"
 #include "../types/tensor_views/clip_tensor_view.hpp"
+#include "../types/tensor_views/scalar_divide_tensor_view.hpp"
 
 using namespace std;
 using namespace happyml;
@@ -31,10 +32,11 @@ namespace happyml {
     class NeuralNetworkNode : public enable_shared_from_this<NeuralNetworkNode> {
     public:
         explicit NeuralNetworkNode(
-                const shared_ptr<NeuralNetworkLayerFunction> &neuralNetworkFunction) {
+                const shared_ptr<BaseLayer> &neuralNetworkFunction, bool use_clipping = false) {
             this->neuralNetworkFunction = neuralNetworkFunction;
             this->materialized = true;
             this->saved = true;
+            this->use_clipping = use_clipping;
         }
 
         virtual void sendOutput(shared_ptr<BaseTensor> &output) {
@@ -77,6 +79,11 @@ namespace happyml {
         // todo: right now, i'm assuming this is a directed acyclic graph, this may not work for everything.
         //  It is possible, I'll have to track visited nodes to avoid infinite cycles.
         void doForward(const vector<shared_ptr<BaseTensor>> &inputs, bool forTraining) {
+#ifdef DEBUG_TRAIN_NAN
+            if (!inputs.empty() && inputs[0]->hasNaNOrInf()) {
+                throw runtime_error("NaN detected in forward pass: inputs");
+            }
+#endif
             auto input_to_next = neuralNetworkFunction->forward(inputs, forTraining);
             if (materialized) {
                 // TODO: materializing the output into a full tensor helps performance at the cost of memory.
@@ -84,6 +91,13 @@ namespace happyml {
                 //  to use for performance.
                 input_to_next = materializeTensor(input_to_next);
             }
+#ifdef DEBUG_TRAIN_NAN
+            if (input_to_next->hasNaNOrInf()) {
+                inputs[0]->print();
+                input_to_next->print();
+                throw runtime_error("NaN detected in forward pass: input_to_next");
+            }
+#endif
             if (connectionOutputs.empty()) {
                 // there are no nodes after this one, so we return our result.
                 sendOutput(input_to_next);
@@ -114,13 +128,40 @@ namespace happyml {
             }
         }
 
+        vector<shared_ptr<BaseTensor>> clip(const vector<shared_ptr<BaseTensor>> &tensors) {
+            vector<shared_ptr<BaseTensor>> clipped;
+            clipped.reserve(tensors.size());
+            for (const auto &tensor: tensors) {
+                clipped.push_back(make_shared<ClipTensorView>(tensor, -5.0f, 5.0f));
+            }
+            return clipped;
+        }
+
+        void apply(const shared_ptr<BaseOptimizer> &optimizer) {
+            neuralNetworkFunction->apply(optimizer);
+            for (const auto &inputConnection: connectionInputs) {
+                const auto conn = inputConnection.lock();
+                const auto from = conn->from.lock();
+                from->apply(optimizer);
+            }
+            saved = false;
+        }
+
         // todo: right now, i'm assuming this is a directed acyclic graph, this may not work for everything.
         //  It is possible, I'll have to track visited nodes to avoid infinite cycles.
         void backward(const shared_ptr<BaseTensor> &outputError) {
             // TODO: for multiple errors, I'm currently averaging the errors as they propagate, but it probably should be a weighted average
             PROFILE_BLOCK(profileBlock);
-
+#ifdef DEBUG_TRAIN_NAN
+            if (outputError->hasNaNOrInf()) {
+                outputError->print();
+                throw runtime_error("NaN detected in backward pass");
+            }
+#endif
             auto prior_errors = neuralNetworkFunction->backward(outputError);
+            if (use_clipping) {
+                prior_errors = clip(prior_errors);
+            }
             if (materialized) {
                 vector<shared_ptr<BaseTensor>> new_prior_error;
                 new_prior_error.reserve(prior_errors.size());
@@ -166,8 +207,7 @@ namespace happyml {
                         continue;
                     }
                     // TODO: for multiple errors, I'm currently averaging the errors as they propagate, but it probably should be a weighted average
-                    shared_ptr<BaseTensor> average_error = make_shared<ScalarMultiplyTensorView>(sum, 1.0f /
-                                                                                                      (float) fromConnectionOutputSize);
+                    shared_ptr<BaseTensor> average_error = make_shared<ScalarDivideTensorView>(sum, (float) fromConnectionOutputSize);
                     from->backward(average_error);
                     for (const auto &output_conn: from->connectionOutputs) {
                         output_conn->prior_error = nullptr;
@@ -216,14 +256,15 @@ namespace happyml {
     private:
         vector<weak_ptr<NeuralNetworkConnection>> connectionInputs;
         vector<shared_ptr<NeuralNetworkConnection>> connectionOutputs;
-        shared_ptr<NeuralNetworkLayerFunction> neuralNetworkFunction;
+        shared_ptr<BaseLayer> neuralNetworkFunction;
         bool materialized;
         bool saved;
+        bool use_clipping;
     };
 
     class NeuralNetworkOutputNode : public NeuralNetworkNode {
     public:
-        explicit NeuralNetworkOutputNode(const shared_ptr<NeuralNetworkLayerFunction> &neuralNetworkFunction)
+        explicit NeuralNetworkOutputNode(const shared_ptr<BaseLayer> &neuralNetworkFunction)
                 : NeuralNetworkNode(neuralNetworkFunction) {
         }
 

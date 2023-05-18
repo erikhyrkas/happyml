@@ -25,7 +25,7 @@ namespace happyml {
     };
 
     enum LayerType {
-        full, convolution2dValid, concatenate, flatten
+        full, convolution2dValid, concatenate, flatten, normalize
     };
 
     // Added the word "Default" after tanh because
@@ -108,6 +108,8 @@ namespace happyml {
                 return "concatenate";
             case flatten:
                 return "flatten";
+            case normalize:
+                return "normalize";
         }
         throw runtime_error("Unknown Node Type");
     }
@@ -124,6 +126,9 @@ namespace happyml {
         }
         if(layerType == "flatten") {
             return flatten;
+        }
+        if(layerType == "normalize") {
+            return normalize;
         }
         string error = "Unknown Node Type: " + layerType;
         throw runtime_error(error);

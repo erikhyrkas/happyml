@@ -6,28 +6,24 @@
 #ifndef HAPPYML_FULLY_CONNECTED_LAYER_HPP
 #define HAPPYML_FULLY_CONNECTED_LAYER_HPP
 
-#include "../neural_network_layer_function.hpp"
+#include "../base_layer.hpp"
 #include "../../types/tensor_impls/tensor_from_xavier.hpp"
+#include "../../types/tensor_views/standardize_tensor_view.hpp"
+#include "../../types/tensor_views/standardize_derivative_tensor_view.hpp"
 
 namespace happyml {
-    class FullyConnectedLayer : public NeuralNetworkLayerFunction {
+    class FullyConnectedLayer : public BaseLayer {
     public:
         FullyConnectedLayer(const string &label, size_t inputSize, size_t outputSize, uint8_t bits,
-                            const shared_ptr<BaseOptimizer> &optimizer) {
+                            int optimizer_registration_id,
+                            bool use_l2_regularization = true) : weights_errors() {
             this->label = label;
-            this->registration_id = optimizer->registerForWeightChanges();
+            this->registration_id = optimizer_registration_id;
             this->inputShapes = vector<vector<size_t >>{{1, inputSize, 1}};
             this->outputShape = vector<size_t>{1, outputSize, 1};
             this->weights = make_shared<TensorFromXavier>(inputSize, outputSize, 1, 42);
             this->bits = bits;
-            this->optimizer = optimizer;
-            if (bits == 32) {
-                mixedPrecisionScale = 0.5f;
-            } else if (bits == 16) {
-                mixedPrecisionScale = 2.f;
-            } else {
-                mixedPrecisionScale = 3.f;
-            }
+            this->use_l2_regularization = use_l2_regularization;
         }
 
         vector<vector<size_t>> getInputShapes() {
@@ -60,7 +56,14 @@ namespace happyml {
                 lastInputs.push(lastInput);
             }
 
-            return make_shared<MatrixMultiplyTensorView>(lastInput, weights);
+            shared_ptr<BaseTensor> result = make_shared<MatrixMultiplyTensorView>(lastInput, weights);
+
+#ifdef DEBUG_TRAIN_NAN
+            if (result->hasNaNOrInf()) {
+                throw runtime_error("FullyConnectedNeurons.forward() result has NaN or Inf");
+            }
+#endif
+            return result;
         }
 
         // learning
@@ -73,6 +76,7 @@ namespace happyml {
             shared_ptr<BaseTensor> average_last_inputs = lastInputs.front();
             lastInputs.pop();
             if (lastInputsSize > 1) {
+                PROFILE_BLOCK(multiInputProfileBlock);
                 while (!lastInputs.empty()) {
                     auto nextLastInput = lastInputs.front();
                     lastInputs.pop();
@@ -87,21 +91,67 @@ namespace happyml {
             // TODO: we greatly improve performance by materializing the tensor into a FullTensor here, but sometimes this will use
             //  considerably more memory than we need. Part of me thinks that all dot product tensors should be materialized,
             //  and part of me thinks that there are situations of simple dot products don't need to be.
-            shared_ptr<BaseTensor> input_error = make_shared<FullTensor>(
+            shared_ptr<BaseTensor> input_error = materializeTensor(
                     make_shared<MatrixMultiplyTensorView>(output_error, weights_transposed));
 
             // update weights
             auto input_transposed = make_shared<TransposeTensorView>(average_last_inputs);
-            auto weights_error = make_shared<MatrixMultiplyTensorView>(input_transposed, output_error);
 
-            const auto adjusted_weights_error = make_shared<ScalarMultiplyTensorView>(weights_error,
-                                                                                      mixedPrecisionScale);
-            const auto adjusted_weights = optimizer->calculateWeightsChange(
-                    registration_id, weights, adjusted_weights_error);
+            shared_ptr<BaseTensor> weights_error = make_shared<MatrixMultiplyTensorView>(input_transposed, output_error);
 
-            weights = materializeTensor(adjusted_weights, bits);
+            if (use_l2_regularization) {
+                PROFILE_BLOCK(profileBlock2);
+
+                auto weights_squared = make_shared<PowerTensorView>(weights, 2.0f);
+                // Calculate L2 regularization term
+                auto l2_regularization = make_shared<ScalarMultiplyTensorView>(weights_squared, regularization_param);
+                // Add L2 regularization term to weights error
+                weights_error = make_shared<AddTensorView>(weights_error, l2_regularization);
+#ifdef DEBUG_TRAIN_NAN
+                if (weights->hasNaNOrInf()) {
+                    throw runtime_error("FullyConnectedNeurons.backward() weights has NaN or Inf");
+                }
+                if (weights_squared->hasNaNOrInf()) {
+                    weights->print();
+                    weights_squared->print();
+                    throw runtime_error("FullyConnectedNeurons.backward() weights_squared has NaN or Inf");
+                }
+                if (l2_regularization->hasNaNOrInf()) {
+                    throw runtime_error("FullyConnectedNeurons.backward() l2_regularization has NaN or Inf");
+                }
+                if (weights_error->hasNaNOrInf()) {
+                    throw runtime_error("FullyConnectedNeurons.backward() weights_error has NaN or Inf");
+                }
+#endif
+            }
+            weights_errors.push(weights_error);
 
             return {input_error};
+        }
+
+        void apply(const shared_ptr<BaseOptimizer> &optimizer) override {
+            PROFILE_BLOCK(profileBlock);
+
+            if (weights_errors.empty()) {
+                throw runtime_error("FullyConnectedNeurons.apply() called without previous weights_errors.");
+            }
+
+            size_t weights_errors_size = weights_errors.size();
+            auto weights_error = weights_errors.front();
+            weights_errors.pop();
+            while (!weights_errors.empty()) {
+                auto next_weights_error = weights_errors.front();
+                weights_errors.pop();
+                weights_error = make_shared<AddTensorView>(weights_error, next_weights_error);
+            }
+            weights_error = materializeTensor(
+                    make_shared<ScalarDivideTensorView>(weights_error,
+                                                        (float) weights_errors_size));
+
+            const auto adjusted_weights = optimizer->calculateWeightsChange(
+                    registration_id, weights, weights_error);
+
+            weights = materializeTensor(adjusted_weights, bits);
         }
 
     private:
@@ -109,10 +159,11 @@ namespace happyml {
         int registration_id;
         queue<shared_ptr<BaseTensor>> lastInputs; // each input in a batch will queue in order during forward, and deque properly when back-propagating
         uint8_t bits;
-        float mixedPrecisionScale;
         vector<vector<size_t>> inputShapes;
         vector<size_t> outputShape;
-        shared_ptr<BaseOptimizer> optimizer;
+        queue<shared_ptr<BaseTensor>> weights_errors;
+        bool use_l2_regularization;
+        const float regularization_param = 0.0002f; // sane default of 2 * 0.01f
         string label;
     };
 }

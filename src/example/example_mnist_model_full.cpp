@@ -35,13 +35,13 @@ int main() {
                                                               expectedEncoder, givenEncoder);
         cout << "Loaded test data." << endl;
 
-        auto neuralNetwork = neuralNetworkBuilder()
+        auto neuralNetwork = neuralNetworkBuilder(OptimizerType::adam)
                 ->addInputLayer(mnistDataSource->getGivenShape(), 100, LayerType::full, relu)->setUseBias(false)
                 ->addLayer(50, LayerType::full, relu)->setUseBias(false)
                 ->addOutputLayer(mnistDataSource->getExpectedShape(), ActivationType::sigmoidApprox)
                 ->build();
         neuralNetwork->useHighPrecisionExitStrategy();
-        float loss = neuralNetwork->train(mnistDataSource, testMnistDataSource, 4);
+        float loss = neuralNetwork->train(mnistDataSource, testMnistDataSource, 32);
         // Trained 20 epochs using a batch size of 1 in 269 minutes with a loss of 0.000004.
         // Trained 20 epochs using a batch size of 4 in 92 minutes with a loss of 0.011218.
         // Trained 20 epochs using a batch size of 8 in 67 minutes with a loss of 0.017087.

@@ -13,13 +13,13 @@ namespace happyml {
 // https://towardsdatascience.com/convolution-vs-correlation-af868b6b4fb5
 // also:
 // https://medium.com/@2017csm1006/forward-and-backpropagation-in-convolutional-neural-network-4dfa96d7b37e
-    class Convolution2dValidFunction : public NeuralNetworkLayerFunction {
+    class Convolution2dValidFunction : public BaseLayer {
     public:
         Convolution2dValidFunction(const string &label,
                                    vector<size_t> inputShape, size_t filters, size_t kernelSize, uint8_t bits,
-                                   const shared_ptr<BaseOptimizer> &optimizer) {
+                                   int optimizer_registration_id) {
             this->label = label;
-            this->registration_id = optimizer->registerForWeightChanges();
+            this->registration_id = optimizer_registration_id;
             this->inputShape = inputShape;
             this->kernelSize = kernelSize;
             this->outputShape = {inputShape[0] - kernelSize + 1, inputShape[1] - kernelSize + 1, filters};
@@ -29,14 +29,6 @@ namespace happyml {
                 this->weights.push_back(make_shared<TensorFromXavier>(kernelSize, kernelSize, inputShape[2], 42));
             }
             this->optimizer = optimizer;
-            if (bits == 32) {
-                mixedPrecisionScale = 0.5f;
-            } else if (bits == 16) {
-                mixedPrecisionScale = 2.f;
-            } else {
-                mixedPrecisionScale = 3.f;
-            }
-
         }
 
         void saveKnowledge(const string &fullKnowledgePath) override {
@@ -76,10 +68,10 @@ namespace happyml {
                 shared_ptr<BaseTensor> outputTensor = nullptr;
                 for (size_t inputLayer = 0; inputLayer < inputDepth; inputLayer++) {
                     const auto weightForInputLayer = make_shared<ChannelToTensorView>(weights[outputLayer],
-                                                                                               inputLayer);
+                                                                                      inputLayer);
                     const auto inputChannel = make_shared<ChannelToTensorView>(lastInput, inputLayer);
                     const auto correlation2d = make_shared<Valid2DCrossCorrelationTensorView>(inputChannel,
-                                                                                                       weightForInputLayer);
+                                                                                              weightForInputLayer);
                     if (outputTensor) {
                         outputTensor = make_shared<AddTensorView>(outputTensor, correlation2d);
                     } else {
@@ -87,8 +79,8 @@ namespace happyml {
                     }
                 }
                 const shared_ptr<BaseTensor> summedCorrelation2d = make_shared<SumToChannelTensorView>(outputTensor,
-                                                                                                                         outputLayer,
-                                                                                                                         filters);
+                                                                                                       outputLayer,
+                                                                                                       filters);
                 if (!result) {
                     result = summedCorrelation2d;
                 } else {
@@ -106,18 +98,19 @@ namespace happyml {
         }
 
         vector<shared_ptr<BaseTensor>> backward(const shared_ptr<BaseTensor> &outputError) override {
+            PROFILE_BLOCK(profileBlock);
             size_t lastInputsSize = lastInputs.size();
             if (lastInputsSize < 1) {
                 throw runtime_error("FullyConnectedNeurons.backward() called without previous inputs.");
             }
             shared_ptr<BaseTensor> averageLastInputs = lastInputs.front();
             lastInputs.pop();
-            while (!lastInputs.empty()) {
-                auto nextLastInput = lastInputs.front();
-                lastInputs.pop();
-                averageLastInputs = make_shared<AddTensorView>(averageLastInputs, nextLastInput);
-            }
             if (lastInputsSize > 1) {
+                while (!lastInputs.empty()) {
+                    auto nextLastInput = lastInputs.front();
+                    lastInputs.pop();
+                    averageLastInputs = make_shared<AddTensorView>(averageLastInputs, nextLastInput);
+                }
                 averageLastInputs = materializeTensor(
                         make_shared<ScalarMultiplyTensorView>(averageLastInputs, 1.f / (float) lastInputsSize));
             }
@@ -127,50 +120,57 @@ namespace happyml {
             // filters are the number of output channels we have
             const size_t filters = outputShape[2];
             const size_t inputDepth = inputShape[2];
-            shared_ptr<BaseTensor> inputError = nullptr;
+            shared_ptr<BaseTensor> inputError = make_shared<UniformTensor>(inputShape, 0.0f);
+            vector<shared_ptr<BaseTensor>> output_layers_weight_changes;
             for (size_t outputLayer = 0; outputLayer < filters; outputLayer++) {
                 const auto outputErrorForLayer = make_shared<ChannelToTensorView>(outputError, outputLayer);
-                shared_ptr<BaseTensor> weightChanges = nullptr;
+                shared_ptr<BaseTensor> output_weight_changes = make_shared<UniformTensor>(weights[outputLayer]->getShape(), 0.0f);;
                 for (size_t inputLayer = 0; inputLayer < inputDepth; inputLayer++) {
                     const auto weightForInputLayer = make_shared<ChannelToTensorView>(weights[outputLayer],
-                                                                                               inputLayer);
+                                                                                      inputLayer);
                     const auto nextInputError = make_shared<Full2DConvolveTensorView>(outputErrorForLayer,
-                                                                                               weightForInputLayer);
+                                                                                      weightForInputLayer);
                     const auto inputErrorToInputChannel = make_shared<SumToChannelTensorView>(nextInputError,
-                                                                                                       inputLayer, inputDepth);
-                    if (inputError) {
-                        inputError = make_shared<AddTensorView>(inputError, inputErrorToInputChannel);
-                    } else {
-                        inputError = inputErrorToInputChannel;
-                    }
+                                                                                              inputLayer,
+                                                                                              inputDepth);
+                    inputError = make_shared<AddTensorView>(inputError, inputErrorToInputChannel);
                     const auto inputLayerChannel = make_shared<ChannelToTensorView>(averageLastInputs,
-                                                                                             inputLayer);
+                                                                                    inputLayer);
                     const auto nextWeightError = make_shared<Valid2DCrossCorrelationTensorView>(inputLayerChannel,
-                                                                                                         outputErrorForLayer);
+                                                                                                outputErrorForLayer);
                     const auto nextWeightToInputChannel = make_shared<SumToChannelTensorView>(nextWeightError,
-                                                                                                       inputLayer, inputDepth);
-                    if (weightChanges) {
-                        weightChanges = make_shared<AddTensorView>(weightChanges, nextWeightToInputChannel);
-                    } else {
-                        weightChanges = nextWeightToInputChannel;
-                    }
+                                                                                              inputLayer, inputDepth);
+                    output_weight_changes = make_shared<AddTensorView>(output_weight_changes, nextWeightToInputChannel);
                 }
-
-                const auto adjusted_weights_error = make_shared<ScalarMultiplyTensorView>(weightChanges,
-                                                                                          mixedPrecisionScale);
-                const auto adjustedWeights = optimizer->calculateWeightsChange(registration_id,
-                                                                               weights[outputLayer],
-                                                                               adjusted_weights_error);
-                weights[outputLayer] = materializeTensor(adjustedWeights, bits);
+                output_layers_weight_changes.push_back(output_weight_changes);
             }
+            weight_changes.push(output_layers_weight_changes);
 
             const auto resultError = make_shared<SumChannelsTensorView>(inputError);
             return {resultError};
         }
 
+        void apply(const shared_ptr<BaseOptimizer> &optimizer) override {
+            PROFILE_BLOCK(profileBlock);
+
+            const size_t filters = outputShape[2];
+            while (!weight_changes.empty()) {
+                vector<shared_ptr<BaseTensor>> weightChanges = weight_changes.front();
+                weight_changes.pop();
+                for (size_t outputLayer = 0; outputLayer < filters; outputLayer++) {
+                    auto loss_gradient = weightChanges[outputLayer];
+                    const auto adjustedWeights = optimizer->calculateWeightsChange(registration_id,
+                                                                                   weights[outputLayer],
+                                                                                   loss_gradient);
+                    weights[outputLayer] = materializeTensor(adjustedWeights, bits);
+                }
+            }
+        }
+
     private:
         int registration_id;
         queue<shared_ptr<BaseTensor>> lastInputs; // each input in a batch will queue in order during forward, and deque properly when back-propagating
+        queue<vector<shared_ptr<BaseTensor>>> weight_changes;
         vector<shared_ptr<BaseTensor>> weights;
         uint8_t bits;
         float mixedPrecisionScale;

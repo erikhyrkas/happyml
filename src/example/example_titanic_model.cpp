@@ -48,19 +48,17 @@ int main() {
         BinaryDatasetReader reader(result_path);
         auto titanicDataSource = make_shared<BinaryDataSet>(result_path);
 
-        auto neuralNetwork = neuralNetworkBuilder()
+        auto neuralNetwork = neuralNetworkBuilder(OptimizerType::adam)
                 ->setModelName("titanic_example")
                 ->setModelRepo("../repo/")
-                ->setLearningRate(0.05)
                 ->setLossFunction(LossType::categoricalCrossEntropy)
                 ->add_concatenated_input_layer(titanicDataSource->getGivenShapes())
-                ->addLayer(16, LayerType::full, ActivationType::relu)->setUseBias(false)
                 ->addLayer(8, LayerType::full, ActivationType::relu)->setUseBias(false)
                 ->addLayer(8, LayerType::full, ActivationType::relu)->setUseBias(false)
                 ->addOutputLayer(titanicDataSource->getExpectedShape(), ActivationType::softmax)->setUseBias(false)
                 ->build();
         neuralNetwork->useHighPrecisionExitStrategy();
-        float loss = neuralNetwork->train(titanicDataSource);
+        float loss = neuralNetwork->train(titanicDataSource, 32);
 
         cout << fixed << setprecision(2);
         titanicDataSource->restart();

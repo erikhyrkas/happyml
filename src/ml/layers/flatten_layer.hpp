@@ -8,7 +8,7 @@
 
 
 namespace happyml {
-    class FlattenLayer : public NeuralNetworkLayerFunction {
+    class FlattenLayer : public BaseLayer {
     public:
         shared_ptr<BaseTensor> forward(const vector<shared_ptr<BaseTensor>> &input, bool forTraining) override {
             PROFILE_BLOCK(profileBlock);

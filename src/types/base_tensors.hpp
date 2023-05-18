@@ -118,6 +118,17 @@ namespace happyml {
             return false;
         }
 
+        bool hasNaNOrInf() {
+            size_t current_size = size();
+            for (size_t i = 0; i < current_size; i++) {
+                float val = getValue(i);
+                if (isnan(val) || isinf(val)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         void save(ofstream &stream, bool header = true) {
             uint64_t channels = channelCount();
             uint64_t rows = rowCount();

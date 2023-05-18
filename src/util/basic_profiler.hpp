@@ -34,10 +34,13 @@ namespace happyml {
 
         void blockLeft() {
             thread_local map<string, chrono::microseconds> duration{};
+            thread_local map<string, double> count{};
+            count[label]++;
             auto stopTime = chrono::high_resolution_clock::now();
             auto elapsed = chrono::duration_cast<chrono::microseconds>(stopTime - startTime);
             duration[label] += elapsed;
-            cout << "||end " << label << " " << elapsed.count() << " ms (" << duration[label].count() << " ms)||"
+            auto average = (double) duration[label].count() / count[label];
+            cout << "||end " << label << " Calls: " << count[label] << " Last: " << elapsed.count() << " ms Total: " << duration[label].count() << " ms Average: " << average << " ms||"
                  << endl;
         }
 
@@ -46,13 +49,57 @@ namespace happyml {
         string label;
     };
 
+    class SummaryProfileBlock {
+    public:
+        SummaryProfileBlock(const char *file, const string &func, const int line) {
+            stringstream ss;
+            ss << file << ":" << func << ":" << line;
+            this->label = ss.str();
+            blockEntered();
+        }
 
+        ~SummaryProfileBlock() {
+            blockLeft();
+        }
 
-//#define MICRO_ML_PROFILE
-#ifdef MICRO_ML_PROFILE
+        void blockEntered() {
+            startTime = chrono::high_resolution_clock::now();
+        }
+
+        void blockLeft() {
+            thread_local map<string, chrono::microseconds> duration{};
+            thread_local map<string, double> count{};
+            thread_local map<string, int> count_from_last_print{};
+            auto stopTime = chrono::high_resolution_clock::now();
+            auto elapsed = chrono::duration_cast<chrono::microseconds>(stopTime - startTime);
+            duration[label] += elapsed;
+            count[label] += 1;
+            if (count_from_last_print[label] > 2000) {
+                auto average = (double) duration[label].count() / count[label];
+                cout << "||" << label << " Calls: " << count[label] << " Last: " << elapsed.count() << " ms Total: " << duration[label].count() << " ms Average: " << average << " ms)||"
+                     << endl;
+                count_from_last_print[label] = 0;
+            } else {
+                count_from_last_print[label] += 1;
+            }
+        }
+
+    private:
+        chrono::time_point<chrono::high_resolution_clock> startTime{};
+        string label;
+    };
+
+//#define HAPPYML_ML_PROFILE_DETAILS
+//#define HAPPYML_ML_PROFILE_SUMMARY
+
+#ifdef HAPPYML_ML_PROFILE_DETAILS
 #define PROFILE_BLOCK(x) ProfileBlock x(__FILE__, __func__, __LINE__)
 #else
+#ifdef HAPPYML_ML_PROFILE_SUMMARY
+#define PROFILE_BLOCK(x) SummaryProfileBlock x(__FILE__, __func__, __LINE__)
+#else
 #define PROFILE_BLOCK(x) ((void)0)
-#endif
+#endif // HAPPYML_ML_PROFILE_SUMMARY
+#endif //HAPPYML_ML_PROFILE_DETAILS
 }
 #endif //HAPPYML_BASIC_PROFILER_HPP

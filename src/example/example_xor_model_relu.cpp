@@ -19,11 +19,13 @@ int main() {
         xorDataSource->addTrainingData(columnVector({1.f, 1.f}), 0.f);
 
         cout << "Test with reluActivation" << endl;
-        auto neuralNetwork = neuralNetworkBuilder()
-                ->addInputLayer(xorDataSource->getGivenShape(), 8, LayerType::full, ActivationType::relu)->setBits(8)
-                ->addLayer(8, LayerType::full, ActivationType::relu)->setBits(8)
-                ->addOutputLayer(xorDataSource->getExpectedShape(), ActivationType::tanhDefault)
+        auto neuralNetwork = neuralNetworkBuilder(OptimizerType::adam)
+                ->setLearningRate(0.05f)
+                ->addInputLayer(xorDataSource->getGivenShape(), 7, LayerType::full, ActivationType::relu)->setUseBias(false)->setBits(8)
+                ->addLayer(7, LayerType::full, ActivationType::relu)->setBits(8)->setUseBias(false)
+                ->addOutputLayer(xorDataSource->getExpectedShape(), ActivationType::tanhDefault)->setUseBias(false)
                 ->build();
+        neuralNetwork->useHighPrecisionExitStrategy();
         float loss = neuralNetwork->train(xorDataSource);
 
         cout << fixed << setprecision(2);
