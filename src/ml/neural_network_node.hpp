@@ -32,11 +32,20 @@ namespace happyml {
     class NeuralNetworkNode : public enable_shared_from_this<NeuralNetworkNode> {
     public:
         explicit NeuralNetworkNode(
-                const shared_ptr<BaseLayer> &neuralNetworkFunction, bool use_clipping = false) {
+                const shared_ptr<BaseLayer> &neuralNetworkFunction) {
             this->neuralNetworkFunction = neuralNetworkFunction;
             this->materialized = true;
             this->saved = true;
-            this->use_clipping = use_clipping;
+            this->use_norm_clipping = false;
+            this->norm_clip_threshold = 5.0f;
+        }
+
+        void set_use_norm_clipping(bool use_clipping) {
+            this->use_norm_clipping = use_clipping;
+        }
+
+        void set_norm_clipping_threshold(float threshold) {
+            this->norm_clip_threshold = threshold;
         }
 
         virtual void sendOutput(shared_ptr<BaseTensor> &output) {
@@ -128,11 +137,18 @@ namespace happyml {
             }
         }
 
-        vector<shared_ptr<BaseTensor>> clip(const vector<shared_ptr<BaseTensor>> &tensors) {
+        vector<shared_ptr<BaseTensor>> clip(const vector<shared_ptr<BaseTensor>> &errors_from_backward) {
+            // backward could be sending to multiple parent nodes in the case we are coming from something
+            // like a concatenation layer.
             vector<shared_ptr<BaseTensor>> clipped;
-            clipped.reserve(tensors.size());
-            for (const auto &tensor: tensors) {
-                clipped.push_back(make_shared<ClipTensorView>(tensor, -5.0f, 5.0f));
+            clipped.reserve(errors_from_backward.size());
+            for (const auto &single_error: errors_from_backward) {
+                auto l2_norm = single_error->euclidean_norm();
+                if (l2_norm > norm_clip_threshold) {
+                    clipped.push_back(make_shared<ScalarMultiplyTensorView>(single_error, norm_clip_threshold / l2_norm));
+                } else {
+                    clipped.push_back(single_error);
+                }
             }
             return clipped;
         }
@@ -159,7 +175,7 @@ namespace happyml {
             }
 #endif
             auto prior_errors = neuralNetworkFunction->backward(outputError);
-            if (use_clipping) {
+            if (use_norm_clipping) {
                 prior_errors = clip(prior_errors);
             }
             if (materialized) {
@@ -259,7 +275,8 @@ namespace happyml {
         shared_ptr<BaseLayer> neuralNetworkFunction;
         bool materialized;
         bool saved;
-        bool use_clipping;
+        bool use_norm_clipping;
+        float norm_clip_threshold;
     };
 
     class NeuralNetworkOutputNode : public NeuralNetworkNode {

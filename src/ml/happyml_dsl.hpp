@@ -139,7 +139,9 @@ namespace happyml {
                 this->inputShapes = {input_shape};
                 this->outputShape = output_shape;
                 this->bits = 32;
-                this->use_bias = true;
+                this->use_bias = false;
+                this->use_l2_regularization = node_type == LayerType::full;
+                this->use_normalization = false;
                 this->materialized = false;
                 this->first_node = nullptr;
                 this->producesOutput = for_output;
@@ -147,6 +149,12 @@ namespace happyml {
                 this->filters = 0;
                 this->vertexUniqueId = vertexUniqueId;
                 this->acceptsInput = givenInput;
+                this->use_norm_clipping = false;
+                this->norm_clipping_threshold = 5.0f;
+
+                if (for_output && node_type != LayerType::full) {
+                    throw runtime_error("Only full or convolution2dValid layers can be used as output.");
+                }
             }
 
             // used for convolutional layers
@@ -159,7 +167,9 @@ namespace happyml {
                 this->inputShapes = {input_shape};
                 this->outputShape = {input_shape[0] - kernel_size + 1, input_shape[1] - kernel_size + 1, filters};
                 this->bits = 32;
-                this->use_bias = true;
+                this->use_bias = false;
+                this->use_l2_regularization = false;
+                this->use_normalization = false;
                 this->materialized = true;
                 this->first_node = nullptr;
                 this->kernel_size = kernel_size;
@@ -167,6 +177,11 @@ namespace happyml {
                 this->producesOutput = for_output;
                 this->vertexUniqueId = vertexUniqueId;
                 this->acceptsInput = acceptsInput;
+                this->use_norm_clipping = false;
+                this->norm_clipping_threshold = 5.0f;
+                if (for_output && node_type != LayerType::convolution2dValid) {
+                    throw runtime_error("Only full or convolution2dValid layers can be used as output.");
+                }
             }
 
             // used for concatenate layers
@@ -179,6 +194,8 @@ namespace happyml {
                 this->outputShape = output_shape;
                 this->bits = 32;
                 this->use_bias = false;
+                this->use_l2_regularization = false;
+                this->use_normalization = false;
                 this->materialized = false;
                 this->first_node = nullptr;
                 this->producesOutput = false;
@@ -186,10 +203,32 @@ namespace happyml {
                 this->filters = 0;
                 this->vertexUniqueId = vertexUniqueId;
                 this->acceptsInput = false;
+                this->use_norm_clipping = false;
+                this->norm_clipping_threshold = 5.0f;
+            }
+
+            shared_ptr<NNVertex> setUseL2Regularization(bool b) {
+                this->use_l2_regularization = b;
+                if (b && node_type != LayerType::full) {
+                    throw runtime_error("L2 regularization can only be used on full layers");
+                }
+                return shared_from_this();
+            }
+
+            shared_ptr<NNVertex> setUseNormalization(bool b) {
+                this->use_normalization = b;
+                if (b && node_type != LayerType::full) {
+                    throw runtime_error("Layer Normalization can only be used on full layers");
+                }
+                return shared_from_this();
             }
 
             shared_ptr<NNVertex> setUseBias(bool b) {
                 this->use_bias = b;
+                if (b && (node_type != LayerType::full &&
+                          node_type != LayerType::convolution2dValid)) {
+                    throw runtime_error("Bias can only be used on full or convolution2dValid layers");
+                }
                 return shared_from_this();
             }
 
@@ -200,7 +239,21 @@ namespace happyml {
 
             shared_ptr<NNVertex> setMaterialized(bool m) {
                 this->materialized = m;
+                if (m && (node_type != LayerType::full &&
+                          node_type != LayerType::convolution2dValid)) {
+                    throw runtime_error("Materialized can only be used on full or convolution2dValid layers");
+                }
                 return shared_from_this();
+            }
+
+            shared_ptr<NNVertex> setUseNormClipping(bool b) {
+                this->use_norm_clipping = b;
+                return shared_from_this();
+            }
+
+            shared_ptr<NNVertex> setNormClippingThreshold(float value) {
+                this->norm_clipping_threshold = value;
+                return setUseNormClipping(true);
             }
 
             // edge aka connection
@@ -268,6 +321,16 @@ namespace happyml {
                 return nnv;
             }
 
+            shared_ptr<NNVertex> addNormalizationLayer() {
+                auto parentObject = parent.lock();
+                auto nnv = make_shared<NNVertex>(parentObject, LayerType::normalize, this->outputShape,
+                                                 this->outputShape,
+                                                 false, false,
+                                                 ActivationType::linear, parentObject->nextVertexId());
+                addEdge(nnv);
+                return nnv;
+            }
+
             shared_ptr<NNVertex> addLayer(const vector<size_t> &nodeInputShape,
                                           const vector<size_t> &nodeOutputShape, LayerType layerType,
                                           bool next_for_output, ActivationType activationType) {
@@ -321,6 +384,10 @@ namespace happyml {
                 metadata_row.push_back(asString(outputShape[2]));
                 metadata_row.push_back(asString(getFilters()));
                 metadata_row.push_back(asString(getKernelSize()));
+                metadata_row.push_back(asString(isUseL2Regularization()));
+                metadata_row.push_back(asString(isUseNormalization()));
+                metadata_row.push_back(asString(isUseNormClipping()));
+                metadata_row.push_back(asString(getNormClippingThreshold()));
                 networkMetadata.push_back(metadata_row);
                 shared_ptr<BaseOptimizer> optimizer = nn->getOptimizer();
                 shared_ptr<NeuralNetworkNode> next_node;
@@ -340,7 +407,8 @@ namespace happyml {
                                                                                                   outputShape[1] *
                                                                                                   outputShape[2],
                                                                                                   bits,
-                                                                                                  optimizer->registerForWeightChanges());
+                                                                                                  optimizer->registerForWeightChanges(),
+                                                                                                  use_l2_regularization);
                     next_node = make_shared<NeuralNetworkNode>(fcn);
                 } else if (node_type == LayerType::concatenate) {
                     // TODO: we could probably have a strategy for handling different input shapes.
@@ -369,26 +437,48 @@ namespace happyml {
                 } else {
                     throw runtime_error("Unimplemented NodeType");
                 }
-
+                if (use_norm_clipping) {
+                    next_node->set_use_norm_clipping(use_norm_clipping);
+                    next_node->set_norm_clipping_threshold(norm_clipping_threshold);
+                }
                 last_node = appendNode(last_node, next_node);
 
                 if (use_bias) {
                     string biasLabel = asString(vertexUniqueId) + "_bias";
                     auto b = make_shared<BiasLayer>(biasLabel, outputShape, outputShape, bits, optimizer->registerForBiasChanges());
                     auto bias_node = make_shared<NeuralNetworkNode>(b);
+                    if (use_norm_clipping) {
+                        bias_node->set_use_norm_clipping(use_norm_clipping);
+                        bias_node->set_norm_clipping_threshold(norm_clipping_threshold);
+                    }
                     last_node = appendNode(last_node, bias_node);
                 }
 
-                shared_ptr<ActivationFunction> activationFunction = createActivationFunction();
-                auto activation_node = make_shared<NeuralNetworkOutputNode>(
-                        make_shared<ActivationLayer>(activationFunction));
-                last_node = appendNode(last_node, activation_node);
-
-                if (producesOutput) {
-                    nn->addOutput(activation_node);
+                if (use_normalization) {
+                    auto norm = make_shared<NormalizationLayer>();
+                    auto norm_node = make_shared<NeuralNetworkNode>(norm);
+                    if (use_norm_clipping) {
+                        norm_node->set_use_norm_clipping(use_norm_clipping);
+                        norm_node->set_norm_clipping_threshold(norm_clipping_threshold);
+                    }
+                    last_node = appendNode(last_node, norm_node);
                 }
 
-                last_node->setMaterialized(materialized);
+                if (node_type == LayerType::convolution2dValid || node_type == LayerType::full) {
+                    shared_ptr<ActivationFunction> activationFunction = createActivationFunction();
+                    auto activation_node = make_shared<NeuralNetworkOutputNode>(
+                            make_shared<ActivationLayer>(activationFunction));
+                    if (use_norm_clipping) {
+                        activation_node->set_use_norm_clipping(use_norm_clipping);
+                        activation_node->set_norm_clipping_threshold(norm_clipping_threshold);
+                    }
+                    last_node = appendNode(last_node, activation_node);
+                    if (producesOutput) {
+                        nn->addOutput(activation_node);
+                    }
+                    last_node->setMaterialized(materialized);
+                }
+
                 vector<string> edgeMetadata{"edge", asString(getVertexUniqueId())};
                 for (const auto &edge: edges) {
                     edgeMetadata.push_back(asString(edge->to->getVertexUniqueId()));
@@ -471,6 +561,14 @@ namespace happyml {
                 return use_bias;
             }
 
+            bool isUseL2Regularization() const {
+                return use_l2_regularization;
+            }
+
+            bool isUseNormalization() const {
+                return use_normalization;
+            }
+
             uint8_t getBits() const {
                 return bits;
             }
@@ -491,6 +589,14 @@ namespace happyml {
                 return kernel_size;
             }
 
+            bool isUseNormClipping() const {
+                return use_norm_clipping;
+            }
+
+            float getNormClippingThreshold() const {
+                return norm_clipping_threshold;
+            }
+
         private:
             weak_ptr<HappymlDSL> parent;
             vector<shared_ptr<NNEdge>> edges;
@@ -500,6 +606,10 @@ namespace happyml {
             ActivationType activation_type;
             bool materialized;
             bool use_bias;
+            bool use_l2_regularization;
+            bool use_normalization;
+            bool use_norm_clipping;
+            float norm_clipping_threshold;
             uint8_t bits;
             shared_ptr<NeuralNetworkNode> first_node;
             size_t kernel_size{};
@@ -666,6 +776,16 @@ namespace happyml {
         size_t filters = stoull(vertexMetadata[current_metadata_offset]);
         current_metadata_offset++;
         size_t kernels = stoull(vertexMetadata[current_metadata_offset]);
+        current_metadata_offset++;
+        bool use_l2_regularization = asBool(vertexMetadata[current_metadata_offset]);
+        current_metadata_offset++;
+        bool use_normalization = asBool(vertexMetadata[current_metadata_offset]);
+        current_metadata_offset++;
+        bool use_clipping = asBool(vertexMetadata[current_metadata_offset]);
+        current_metadata_offset++;
+        float clipping_threshold = stof(vertexMetadata[current_metadata_offset]);
+        current_metadata_offset++;
+
         if (acceptsInput) {
             if (inputShapes.size() > 1) {
                 throw runtime_error("An input layer can't have multiple inputs.");
@@ -737,6 +857,10 @@ namespace happyml {
         createdVertexes[vertexId]->setMaterialized(isMaterialized);
         createdVertexes[vertexId]->setUseBias(useBias);
         createdVertexes[vertexId]->setBits(bits);
+        createdVertexes[vertexId]->setUseL2Regularization(use_l2_regularization);
+        createdVertexes[vertexId]->setUseNormalization(use_normalization);
+        createdVertexes[vertexId]->setNormClippingThreshold(clipping_threshold); // set this first because it would enable clipping
+        createdVertexes[vertexId]->setUseNormClipping(use_clipping); // set this second because it could disable clipping if required
 
         if (edgeFromTo.count(vertexId) > 0) {
             auto edges = edgeFromTo[vertexId];

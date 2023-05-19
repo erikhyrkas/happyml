@@ -53,9 +53,9 @@ int main() {
                 ->setModelRepo("../repo/")
                 ->setLossFunction(LossType::categoricalCrossEntropy)
                 ->add_concatenated_input_layer(titanicDataSource->getGivenShapes())
-                ->addLayer(8, LayerType::full, ActivationType::relu)->setUseBias(false)
-                ->addLayer(8, LayerType::full, ActivationType::relu)->setUseBias(false)
-                ->addOutputLayer(titanicDataSource->getExpectedShape(), ActivationType::softmax)->setUseBias(false)
+                ->addLayer(8, LayerType::full, ActivationType::leaky)
+                ->addLayer(4, LayerType::full, ActivationType::leaky)
+                ->addOutputLayer(titanicDataSource->getExpectedShape(), ActivationType::softmax)->setUseBias(true)
                 ->build();
         neuralNetwork->useHighPrecisionExitStrategy();
         float loss = neuralNetwork->train(titanicDataSource, 32);

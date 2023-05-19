@@ -231,6 +231,36 @@ namespace happyml {
             }
         }
 
+        float compute_binary_accuracy(const shared_ptr<TrainingDataSet> &testDataset, int limit = -1) {
+            float accuracy = 0;
+            float total = 0;
+            auto nextRecord = testDataset->nextRecord();
+            while (nextRecord != nullptr && (limit < 0 || total < limit)) {
+                auto prediction = predict(nextRecord->getGiven());
+                auto actual = nextRecord->getExpected();
+
+                bool matched_all = true;
+
+                for (int i = 0; i < testDataset->getExpectedShapes().size(); i++) {
+                    auto best_prediction = prediction[i];
+                    auto best_actual = actual[i];
+                    for( int j = 0; j < prediction.size(); j++) {
+                        if (!roughlyEqual(std::round(best_prediction->getValue(j)),std::round(best_actual->getValue(j)))) {
+                            matched_all = false;
+                            break;
+                        }
+                    }
+                }
+                if (matched_all) {
+                    accuracy++;
+                }
+
+                total++;
+                nextRecord = testDataset->nextRecord();
+            }
+            return accuracy / total;
+        }
+
         float compute_categorical_accuracy(const shared_ptr<TrainingDataSet> &testDataset, vector<shared_ptr<RawDecoder >> expected_decoders, int limit = -1) {
             float accuracy = 0;
             float total = 0;

@@ -166,5 +166,18 @@ namespace happyml {
         const float regularization_param = 0.0002f; // sane default of 2 * 0.01f
         string label;
     };
+
+    // TODO: make layers thread safe. For example:
+    // #include <concurrentqueue/concurrentqueue.h>
+    //
+    //concurrentqueue::concurrent_queue<shared_ptr<StandardizeTensorView>> lastInputs;
+    //
+    //void push(shared_ptr<StandardizeTensorView> tensor) {
+    //    lastInputs.push(tensor);
+    //}
+    //
+    //shared_ptr<StandardizeTensorView> pop() {
+    //    return lastInputs.pop();
+    //}
 }
 #endif //HAPPYML_FULLY_CONNECTED_LAYER_HPP

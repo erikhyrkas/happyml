@@ -32,7 +32,11 @@ namespace happyml {
             // calculate three parts of gradient
             float dx1 = d_output_value / std_dev_;
             float dx2 = -common * (input_value - mean_);
-            float dx3 = -2.0f / (float) total_elements_ * (input_value - mean_) * common;
+
+            // Recompute common with square of difference
+            float diff = input_value - mean_;
+            common = d_output_value * diff / (std_dev_ * std_dev_ * std_dev_ * (float) total_elements_);
+            float dx3 = - (float) total_elements_ * diff * common;
 
             // return total gradient
             return dx1 + dx2 + dx3;

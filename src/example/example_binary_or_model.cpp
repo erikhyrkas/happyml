@@ -26,7 +26,7 @@ int main() {
                 ->addInputLayer(orDataSource->getGivenShape(), 64, LayerType::full, ActivationType::tanhApprox)
                 ->addLayer(32, LayerType::full, ActivationType::tanhApprox)
                 ->addLayer(8, LayerType::full, ActivationType::tanhApprox)
-                ->addOutputLayer(orDataSource->getExpectedShape(), ActivationType::sigmoid)
+                ->addOutputLayer(orDataSource->getExpectedShape(), ActivationType::sigmoid)->setUseBias(true)
                 ->build();
 
 //        neuralNetwork->useHighPrecisionExitStrategy();
@@ -34,10 +34,10 @@ int main() {
 
         cout << fixed << setprecision(2);
         cout << "Result loss: " << loss << endl;
-        cout << "0 OR 0 = 0 Prediction: " << neuralNetwork->predictScalar(columnVector({0.f, 0.f})) << endl;
-        cout << "0 OR 1 = 1 Prediction: " << neuralNetwork->predictScalar(columnVector({0.f, 1.f})) << endl;
-        cout << "1 OR 0 = 1 Prediction: " << neuralNetwork->predictScalar(columnVector({1.f, 0.f})) << endl;
-        cout << "1 OR 1 = 1 Prediction: " << neuralNetwork->predictScalar(columnVector({1.f, 1.f})) << endl;
+        cout << "0 OR 0 = 0 Prediction: " << round(neuralNetwork->predictScalar(columnVector({0.f, 0.f}))) << endl;
+        cout << "0 OR 1 = 1 Prediction: " << round(neuralNetwork->predictScalar(columnVector({0.f, 1.f}))) << endl;
+        cout << "1 OR 0 = 1 Prediction: " << round(neuralNetwork->predictScalar(columnVector({1.f, 0.f}))) << endl;
+        cout << "1 OR 1 = 1 Prediction: " << round(neuralNetwork->predictScalar(columnVector({1.f, 1.f}))) << endl;
 
         // testing save logic:
         neuralNetwork->saveWithOverwrite();
@@ -45,6 +45,9 @@ int main() {
                                                                 "../repo/");
         float testLoss = loadedNeuralNetwork->test(orDataSource);
         cout << fixed << setprecision(2) << "Result testLoss: " << testLoss << endl;
+        orDataSource->restart();
+        float accuracy = loadedNeuralNetwork->compute_binary_accuracy(orDataSource);
+        cout << fixed << setprecision(2) << "Result accuracy: " << accuracy << endl;
     } catch (const exception &e) {
         cout << e.what() << endl;
     }

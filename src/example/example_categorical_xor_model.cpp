@@ -25,13 +25,11 @@ int main() {
         auto neuralNetwork = neuralNetworkBuilder(OptimizerType::adam)
                 ->setModelName("cat_xor_example")
                 ->setModelRepo("../repo/")
-//                ->setLearningRate(0.005f)
-//                ->setBiasLearningRate(0.0001f)
                 ->setLossFunction(LossType::categoricalCrossEntropy)
-                ->addInputLayer(xorDataSource->getGivenShape(), 32, LayerType::full, ActivationType::leaky)->setUseBias(false)
-                ->addLayer(16, LayerType::full, ActivationType::leaky)->setUseBias(false)
-                ->addLayer(8, LayerType::full, ActivationType::sigmoid)->setUseBias(false)
-                ->addOutputLayer(xorDataSource->getExpectedShape(), ActivationType::softmax)->setUseBias(false) // softmax
+                ->addInputLayer(xorDataSource->getGivenShape(), 32, LayerType::full, ActivationType::leaky)
+                ->addLayer(16, LayerType::full, ActivationType::leaky)
+                ->addLayer(8, LayerType::full, ActivationType::sigmoid)
+                ->addOutputLayer(xorDataSource->getExpectedShape(), ActivationType::softmax)
                 ->build();
 
         neuralNetwork->useHighPrecisionExitStrategy();
@@ -41,19 +39,19 @@ int main() {
         cout << "Result loss: " << loss << endl;
         cout << "0 XOR 0 = [1, 0] Prediction: ";
         auto value1 = neuralNetwork->predictOne(columnVector({0.f, 0.f}));
-        cout << "[" << value1->getValue(0,0, 0) << ", " << value1->getValue(0, 1, 0) << "]" << endl;
+        cout << "[" << value1->getValue(0, 0, 0) << ", " << value1->getValue(0, 1, 0) << "]" << endl;
 
         cout << "0 XOR 1 = [0, 1] Prediction: ";
         auto value2 = neuralNetwork->predictOne(columnVector({0.f, 1.f}));
-        cout << "[" << value2->getValue(0,0, 0) << ", " << value2->getValue(0, 1, 0) << "]" << endl;
+        cout << "[" << value2->getValue(0, 0, 0) << ", " << value2->getValue(0, 1, 0) << "]" << endl;
 
         cout << "1 XOR 0 = [0, 1] Prediction: ";
         auto value3 = neuralNetwork->predictOne(columnVector({1.f, 0.f}));
-        cout << "[" << value3->getValue(0,0, 0) << ", " << value3->getValue(0, 1, 0) << "]" << endl;
+        cout << "[" << value3->getValue(0, 0, 0) << ", " << value3->getValue(0, 1, 0) << "]" << endl;
 
         cout << "1 XOR 1 = [1, 0] Prediction: ";
         auto value4 = neuralNetwork->predictOne(columnVector({1.f, 1.f}));
-        cout << "[" << value4->getValue(0,0, 0) << ", " << value4->getValue(0, 1, 0) << "]" << endl;
+        cout << "[" << value4->getValue(0, 0, 0) << ", " << value4->getValue(0, 1, 0) << "]" << endl;
 
         // testing save logic:
         neuralNetwork->saveWithOverwrite();

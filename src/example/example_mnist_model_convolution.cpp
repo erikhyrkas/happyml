@@ -53,9 +53,9 @@ int main() {
                 ->setModelName("mnist_conv2d_example")
                 ->setModelRepo("../repo/")
                 ->addInputLayer(mnistDataSource->getGivenShape(), 1, 3, LayerType::convolution2dValid,
-                                ActivationType::relu)->setUseBias(false)
-                ->addLayer(100, LayerType::full, ActivationType::relu)->setUseBias(false)
-                ->addOutputLayer(mnistDataSource->getExpectedShape(), ActivationType::sigmoidApprox)
+                                ActivationType::relu)
+                ->addLayer(100, LayerType::full, ActivationType::relu)
+                ->addOutputLayer(mnistDataSource->getExpectedShape(), ActivationType::sigmoidApprox)->setUseBias(true)
                 ->build();
 
 //        neuralNetwork->useLowPrecisionExitStrategy();

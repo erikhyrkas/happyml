@@ -248,6 +248,21 @@ namespace happyml {
             return result;
         }
 
+        float max_abs() {
+            float result = 0.0;
+            const size_t maxRows = rowCount();
+            const size_t maxCols = columnCount();
+            const size_t maxChannels = channelCount();
+            for (size_t channel = 0; channel < maxChannels; channel++) {
+                for (size_t row = 0; row < maxRows; row++) {
+                    for (size_t col = 0; col < maxCols; col++) {
+                        result = std::max(result, std::abs(getValue(row, col, channel)));
+                    }
+                }
+            }
+            return result;
+        }
+
         float max() {
             float result = -INFINITY;
             const size_t maxRows = rowCount();
@@ -428,6 +443,25 @@ namespace happyml {
         float variance() {
             float mean = arithmeticMean();
             return variance_point(mean);
+        }
+
+        // Euclidean norm or L2 norm
+        float euclidean_norm() {
+            double sum = 0;
+            const size_t rows = rowCount();
+            const size_t cols = columnCount();
+            const size_t maxChannels = channelCount();
+            auto max_abs_val = (double) max_abs();
+            for (size_t channel = 0; channel < maxChannels; channel++) {
+                for (size_t row = 0; row < rows; row++) {
+                    for (size_t col = 0; col < cols; col++) {
+                        const double val = getValue(row, col, channel) / max_abs_val;
+                        sum += val * val;
+                    }
+                }
+            }
+
+            return static_cast<float>(max_abs_val * sqrt(sum));
         }
 
         float arithmeticMean() {

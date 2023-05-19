@@ -37,10 +37,10 @@ int main() {
         cout << "Loaded test data." << endl;
         auto neuralNetwork = neuralNetworkBuilder()
                 ->addInputLayer(mnistDataSource->getGivenShape(), 100,
-                                LayerType::full, ActivationType::relu)->setUseBias(false)->setBits(8)->setMaterialized(false)
+                                LayerType::full, ActivationType::relu)->setBits(8)->setMaterialized(false)
                 ->addLayer(50,
-                           LayerType::full, ActivationType::relu)->setUseBias(false)->setBits(8)->setMaterialized(false)
-                ->addOutputLayer(mnistDataSource->getExpectedShape(), ActivationType::sigmoidApprox)
+                           LayerType::full, ActivationType::relu)->setBits(8)->setMaterialized(false)
+                ->addOutputLayer(mnistDataSource->getExpectedShape(), ActivationType::sigmoidApprox)->setUseBias(true)
                 ->build();
         neuralNetwork->useHighPrecisionExitStrategy();
         float loss = neuralNetwork->train(mnistDataSource, testMnistDataSource, 4);

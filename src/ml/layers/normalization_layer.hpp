@@ -16,19 +16,21 @@
 namespace happyml {
     class NormalizationLayer : public BaseLayer {
     public:
-        explicit NormalizationLayer() : lastInputs() {
+        explicit NormalizationLayer() {
+            lastInput = nullptr;
         }
 
         shared_ptr<BaseTensor> forward(const vector<shared_ptr<BaseTensor>> &input, bool forTraining) override {
             PROFILE_BLOCK(profileBlock);
             if (input.size() > 1) {
+                // only layers that combine input, like the concatenate_wide_layer, should have more than one input
                 throw runtime_error("NormalizationLayer only supports a single input.");
             }
             auto &inputTensor = input[0];
 
             shared_ptr<StandardizeTensorView> normTensor = make_shared<StandardizeTensorView>(inputTensor);
             if (forTraining) {
-                lastInputs.push(normTensor);
+                lastInput = normTensor;
             }
 #ifdef DEBUG_TRAIN_NAN
             if (normTensor->hasNaNOrInf()) {
@@ -42,43 +44,23 @@ namespace happyml {
 
         vector<shared_ptr<BaseTensor>> backward(const shared_ptr<BaseTensor> &output_error) override {
             PROFILE_BLOCK(profileBlock);
-            size_t lastInputsSize = lastInputs.size();
-            if (lastInputsSize == 0) {
+            if (lastInput == nullptr) {
                 throw runtime_error("No inputs to backpropagate through.");
             }
 
-            shared_ptr<BaseTensor> average_last_inputs = lastInputs.front();
-            lastInputs.pop();
-            if (lastInputsSize > 1) {
-                while (!lastInputs.empty()) {
-                    auto nextLastInput = lastInputs.front();
-                    lastInputs.pop();
-                    shared_ptr<BaseTensor> normDerivativeTensor = make_shared<StandardizeDerivativeTensorView>(output_error, nextLastInput, nextLastInput->get_mean(), nextLastInput->get_std_dev());
-                    average_last_inputs = make_shared<AddTensorView>(average_last_inputs, normDerivativeTensor);
-                }
-                average_last_inputs = materializeTensor(
-                        make_shared<ScalarDivideTensorView>(average_last_inputs, (float) lastInputsSize));
-            }
+            shared_ptr<BaseTensor> normDerivativeTensor = make_shared<StandardizeDerivativeTensorView>(output_error, lastInput, lastInput->get_mean(), lastInput->get_std_dev());
 #ifdef DEBUG_TRAIN_NAN
-            if (average_last_inputs->hasNaNOrInf()) {
-                average_last_inputs->print();
+            if (normDerivativeTensor->hasNaNOrInf()) {
+                normDerivativeTensor->print();
                 throw runtime_error("NaN or Inf found in NormalizationLayer.");
             }
 #endif
 
-            return {average_last_inputs};
-        }
-
-        void saveKnowledge(const string &fullKnowledgePath) override {
-            // TODO: right now, we don't have any state, is that right?
-        }
-
-        void loadKnowledge(const string &fullKnowledgePath) override {
-            // TODO: right now, we don't have any state, is that right?
+            return {normDerivativeTensor};
         }
 
     private:
-        queue<shared_ptr<StandardizeTensorView>> lastInputs;
+        shared_ptr<StandardizeTensorView> lastInput;
     };
 
 }
