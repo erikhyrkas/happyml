@@ -19,7 +19,7 @@ int main() {
         xorDataSource->addTrainingData(columnVector({1.f, 1.f}), 0.f);
 
         cout << "Test with tanhActivation" << endl;
-        auto neuralNetwork = neuralNetworkBuilder()
+        auto neuralNetwork = neuralNetworkBuilder(OptimizerType::sgd)
                 ->setModelName("xor_example")
                 ->setModelRepo("../repo/")
                 ->setLossFunction(LossType::mse)

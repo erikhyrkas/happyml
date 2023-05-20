@@ -45,7 +45,7 @@ namespace happyml {
                 throw runtime_error("Model name must contain only alphanumeric characters.");
             }
             switch (optimizerType) {
-                case microbatch:
+                case sgd:
                     this->learningRate = 0.005;
                     this->biasLearningRate = 0.001;
                     break;
@@ -740,7 +740,7 @@ namespace happyml {
     }
 
     shared_ptr<HappymlDSL> neuralNetworkBuilder() {
-        return neuralNetworkBuilder(microbatch);
+        return neuralNetworkBuilder(adam);
     }
 
     void createVertexFromMetadata(const shared_ptr<HappymlDSL> &dsl,

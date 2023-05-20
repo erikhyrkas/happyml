@@ -48,7 +48,7 @@ int main() {
         BinaryDatasetReader reader(result_path);
         auto titanicDataSource = make_shared<BinaryDataSet>(result_path);
 
-        auto neuralNetwork = neuralNetworkBuilder(OptimizerType::adam)
+        auto neuralNetwork = neuralNetworkBuilder()
                 ->setModelName("titanic_example")
                 ->setModelRepo("../repo/")
                 ->setLossFunction(LossType::categoricalCrossEntropy)

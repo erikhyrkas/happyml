@@ -22,7 +22,7 @@ int main() {
         xorDataSource->addTrainingData(columnVector({1.f, 1.f}), columnVector({1.f, 0.f}));
 
         cout << "Test with categorical cross entropy" << endl;
-        auto neuralNetwork = neuralNetworkBuilder(OptimizerType::adam)
+        auto neuralNetwork = neuralNetworkBuilder()
                 ->setModelName("cat_xor_example")
                 ->setModelRepo("../repo/")
                 ->setLossFunction(LossType::categoricalCrossEntropy)

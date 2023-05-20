@@ -20,7 +20,7 @@ namespace happyml {
                                               const float biasLearningRate) {
         shared_ptr<BaseOptimizer> result;
         switch (optimizerType) {
-            case OptimizerType::microbatch:
+            case OptimizerType::sgd:
                 result = make_shared<MBGDOptimizer>(learningRate, biasLearningRate);
                 break;
             case OptimizerType::adam_with_decaying_momentum:

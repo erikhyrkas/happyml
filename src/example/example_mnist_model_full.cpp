@@ -35,7 +35,7 @@ int main() {
                                                               expectedEncoder, givenEncoder);
         cout << "Loaded test data." << endl;
 
-        auto neuralNetwork = neuralNetworkBuilder(OptimizerType::adam)
+        auto neuralNetwork = neuralNetworkBuilder()
                 ->addInputLayer(mnistDataSource->getGivenShape(), 100, LayerType::full, relu)
                 ->addLayer(50, LayerType::full, relu)
                 ->addOutputLayer(mnistDataSource->getExpectedShape(), ActivationType::sigmoidApprox)->setUseBias(true)

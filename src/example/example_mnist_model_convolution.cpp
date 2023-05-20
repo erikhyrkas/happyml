@@ -49,7 +49,7 @@ int main() {
         //   * This lets us map those interesting qualities back to our label
         // * We then define a final fully connected layer that has the appropriate output shape
         //   * The sigmoid activation function gives us a probability of a given label
-        auto neuralNetwork = neuralNetworkBuilder(OptimizerType::adam_with_decaying_momentum)
+        auto neuralNetwork = neuralNetworkBuilder()
                 ->setModelName("mnist_conv2d_example")
                 ->setModelRepo("../repo/")
                 ->addInputLayer(mnistDataSource->getGivenShape(), 1, 3, LayerType::convolution2dValid,

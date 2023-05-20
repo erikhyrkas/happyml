@@ -13,19 +13,27 @@ using namespace std;
 namespace happyml {
 
     enum OptimizerType {
-        microbatch, adam_with_decaying_momentum, sgdm, adam, sgdm_with_decaying_momentum
+        sgd,                            // stochastic gradient descent with microbatch support, good for small datasets, uses little memory, slow
+        adam,                           // adaptive moment estimation, good for large datasets, uses more memory than sgd, fast, easy to tune
+        sgdm,                           // stochastic gradient descent with momentum, good for large datasets, uses more memory than sgd, fast
+        adam_with_decaying_momentum,    // adaptive moment estimation with decaying momentum, good for large datasets, uses more memory than adam, fast, difficult to tune
+        sgdm_with_decaying_momentum     // stochastic gradient descent with momentum and decaying momentum, good for large datasets, uses more memory than sgdm, fast, difficult to tune
     };
 
     enum LossType {
-        mse,
-        mae,
-        smae,
-        categoricalCrossEntropy,
-        binaryCrossEntropy,
+        mse,                        // mean squared error, good for regression
+        mae,                        // mean absolute error, good for regression
+        smae,                       // scaled mean absolute error, good for regression
+        categoricalCrossEntropy,    // good for classification
+        binaryCrossEntropy,         // good for classification
     };
 
     enum LayerType {
-        full, convolution2dValid, concatenate, flatten, normalize
+        full,               // fully connected layer, good for classification and regression
+        convolution2dValid, // convolutional layer, good for image classification
+        concatenate,        // concatenates two layers
+        flatten,            // flattens a layer
+        normalize           // normalizes a layer
     };
 
     // Added the word "Default" after tanh because
@@ -33,19 +41,19 @@ namespace happyml {
     // This feels bad to me, but I need a quick fix, and I'll ponder
     // a better naming situation later.
     enum ActivationType {
-        relu,
-        tanhDefault,
-        sigmoid,
-        leaky,
-        softmax,
-        sigmoidApprox,
-        tanhApprox,
-        linear
+        relu,           // 0 to infinity, good for classification
+        tanhDefault,    // -1 to 1, good for regression
+        sigmoid,        // 0 to 1, good for classification
+        leaky,          // approximately 0 to 1, good to prevent dead neurons
+        softmax,        // 0 to 1, good for classification
+        sigmoidApprox,  // 0 to 1, faster than sigmoid
+        tanhApprox,     // -1 to 1, faster than tanh
+        linear          // no activation, good for regression
     };
 
     enum TrainingRetentionPolicy {
         best, // accurate
-        last  // fast
+        last  // fast and uses less disk space
     };
 
     string activationTypeToString(ActivationType activationType) {
@@ -173,8 +181,8 @@ namespace happyml {
 
     string optimizerTypeToString(OptimizerType optimizerType) {
         switch (optimizerType) {
-            case microbatch:
-                return "Micro Batch";
+            case sgd:
+                return "SGD";
             case adam_with_decaying_momentum:
                 return "Adam with Decaying Momentum";
             case adam:
@@ -188,8 +196,8 @@ namespace happyml {
     }
 
     OptimizerType stringToOptimizerType(const string &optimizerType) {
-        if (optimizerType == "Micro Batch") {
-            return microbatch;
+        if (optimizerType == "SGD") {
+            return sgd;
         }
         if (optimizerType == "Adam with Decaying Momentum") {
             return adam_with_decaying_momentum;

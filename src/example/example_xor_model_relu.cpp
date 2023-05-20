@@ -19,7 +19,7 @@ int main() {
         xorDataSource->addTrainingData(columnVector({1.f, 1.f}), 0.f);
 
         cout << "Test with reluActivation" << endl;
-        auto neuralNetwork = neuralNetworkBuilder(OptimizerType::adam)
+        auto neuralNetwork = neuralNetworkBuilder(OptimizerType::sgd)
                 ->setLearningRate(0.05f)
                 ->addInputLayer(xorDataSource->getGivenShape(), 7, LayerType::full, ActivationType::relu)->setBits(8)
                 ->addLayer(7, LayerType::full, ActivationType::relu)->setBits(8)
