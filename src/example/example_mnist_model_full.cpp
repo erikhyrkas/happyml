@@ -34,20 +34,15 @@ int main() {
                                                               vector<size_t>{28, 28, 1},
                                                               expectedEncoder, givenEncoder);
         cout << "Loaded test data." << endl;
-
         auto neuralNetwork = neuralNetworkBuilder()
-                ->addInputLayer(mnistDataSource->getGivenShape(), 100, LayerType::full, relu)
-                ->addLayer(50, LayerType::full, relu)
+                ->addInputLayer(mnistDataSource->getGivenShape(), 100, LayerType::full, ActivationType::relu)
+                ->addLayer(50, LayerType::full, ActivationType::relu)
                 ->addOutputLayer(mnistDataSource->getExpectedShape(), ActivationType::sigmoidApprox)->setUseBias(true)
                 ->build();
         neuralNetwork->useHighPrecisionExitStrategy();
         float loss = neuralNetwork->train(mnistDataSource, testMnistDataSource, 32);
-        // Trained 20 epochs using a batch size of 1 in 269 minutes with a loss of 0.000004.
-        // Trained 20 epochs using a batch size of 4 in 92 minutes with a loss of 0.011218.
-        // Trained 20 epochs using a batch size of 8 in 67 minutes with a loss of 0.017087.
-        // Trained 20 epochs using a batch size of 16 in 54 minutes with a loss of 0.024266.
-        // Trained 20 epochs using a batch size of 256 in 42 minutes with a loss of 0.094601.
         cout << fixed << setprecision(2);
+
         testMnistDataSource->restart();
         auto decoder = make_shared<BestTextCategoryDecoder>(categoryLabels);
         size_t limit = 50;

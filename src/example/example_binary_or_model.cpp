@@ -19,7 +19,7 @@ int main() {
         orDataSource->addTrainingData(columnVector({1.f, 1.f}), 1.f);
 
         cout << "Test with binary cross entropy" << endl;
-        auto neuralNetwork = neuralNetworkBuilder(OptimizerType::sgd)
+        auto neuralNetwork = neuralNetworkBuilder()
                 ->setModelName("or_example")
                 ->setModelRepo("../repo/")
                 ->setLossFunction(LossType::binaryCrossEntropy)

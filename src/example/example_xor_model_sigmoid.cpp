@@ -22,7 +22,7 @@ int main() {
         cout << "Test with sigmoid" << endl;
         auto neuralNetwork = neuralNetworkBuilder(OptimizerType::sgd)
                 ->addInputLayer(xorDataSource->getGivenShape(), 5, LayerType::full, ActivationType::tanhDefault)
-                ->addOutputLayer(xorDataSource->getExpectedShape(), ActivationType::sigmoid)
+                ->addOutputLayer(xorDataSource->getExpectedShape(), ActivationType::sigmoid)->setUseBias(true)
                 ->build();
 
         // good enough results if you round to 0 or 1:
