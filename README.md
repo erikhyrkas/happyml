@@ -101,7 +101,7 @@ Nice-to-haves for alpha:
   * [x] help
   * [x] create dataset
   * [x] print dataset
-  * [ ] create task
+  * [x] create task
   * [ ] list tasks
   * [ ] execute tasks
 * [ ] Possibly support a decoder-only transformer model.
