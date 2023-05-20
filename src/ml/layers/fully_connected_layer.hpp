@@ -154,6 +154,13 @@ namespace happyml {
             weights = materializeTensor(adjusted_weights, bits);
         }
 
+        bool is_trainable() override {
+            return true;
+        }
+
+        size_t get_parameter_count() override {
+            return weights->size();
+        }
     private:
         shared_ptr<BaseTensor> weights;
         int registration_id;

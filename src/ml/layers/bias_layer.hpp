@@ -83,6 +83,13 @@ namespace happyml {
             bias = materializeTensor(adjusted_bias, bits);
         }
 
+        bool is_trainable() override {
+            return true;
+        }
+
+        size_t get_parameter_count() override {
+            return bias->size();
+        }
     private:
         int registration_id;
         shared_ptr<BaseTensor> bias;

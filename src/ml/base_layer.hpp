@@ -38,6 +38,14 @@ namespace happyml {
 
         virtual void loadKnowledge(const string &fullKnowledgePath) {
         }
+
+        virtual bool is_trainable() {
+            return false;
+        }
+
+        virtual size_t get_parameter_count() {
+            return 0;
+        }
     };
 
 

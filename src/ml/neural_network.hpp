@@ -235,7 +235,7 @@ namespace happyml {
             float accuracy = 0;
             float total = 0;
             auto nextRecord = testDataset->nextRecord();
-            while (nextRecord != nullptr && (limit < 0 || total < limit)) {
+            while (nextRecord != nullptr && (limit < 0 || total < (float) limit)) {
                 auto prediction = predict(nextRecord->getGiven());
                 auto actual = nextRecord->getExpected();
 
@@ -244,8 +244,8 @@ namespace happyml {
                 for (int i = 0; i < testDataset->getExpectedShapes().size(); i++) {
                     auto best_prediction = prediction[i];
                     auto best_actual = actual[i];
-                    for( int j = 0; j < prediction.size(); j++) {
-                        if (!roughlyEqual(std::round(best_prediction->getValue(j)),std::round(best_actual->getValue(j)))) {
+                    for (int j = 0; j < prediction.size(); j++) {
+                        if (!roughlyEqual(std::round(best_prediction->getValue(j)), std::round(best_actual->getValue(j)))) {
                             matched_all = false;
                             break;
                         }
@@ -265,7 +265,7 @@ namespace happyml {
             float accuracy = 0;
             float total = 0;
             auto nextRecord = testDataset->nextRecord();
-            while (nextRecord != nullptr && (limit < 0 || total < limit)) {
+            while (nextRecord != nullptr && (limit < 0 || total < (float) limit)) {
                 auto prediction = predict(nextRecord->getGiven());
                 auto actual = nextRecord->getExpected();
 
@@ -289,6 +289,31 @@ namespace happyml {
             return accuracy / total;
         }
 
+        size_t get_total_parameters() {
+            std::unordered_set<void *> visited;
+            size_t total_parameters = 0;
+            for (const auto &headNode: headNodes) {
+                total_parameters += headNode->get_parameter_count(visited);
+            }
+            return total_parameters;
+        }
+
+        size_t get_total_trainable_layers() {
+            std::unordered_set<void *> visited;
+            size_t trainable_layers = 0;
+            for (const auto &headNode: headNodes) {
+                trainable_layers += headNode->get_trainable_count(visited);
+            }
+            return trainable_layers;
+        }
+
+        void print_model_facts() {
+            size_t total_parameters = get_total_parameters();
+            size_t trainable_layers = get_total_trainable_layers();
+
+            cout << "Model " << name << " has " << total_parameters << " parameters and " << trainable_layers << " trainable layers." << endl;
+        }
+
         float train(const shared_ptr<TrainingDataSet> &trainingDataset,
                     int batchSize = 1,
                     TrainingRetentionPolicy trainingRetentionPolicy = best,
@@ -309,6 +334,8 @@ namespace happyml {
                     int batchSize = 1,
                     TrainingRetentionPolicy trainingRetentionPolicy = best,
                     bool overwriteOutputLines = true) {
+            print_model_facts();
+            cout << "Training " << name << " with " << trainingDataset->recordCount() << " records." << endl;
             ElapsedTimer totalTimer;
             // TODO: we save the best checkpoint, but we don't save any other checkpoints
             //  we should save the last N checkpoints + best checkpoint and then delete the rest
@@ -439,6 +466,8 @@ namespace happyml {
             } else {
                 cout << (elapsed / 60000) << " minutes." << endl;
             }
+            print_model_facts();
+            cout << "Trained with " << trainingDataset->recordCount() << " records." << endl;
             // TODO: this is placeholder code until we actually save and formalize best loss,
             //  but it simulates the future results.
             if (trainingRetentionPolicy == best) {

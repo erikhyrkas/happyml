@@ -28,7 +28,6 @@ namespace happyml {
             for (size_t next_weight_layer = 0; next_weight_layer < filters; next_weight_layer++) {
                 this->weights.push_back(make_shared<TensorFromXavier>(kernelSize, kernelSize, inputShape[2], 42));
             }
-            this->optimizer = optimizer;
         }
 
         void saveKnowledge(const string &fullKnowledgePath) override {
@@ -167,17 +166,30 @@ namespace happyml {
             }
         }
 
+        bool is_trainable() override {
+            return true;
+        }
+
+        size_t get_parameter_count() override {
+            size_t total = 0;
+            for(const auto& weight : weights) {
+                total += weight->size();
+            }
+            return total;
+        }
+
+        [[nodiscard]] size_t get_kernel_size() const {
+            return kernelSize;
+        }
     private:
         int registration_id;
         queue<shared_ptr<BaseTensor>> lastInputs; // each input in a batch will queue in order during forward, and deque properly when back-propagating
         queue<vector<shared_ptr<BaseTensor>>> weight_changes;
         vector<shared_ptr<BaseTensor>> weights;
         uint8_t bits;
-        float mixedPrecisionScale;
         vector<size_t> inputShape;
         vector<size_t> outputShape;
         size_t kernelSize;
-        shared_ptr<BaseOptimizer> optimizer;
         string label;
     };
 }

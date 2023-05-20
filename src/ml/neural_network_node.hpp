@@ -8,6 +8,7 @@
 
 #include <vector>
 #include <filesystem>
+#include <unordered_set>
 #include "loss.hpp"
 #include "optimizer.hpp"
 #include "enums.hpp"
@@ -83,6 +84,35 @@ namespace happyml {
             for (const auto &outputConnection: connectionOutputs) {
                 outputConnection->to->loadKnowledge(fullKnowledgePath);
             }
+        }
+
+        size_t get_parameter_count(std::unordered_set<void *> &visited) {
+            if (visited.find((void *) this) != visited.end()) {
+                return 0;
+            }
+            visited.insert((void *) this);
+
+            size_t total = neuralNetworkFunction->get_parameter_count();
+            for (const auto &outputConnection: connectionOutputs) {
+                total += outputConnection->to->get_parameter_count(visited);
+            }
+            return total;
+        }
+
+        size_t get_trainable_count(std::unordered_set<void *> &visited) {
+            if (visited.find((void *) this) != visited.end()) {
+                return 0;
+            }
+            visited.insert((void *) this);
+
+            size_t total = 0;
+            if (neuralNetworkFunction->is_trainable()) {
+                total++;
+            }
+            for (const auto &outputConnection: connectionOutputs) {
+                total += outputConnection->to->get_trainable_count(visited);
+            }
+            return total;
         }
 
         // todo: right now, i'm assuming this is a directed acyclic graph, this may not work for everything.
