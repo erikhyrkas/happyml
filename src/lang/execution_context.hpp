@@ -41,6 +41,10 @@ namespace happyml {
             return DEFAULT_HAPPYML_TASKS_PATH + task_name;
         }
 
+        static string get_base_task_folder_path() {
+            return DEFAULT_HAPPYML_TASKS_PATH;
+        }
+
         static bool dataset_exists(const string &dataset_name) {
             string bin_path = get_dataset_path(dataset_name) + "/dataset.bin";
             ifstream f(bin_path.c_str());

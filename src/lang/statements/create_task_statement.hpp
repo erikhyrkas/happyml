@@ -37,7 +37,7 @@ namespace happyml {
                 return make_shared<ExecutionResult>(false, false, message);
             }
             string dataset_path = context->get_dataset_path(dataset_name_);
-            string task_folder_path = context->get_task_folder_path(task_name_);
+            string task_folder_path = context->get_base_task_folder_path();
             if (!create_happyml_task(task_type_, task_name_,
                                      goal_, dataset_name_,
                                      dataset_path, task_folder_path)) {

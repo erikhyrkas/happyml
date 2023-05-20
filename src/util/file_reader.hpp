@@ -203,6 +203,9 @@ namespace happyml {
     public:
         explicit BinaryDatasetReader(const string &path) : path_(path) {
             binaryFile_.open(path, ios::binary | ios::in);
+            if (!binaryFile_.is_open()) {
+                throw runtime_error("Could not open file " + path);
+            }
             readHeader();
         }
 

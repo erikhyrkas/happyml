@@ -597,6 +597,10 @@ namespace happyml {
                 return norm_clipping_threshold;
             }
 
+            shared_ptr<NNVertex> usingParent(const shared_ptr<HappymlDSL> &new_parent) {
+                this->parent = new_parent;
+                return shared_from_this();
+            }
         private:
             weak_ptr<HappymlDSL> parent;
             vector<shared_ptr<NNEdge>> edges;
