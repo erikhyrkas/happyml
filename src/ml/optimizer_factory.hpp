@@ -23,11 +23,17 @@ namespace happyml {
             case OptimizerType::microbatch:
                 result = make_shared<MBGDOptimizer>(learningRate, biasLearningRate);
                 break;
+            case OptimizerType::adam_with_decaying_momentum:
+                result = make_shared<AdamOptimizer>(learningRate, biasLearningRate, true);
+                break;
             case OptimizerType::adam:
-                result = make_shared<AdamOptimizer>(learningRate, biasLearningRate);
+                result = make_shared<AdamOptimizer>(learningRate, biasLearningRate, false);
+                break;
+            case OptimizerType::sgdm_with_decaying_momentum:
+                result = make_shared<SGDMOptimizer>(learningRate, biasLearningRate, true);
                 break;
             case OptimizerType::sgdm:
-                result = make_shared<SGDMOptimizer>(learningRate, biasLearningRate);
+                result = make_shared<SGDMOptimizer>(learningRate, biasLearningRate, false);
                 break;
             default:
                 result = make_shared<MBGDOptimizer>(learningRate, biasLearningRate);

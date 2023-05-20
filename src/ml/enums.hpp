@@ -13,7 +13,7 @@ using namespace std;
 namespace happyml {
 
     enum OptimizerType {
-        microbatch, adam, sgdm
+        microbatch, adam_with_decaying_momentum, sgdm, adam, sgdm_with_decaying_momentum
     };
 
     enum LossType {
@@ -124,10 +124,10 @@ namespace happyml {
         if (layerType == "concatenate") {
             return concatenate;
         }
-        if(layerType == "flatten") {
+        if (layerType == "flatten") {
             return flatten;
         }
-        if(layerType == "normalize") {
+        if (layerType == "normalize") {
             return normalize;
         }
         string error = "Unknown Node Type: " + layerType;
@@ -175,8 +175,12 @@ namespace happyml {
         switch (optimizerType) {
             case microbatch:
                 return "Micro Batch";
+            case adam_with_decaying_momentum:
+                return "Adam with Decaying Momentum";
             case adam:
                 return "Adam";
+            case sgdm_with_decaying_momentum:
+                return "SGDM with Decaying Momentum";
             case sgdm:
                 return "SGDM";
         }
@@ -187,8 +191,14 @@ namespace happyml {
         if (optimizerType == "Micro Batch") {
             return microbatch;
         }
+        if (optimizerType == "Adam with Decaying Momentum") {
+            return adam_with_decaying_momentum;
+        }
         if (optimizerType == "Adam") {
             return adam;
+        }
+        if (optimizerType == "SGDM with Decaying Momentum") {
+            return sgdm_with_decaying_momentum;
         }
         if (optimizerType == "SGDM") {
             return sgdm;
