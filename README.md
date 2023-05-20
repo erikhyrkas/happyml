@@ -66,6 +66,7 @@ based on the [CMakeLists.txt](CMakeLists.txt).
 This project is pre-alpha.
 
 Recent Notable additions:
+* Scripting language support for creating label tasks and training the supporting models (5/2023)
 * L2 Regularization (5/2023)
 * Layer Normalization (5/2023)
 * Improved Profiling (5/2023)

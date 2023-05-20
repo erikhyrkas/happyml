@@ -52,6 +52,9 @@ create dataset titanic
 print raw titanic limit 5
 print pretty titanic limit 5
 
+
+# example with test set:
+# create task label predict_survivor with goal accuracy with test titanic_test using titanic
 create task label predict_survivor with goal accuracy using titanic
 
 

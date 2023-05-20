@@ -37,6 +37,7 @@ namespace happyml {
 
                 cout << "  create task <task type> <task name>" << endl
                      << "  [with goal <speed|accuracy|memory>]" << endl
+                     << "  [with test <dataset name>]" << endl
                      << "  using <dataset name>" << endl << endl;
 
             } else if (help_menu_item_ == "future") {
