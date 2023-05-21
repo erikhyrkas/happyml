@@ -12,38 +12,128 @@ So, here's v2. I reserve the right to just change my mind again, but for the mom
 
 # Comments
 
+# Current Commands:
+General syntax:
+```happyml
+# Comments are indicated by a # at the beginning of a line
+
+exit
+
+help [dataset|task|future]?
+```
+
+Dataset commands:
+```happyml
+create dataset <dataset name>
+[with header]?
+[with given [label|number|text|image] <given name> [<rows>, <columns>, <channels>] at <column position>]+
+[with expected [label|number|text|image] <expected name> [<rows>, <columns>, <channels>] at <column position>]*
+using <file://path/>
+
+print [pretty|raw] <dataset name> [limit <limit number>]?
+
+list datasets [starting with <start string>]?
+
+copy dataset <original dataset name> to <new dataset name>
+
+delete dataset <dataset name>
+
+move dataset <original dataset name> to <new dataset name>
+```
+
+Task commands:
+```happyml
+create task <task type> <task name>
+[with goal [speed|accuracy|memory]]?
+[with test <test dataset name>]?
+using <dataset name>
+
+list tasks [starting with <start string>]?
+
+execute task <task name>
+[with label <task label>]?
+using dataset <dataset name>
+
+execute task <task name>
+[with label <task label>]?
+using input ("key": "value", "key": "value", ...)
+
+refine task <task name>
+[with label <task label>]?
+using dataset <dataset name>
+
+copy task <original task name> [with label <original task label>]? to <new task name> [with label <new task label>]?
+
+delete task <task name> [with label <task label>]?
+
+move task <original task name> [with label <original task label>]? to <new task name> [with label <new task label>]?
+```
+
+
 # Keywords
 
-This will probably change, but after writing up the sample commands that I think I want with the syntax 
-that I think I want, here are the keywords I'm currently planning:
+You can use these keywords to setup syntax highlighting in your editor. CLion has 4 groups of keywords, so I'm going
+to split them into four groups.
 
-* at
-* config
-* copy
-* create
-* dataset
-* datasets
-* delete
-* execute
-* expected
-* exit
-* given
-* help
-* input
-* label
-* limit
-* list
-* move
-* pixel
-* print
-* refine
-* scalar
-* task
-* tasks
-* to
-* using
-* value
-* with
+Add *.happyml to the file type pattern and then add the keywords to the appropriate group. Here's what it looks like:
+
+![](C:\Users\erikh\CLionProjects\happyml\happyml_file_type_pattern.png)
+
+Hit ctrl-alt-s while in a happyml file to bring up the settings or navigate to the happyml file type manually, then
+add the keywords:
+
+![](C:\Users\erikh\CLionProjects\happyml\happyml_file_type_config.png)
+
+Current keywords are:
+### Control Keywords
+```happyml
+copy
+create
+delete
+execute
+exit
+help
+list
+move
+print
+refine
+```
+### Types
+```happyml
+accuracy
+dataset
+datasets
+future
+image
+input
+label
+memory
+number
+speed
+task
+tasks
+text
+```
+### Operational Keywords
+```happyml
+at
+expected
+given
+goal
+header
+limit
+pretty
+raw
+starting
+test
+to
+using
+with
+```
+### Path indicators
+```happyml
+file://
+```
 
 # Basics
 

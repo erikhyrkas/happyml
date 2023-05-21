@@ -23,58 +23,55 @@ namespace happyml {
 
             if (help_menu_item_ == "dataset" || help_menu_item_ == "datasets") {
                 cout << "Available dataset commands: " << endl;
-                cout << "  create dataset <name>" << endl
-                     << "  [with header]" << endl
-                     << "  [with given <label|number|text|image> <name> [(<rows>, <columns>, <channels>)] at <column> ]+ " << endl
-                     << "  [with expected <label|number|text|image> <name> [(<rows>, <columns>, <channels>)] at <column> ]*" << endl
-                     << "  using <file://path/>" << endl << endl;
-
-                cout << "  print pretty <name> [limit <x>]" << endl << endl;
-                cout << "  print raw <name> [limit <x>]" << endl << endl;
-
+                cout << "  create dataset <dataset name>" << endl;
+                cout << "  [with header]?" << endl;
+                cout << "  [with given [label|number|text|image] <given name> [<rows>, <columns>, <channels>] at <column position>]+" << endl;
+                cout << "  [with expected [label|number|text|image] <expected name> [<rows>, <columns>, <channels>] at <column position>]*" << endl;
+                cout << "  using <file://path/>" << endl;
+                cout << endl;
+                cout << "  print [pretty|raw] <dataset name> [limit <limit number>]?" << endl;
+                cout << endl;
             } else if (help_menu_item_ == "task" || help_menu_item_ == "tasks") {
                 cout << "Available task commands: " << endl;
-
-                cout << "  create task <task type> <task name>" << endl
-                     << "  [with goal <speed|accuracy|memory>]" << endl
-                     << "  [with test <dataset name>]" << endl
-                     << "  using <dataset name>" << endl << endl;
-
+                cout << "  create task <task type> <task name>" << endl;
+                cout << "  [with goal [speed|accuracy|memory]]?" << endl;
+                cout << "  [with test <test dataset name>]?" << endl;
+                cout << "  using <dataset name>" << endl;
             } else if (help_menu_item_ == "future") {
-                cout << "Future commands: " << endl;
-
-                cout << "  execute task <task name>" << endl
-                     << "  [with label <label>]" << endl
-                     << "  using dataset <dataset>" << endl << endl;
-
-                cout << "  list tasks [<starting with x>]" << endl << endl;
-
-                cout << "  refine task <task name>" << endl
-                     << "  [with label [label]]" << endl
-                     << "  using dataset <dataset name>" << endl << endl;
-
-                cout << "  list datasets [<starting with x>]" << endl << endl;
-
-                cout << "  copy <task name> [<label>] to [<task name>] [<label>]" << endl << endl;
-
-                cout << "  copy <dataset name> to [<dataset name>]" << endl << endl;
-
-                cout << "  delete <task name> [<label>]" << endl << endl;
-
-                cout << "  delete <dataset name>" << endl << endl;
-
-                cout << "  execute task <task name>" << endl
-                     << "  [with label <label>]" << endl
-                     << "  using input <csv encoded row>" << endl << endl;
-
-                cout << "  move <task name> [<label>] to [<task name>] [<label>]" << endl << endl;
-
-                cout << "  move <dataset name> to [<dataset name>] [<label>]" << endl << endl;
+                cout << "Future dataset commands: " << endl;
+                cout << "  list datasets [starting with <start string>]?" << endl;
+                cout << endl;
+                cout << "  copy dataset <original dataset name> to <new dataset name>" << endl;
+                cout << endl;
+                cout << "  delete dataset <dataset name>" << endl;
+                cout << endl;
+                cout << "  move dataset <original dataset name> to <new dataset name>" << endl;
+                cout << endl;
+                cout << "Future task commands: " << endl;
+                cout << "  list tasks [starting with <start string>]?" << endl;
+                cout << endl;
+                cout << "  execute task <task name>" << endl;
+                cout << "  [with label <task label>]?" << endl;
+                cout << "  using dataset <dataset name>" << endl;
+                cout << endl;
+                cout << "  execute task <task name>" << endl;
+                cout << "  [with label <task label>]?" << endl;
+                cout << "  using input (\"key\": \"value\", \"key\": \"value\", ...)" << endl;
+                cout << endl;
+                cout << "  refine task <task name>" << endl;
+                cout << "  [with label <task label>]?" << endl;
+                cout << "  using dataset <dataset name>" << endl;
+                cout << endl;
+                cout << "  copy task <original task name> [with label <original task label>]? to <new task name> [with label <new task label>]?" << endl;
+                cout << endl;
+                cout << "  delete task <task name> [with label <task label>]?" << endl;
+                cout << endl;
+                cout << "  move task <original task name> [with label <original task label>]? to <new task name> [with label <new task label>]?" << endl;
             } else {
                 cout << "Available commands: " << endl;
-                cout << "  exit" << endl << endl;
-
-                cout << "  help [dataset|task|future]" << endl << endl;
+                cout << "  exit" << endl;
+                cout << endl;
+                cout << "  help [dataset|task|future]" << endl;
             }
 
             return make_shared<ExecutionResult>(false);
