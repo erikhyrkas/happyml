@@ -19,20 +19,28 @@ General syntax:
 
 exit
 
-help [dataset|task|future]?
+help [{dataset|task|future}]
+```
+Future commands:
+```happyml
+set <property> <value>
 ```
 
 Dataset commands:
 ```happyml
 create dataset <dataset name>
-[with header]?
-[with given [label|number|text|image] <given name> [<rows>, <columns>, <channels>] at <column position>]+
-[with expected [label|number|text|image] <expected name> [<rows>, <columns>, <channels>] at <column position>]*
+[with header]
+[with given {label|number|text|image} <given name> [<rows>, <columns>, <channels>] at <column position>]+
+[with expected {label|number|text|image} <expected name> [<rows>, <columns>, <channels>] at <column position>]*
 using <file://path/>
 
-print [pretty|raw] <dataset name> [limit <limit number>]?
+print {pretty|raw} <dataset name> [limit <limit number>]
+```
+Future dataset commands:
+```happyml
+describe dataset <dataset name>
 
-list datasets [starting with <start string>]?
+list datasets [starting with <start string>]
 
 copy dataset <original dataset name> to <new dataset name>
 
@@ -43,30 +51,34 @@ move dataset <original dataset name> to <new dataset name>
 
 Task commands:
 ```happyml
-create task <task type> <task name>
-[with goal [speed|accuracy|memory]]?
-[with test <test dataset name>]?
+create task {label} <task name>
+[with goal [speed|accuracy|memory]]
+[with test <test dataset name>]
 using <dataset name>
+```
+Future task commands:
+```happyml
+describe task <task name> [with label <task label>]
 
-list tasks [starting with <start string>]?
+list tasks [starting with <start string>]
 
 execute task <task name>
-[with label <task label>]?
+[with label <task label>]
 using dataset <dataset name>
 
 execute task <task name>
-[with label <task label>]?
+[with label <task label>]
 using input ("key": "value", "key": "value", ...)
 
 refine task <task name>
-[with label <task label>]?
+[with label <task label>]
 using dataset <dataset name>
 
-copy task <original task name> [with label <original task label>]? to <new task name> [with label <new task label>]?
+copy task <original task name> [with label <original task label>] to <new task name> [with label <new task label>]
 
-delete task <task name> [with label <task label>]?
+delete task <task name> [with label <task label>]
 
-move task <original task name> [with label <original task label>]? to <new task name> [with label <new task label>]?
+move task <original task name> [with label <original task label>] to <new task name> [with label <new task label>]
 ```
 
 
@@ -90,6 +102,7 @@ Current keywords are:
 copy
 create
 delete
+describe
 execute
 exit
 help
@@ -97,6 +110,7 @@ list
 move
 print
 refine
+set
 ```
 ### Types
 ```happyml
@@ -133,6 +147,8 @@ with
 ### Path indicators
 ```happyml
 file://
+http://
+https://
 ```
 
 # Basics
