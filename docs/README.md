@@ -7,6 +7,8 @@ HappyML is a language for creating and executing machine learning tasks.
 * [Keywords](KEYWORDS.md)
 * [Notable Changes](NOTABLE_CHANGES.md)
 * [Roadmap](ROADMAP.md)
+* Examples
+  * [titanic](examples/TITANIC.md)
 * Commands
   * [copy dataset](commands/COPY_DATASET.md)
   * [copy task](commands/COPY_TASK.md)
@@ -28,8 +30,6 @@ HappyML is a language for creating and executing machine learning tasks.
   * [refine task](commands/REFINE_TASK.md)
   * [set](commands/SET.md)
   * [split dataset](commands/SPLIT_DATASET.md)
-* Examples
-  * [titanic](examples/TITANIC.md)
 <!-- TOC -->
 
 

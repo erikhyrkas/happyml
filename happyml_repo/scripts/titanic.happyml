@@ -58,5 +58,5 @@ print pretty titanic limit 5
 create task label predict_survivor using titanic
 
 # Coming soon, execute the task:
-# execute task titanic using input ("Pclass": "2", "Sex": "female", "Age": "55", "SibSp": "0", "Parch": "0", "Fare": "16", "Embarked": "S")
+# execute task predict_survivor using input ("Pclass": "2", "Sex": "female", "Age": "55", "SibSp": "0", "Parch": "0", "Fare": "16", "Embarked": "S")
 

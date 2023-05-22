@@ -32,5 +32,5 @@ create task label predict_survivor using titanic
 
 ## Using the Task
 ```happyml
-execute task titanic using input ("Pclass": "2", "Sex": "female", "Age": "55", "SibSp": "0", "Parch": "0", "Fare": "16", "Embarked": "S")
+execute task predict_survivor using input ("Pclass": "2", "Sex": "female", "Age": "55", "SibSp": "0", "Parch": "0", "Fare": "16", "Embarked": "S")
 ```
