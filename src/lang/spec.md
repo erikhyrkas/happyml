@@ -1,5 +1,7 @@
 # Spec v2
 
+**This document is being replaced by [docs](../../docs/README.md)**
+
 So, I've been pondering the language more and more now that there's a working interpreter, and it's simply a matter
 of typing the mappings between commands and actual code that runs. 
 
@@ -24,6 +26,7 @@ help [{dataset|task|future}]
 Future commands:
 ```happyml
 set <property> <value>
+let <variable> <value>
 ```
 
 Dataset commands:
@@ -42,11 +45,13 @@ describe dataset <dataset name>
 
 list datasets [starting with <start string>]
 
-copy dataset <original dataset name> to <new dataset name>
+copy dataset <source dataset name> to <destination dataset name>
 
 delete dataset <dataset name>
 
 move dataset <original dataset name> to <new dataset name>
+
+split dataset <dataset name> at <percent>
 ```
 
 Task commands:
@@ -89,12 +94,12 @@ to split them into four groups.
 
 Add *.happyml to the file type pattern and then add the keywords to the appropriate group. Here's what it looks like:
 
-![](C:\Users\erikh\CLionProjects\happyml\happyml_file_type_pattern.png)
+![](../../happyml_file_type_pattern.png)
 
 Hit ctrl-alt-s while in a happyml file to bring up the settings or navigate to the happyml file type manually, then
 add the keywords:
 
-![](C:\Users\erikh\CLionProjects\happyml\happyml_file_type_config.png)
+![](../../happyml_file_type_config.png)
 
 Current keywords are:
 ### Control Keywords

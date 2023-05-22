@@ -15,7 +15,7 @@ int main() {
         {
             // example dataset from https://www.kaggle.com/datasets/jrobischon/wikipedia-movie-plots
             // See the README.md in this folder for details on preparing it.
-            auto reader = DelimitedTextFileReader("..\\data\\wiki_movie_plots_deduped.csv", ',', true);
+            auto reader = DelimitedTextFileReader("..\\happyml_data\\wiki_movie_plots_deduped.csv", ',', true);
             std::string current_token;
             char previous_character = 0;
 

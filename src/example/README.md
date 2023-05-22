@@ -11,8 +11,8 @@ There should be two files in the archive you download:
 
 I moved those files to the data folder:
 
-* happyml\data\mnist_train.csv
-* happyml\data\mnist_test.csv
+* happyml\happyml_data\mnist_train.csv
+* happyml\happyml_data\mnist_test.csv
 
 
 ### About The MNIST Data
@@ -32,7 +32,7 @@ https://www.kaggle.com/datasets/jrobischon/wikipedia-movie-plots
 
 After I uncompressed the archive.zip, I moved the file to the data folder:
 
-* happyml\data\wiki_movie_plots_deduped.csv
+* happyml\happyml_data\wiki_movie_plots_deduped.csv
 
 The csv has the following header:
 ```

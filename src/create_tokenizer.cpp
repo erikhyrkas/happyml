@@ -29,8 +29,8 @@ using namespace happyml;
 // USAGE: creat_tokenizer path
 // path: path to a single text file or folder of text files
 //
-// Example with file:  .\create_tokenizer.exe ..\data\internet.txt
-// Example with folder:  .\create_tokenizer.exe ..\data\text
+// Example with file:  .\create_tokenizer.exe ..\happyml_data\internet.txt
+// Example with folder:  .\create_tokenizer.exe ..\happyml_data\text
 //
 // The tokenizer will be saved to: ../happyml_repo/default_token_encoder
 int main(int argc, char *argv[]) {

@@ -60,7 +60,7 @@ void test_training() {
 
 void test_training_large_file() {
     BytePairEncoderModel bpe;
-    vector<string> const data = load_file_to_tokens("../data/data.txt");
+    vector<string> const data = load_file_to_tokens("../happyml_data/data.txt");
     bpe.train(data);
 
     auto bpe_codes = bpe.getBpeCodes();
@@ -371,7 +371,7 @@ void test_train_folder() {
         ASSERT_TRUE("is" == bpe.decode(bpe.encode("is")));
         ASSERT_TRUE("i" == bpe.decode(bpe.encode("i")));
 
-        const vector<string> data = load_file_to_tokens("../data/data.txt");
+        const vector<string> data = load_file_to_tokens("../happyml_data/data.txt");
         cout << "Compression: " << bpe.validate_compression_rate(data) << endl;
     }
 }
@@ -413,7 +413,7 @@ void test_validate_file() {
     ASSERT_TRUE("mars" == bpe.decode(bpe.encode("mars")));
     ASSERT_TRUE("is" == bpe.decode(bpe.encode("is")));
     ASSERT_TRUE("i" == bpe.decode(bpe.encode("i")));
-    const vector<string> data = load_file_to_tokens("../data/misc/tritium gambit.txt");//data.txt");
+    const vector<string> data = load_file_to_tokens("../happyml_data/misc/tritium gambit.txt");//data.txt");
 
     cout << "Compression: " << bpe.validate_compression_rate(data) << endl;
 }

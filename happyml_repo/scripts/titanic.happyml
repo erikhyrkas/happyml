@@ -3,7 +3,7 @@
 #
 # I used the train.csv file from https://www.kaggle.com/datasets/hesh97/titanicdataset-traincsv
 #
-# I stored the raw csv in the data/titanic directory. See below.
+# I stored the raw csv in the happyml_data/titanic directory. See below.
 #
 # My directory structure:
 # happyml
@@ -46,7 +46,7 @@ create dataset titanic
        with given number   Parch    at 7
        with given number   Fare     at 9
        with given label    Embarked at 11
-       using file://../data/titanic/train.csv
+       using file://../happyml_data/titanic/train.csv
 
 
 print raw titanic limit 5
@@ -57,4 +57,6 @@ print pretty titanic limit 5
 # create task label predict_survivor with goal accuracy with test titanic_test using titanic
 create task label predict_survivor using titanic
 
+# Coming soon, execute the task:
+# execute task titanic using input ("Pclass": "2", "Sex": "female", "Age": "55", "SibSp": "0", "Parch": "0", "Fare": "16", "Embarked": "S")
 

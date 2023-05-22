@@ -36,7 +36,7 @@ int main() {
         //       with given number   at 7     # Parch
         //       with given number   at 9     # Fare
         //       with given label    at 11    # Embarked
-        //       using file://../data/titanic/train.csv
+        //       using file://../happyml_data/titanic/train.csv
 
         // NOTE: If we were doing better data science, we'd split the data set up into a training and test set.
         // For now, we'll use our training set to test. This is not a good practice for real life because it

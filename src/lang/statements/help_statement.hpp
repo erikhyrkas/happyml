@@ -38,19 +38,23 @@ namespace happyml {
                 cout << "  [with test <test dataset name>]" << endl;
                 cout << "  using <dataset name>" << endl;
             } else if (help_menu_item_ == "future") {
-                cout << "Future genreal commands: " << endl;
+                cout << "Future general commands: " << endl;
                 cout << "  set <property> <value>" << endl;
+                cout << endl;
+                cout << "  let <variable> <value>" << endl;
                 cout << endl;
                 cout << "Future dataset commands: " << endl;
                 cout << "  describe dataset <dataset name>" << endl;
                 cout << endl;
                 cout << "  list datasets [starting with <start string>]" << endl;
                 cout << endl;
-                cout << "  copy dataset <original dataset name> to <new dataset name>" << endl;
+                cout << "  copy dataset <source dataset name> to <destination dataset name>" << endl;
                 cout << endl;
                 cout << "  delete dataset <dataset name>" << endl;
                 cout << endl;
                 cout << "  move dataset <original dataset name> to <new dataset name>" << endl;
+                cout << endl;
+                cout << "  split dataset <dataset name> at <percent>" << endl;
                 cout << endl;
                 cout << "Future task commands: " << endl;
                 cout << "  describe task <task name> [with label <task label>]" << endl;
