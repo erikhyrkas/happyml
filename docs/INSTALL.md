@@ -1,6 +1,7 @@
 ![happyml](../happyml.png)
 
 # Installation
+[Back to the table of contents](README.md)
 
 Right now, you have to compile it yourself with CLion/cmake. I will work on making it easier to install.
 

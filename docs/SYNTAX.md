@@ -1,4 +1,7 @@
-# Basic Syntax
+![happyml](../happyml.png)
+
+# Basic Syntax 
+[Back to the table of contents](README.md)
 
 happyml is case-insensitive. I generally prefer lowercase, but you can use whatever you want.
 

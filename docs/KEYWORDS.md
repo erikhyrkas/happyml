@@ -1,5 +1,7 @@
 ![happyml](../happyml.png)
+
 # Keywords
+[Back to the table of contents](README.md)
 
 You can use these keywords to setup syntax highlighting in your editor. CLion has 4 groups of keywords, so I'm going
 to split them into four groups.

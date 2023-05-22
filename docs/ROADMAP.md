@@ -1,4 +1,7 @@
+![happyml](../happyml.png)
+
 # Roadmap
+[Back to the table of contents](README.md)
 
 Nice-to-haves for alpha:
 * [ ] Finish interpreter commands to handle interfacing with happyml through a dsl.

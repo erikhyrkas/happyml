@@ -1,4 +1,6 @@
 # Titanic
+[Back to the table of contents](README.md)
+
 This example uses the Titanic dataset to predict whether a passenger survived or not.
 
 ## CODE

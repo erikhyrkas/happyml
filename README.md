@@ -1,18 +1,17 @@
 ![happyml](happyml.png)
 
-# What is happyml?
+## What is happyml?
 
-happyml is a scripting language and framework to make machine learning tasks easier and available to everybody. 
+happyml is a scripting language and framework to make machine learning tasks easier to create and usable by everybody. 
 
-### What can it do?
+## Current State
+This project is pre-alpha.
 
-You can define tasks backed by a machine learning model and train it to solve the task by giving 
-it a set of example inputs and the corresponding outputs. Task execution from the scripting language
-is a work in progress, but nearly done.
+[Recent Notable additions](docs/NOTABLE_CHANGES.md)
 
-See the [titanic example](docs/examples/TITANIC.md) for how the scripting language works. 
+[Current Roadmap](docs/ROADMAP.md)
 
-Or read the docs for more information: [Scripting Docs](docs/README.md).
+## What can it do?
 
 **For the moment, you still need to use C++ instead of the scripting language**, and it does
 require a deeper understanding of how machine learning works, but happyml still tries to make
@@ -22,14 +21,18 @@ Here are two examples:
 * [C++ MNIST example](src/example/example_mnist_model_convolution.cpp).
 * [C++ BPE example](src/test/test_byte_pair_encoding.cpp).
 
-# Current State
-This project is pre-alpha.
+The happyml scripting language is a work in progress, but parts of it are complete.
 
-[Recent Notable additions](docs/NOTABLE_CHANGES.md)
+You can define tasks backed by a machine learning model and train it to solve the task by giving 
+it a set of example inputs and the corresponding outputs. Task execution from the scripting language
+is a work in progress, but nearly done.
 
-[Current Roadmap](docs/ROADMAP.md)
+See the [titanic example](docs/examples/TITANIC.md) for how the scripting language works. 
 
-### What makes happyml special?
+Or read the docs for more information: [Scripting Docs](docs/README.md).
+
+
+## What makes happyml special?
 
 1. EDUCATIONAL: I've made an effort to document what I've learned throughout, so that you can learn from it as well.
 2. SMALL MEMORY FOOTPRINT: It supports 8-bit quantization for training, not just inference.
@@ -44,7 +47,7 @@ For a small model, you don't have to use 8-bit or 16-bit features and can use 32
 
 Largely, what makes this framework special is how I made tensors immutable and stacked "views" on top of them to effectively compress the tensors in memory without losing much precision.
 
-# Using
+## Using
 
 There are options as to how you use happyml. 
 
@@ -54,17 +57,8 @@ There are options as to how you use happyml.
 
 We have a working lexer and parser to make scripting a reality, but there is still work to be done on filling out functionality. The work remaining on the interpreter is not so much hard as plentiful and a little boring.
 
-# Compiling C++
-I use CLion with Visual Studio 2022 community for the C++ runtime libraries.
-* https://visualstudio.microsoft.com/downloads/
 
-Look at the [clion_settings.png](clion_settings.png) for an example on configuring CLion. Pay special attention to the x64 setting. I had to type that value, since it was not in the dropdown options.
-
-I didn't include the idea project settings files, so you'll have to make a project from source, but everything should work
-based on the [CMakeLists.txt](CMakeLists.txt).
-
-
-# Why did you build this?
+## Why did you build this?
 
 Three reasons I built happyml:
 1. LEARNING: I want to understand every aspect of what goes into the science and algorithms fueling the future, and share what I learn along the way. The next generation can pick up this torch and build their own dreams.

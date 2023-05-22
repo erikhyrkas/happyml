@@ -1,4 +1,7 @@
+![happyml](../happyml.png)
+
 # Notable Changes
+[Back to the table of contents](README.md)
 
 * Documentation (5/2023)
 * Scripting language support for creating label tasks and training the supporting models (5/2023)

@@ -1,15 +1,17 @@
 ![happyml](../happyml.png)
 
-HappyML is a language for creating and executing machine learning tasks.
+happyml is a scripting language and framework to make machine learning tasks easier to create and usable by everybody.
 
 <!-- TOC -->
 * [Installation](INSTALL.md)
-* [Keywords](KEYWORDS.md)
+  * [Compiling](COMPILING.md)
 * [Notable Changes](NOTABLE_CHANGES.md)
 * [Roadmap](ROADMAP.md)
 * Examples
   * [titanic](examples/TITANIC.md)
-* Commands
+* Language
+  * [Keywords](KEYWORDS.md)
+  * [Syntax](SYNTAX.md)
   * [copy dataset](commands/COPY_DATASET.md)
   * [copy task](commands/COPY_TASK.md)
   * [create dataset](commands/CREATE_DATASET.md)
