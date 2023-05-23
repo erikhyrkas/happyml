@@ -24,7 +24,7 @@ int main() {
         cout << "Test with categorical cross entropy" << endl;
         auto neuralNetwork = neuralNetworkBuilder()
                 ->setModelName("cat_xor_example")
-                ->setModelRepo("../repo/")
+                ->setModelRepo("../happyml_repo/models/")
                 ->setLossFunction(LossType::categoricalCrossEntropy)
                 ->addInputLayer(xorDataSource->getGivenShape(), 32, LayerType::full, ActivationType::leaky)
                 ->addLayer(16, LayerType::full, ActivationType::leaky)
@@ -56,7 +56,7 @@ int main() {
         // testing save logic:
         neuralNetwork->saveWithOverwrite();
         auto loadedNeuralNetwork = loadNeuralNetworkForTraining("cat_xor_example",
-                                                                "../repo/");
+                                                                "../happyml_repo/models/");
         float testLoss = loadedNeuralNetwork->test(xorDataSource);
         cout << fixed << setprecision(2) << "Result testLoss: " << testLoss << endl;
     } catch (const exception &e) {

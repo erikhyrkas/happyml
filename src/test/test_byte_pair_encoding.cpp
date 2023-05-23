@@ -60,7 +60,7 @@ void test_training() {
 
 void test_training_large_file() {
     BytePairEncoderModel bpe;
-    vector<string> const data = load_file_to_tokens("../happyml_data/data.txt");
+    vector<string> const data = load_file_to_tokens("../happyml_repo/raw/data.txt");
     bpe.train(data);
 
     auto bpe_codes = bpe.getBpeCodes();
@@ -332,10 +332,10 @@ void test_save_load() {
     auto bpe_codes1 = bpe1.getBpeCodes();
     ASSERT_TRUE(!bpe_codes1.empty());
     auto hello16_1 = bpe1.encode("hello");
-    bpe1.save("../repo", "bpe_test", true);
+    bpe1.save("../happyml_repo/models", "bpe_test", true);
 
     BytePairEncoderModel bpe;
-    bpe.load("../repo", "bpe_test");
+    bpe.load("../happyml_repo/models", "bpe_test");
     auto bpe_codes = bpe.getBpeCodes();
     ASSERT_TRUE(!bpe_codes.empty());
     ASSERT_TRUE(bpe_codes1.size() == bpe_codes.size());
@@ -354,11 +354,11 @@ void test_train_folder() {
     {
         BytePairEncoderModel bpe;
         bpe.train_on_folder("../data/misc");
-        bpe.save("../repo", "bpe_test_large_folder", true);
+        bpe.save("../happyml_repo/models", "bpe_test_large_folder", true);
     }
     {
         BytePairEncoderModel bpe;
-        bpe.load("../repo", "bpe_test_large_folder");
+        bpe.load("../happyml_repo/models", "bpe_test_large_folder");
         ASSERT_TRUE(!bpe.getBpeCodes().empty());
 
         auto hello16 = bpe.encode("hello");
@@ -371,7 +371,7 @@ void test_train_folder() {
         ASSERT_TRUE("is" == bpe.decode(bpe.encode("is")));
         ASSERT_TRUE("i" == bpe.decode(bpe.encode("i")));
 
-        const vector<string> data = load_file_to_tokens("../happyml_data/data.txt");
+        const vector<string> data = load_file_to_tokens("../happyml_repo/raw/data.txt");
         cout << "Compression: " << bpe.validate_compression_rate(data) << endl;
     }
 }
@@ -380,11 +380,11 @@ void test_train_file() {
     {
         BytePairEncoderModel bpe;
         bpe.train_on_file("../data/data.txt");
-        bpe.save("../repo", "bpe_data", true);
+        bpe.save("../happyml_repo/models", "bpe_data", true);
     }
     {
         BytePairEncoderModel bpe;
-        bpe.load("../repo", "bpe_data");
+        bpe.load("../happyml_repo/models", "bpe_data");
         ASSERT_TRUE(!bpe.getBpeCodes().empty());
 
         auto hello16 = bpe.encode("hello");
@@ -413,7 +413,7 @@ void test_validate_file() {
     ASSERT_TRUE("mars" == bpe.decode(bpe.encode("mars")));
     ASSERT_TRUE("is" == bpe.decode(bpe.encode("is")));
     ASSERT_TRUE("i" == bpe.decode(bpe.encode("i")));
-    const vector<string> data = load_file_to_tokens("../happyml_data/misc/tritium gambit.txt");//data.txt");
+    const vector<string> data = load_file_to_tokens("../happyml_repo/raw/misc/tritium gambit.txt");//data.txt");
 
     cout << "Compression: " << bpe.validate_compression_rate(data) << endl;
 }

@@ -36,7 +36,7 @@ int main() {
         //       with given number   at 7     # Parch
         //       with given number   at 9     # Fare
         //       with given label    at 11    # Embarked
-        //       using file://../happyml_data/titanic/train.csv
+        //       using file://../happyml_repo/raw/titanic/train.csv
 
         // NOTE: If we were doing better data science, we'd split the data set up into a training and test set.
         // For now, we'll use our training set to test. This is not a good practice for real life because it
@@ -50,7 +50,7 @@ int main() {
 
         auto neuralNetwork = neuralNetworkBuilder()
                 ->setModelName("titanic_example")
-                ->setModelRepo("../repo/")
+                ->setModelRepo("../happyml_repo/models/")
                 ->setLossFunction(LossType::categoricalCrossEntropy)
                 ->add_concatenated_input_layer(titanicDataSource->getGivenShapes())
                 ->addLayer(8, LayerType::full, ActivationType::leaky)
@@ -80,7 +80,7 @@ int main() {
         cout << fixed << setprecision(4) << "Loss: " << loss;
         neuralNetwork->saveWithOverwrite();
         auto loadedNeuralNetwork = loadNeuralNetworkForTraining("titanic_example",
-                                                                "../repo/");
+                                                                "../happyml_repo/models/");
 
         float testLoss = loadedNeuralNetwork->test(titanicDataSource);
         cout << fixed << setprecision(2) << "Result testLoss: " << testLoss << endl;

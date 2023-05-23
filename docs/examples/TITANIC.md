@@ -21,7 +21,7 @@ create dataset titanic
        with given number   Parch    at 7
        with given number   Fare     at 9
        with given label    Embarked at 11
-       using file://../happyml_data/titanic/train.csv              
+       using file://../happyml_repo/raw/titanic/train.csv              
 ```
 
 

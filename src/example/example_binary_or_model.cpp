@@ -21,7 +21,7 @@ int main() {
         cout << "Test with binary cross entropy" << endl;
         auto neuralNetwork = neuralNetworkBuilder()
                 ->setModelName("or_example")
-                ->setModelRepo("../repo/")
+                ->setModelRepo("../happyml_repo/models/")
                 ->setLossFunction(LossType::binaryCrossEntropy)
                 ->addInputLayer(orDataSource->getGivenShape(), 64, LayerType::full, ActivationType::tanhApprox)
                 ->addLayer(32, LayerType::full, ActivationType::tanhApprox)
@@ -42,7 +42,7 @@ int main() {
         // testing save logic:
         neuralNetwork->saveWithOverwrite();
         auto loadedNeuralNetwork = loadNeuralNetworkForTraining("or_example",
-                                                                "../repo/");
+                                                                "../happyml_repo/models/");
         float testLoss = loadedNeuralNetwork->test(orDataSource);
         cout << fixed << setprecision(2) << "Result testLoss: " << testLoss << endl;
         orDataSource->restart();

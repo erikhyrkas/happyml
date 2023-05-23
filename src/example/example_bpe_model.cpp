@@ -15,7 +15,7 @@ int main() {
         {
             // example dataset from https://www.kaggle.com/datasets/jrobischon/wikipedia-movie-plots
             // See the README.md in this folder for details on preparing it.
-            auto reader = DelimitedTextFileReader("..\\happyml_data\\wiki_movie_plots_deduped.csv", ',', true);
+            auto reader = DelimitedTextFileReader("..\\happyml_repo\\raw\\wiki_movie_plots_deduped.csv", ',', true);
             std::string current_token;
             char previous_character = 0;
 
@@ -32,7 +32,7 @@ int main() {
         }
         BytePairEncoderModel bpe;
         bpe.train(tokens);
-        if (!bpe.save("../repo/", "bpe_example")) {
+        if (!bpe.save("../happyml_repo/models/", "bpe_example")) {
             cerr << "Error Saving model!" << endl;
         }
 

@@ -21,7 +21,7 @@ int main() {
         cout << "Test with tanhActivation" << endl;
         auto neuralNetwork = neuralNetworkBuilder(OptimizerType::sgd)
                 ->setModelName("xor_example")
-                ->setModelRepo("../repo/")
+                ->setModelRepo("../happyml_repo/models/")
                 ->setLossFunction(LossType::mse)
                 ->addInputLayer(xorDataSource->getGivenShape(), 3, LayerType::full, ActivationType::tanhApprox)
                 ->addOutputLayer(xorDataSource->getExpectedShape(), ActivationType::tanhApprox)
@@ -42,7 +42,7 @@ int main() {
         // testing save logic:
         neuralNetwork->saveWithOverwrite();
         auto loadedNeuralNetwork = loadNeuralNetworkForTraining("xor_example",
-                                                                "../repo/");
+                                                                "../happyml_repo/models/");
         float testLoss = loadedNeuralNetwork->test(xorDataSource);
         cout << fixed << setprecision(2) << "Result testLoss: " << testLoss << endl;
     } catch (const exception &e) {

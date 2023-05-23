@@ -24,7 +24,7 @@ int main() {
         // making the shape square (28x28) just to test the auto-flattening capabilities of the network.
         cout << "Loading training data..." << endl;
 
-        auto mnistDataSource = loadDelimitedValuesDataset("..\\happyml_data\\mnist_train.csv", ',',
+        auto mnistDataSource = loadDelimitedValuesDataset("..\\happyml_repo\\raw\\mnist_train.csv", ',',
                                                           true, false, true,
                                                           1, 28 * 28,
                                                           vector<size_t>{1, 10, 1},
@@ -32,7 +32,7 @@ int main() {
                                                           expectedEncoder, givenEncoder);
         cout << "Loaded training data." << endl;
         cout << "Loading test data..." << endl;
-        auto testMnistDataSource = loadDelimitedValuesDataset("..\\happyml_data\\mnist_test.csv", ',',
+        auto testMnistDataSource = loadDelimitedValuesDataset("..\\happyml_repo\\raw\\mnist_test.csv", ',',
                                                               true, false, true,
                                                               1, 28 * 28,
                                                               vector<size_t>{1, 10, 1},
@@ -51,7 +51,7 @@ int main() {
         //   * The sigmoid activation function gives us a probability of a given label
         auto neuralNetwork = neuralNetworkBuilder()
                 ->setModelName("mnist_conv2d_example")
-                ->setModelRepo("../repo/")
+                ->setModelRepo("../happyml_repo/models/")
                 ->addInputLayer(mnistDataSource->getGivenShape(), 1, 3, LayerType::convolution2dValid,
                                 ActivationType::relu)
                 ->addLayer(100, LayerType::full, ActivationType::relu)
@@ -85,7 +85,7 @@ int main() {
         // save logic:
 //        neuralNetwork->saveWithOverwrite();
 //        auto loadedNeuralNetwork = loadNeuralNetworkForTraining("mnist_conv2d_example",
-//                                                                "../repo/");
+//                                                                "../happyml_repo/models/");
 //        float testLoss = loadedNeuralNetwork->test(testMnistDataSource);
 //        cout << fixed << setprecision(2) << "Result testLoss: " << testLoss << endl;
     } catch (const exception &e) {

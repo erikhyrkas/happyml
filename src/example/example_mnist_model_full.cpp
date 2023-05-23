@@ -16,10 +16,10 @@ int main() {
         auto expectedEncoder = make_shared<TextToUniqueCategoryEncoder>(categoryLabels);
         auto givenEncoder = make_shared<TextToPixelEncoder>();
         // making the shape square (28x28) just to test the auto-flattening capabilities of the network.
-        //"..\\happyml_data\\mnist_test.csv"
-        //"..\\happyml_data\\mnist_train.csv"
+        //"..\\happyml_repo\\raw\\mnist_test.csv"
+        //"..\\happyml_repo\\raw\\mnist_train.csv"
         cout << "Loading training data..." << endl;
-        auto mnistDataSource = loadDelimitedValuesDataset("..\\happyml_data\\mnist_train.csv", ',',
+        auto mnistDataSource = loadDelimitedValuesDataset("..\\happyml_repo\\raw\\mnist_train.csv", ',',
                                                           true, false, true,
                                                           1, 28 * 28,
                                                           vector<size_t>{1, 10, 1},
@@ -27,7 +27,7 @@ int main() {
                                                           expectedEncoder, givenEncoder);
         cout << "Loaded training data." << endl;
         cout << "Loading test data..." << endl;
-        auto testMnistDataSource = loadDelimitedValuesDataset("..\\happyml_data\\mnist_test.csv", ',',
+        auto testMnistDataSource = loadDelimitedValuesDataset("..\\happyml_repo\\raw\\mnist_test.csv", ',',
                                                               true, false, true,
                                                               1, 28 * 28,
                                                               vector<size_t>{1, 10, 1},

@@ -31,7 +31,7 @@ Valid properties:
   * `overwrite` -- Overwrites the output file.
 * `token_encoder_path` -- Sets the path to the byte pair encoder model.
 * `repo_path` -- Sets the path to the happyml repository. **Defaults to the ..\happyml_repo directory.**
-* `data_path` -- Sets the path to the happyml data directory. **Defaults to the ..\happyml_data directory.**
+* `data_path` -- Sets the path to the happyml data directory. **Defaults to the ..\happyml_repo\raw directory.**
 
 ## Example
 
