@@ -14,6 +14,7 @@
 #include "../statements/help_statement.hpp"
 #include "../statements/create_dataset_statement.hpp"
 #include "../statements/create_task_statement.hpp"
+#include "../statements/execute_task_statement.hpp"
 
 using namespace std;
 
@@ -299,6 +300,93 @@ namespace happyml {
             return generateError("Unsupported object for create: ", next);
         }
 
+        static shared_ptr<ParseResult> parseExecuteStatement(const shared_ptr<TokenStream> &stream) {
+            try {
+                //execute task <task name>
+                //[with label <task label>]
+                //using dataset <dataset name>
+                //
+                //      --or--
+                //
+                //execute task <task name>
+                //[with label <task label>]
+                //using input ("key": "value", "key": "value", ...)
+
+                if (!stream->hasNext()) {
+                    return generateError("execute requires a type: ", stream->previous());
+                }
+                auto executableType = stream->next(); // task
+                if ("_task" != executableType->getLabel()) {
+                    return generateError("task is the only valid executable right now: ", executableType);
+                }
+                if (!stream->hasNext()) {
+                    return generateError("execute requires a name: ", stream->previous());
+                }
+                auto taskName = stream->next();
+                if ("_word" != taskName->getLabel()) {
+                    return generateError("task name is invalid: ", taskName);
+                }
+                string name = taskName->getValue();
+                string label;
+                if (stream->hasNext() && "_with" == stream->peek()->getLabel()) {
+                    stream->consume();
+                    if (!stream->hasNext()) {
+                        return generateError("with statement is incomplete ", stream->previous());
+                    }
+                    auto withType = stream->next();
+                    if ("_label" != withType->getLabel()) {
+                        return generateError("with statement is invalid ", withType);
+                    }
+                    if (!stream->hasNext()) {
+                        return generateError("with statement is incomplete ", stream->previous());
+                    }
+                    auto labelToken = stream->next();
+                    if ("_word" != labelToken->getLabel()) {
+                        return generateError("with statement is invalid ", labelToken);
+                    }
+                    label = labelToken->getValue();
+                }
+                if (!stream->hasNext()) {
+                    return generateError("execute requires a dataset or input: ", stream->previous());
+                }
+                auto usingKeyword = stream->next();
+                if ("_using" != usingKeyword->getLabel()) {
+                    return generateError("Invalid token at: ", usingKeyword);
+                }
+                if (!stream->hasNext()) {
+                    return generateError("execute requires a dataset or input: ", stream->previous());
+                }
+                auto next = stream->next();
+                if ("_dataset" == next->getLabel()) {
+                    if (!stream->hasNext()) {
+                        return generateError("execute requires a dataset name: ", stream->previous());
+                    }
+                    auto datasetName = stream->next();
+                    if ("_word" != datasetName->getLabel()) {
+                        return generateError("dataset name is invalid: ", datasetName);
+                    }
+                    string dataset = datasetName->getValue();
+                    unordered_map<string, string> input_map;
+                    auto executeTask = make_shared<ExecuteTaskStatement>(name, label, dataset, input_map);
+                    return make_shared<ParseResult>(executeTask);
+                } else if ("_input" == next->getLabel()) {
+                    if (!stream->hasNext()) {
+                        return generateError("execute requires an input: ", stream->previous());
+                    }
+
+                    unordered_map<string, string> input_map;
+                    // todo: parse input: ("key": "value", "key": "value", ...)
+                    auto executeTask = make_shared<ExecuteTaskStatement>(name, label, "", input_map);
+                    return make_shared<ParseResult>(executeTask);
+                } else {
+                    return generateError("execute requires a dataset or input: ", next);
+                }
+
+            } catch (runtime_error &e) {
+                return generateError(e.what(), stream->previous());
+            }
+        }
+
         static shared_ptr<ParseResult> parseCodeBlock(const shared_ptr<TokenStream> &stream) {
             auto codeBlock = make_shared<CodeBlock>();
             shared_ptr<ParseResult> result = make_shared<ParseResult>(codeBlock);
@@ -325,6 +413,12 @@ namespace happyml {
                         return createStatementResult;
                     }
                     codeBlock->addChild(createStatementResult->getExecutable());
+                } else if ("_execute" == label) {
+                    auto executeStatementResult = parseExecuteStatement(stream);
+                    if (!executeStatementResult->isSuccessful()) {
+                        return executeStatementResult;
+                    }
+                    codeBlock->addChild(executeStatementResult->getExecutable());
                 } else if ("_exit" == label) {
                     codeBlock->addChild(make_shared<ExitStatement>());
                 } else {

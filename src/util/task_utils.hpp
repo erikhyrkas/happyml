@@ -50,6 +50,61 @@ namespace happyml {
 
     }
 
+    bool execute_task_with_dataset(const string &task_name, const string &dataset_file_path, const string &task_folder_path) {
+        // TODO: we need to cache the task in the context so we don't have to reload it.
+
+        string task_full_path = task_folder_path + task_name;
+        if (!filesystem::exists(task_full_path)) {
+            cout << "Task " << task_name << " does not exists. Skipping." << endl;
+            return false;
+        }
+
+        // TODO: this doesn't use label, yet. It assumes "default" label.
+        // TODO: this could use NeuralNetworkForPrediction instead of NeuralNetworkForTraining
+        //  while NeuralNetworkForTraining works, it uses more memory and is slower.
+        auto loadedNeuralNetwork = loadNeuralNetworkForTraining(task_name,
+                                                                task_folder_path);
+
+        string dataset_full_file_path = dataset_file_path + "/dataset.bin";
+        BinaryDatasetReader reader(dataset_full_file_path);
+        vector<shared_ptr<RawDecoder>> given_decoders = build_given_decoders(false, reader);
+        vector<shared_ptr<RawDecoder>> expected_decoders = build_expected_decoders(false, reader);
+        size_t number_of_given = reader.get_given_column_count();
+        size_t number_of_expected = reader.get_expected_column_count();
+        reader.close();
+
+        auto dataset = make_shared<BinaryDataSet>(dataset_full_file_path);
+        auto nextRecord = dataset->nextRecord();
+        // TODO: wow, this output is ugly.
+        while (nextRecord) {
+            auto given_values = nextRecord->getGiven();
+            cout << "Given: ";
+            for (size_t i = 0; i < number_of_given; i++) {
+                if (given_decoders[i]->isText()) {
+                    cout << given_decoders[i]->decodeBest(given_values[i]) << " ";
+                } else {
+                    given_decoders[i]->decode(given_values[i])->print();
+                }
+            }
+            cout << endl;
+            auto predictions = loadedNeuralNetwork->predict(given_values);
+            cout << "Predicted: ";
+            for (size_t i = 0; i < number_of_expected; i++) {
+                if (expected_decoders[i]->isText()) {
+                    cout << expected_decoders[i]->decodeBest(predictions[i]);
+                } else {
+                    cout << expected_decoders[i]->decode(predictions[i]);
+                }
+
+            }
+            cout << endl;
+
+            nextRecord = dataset->nextRecord();
+        }
+
+        return true;
+    }
+
     bool create_label_task(const string &task_name, const string &goal, const string &dataset_name,
                            const string &dataset_file_path, const string &task_folder_path,
                            const string &test_dataset_file_path) {
@@ -128,6 +183,7 @@ namespace happyml {
 
     bool create_happyml_task(const string &task_type, const string &task_name, const string &goal, const string &dataset_name,
                              const string &dataset_file_path, const string &task_folder_path, const string &test_dataset_file_path) {
+        // TODO: we need to cache the task in the context so we don't have to reload it.
         if (task_type == "label") {
             return create_label_task(task_name, goal, dataset_name, dataset_file_path, task_folder_path, test_dataset_file_path);
         }

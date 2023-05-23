@@ -17,7 +17,7 @@ This project is pre-alpha.
 require a deeper understanding of how machine learning works, but happyml still tries to make
 it as simple as possible. It won't be long before this isn't necessary.
 
-Here are two examples:
+Here are two C++ examples:
 * [C++ MNIST example](src/example/example_mnist_model_convolution.cpp).
 * [C++ BPE example](src/test/test_byte_pair_encoding.cpp).
 
@@ -27,7 +27,8 @@ You can define tasks backed by a machine learning model and train it to solve th
 it a set of example inputs and the corresponding outputs. Task execution from the scripting language
 is a work in progress, but nearly done.
 
-See the [titanic example](docs/examples/TITANIC.md) for how the scripting language works. 
+See the happyml scripting language example: 
+*  [Titanic Survivor example](docs/examples/TITANIC.md)
 
 Or read the docs for more information: [Scripting Docs](docs/README.md).
 
