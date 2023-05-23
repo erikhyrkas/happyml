@@ -1,4 +1,8 @@
+![happyml](../happyml.png)
+
 # Compiling C++
+[Back to the table of contents](README.md)
+
 I use CLion with Visual Studio 2022 community for the C++ runtime libraries.
 * https://visualstudio.microsoft.com/downloads/
 
