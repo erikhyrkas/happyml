@@ -25,6 +25,7 @@ namespace happyml {
             string result_path = context->get_dataset_path(dataset_name_) + "/dataset.bin";
             BinaryDatasetReader reader(result_path);
             pretty_print(cout, reader, limit_, raw_);
+            reader.close();
             return make_shared<ExecutionResult>(false);
         }
 

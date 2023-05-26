@@ -8,6 +8,7 @@
 
 #include "dataset_utils.hpp"
 #include "../ml/happyml_dsl.hpp"
+#include "../../util/pretty_print_row.hpp"
 
 namespace happyml {
 
@@ -69,35 +70,26 @@ namespace happyml {
         BinaryDatasetReader reader(dataset_full_file_path);
         vector<shared_ptr<RawDecoder>> given_decoders = build_given_decoders(false, reader);
         vector<shared_ptr<RawDecoder>> expected_decoders = build_expected_decoders(false, reader);
-        size_t number_of_given = reader.get_given_column_count();
-        size_t number_of_expected = reader.get_expected_column_count();
+        vector<string> given_column_names = reader.get_given_names();
+        vector<string> expected_column_names = reader.get_expected_names();
         reader.close();
+
+        vector<string> merged_headers = pretty_print_merge_headers(expected_column_names, given_column_names);
+        vector<size_t> widths;
 
         auto dataset = make_shared<BinaryDataSet>(dataset_full_file_path);
         auto nextRecord = dataset->nextRecord();
-        // TODO: wow, this output is ugly.
         while (nextRecord) {
             auto given_values = nextRecord->getGiven();
-            cout << "Given: ";
-            for (size_t i = 0; i < number_of_given; i++) {
-                if (given_decoders[i]->isText()) {
-                    cout << given_decoders[i]->decodeBest(given_values[i]) << " ";
-                } else {
-                    given_decoders[i]->decode(given_values[i])->print();
-                }
-            }
-            cout << endl;
             auto predictions = loadedNeuralNetwork->predict(given_values);
-            cout << "Predicted: ";
-            for (size_t i = 0; i < number_of_expected; i++) {
-                if (expected_decoders[i]->isText()) {
-                    cout << expected_decoders[i]->decodeBest(predictions[i]);
-                } else {
-                    cout << expected_decoders[i]->decode(predictions[i]);
-                }
 
+            auto merged_values = pretty_print_merge_records(expected_decoders, predictions, given_decoders, given_values);
+            if (widths.empty()) {
+                // using width of first result is suboptimal, but it's good enough for now.
+                widths = calculate_pretty_print_column_widths(merged_headers, merged_values);
+                pretty_print_header(cout, merged_headers, widths);
             }
-            cout << endl;
+            pretty_print_row(cout, merged_values, widths);
 
             nextRecord = dataset->nextRecord();
         }

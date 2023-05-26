@@ -144,6 +144,7 @@ namespace happyml {
 
             auto merged_values = pretty_print_merge_records(expected_decoders, expected_record_group, given_decoders, given_record_group);
             if (widths.empty()) {
+                // using width of first result is suboptimal, but it's good enough for now.
                 widths = calculate_pretty_print_column_widths(merged_headers, merged_values);
                 pretty_print_header(stream, merged_headers, widths);
             }
