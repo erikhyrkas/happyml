@@ -3,6 +3,7 @@
 # Notable Changes
 [Back to the table of contents](README.md)
 
+* Prettier pretty print (5/2023)
 * Ability to execute tasks against datasets from the scripting language with rather ugly output (5/2023)
 * Documentation (5/2023)
 * Scripting language support for creating label tasks and training the supporting models (5/2023)

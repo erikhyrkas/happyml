@@ -4,13 +4,13 @@
 [Back to the table of contents](README.md)
 
 Nice-to-haves for alpha:
-* [ ] Finish interpreter commands to handle interfacing with happyml through a dsl.
+* [x] Finish interpreter commands to handle interfacing with happyml through a dsl.
     * [x] exit
     * [x] help
     * [x] create dataset
     * [x] print dataset
     * [x] create task
-    * [ ] execute tasks
+    * [x] execute tasks
 
 Issues to address later:
 * The save format could be more efficient and compact. (The file support utilities exist as of 3/23, but the models aren't using it.)

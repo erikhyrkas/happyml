@@ -1,6 +1,6 @@
 ![happyml](../../happyml.png)
 
-# EXECUTE TASK (future)
+# EXECUTE TASK
 [Back to the table of contents](../README.md)
 
 Disclaimer: happyml is constantly changing. If I see the chance for improvement, I'm going to take it. I hope that you get value out of it,
@@ -9,12 +9,14 @@ to rewrite how it works. I hope you can appreciate the spirit of this project.
 
 ## Syntax
 
+Existing:
 ```happyml
 execute task <task name>
 [with label <task label>]
 using dataset <dataset name>
 ```
 
+Coming in the near future:
 ```happyml
 execute task <task name>
 [with label <task label>]
@@ -22,7 +24,6 @@ using input ("key": "value", "key": "value", ...)
 ```
 
 ## Description and Notes
-**This is a future feature.**
 
 Executes a task on a dataset. This will run the task on the dataset and return the results.
 
@@ -31,6 +32,8 @@ Executes a task on a dataset. This will run the task on the dataset and return t
 `task label` is the label of the task you want to execute. If you have multiple tasks with the same name, you can use this to specify which one you want to execute.
 
 `dataset name` is the name of the dataset you want to execute the task on.
+
+**This is a future feature:**
 
 `input` is a list of key-value pairs as input for the task. This is an alternative to using a dataset. If you use this, you don't need to specify a dataset.
 
@@ -44,6 +47,7 @@ execute task my_task using dataset my_dataset
 execute task my_task with label my_label using dataset my_dataset
 ```
 
+**This is a future feature:**
 ```happyml
 execute task my_task using input ("color": "red", "age": "5")
 ```
