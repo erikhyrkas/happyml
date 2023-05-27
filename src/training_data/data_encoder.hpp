@@ -17,6 +17,9 @@
 #include "../ml/byte_pair_encoder.hpp"
 #include "../ml/rotary_positional_embedding.hpp"
 #include "../util/one_hot_encoder.hpp"
+#include "../lang/happyml_variant.hpp"
+#include "../types/tensor_views/normalize_tensor_view.hpp"
+#include "../types/tensor_views/standardize_tensor_view.hpp"
 
 using namespace std;
 
@@ -63,6 +66,89 @@ namespace happyml {
         auto [ptr, error_check] = std::from_chars(text.data(), text.data() + text.size(), value);
         return error_check == std::errc();
     }
+
+    class HappyMLVariantEncoder {
+    public:
+        explicit HappyMLVariantEncoder(std::shared_ptr<BinaryColumnMetadata> metadata) : metadata(std::move(metadata)) {}
+
+        string get_name() {
+            return metadata->name;
+        }
+
+        std::shared_ptr<BaseTensor> encode(const std::vector<HappyMLVariant> &text) {
+            // purpose: 'I' (image), 'T' (text), 'N' (number), 'L' (label)
+            if (metadata->purpose == 'I') {
+                std::vector<std::vector<std::vector<float>>> floats;
+                floats.resize(metadata->channels);
+                for (size_t channel = 0; channel < metadata->channels; channel++) {
+                    floats[channel].resize(metadata->columns);
+                    for (size_t column = 0; column < metadata->columns; column++) {
+                        floats[channel][column].resize(metadata->rows);
+                        for (size_t row = 0; row < metadata->rows; row++) {
+                            floats[channel][column][row] = text[channel * metadata->columns * metadata->rows + column * metadata->rows + row].as_float();
+                        }
+                    }
+                }
+                return pixelTensor(floats);
+            } else if (metadata->purpose == 'T') {
+                throw runtime_error("Text encoding not implemented yet.");
+            } else if (metadata->purpose == 'N') {
+                std::vector<std::vector<std::vector<float>>> floats;
+                floats.resize(metadata->channels);
+                for (size_t channel = 0; channel < metadata->channels; channel++) {
+                    floats[channel].resize(metadata->columns);
+                    for (size_t column = 0; column < metadata->columns; column++) {
+                        floats[channel][column].resize(metadata->rows);
+                        for (size_t row = 0; row < metadata->rows; row++) {
+                            floats[channel][column][row] = text[channel * metadata->columns * metadata->rows + column * metadata->rows + row].as_float();
+                        }
+                    }
+                }
+                std::shared_ptr<BaseTensor> base_tensor = tensor(floats);
+                if (metadata->is_standardized) {
+                    base_tensor = make_shared<StandardizeTensorView>(base_tensor, metadata->mean, metadata->standard_deviation);
+                }
+                if (metadata->is_normalized) {
+                    base_tensor = make_shared<NormalizeTensorView>(base_tensor, metadata->min_value, metadata->max_value);
+                }
+                return base_tensor;
+            } else if (metadata->purpose == 'L') {
+                for (const auto &next_text: text) {
+                    size_t column_offset = 0;
+                    bool found = false;
+                    for (size_t i = 0; i < metadata->ordered_labels.size(); i++) {
+                        if (metadata->ordered_labels[i] == next_text.to_string()) {
+                            column_offset = i;
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        string error_message = "Unknown label " + next_text.to_string() + " for column: " + metadata->name;
+                        throw runtime_error(error_message);
+                    }
+                    vector<vector<vector<float>>> result;
+                    result.resize(metadata->channels);
+                    for (size_t channel = 0; channel < metadata->channels; channel++) {
+                        result[channel].resize(metadata->columns);
+                        for (size_t column = 0; column < metadata->columns; column++) {
+                            result[channel][column].resize(metadata->rows);
+                            for (size_t row = 0; row < metadata->rows; row++) {
+                                result[channel][column][row] = column == column_offset ? 1.f : 0.f;
+                            }
+                        }
+                    }
+
+                    return tensor(result);
+                }
+            }
+            string error_message = "Unknown purpose " + string(1, metadata->purpose) + " for column: " + metadata->name;
+            throw runtime_error(error_message);
+        }
+
+    private:
+        shared_ptr<BinaryColumnMetadata> metadata;
+    };
 
     class DataEncoder {
     public:
@@ -198,7 +284,7 @@ namespace happyml {
 
     class TextEncoder : public DataEncoder {
     public:
-        explicit TextEncoder(shared_ptr <BytePairEncoderModel> bytePairEncoderModel) :
+        explicit TextEncoder(shared_ptr<BytePairEncoderModel> bytePairEncoderModel) :
                 bytePairEncoderModel_(std::move(bytePairEncoderModel)) {
 
         }
@@ -208,8 +294,8 @@ namespace happyml {
         //  output shape would not be predictable.
         //  Also, part of me wonders if I should only use BPE on the tokens, but not one-hot encode
         //  at this point. By one-hot encoding here, the training set files will be huge.
-        shared_ptr <BaseTensor> encode(const vector<string> &columnsOfText,
-                                       size_t rows, size_t columns, size_t channels, bool trim) override {
+        shared_ptr<BaseTensor> encode(const vector<string> &columnsOfText,
+                                      size_t rows, size_t columns, size_t channels, bool trim) override {
             if (bytePairEncoderModel_ == nullptr) {
                 // I considered just doing character-level encoding using one_hot_encode_characters(), but
                 // it would take a huge amount of memory and not produce good results. It's better to stop
@@ -251,7 +337,7 @@ namespace happyml {
         }
 
     private:
-        shared_ptr <BytePairEncoderModel> bytePairEncoderModel_;
+        shared_ptr<BytePairEncoderModel> bytePairEncoderModel_;
     };
 
 }

@@ -66,6 +66,8 @@ namespace happyml {
         // punctuation
         patterns.push_back(createToken("_open_parenthesis", "("));
         patterns.push_back(createToken("_close_parenthesis", ")"));
+        patterns.push_back(createToken("_open_bracket", "["));
+        patterns.push_back(createToken("_close_bracket", "]"));
         patterns.push_back(createToken("_equal", "="));
         patterns.push_back(createToken("_colon", ":"));
         patterns.push_back(createToken("_slash", "/"));

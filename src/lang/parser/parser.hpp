@@ -15,6 +15,7 @@
 #include "../statements/create_dataset_statement.hpp"
 #include "../statements/create_task_statement.hpp"
 #include "../statements/execute_task_statement.hpp"
+#include "../happyml_variant.hpp"
 
 using namespace std;
 
@@ -241,7 +242,7 @@ namespace happyml {
                 if (!stream->hasNext(2)) {
                     return generateError("create dataset requires a location: ", datasetName);
                 }
-                vector<shared_ptr<ColumnGroup>>
+                vector<shared_ptr<ColumnGroup >>
                         column_groups;
                 bool has_header = false;
                 while (stream->hasNext() && "_with" == stream->peek()->getLabel()) {
@@ -298,6 +299,102 @@ namespace happyml {
                 return parseCreateTask(stream, next);
             }
             return generateError("Unsupported object for create: ", next);
+        }
+
+        static unordered_map <std::string, std::vector<HappyMLVariant>> parseInput(const shared_ptr<TokenStream> &stream) {
+            unordered_map<std::string, std::vector<HappyMLVariant>> inputs;
+            if (!stream->hasNext()) {
+                throw runtime_error("Missing input content");
+            }
+            // stream should have something like this in it: ("key": "value", "key": "value", ...)
+            auto inputToken = stream->next();
+            if ("_open_parenthesis" != inputToken->getLabel()) {
+                throw runtime_error("Missing input content");
+            }
+
+            while (stream->hasNext() && "_close_parenthesis" != stream->peek()->getLabel()) {
+                auto next_key = stream->next();
+                if ("_word" != next_key->getLabel() && "_string" != next_key->getLabel()) {
+                    throw runtime_error("Invalid input key");
+                }
+                string key = next_key->getValue();
+                if ("_string" == next_key->getLabel()) {
+                    key = unescapeString(key);
+                }
+                if (!stream->hasNext() || "_colon" != stream->peek()->getLabel()) {
+                    throw runtime_error("Invalid input key");
+                }
+                stream->next(); // consume colon
+                if (!stream->hasNext() || ("_string" != stream->peek()->getLabel() &&
+                                           "_word" != stream->peek()->getLabel()) &&
+                                          "_number" != stream->peek()->getLabel() &&
+                                          "_open_bracket" != stream->peek()->getLabel()) {
+                    throw runtime_error("Invalid input value");
+                }
+                std::vector<HappyMLVariant> next_value;
+                if ("_open_bracket" == stream->peek()->getLabel()) {
+                    stream->next(); // consume open bracket
+                    while (stream->hasNext() && "_close_bracket" != stream->peek()->getLabel()) {
+                        HappyMLVariant value;
+                        auto token = stream->next();
+                        string label = token->getLabel();
+                        string data = token->getValue();
+                        if ("_number" == label) {
+                            value = stof(data);
+                        } else if ("_string" == label) {
+                            value = unescapeString(data);
+                        } else {
+                            value = data;
+                        }
+                        next_value.push_back(value);
+                    }
+                    if (!stream->hasNext()) {
+                        throw runtime_error("Invalid input value");
+                    }
+                    stream->next(); // consume close bracket
+                } else {
+                    HappyMLVariant value;
+                    auto token = stream->next();
+                    string label = token->getLabel();
+                    string data = token->getValue();
+                    if ("_number" == label) {
+                        value = stof(data);
+                    } else if ("_string" == label) {
+                        value = unescapeString(data);
+                    } else {
+                        value = data;
+                    }
+                    next_value.push_back(value);
+                }
+                // key needs to be lowercase
+                std::transform(key.begin(), key.end(), key.begin(), ::tolower);
+                inputs[key] = next_value;
+                if (stream->hasNext() && "_comma" == stream->peek()->getLabel()) {
+                    stream->next(); // consume comma
+                }
+            }
+
+            if (!stream->hasNext() || "_close_parenthesis" != stream->peek()->getLabel()) {
+                throw runtime_error("Input incomplete, missing closing parenthesis");
+            }
+            stream->next(); // consume closing parenthesis
+
+            return inputs;
+        }
+
+        static string &unescapeString(string &original) {// check for quote type
+            string quote_type = original.substr(0, 1);
+            original = original.substr(1, original.size() - 2);
+            // unescape string. if we find a backslash followed by quote type, remove the backslash
+            // otherwise, leave it alone
+            for (int i = 0; i < original.size(); i++) {
+                if (original[i] == '\\') {
+                    if (i + 1 < original.size() && original[i + 1] == quote_type[0]) {
+                        original.erase(i, 1);
+                    }
+                }
+            }
+            return original;
         }
 
         static shared_ptr<ParseResult> parseExecuteStatement(const shared_ptr<TokenStream> &stream) {
@@ -366,7 +463,7 @@ namespace happyml {
                         return generateError("dataset name is invalid: ", datasetName);
                     }
                     string dataset = datasetName->getValue();
-                    unordered_map<string, string> input_map;
+                    std::unordered_map<std::string, std::vector<HappyMLVariant>> input_map;
                     auto executeTask = make_shared<ExecuteTaskStatement>(name, label, dataset, input_map);
                     return make_shared<ParseResult>(executeTask);
                 } else if ("_input" == next->getLabel()) {
@@ -374,8 +471,7 @@ namespace happyml {
                         return generateError("execute requires an input: ", stream->previous());
                     }
 
-                    unordered_map<string, string> input_map;
-                    // todo: parse input: ("key": "value", "key": "value", ...)
+                    std::unordered_map<std::string, std::vector<HappyMLVariant>> input_map = parseInput(stream);
                     auto executeTask = make_shared<ExecuteTaskStatement>(name, label, "", input_map);
                     return make_shared<ParseResult>(executeTask);
                 } else {

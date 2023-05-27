@@ -57,6 +57,23 @@ print pretty titanic limit 5
 # create task label predict_survivor with goal accuracy with test titanic_test using titanic
 create task label predict_survivor using titanic
 
-# Coming soon, execute the task:
-# execute task predict_survivor using input ("Pclass": "2", "Sex": "female", "Age": "55", "SibSp": "0", "Parch": "0", "Fare": "16", "Embarked": "S")
-execute task predict_survivor using dataset titanic
+# The passenger did survive (1), let's see if we can predict that:
+execute task predict_survivor using input (Pclass: "2", Sex: female, Age: 55, SibSp: 0, Parch: 0, Fare: 16, Embarked: S)
+#execute task predict_survivor using dataset titanic
+
+# Case insensitive check:
+execute task predict_survivor using input (pclass: "2", sex: female, age: 55, sibsp: 0, parch: 0, fare: 16, embarked: S)
+
+# The passenger did not survive (0), let's see if we can predict that:
+execute task predict_survivor using input (pclass: "3", sex: male, age: 2, sibsp: 4, parch: 1, fare: 29.125, embarked: Q)
+
+# Invalid field "sex1" should fail:
+# execute task predict_survivor using input (pclass: "3", sex1: male, age: 2, sibsp: 4, parch: 1, fare: 29.125, embarked: Q)
+# missing field "sex" should fail:
+# execute task predict_survivor using input (pclass: "3", age: 2, sibsp: 4, parch: 1, fare: 29.125, embarked: Q)
+# No input should fail:
+# execute task predict_survivor using input ()
+# Completely invalid input should fail:
+# execute task predict_survivor using input (spiders: "Yes")
+# "ok" is not a valid pclass:
+# execute task predict_survivor using input (pclass: "ok", sex: male, age: 2, sibsp: 4, parch: 1, fare: 29.125, embarked: Q)

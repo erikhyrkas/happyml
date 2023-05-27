@@ -227,9 +227,9 @@ namespace happyml {
             return number_of_rows_;
         }
 
-        pair<vector < shared_ptr<BaseTensor>>, vector <shared_ptr<BaseTensor>>>
+        pair<vector<shared_ptr<BaseTensor>>, vector<shared_ptr<BaseTensor>>>
         readRow(size_t
-        index) {
+                index) {
             if (index >= number_of_rows_) {
                 throw runtime_error("Index out of bounds");
             }
@@ -237,12 +237,12 @@ namespace happyml {
             std::streamoff offset = static_cast<std::streamoff>(index) * static_cast<std::streamoff>(row_size_);
             binaryFile_.seekg(header_size_ + offset, ios::beg);
 
-            vector <shared_ptr<BaseTensor>> given_tensors;
+            vector<shared_ptr<BaseTensor>> given_tensors;
             for (const auto &metadata: given_metadata_) {
                 shared_ptr<BaseTensor> next_tensor = loadTensor(metadata);
                 given_tensors.push_back(next_tensor);
             }
-            vector <shared_ptr<BaseTensor>> expected_tensors;
+            vector<shared_ptr<BaseTensor>> expected_tensors;
             for (const auto &metadata: expected_metadata_) {
                 shared_ptr<BaseTensor> next_tensor = loadTensor(metadata);
                 expected_tensors.push_back(next_tensor);
@@ -265,14 +265,14 @@ namespace happyml {
             return given_metadata_[index]->purpose;
         }
 
-        vector <size_t> getExpectedTensorDims(size_t index) {
+        vector<size_t> getExpectedTensorDims(size_t index) {
             if (index >= expected_metadata_.size()) {
                 throw runtime_error("Index out of bounds");
             }
             return {expected_metadata_[index]->rows, expected_metadata_[index]->columns, expected_metadata_[index]->channels};
         }
 
-        vector <size_t> getGivenTensorDims(size_t index) {
+        vector<size_t> getGivenTensorDims(size_t index) {
             if (index >= given_metadata_.size()) {
                 throw runtime_error("Index out of bounds");
             }
@@ -315,14 +315,15 @@ namespace happyml {
             return expected_metadata_[index];
         }
 
-        vector <string> getExpectedTensorOrderedLabels(int index) {
+
+        std::vector<string> getExpectedTensorOrderedLabels(int index) {
             if (index >= expected_metadata_.size()) {
                 throw runtime_error("Index out of bounds");
             }
             return expected_metadata_[index]->ordered_labels;
         }
 
-        vector <string> getGivenTensorOrderedLabels(int index) {
+        std::vector<string> getGivenTensorOrderedLabels(int index) {
             if (index >= given_metadata_.size()) {
                 throw runtime_error("Index out of bounds");
             }
@@ -343,8 +344,8 @@ namespace happyml {
             return expected_metadata_[index]->name;
         }
 
-        vector <string> get_given_names() {
-            vector < string > names;
+        std::vector<string> get_given_names() {
+            vector<string> names;
             names.reserve(given_metadata_.size());
             for (const auto &metadata: given_metadata_) {
                 names.push_back(metadata->name);
@@ -352,8 +353,8 @@ namespace happyml {
             return names;
         }
 
-        vector <string> get_expected_names() {
-            vector < string > names;
+        std::vector<string> get_expected_names() {
+            vector<string> names;
             names.reserve(expected_metadata_.size());
             for (const auto &metadata: expected_metadata_) {
                 names.push_back(metadata->name);
@@ -361,12 +362,20 @@ namespace happyml {
             return names;
         }
 
+        std::vector<shared_ptr<BinaryColumnMetadata>> get_given_metadata() {
+            return given_metadata_;
+        }
+
+        std::vector<shared_ptr<BinaryColumnMetadata>> get_expected_metadata() {
+            return expected_metadata_;
+        }
+
     private:
         ifstream binaryFile_;
         size_t row_size_{};
         streampos header_size_;
-        vector <shared_ptr<BinaryColumnMetadata>> given_metadata_;
-        vector <shared_ptr<BinaryColumnMetadata>> expected_metadata_;
+        std::vector<shared_ptr<BinaryColumnMetadata>> given_metadata_;
+        std::vector<shared_ptr<BinaryColumnMetadata>> expected_metadata_;
         size_t number_of_rows_{};
         string path_;
 

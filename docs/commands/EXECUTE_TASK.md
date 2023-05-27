@@ -9,18 +9,16 @@ to rewrite how it works. I hope you can appreciate the spirit of this project.
 
 ## Syntax
 
-Existing:
 ```happyml
 execute task <task name>
 [with label <task label>]
 using dataset <dataset name>
 ```
 
-Coming in the near future:
 ```happyml
 execute task <task name>
 [with label <task label>]
-using input ("key": "value", "key": "value", ...)
+using input (key: "value", key: value,  key: [0,1,2], ...)
 ```
 
 ## Description and Notes
@@ -47,9 +45,9 @@ execute task my_task using dataset my_dataset
 execute task my_task with label my_label using dataset my_dataset
 ```
 
-**This is a future feature:**
 ```happyml
-execute task my_task using input ("color": "red", "age": "5")
+execute task my_task using input (color: red, age: 5, name: "John Doe")
 ```
+
 
 

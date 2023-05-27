@@ -25,11 +25,11 @@ namespace happyml {
                 decoder = make_shared<BestTextCategoryDecoder>(ordered_labels);
             } else if ('N' == purpose) {
                 decoder = make_shared<RawDecoder>(metadata->is_normalized,
-                                                           metadata->is_standardized,
-                                                           metadata->min_value,
-                                                           metadata->max_value,
-                                                           metadata->mean,
-                                                           metadata->standard_deviation);
+                                                  metadata->is_standardized,
+                                                  metadata->min_value,
+                                                  metadata->max_value,
+                                                  metadata->mean,
+                                                  metadata->standard_deviation);
             } else {
                 decoder = make_shared<RawDecoder>();
             }
@@ -46,6 +46,17 @@ namespace happyml {
             given_decoders.push_back(decoder);
         }
         return given_decoders;
+    }
+
+    vector<shared_ptr<HappyMLVariantEncoder>> build_given_encoders(BinaryDatasetReader &reader) {
+        vector<shared_ptr<HappyMLVariantEncoder >> encoders;
+        size_t given_column_count = reader.get_given_column_count();
+        for (size_t i = 0; i < given_column_count; i++) {
+            const shared_ptr<BinaryColumnMetadata> &metadata = reader.get_given_metadata(i);
+            shared_ptr<HappyMLVariantEncoder> encoder = make_shared<HappyMLVariantEncoder>(metadata);
+            encoders.push_back(encoder);
+        }
+        return encoders;
     }
 
     vector<shared_ptr<RawDecoder>> build_expected_decoders(bool raw, BinaryDatasetReader &reader) {

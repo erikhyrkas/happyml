@@ -9,6 +9,7 @@
 #include "dataset_utils.hpp"
 #include "../ml/happyml_dsl.hpp"
 #include "../../util/pretty_print_row.hpp"
+#include "../lang/happyml_variant.hpp"
 
 namespace happyml {
 
@@ -51,6 +52,108 @@ namespace happyml {
 
     }
 
+    vector<shared_ptr<BaseTensor>> build_given(const unordered_map<std::string, std::vector<HappyMLVariant>> &user_inputs, const vector<shared_ptr<HappyMLVariantEncoder>> &encoders) {
+        vector<shared_ptr<BaseTensor>> given;
+        for (auto &encoder: encoders) {
+            string column_name = encoder->get_name();
+            // the column name case needs to be insensitive, as we do that by always being lower case.
+            std::transform(column_name.begin(), column_name.end(), column_name.begin(), ::tolower);
+            // skip if it doesn't exist
+            if (user_inputs.find(column_name) == user_inputs.end()) {
+                break;
+            }
+            const vector<HappyMLVariant> &user_input = user_inputs.at(column_name);
+            try {
+                auto given_tensor = encoder->encode(user_input);
+                given.push_back(given_tensor);
+            } catch (const std::exception &e) {
+                cout << "Error while encoding input: " << e.what() << endl;
+                return given;
+            }
+        }
+        return given;
+    }
+
+    bool execute_task_with_inputs(const string &task_name, const std::unordered_map<std::string, std::vector<HappyMLVariant>> &inputs, const string &task_folder_path) {
+        string task_full_path = task_folder_path + task_name;
+        if (!filesystem::exists(task_full_path)) {
+            cout << "Task " << task_name << " does not exists. Skipping." << endl;
+            return false;
+        }
+        auto loadedNeuralNetwork = loadNeuralNetworkForTraining(task_name,
+                                                                task_folder_path);
+
+        string dataset_full_file_path = task_full_path + "/dataset.bin";
+        BinaryDatasetReader reader(dataset_full_file_path);
+        vector<shared_ptr<RawDecoder>> given_decoders = build_given_decoders(false, reader);
+        vector<shared_ptr<RawDecoder>> expected_decoders = build_expected_decoders(false, reader);
+        vector<shared_ptr<HappyMLVariantEncoder>> given_encoders = build_given_encoders(reader);
+
+        vector<string> given_column_names = reader.get_given_names();
+        vector<string> expected_column_names = reader.get_expected_names();
+        reader.close();
+
+        vector<string> merged_headers = pretty_print_merge_headers(expected_column_names, given_column_names);
+        vector<size_t> widths;
+
+        cout << "Results: " << endl;
+        auto given_values = build_given(inputs, given_encoders);
+        if (given_values.size() != given_column_names.size()) {
+            stringstream message;
+            // the keys of inputs didn't match given_column_names
+            // let's print the values we expected from given_column_names that weren't in inputs and the values of keys in inputs that weren't in given_column_names
+            // to provide a good error message.
+            bool found_one = false;
+            string delim = "You did not provide the fields: ";
+            for (auto &given_column_name: given_column_names) {
+                string lower_given_column_name = given_column_name;
+                std::transform(lower_given_column_name.begin(), lower_given_column_name.end(), lower_given_column_name.begin(), ::tolower);
+                if (inputs.find(lower_given_column_name) == inputs.end()) {
+                    message << delim << given_column_name;
+                    delim = ",";
+                    found_one = true;
+                }
+            }
+            if (found_one) {
+                message << ". ";
+            }
+            vector<string> lower_given_column_names;
+            for (auto &given_column_name: given_column_names) {
+                string lower_given_column_name = given_column_name;
+                std::transform(lower_given_column_name.begin(), lower_given_column_name.end(), lower_given_column_name.begin(), ::tolower);
+                lower_given_column_names.push_back(lower_given_column_name);
+            }
+            delim = "You provided the invalid fields: ";
+            found_one = false;
+            for (auto &input: inputs) {
+                string lower_input_name = input.first;
+                std::transform(lower_input_name.begin(), lower_input_name.end(), lower_input_name.begin(), ::tolower);
+                if (std::find(lower_given_column_names.begin(), lower_given_column_names.end(), lower_input_name) == lower_given_column_names.end()) {
+                    message << delim << input.first;
+                    delim = ",";
+                    found_one = true;
+                }
+            }
+            if (found_one) {
+                message << ".";
+            }
+            cout << message.str() << endl;
+            return false;
+        }
+        auto predictions = loadedNeuralNetwork->predict(given_values);
+
+        auto merged_values = pretty_print_merge_records(expected_decoders, predictions, given_decoders, given_values);
+        if (widths.empty()) {
+            // using width of first result is suboptimal, but it's good enough for now.
+            widths = calculate_pretty_print_column_widths(merged_headers, merged_values);
+            pretty_print_header(cout, merged_headers, widths);
+        }
+        pretty_print_row(cout, merged_values, widths);
+
+
+        return true;
+    }
+
     bool execute_task_with_dataset(const string &task_name, const string &dataset_file_path, const string &task_folder_path) {
         // TODO: we need to cache the task in the context so we don't have to reload it.
 
@@ -76,7 +179,7 @@ namespace happyml {
 
         vector<string> merged_headers = pretty_print_merge_headers(expected_column_names, given_column_names);
         vector<size_t> widths;
-
+        cout << "Results: " << endl;
         auto dataset = make_shared<BinaryDataSet>(dataset_full_file_path);
         auto nextRecord = dataset->nextRecord();
         while (nextRecord) {
@@ -166,6 +269,10 @@ namespace happyml {
             vector<shared_ptr<RawDecoder >> expected_decoders = build_expected_decoders(false, reader);
             float accuracy = neuralNetwork->compute_categorical_accuracy(dataSource, expected_decoders);
             cout << "Accuracy: " << fixed << setprecision(4) << accuracy << endl;
+            string task_dataset_metadata_path = task_full_path + "/dataset.bin";
+            BinaryDatasetWriter writer(task_dataset_metadata_path, reader.get_given_metadata(), reader.get_expected_metadata());
+            writer.close();
+            reader.close();
         } catch (exception &e) {
             cout << "Error: " << e.what() << endl;
             return false;
