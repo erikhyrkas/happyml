@@ -30,7 +30,7 @@ int main() {
                 ->build();
 
 //        neuralNetwork->useHighPrecisionExitStrategy();
-        float loss = neuralNetwork->train(orDataSource);
+        float loss = neuralNetwork->train(orDataSource)->final_loss;
 
         cout << fixed << setprecision(2);
         cout << "Result loss: " << loss << endl;

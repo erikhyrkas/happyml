@@ -85,7 +85,12 @@ namespace happyml {
             } else if (type_ == Type::INT) {
                 return static_cast<float>(int_value_);
             } else if (type_ == Type::STRING) {
-                return std::stof(string_value_);
+                try {
+                    return std::stof(string_value_);
+                } catch (std::exception &e) {
+                    string error = "Cannot convert to float: " + string_value_;
+                    throw std::runtime_error(error);
+                }
             } else if (type_ == Type::BOOL) {
                 return bool_value_ ? 1.0f : 0.0f;
             } else {

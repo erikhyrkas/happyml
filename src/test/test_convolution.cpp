@@ -20,7 +20,7 @@ void testSimpleConv2DBias() {
                     false)
             ->addOutput(conv2dDataSource->getExpectedShape(), 1, convolution2dValid, tanhApprox)
             ->build();
-    float loss = neuralNetwork->train(conv2dDataSource);
+    float loss = neuralNetwork->train(conv2dDataSource)->final_loss;
 
     conv2dDataSource->restart();
     auto record = conv2dDataSource->nextRecord();
@@ -44,7 +44,7 @@ void testSimpleConv2DNoBias() {
             ->addOutput(conv2dDataSource->getExpectedShape(), 1, convolution2dValid, tanhApprox)->setUseBias(
                     false)
             ->build();
-    float loss = neuralNetwork->train(conv2dDataSource);
+    float loss = neuralNetwork->train(conv2dDataSource)->final_loss;
 
     conv2dDataSource->restart();
     auto record = conv2dDataSource->nextRecord();
@@ -70,7 +70,7 @@ void testConv2DWithFilterNoBias() {
             ->addOutput(conv2dDataSource->getExpectedShape(), 3, convolution2dValid, tanhApprox)->setUseBias(
                     false)
             ->build();
-    float loss = neuralNetwork->train(conv2dDataSource);
+    float loss = neuralNetwork->train(conv2dDataSource)->final_loss;
 
     conv2dDataSource->restart();
     auto record = conv2dDataSource->nextRecord();
@@ -94,7 +94,7 @@ void testConv2DWithFilterBias() {
             ->addLayer(1, 3, convolution2dValid, tanhApprox)->setUseBias(false)
             ->addOutput(conv2dDataSource->getExpectedShape(), 3, convolution2dValid, tanhApprox)
             ->build();
-    float loss = neuralNetwork->train(conv2dDataSource);
+    float loss = neuralNetwork->train(conv2dDataSource)->final_loss;
 
     conv2dDataSource->restart();
     auto record = conv2dDataSource->nextRecord();
@@ -121,7 +121,7 @@ void testConv2DComplexNoBias() {
             ->build();
     // it takes 500,000 epochs to get the results fairly close, which takes awhile,
     // so I'll just demonstrate that it does it close enough. If you want it to go faster, use bias.
-    float loss = neuralNetwork->train(conv2dDataSource);
+    float loss = neuralNetwork->train(conv2dDataSource)->final_loss;
 
     conv2dDataSource->restart();
     auto record = conv2dDataSource->nextRecord();
@@ -146,7 +146,7 @@ void testConv2DComplexBias() {
             ->addLayer(1, 3, convolution2dValid, relu)->setUseBias(false)
             ->addOutput(conv2dDataSource->getExpectedShape(), 3, convolution2dValid, sigmoidApprox)
             ->build();
-    float loss = neuralNetwork->train(conv2dDataSource);
+    float loss = neuralNetwork->train(conv2dDataSource)->final_loss;
 
     conv2dDataSource->restart();
     auto record = conv2dDataSource->nextRecord();
@@ -171,7 +171,7 @@ void testConv2DComplexTanhBias() {
             ->addLayer(1, 3, convolution2dValid, tanhApprox)->setUseBias(false)
             ->addOutput(conv2dDataSource->getExpectedShape(), 3, convolution2dValid, tanhApprox)
             ->build();
-    float loss = neuralNetwork->train(conv2dDataSource);
+    float loss = neuralNetwork->train(conv2dDataSource)->final_loss;
     conv2dDataSource->restart();
     auto record = conv2dDataSource->nextRecord();
     auto result = neuralNetwork->predict(record->getGiven()[0]);

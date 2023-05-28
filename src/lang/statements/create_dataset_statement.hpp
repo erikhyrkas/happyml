@@ -21,12 +21,14 @@ namespace happyml {
         CreateDatasetStatement(string name,
                                string location,
                                bool has_header,
-                               vector<shared_ptr<ColumnGroup>> column_groups) :
-
+                               vector<shared_ptr<ColumnGroup>> column_groups,
+                               bool verbose = true) :
                 name_(std::move(name)),
                 location_(std::move(location)),
                 has_header_(has_header),
-                column_groups_(std::move(column_groups)) {
+                column_groups_(std::move(column_groups)),
+                verbose_(verbose) {
+
         }
 
         shared_ptr<ExecutionResult> execute(const shared_ptr<ExecutionContext> &context) override {
@@ -151,12 +153,18 @@ namespace happyml {
                 updatedColumnGroups.push_back(updatedColumnGroup);
             }
 
+            if(verbose_) {
+                cout << "Moving given columns before expected columns and dropping unused columns. This aids in deduping." << endl;
+            }
             auto organized_location = base_file_path + ".given-expected.csv";
             if (!update_column_positions(current_location, organized_location, given_column_groups, expected_column_groups, has_header)) {
                 return make_shared<ExecutionResult>(false, false,
                                                     "Empty dataset");
             }
 
+            if(verbose_) {
+                cout << "Sorting. This aids in deduping." << endl;
+            }
             auto sorted_location = base_file_path + ".sorted.csv";
             if (!FileSorter::sort(organized_location, sorted_location, false)) {
                 return make_shared<ExecutionResult>(false, false,
@@ -169,6 +177,9 @@ namespace happyml {
 
             string new_dataset_path = context->get_dataset_path(name_);
 
+            if(verbose_) {
+                cout << "Converting to binary and deduping." << endl;
+            }
             auto raw_location = create_binary_dataset_from_delimited_values(new_dataset_path,
                                                                             sorted_location,
                                                                             ',',
@@ -179,6 +190,10 @@ namespace happyml {
             if (!filesystem::remove(sorted_location)) {
                 return make_shared<ExecutionResult>(false, false,
                                                     "Could not remove the sorted-deduped file.");
+            }
+
+            if(verbose_) {
+                cout << "Normalizing and standardizing values into final file." << endl;
             }
 
             normalize_and_standardize_dataset(raw_location,
@@ -195,6 +210,7 @@ namespace happyml {
         string location_;
         vector<shared_ptr<ColumnGroup>> column_groups_;
         bool has_header_;
+        bool verbose_;
     };
 }
 

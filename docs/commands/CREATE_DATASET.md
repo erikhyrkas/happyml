@@ -12,8 +12,8 @@ to rewrite how it works. I hope you can appreciate the spirit of this project.
 ```happyml
 create dataset <dataset name>
 [with header]
-[with given {label|number|text|image} <given name> [<rows>, <columns>, <channels>] at <column position>]+
-[with expected {label|number|text|image} <expected name> [<rows>, <columns>, <channels>] at <column position>]*
+[with given {label|number|text|image} <given name> [(<rows>, <columns>, <channels>)] at <column position>]+
+[with expected {label|number|text|image} <expected name> [(<rows>, <columns>, <channels>)] at <column position>]*
 using <file://path/>
 ```
 
@@ -65,4 +65,12 @@ create dataset titanic
        with given number   Fare     at 9
        with given label    Embarked at 11
        using file://../data/titanic/train.csv
+```
+
+```happyml
+create dataset mnist_train
+       with header
+       with expected label value          at 0
+       with given    image pixels(28, 28) at 1
+       using file://../happyml_repo/raw/mnist_train.csv
 ```

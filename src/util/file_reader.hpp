@@ -201,12 +201,29 @@ namespace happyml {
 
     class BinaryDatasetReader {
     public:
-        explicit BinaryDatasetReader(const string &path) : path_(path) {
+        explicit BinaryDatasetReader(const string &path) : BinaryDatasetReader(path, {}, {}) {
+        }
+
+        explicit BinaryDatasetReader(const string &path,
+                                     const std::vector<shared_ptr<BinaryColumnMetadata>> &renormalize_given_metadata,
+                                     const std::vector<shared_ptr<BinaryColumnMetadata>> &renormalize_expected_metadata)
+                : path_(path),
+                  renormalize_given_metadata_(renormalize_given_metadata),
+                  renormalize_expected_metadata_(renormalize_expected_metadata) {
             binaryFile_.open(path, ios::binary | ios::in);
             if (!binaryFile_.is_open()) {
                 throw runtime_error("Could not open file " + path);
             }
             readHeader();
+            if (!renormalize_given_metadata_.empty() && renormalize_given_metadata_.size() != given_metadata_.size()) {
+                close();
+                throw runtime_error("Incompatible given metadata for renormalization");
+            }
+            if (!renormalize_expected_metadata_.empty() && renormalize_expected_metadata_.size() != expected_metadata_.size()) {
+                close();
+                throw runtime_error("Incompatible expected metadata for renormalization");
+            }
+
         }
 
         ~BinaryDatasetReader() {
@@ -227,9 +244,8 @@ namespace happyml {
             return number_of_rows_;
         }
 
-        pair<vector<shared_ptr<BaseTensor>>, vector<shared_ptr<BaseTensor>>>
-        readRow(size_t
-                index) {
+        pair<vector<shared_ptr<BaseTensor>>, vector<shared_ptr<BaseTensor>>> readRow(size_t
+                                                                                     index) {
             if (index >= number_of_rows_) {
                 throw runtime_error("Index out of bounds");
             }
@@ -238,13 +254,30 @@ namespace happyml {
             binaryFile_.seekg(header_size_ + offset, ios::beg);
 
             vector<shared_ptr<BaseTensor>> given_tensors;
+            size_t given_offset = 0;
             for (const auto &metadata: given_metadata_) {
                 shared_ptr<BaseTensor> next_tensor = loadTensor(metadata);
+                if (!renormalize_given_metadata_.empty()) {
+                    next_tensor = renormalizeAndStandardize(next_tensor, metadata->is_normalized, metadata->is_standardized,
+                                                            metadata->min_value, metadata->max_value,
+                                                            metadata->mean, metadata->standard_deviation,
+                                                            renormalize_given_metadata_[given_offset]->is_normalized, renormalize_given_metadata_[given_offset]->is_standardized,
+                                                            renormalize_given_metadata_[given_offset]->min_value, renormalize_given_metadata_[given_offset]->max_value,
+                                                            renormalize_given_metadata_[given_offset]->mean, renormalize_given_metadata_[given_offset]->standard_deviation);
+                }
                 given_tensors.push_back(next_tensor);
             }
             vector<shared_ptr<BaseTensor>> expected_tensors;
             for (const auto &metadata: expected_metadata_) {
                 shared_ptr<BaseTensor> next_tensor = loadTensor(metadata);
+                if (!renormalize_expected_metadata_.empty()) {
+                    next_tensor = renormalizeAndStandardize(next_tensor, metadata->is_normalized, metadata->is_standardized,
+                                                            metadata->min_value, metadata->max_value,
+                                                            metadata->mean, metadata->standard_deviation,
+                                                            renormalize_expected_metadata_[given_offset]->is_normalized, renormalize_expected_metadata_[given_offset]->is_standardized,
+                                                            renormalize_expected_metadata_[given_offset]->min_value, renormalize_expected_metadata_[given_offset]->max_value,
+                                                            renormalize_expected_metadata_[given_offset]->mean, renormalize_expected_metadata_[given_offset]->standard_deviation);
+                }
                 expected_tensors.push_back(next_tensor);
             }
             return {given_tensors, expected_tensors};
@@ -378,6 +411,9 @@ namespace happyml {
         std::vector<shared_ptr<BinaryColumnMetadata>> expected_metadata_;
         size_t number_of_rows_{};
         string path_;
+        std::vector<shared_ptr<BinaryColumnMetadata>> renormalize_given_metadata_;
+        std::vector<shared_ptr<BinaryColumnMetadata>> renormalize_expected_metadata_;
+
 
         void readHeader() {
             row_size_ = 0;

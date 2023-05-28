@@ -9,6 +9,7 @@ happyml is a scripting language and framework to make machine learning tasks eas
 * [Roadmap](ROADMAP.md)
 * Examples
   * [titanic](examples/TITANIC.md)
+  * [mnist](examples/MNIST.md)
 * Language
   * [Keywords](KEYWORDS.md)
   * [Syntax](SYNTAX.md)

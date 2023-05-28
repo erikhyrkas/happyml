@@ -30,7 +30,7 @@ int main() {
         // For 32-bit: Results are good enough at 500 epochs, gets better with more epochs.
         // For 16-bit: 500 epochs seems good enough
         // For 8-bit: 2000 epochs seems good enough
-        float loss = neuralNetwork->train(xorDataSource);
+        float loss = neuralNetwork->train(xorDataSource)->final_loss;
 
         cout << fixed << setprecision(2);
         cout << "Result loss: " << loss << endl;

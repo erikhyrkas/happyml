@@ -16,6 +16,21 @@
 
 namespace happyml {
 
+    struct TrainingResult {
+    public:
+        TrainingResult() {
+            initial_loss = -INFINITY;
+            final_loss = INFINITY;
+            training_time_ms = 0;
+            epochs = 0;
+        }
+
+        float initial_loss;
+        float final_loss;
+        size_t training_time_ms;
+        size_t epochs;
+    };
+
 // You don't need an optimizer for predictions if you already have weights, and you aren't going
 // to change those weights. Optimizers save extra state while doing predictions that
 // we wouldn't need to save if we are never going to use it.
@@ -114,23 +129,33 @@ namespace happyml {
             useLowPrecisionExitStrategy();
         }
 
-        void useLowPrecisionExitStrategy() {
-            setExitStrategy(make_shared<DefaultExitStrategy>(10,
+        void useTestPrecisionExitStrategy() {
+            setExitStrategy(make_shared<DefaultExitStrategy>(2,
                                                              NINETY_DAYS_MS,
-                                                             1000000,
+                                                             2,
                                                              0.001f,
                                                              1e-5,
                                                              2,
                                                              0.05f));
         }
 
+        void useLowPrecisionExitStrategy() {
+            setExitStrategy(make_shared<DefaultExitStrategy>(4,
+                                                             NINETY_DAYS_MS,
+                                                             1000000,
+                                                             0.001f,
+                                                             1e-5,
+                                                             4,
+                                                             0.05f));
+        }
+
         void useHighPrecisionExitStrategy() {
-            setExitStrategy(make_shared<DefaultExitStrategy>(10,
+            setExitStrategy(make_shared<DefaultExitStrategy>(4,
                                                              NINETY_DAYS_MS,
                                                              1000000,
                                                              0.00001f,
                                                              1e-8,
-                                                             5,
+                                                             4,
                                                              0.05f));
         }
 
@@ -314,10 +339,10 @@ namespace happyml {
             cout << "Model " << name << " has " << total_parameters << " parameters and " << trainable_layers << " trainable layers." << endl;
         }
 
-        float train(const shared_ptr<TrainingDataSet> &trainingDataset,
-                    int batchSize = 1,
-                    TrainingRetentionPolicy trainingRetentionPolicy = best,
-                    bool overwriteOutputLines = true) {
+        shared_ptr<TrainingResult> train(const shared_ptr<TrainingDataSet> &trainingDataset,
+                                         int batchSize = 1,
+                                         TrainingRetentionPolicy trainingRetentionPolicy = best,
+                                         bool overwriteOutputLines = true) {
             auto testDataset = make_shared<EmptyTrainingDataSet>();
             return train(trainingDataset,
                          testDataset,
@@ -329,11 +354,12 @@ namespace happyml {
         // a sample is a single record
         // a batch is the number of samples (records) to look at before updating weights
         // train/fit
-        float train(const shared_ptr<TrainingDataSet> &trainingDataset,
-                    const shared_ptr<TrainingDataSet> &testDataset,
-                    int batchSize = 1,
-                    TrainingRetentionPolicy trainingRetentionPolicy = best,
-                    bool overwriteOutputLines = true) {
+        shared_ptr<TrainingResult> train(const shared_ptr<TrainingDataSet> &trainingDataset,
+                                         const shared_ptr<TrainingDataSet> &testDataset,
+                                         int batchSize = 1,
+                                         TrainingRetentionPolicy trainingRetentionPolicy = best,
+                                         bool overwriteOutputLines = true) {
+            shared_ptr<TrainingResult> result = make_shared<TrainingResult>();
             print_model_facts();
             cout << "Training " << name << " with " << trainingDataset->recordCount() << " records." << endl;
             ElapsedTimer totalTimer;
@@ -380,7 +406,7 @@ namespace happyml {
             ElapsedTimer epochTimer;
             float epochTrainingLoss;
             float epochTestingLoss;
-            int64_t trainingElapsedTimeInMilliseconds = 0;
+            int64_t trainingElapsedTimeInMilliseconds;
             do {
                 ElapsedTimer batchTimer;
                 trainingShuffler->shuffle();
@@ -406,6 +432,10 @@ namespace happyml {
                         nextError = make_shared<FullTensor>(nextError);
                         auto nextLoss = lossFunction->compute_loss(nextError);
                         if (isnan(nextLoss)) {
+                            // todo: we could do something better here
+                            if (trainingRetentionPolicy == best) {
+                                removeKnowledge(knowledgeCheckpointLabel);
+                            }
                             throw runtime_error("Error calculating loss.");
                         }
                         single_prediction_loss += nextLoss;
@@ -427,7 +457,7 @@ namespace happyml {
 
                         auto elapsedTime = batchTimer.peekMilliseconds();
                         logTraining(elapsedTime, epoch, currentBatch,
-                                    ceil(total_records / batchSize), batchOffset,
+                                    ceil(total_records / batchSize), batchSize,
                                     epochTrainingLoss, lowestLoss, lowestLossEpoch,
                                     overwriteOutputLines);
                         batchOffset = 0;
@@ -444,10 +474,24 @@ namespace happyml {
                 if (epochTestingLoss < lowestLoss) {
                     lowestLoss = epochTestingLoss;
                     lowestLossEpoch = epoch;
-                    if (trainingRetentionPolicy == best) {
-                        saveKnowledge(knowledgeCheckpointLabel, true);
+                    if (result->initial_loss < 0.f) {
+                        result->initial_loss = lowestLoss;
                     }
-                    logTraining(batchTimer.peekMilliseconds(), epoch, batchSize,
+                    if (trainingRetentionPolicy == best) {
+                        if (lowestLoss < result->final_loss) {
+                            result->final_loss = lowestLoss;
+                            result->epochs = lowestLossEpoch;
+                            result->training_time_ms = totalTimer.peekMilliseconds();
+                        }
+                        saveKnowledge(knowledgeCheckpointLabel, true);
+                    } else {
+                        if (lowestLoss < result->final_loss) {
+                            result->final_loss = epochTestingLoss;
+                            result->epochs = epoch;
+                            result->training_time_ms = totalTimer.peekMilliseconds();
+                        }
+                    }
+                    logTraining(batchTimer.peekMilliseconds(), epoch, ceil(total_records / batchSize),
                                 ceil(total_records / batchSize), batchSize,
                                 epochTrainingLoss, lowestLoss, lowestLossEpoch,
                                 overwriteOutputLines);
@@ -473,9 +517,9 @@ namespace happyml {
             if (trainingRetentionPolicy == best) {
                 loadKnowledge(knowledgeCheckpointLabel);
                 removeKnowledge(knowledgeCheckpointLabel);
-                return lowestLoss;
+                return result;
             }
-            return epochTestingLoss;
+            return result;
         }
 
         float test(const shared_ptr<TrainingDataSet> &testDataset,

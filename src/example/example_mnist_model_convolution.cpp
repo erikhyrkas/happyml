@@ -62,7 +62,7 @@ int main() {
 //        neuralNetwork->useHighPrecisionExitStrategy();
 
         // batch size impacts the number of images we evaluate at a time.
-        float loss = neuralNetwork->train(mnistDataSource, testMnistDataSource, 4);
+        float loss = neuralNetwork->train(mnistDataSource, testMnistDataSource, 64)->final_loss;
         // Trained 20 epochs using a batch size of 4 in 52 minutes with a loss of 0.009784.
 
         cout << fixed << setprecision(2);

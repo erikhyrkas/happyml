@@ -25,8 +25,8 @@ namespace happyml {
                 cout << "Available dataset commands: " << endl;
                 cout << "  create dataset <dataset name>" << endl;
                 cout << "  [with header]" << endl;
-                cout << "  [with given [label|number|text|image] <given name> [<rows>, <columns>, <channels>] at <column position>]+" << endl;
-                cout << "  [with expected [label|number|text|image] <expected name> [<rows>, <columns>, <channels>] at <column position>]*" << endl;
+                cout << "  [with given [label|number|text|image] <given name> [(<rows>, <columns>, <channels>)] at <column position>]+" << endl;
+                cout << "  [with expected [label|number|text|image] <expected name> [(<rows>, <columns>, <channels>)] at <column position>]*" << endl;
                 cout << "  using <file://path/>" << endl;
                 cout << endl;
                 cout << "  print {pretty|raw} <dataset name> [limit <limit number>]" << endl;
@@ -67,7 +67,7 @@ namespace happyml {
                 cout << endl;
                 cout << "  execute task <task name>" << endl;
                 cout << "  [with label <task label>]" << endl;
-                cout << "  using input (\"key\": \"value\", \"key\": \"value\", ...)" << endl;
+                cout << "  using input (key: \"value\", key: value,  key: [0,1,2], ...)" << endl;
                 cout << endl;
                 cout << "  refine task <task name>" << endl;
                 cout << "  [with label <task label>]" << endl;

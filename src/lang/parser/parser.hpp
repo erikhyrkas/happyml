@@ -151,7 +151,11 @@ namespace happyml {
             stringstream url;
             url << scheme->getValue() << "://";
             auto nextLabel = stream->peek()->getLabel();
-            while ("_word" == nextLabel || "_slash" == nextLabel || "_backslash" == nextLabel
+            // TODO: this is a bit of a hack, but it works for now. Keywords aren't currently allowed in
+            //  the url, which is a problem, since words like "raw' are allowed in the url. I'm going to
+            //  manually allow "raw" to pass, but all of the keywords should be allowed. The problem is
+            //  if we didn't do this check, we'd keep going for the rest of the file.
+            while ("raw" == stream->peek()->getValue() || "_word" == nextLabel || "_slash" == nextLabel || "_backslash" == nextLabel
                    || "_dot" == nextLabel || "_colon" == nextLabel || "_number" == nextLabel
                    || "_underscore" == nextLabel) {
                 url << stream->next()->getValue();
@@ -338,6 +342,9 @@ namespace happyml {
                         HappyMLVariant value;
                         auto token = stream->next();
                         string label = token->getLabel();
+                        if( "_comma" == label ) {
+                            continue;
+                        }
                         string data = token->getValue();
                         if ("_number" == label) {
                             value = stof(data);

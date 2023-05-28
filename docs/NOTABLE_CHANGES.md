@@ -3,6 +3,10 @@
 # Notable Changes
 [Back to the table of contents](README.md)
 
+* Alpha Release (5/2023)
+* Improved searching for the best hyperparameters (5/2023)
+* Added a new example for the happyml scripting language: [MNIST example](docs/examples/MNIST.md) (5/2023)
+* Task execution from scripts can now handle inputs directly rather than from a file (5/2023)
 * Prettier pretty print (5/2023)
 * Ability to execute tasks against datasets from the scripting language with rather ugly output (5/2023)
 * Documentation (5/2023)

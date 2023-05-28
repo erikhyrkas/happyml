@@ -31,7 +31,7 @@ int main() {
         //  8-bit input node: input size 32!!, 1500 epochs (8 + 1x32x2 + 8 = 80 bytes)
         // Clearly, 8-bit doesn't work well for memory savings or quality results in this case.
         neuralNetwork->useHighPrecisionExitStrategy();
-        float loss = neuralNetwork->train(xorDataSource);
+        float loss = neuralNetwork->train(xorDataSource)->final_loss;
 
         cout << fixed << setprecision(2);
         cout << "Result loss: " << loss << endl;

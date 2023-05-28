@@ -8,7 +8,7 @@ This example uses the Titanic dataset to predict whether a passenger survived or
 The current code is at [titanic.happyml](../../happyml_repo/scripts/titanic.happyml). 
 
 ## Data
-The data is from [Kaggle](hhttps://www.kaggle.com/datasets/hesh97/titanicdataset-traincsv). It is a list of passengers on the Titanic, and whether they survived or not.
+The data is from [Kaggle](https://www.kaggle.com/datasets/hesh97/titanicdataset-traincsv). It is a list of passengers on the Titanic, and whether they survived or not.
 
 ```happyml
 create dataset titanic

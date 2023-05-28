@@ -14,6 +14,10 @@
 #include "../types/tensor_impls/quarter_tensor.hpp"
 #include "../types/tensor_impls/half_tensor.hpp"
 #include "../util/basic_profiler.hpp"
+#include "../types/tensor_views/denormalize_tensor_view.hpp"
+#include "../types/tensor_views/unstandardize_tensor_view.hpp"
+#include "../types/tensor_views/standardize_tensor_view.hpp"
+#include "../types/tensor_views/normalize_tensor_view.hpp"
 #include <vector>
 #include <utility>
 #include <execution>
@@ -23,30 +27,30 @@ using namespace std;
 
 namespace happyml {
 
-    shared_ptr<PixelTensor> pixelTensor(const vector<vector<vector<float>>> &t) {
+    std::shared_ptr<PixelTensor> pixelTensor(const std::vector<std::vector<std::vector<float>>> &t) {
         return make_shared<PixelTensor>(t);
     }
 
-    shared_ptr<FullTensor> columnVector(const vector<float> &t) {
+    std::shared_ptr<FullTensor> columnVector(const std::vector<float> &t) {
         return make_shared<FullTensor>(t);
     }
 
-    shared_ptr<BaseTensor> randomTensor(size_t rows, size_t cols, size_t channels, float min_value, float max_value) {
+    std::shared_ptr<BaseTensor> randomTensor(size_t rows, size_t cols, size_t channels, float min_value, float max_value) {
         return make_shared<TensorFromRandom>(rows, cols, channels, min_value, max_value, 42);
     }
 
-    float scalar(const shared_ptr<BaseTensor> &tensor) {
+    float scalar(const shared_ptr <BaseTensor> &tensor) {
         if (tensor->size() < 1) {
             return 0.f;
         }
         return tensor->getValue(0);
     }
 
-    shared_ptr<BaseTensor> round(const shared_ptr<BaseTensor> &tensor) {
+    std::shared_ptr<BaseTensor> round(const std::shared_ptr<BaseTensor> &tensor) {
         return make_shared<RoundTensorView>(tensor);
     }
 
-    size_t maxIndex(const shared_ptr<BaseTensor> &tensor) {
+    size_t maxIndex(const std::shared_ptr<BaseTensor> &tensor) {
         return tensor->maxIndexByRow(0, 0);
     }
 
@@ -63,7 +67,7 @@ namespace happyml {
         return quarter_bias;
     }
 
-    shared_ptr<BaseTensor> materializeTensor(const shared_ptr<BaseTensor> &tensor, uint8_t bits) {
+    std::shared_ptr<BaseTensor> materializeTensor(const std::shared_ptr<BaseTensor> &tensor, uint8_t bits) {
         if (bits == 32) {
             if (tensor->isMaterialized()) {
                 // there is no advantage to materializing an already materialized tensor to 32 bits.
@@ -80,7 +84,7 @@ namespace happyml {
     }
 
 // channels, rows, columns
-    shared_ptr<BaseTensor> materializeTensor(const shared_ptr<BaseTensor> &other) {
+    shared_ptr <BaseTensor> materializeTensor(const shared_ptr <BaseTensor> &other) {
         PROFILE_BLOCK(profileBlock);
         if (other->isMaterialized()) {
             return other;
@@ -88,11 +92,11 @@ namespace happyml {
         return make_shared<FullTensor>(other);
     }
 
-    shared_ptr<FullTensor> tensor(const vector<vector<vector<float>>> &t) {
+    shared_ptr <FullTensor> tensor(const vector<vector<vector<float>>> &t) {
         return make_shared<FullTensor>(t);
     }
 
-    shared_ptr<BaseTensor> loadTensor(const string &path, uint8_t bits) {
+    shared_ptr <BaseTensor> loadTensor(const string &path, uint8_t bits) {
         if (bits == 16) {
             return make_shared<HalfTensor>(path);
         } else if (bits == 8) {
@@ -112,7 +116,7 @@ namespace happyml {
         return make_shared<FullTensor>(path);
     }
 
-    bool hasInvalidValues(const shared_ptr<BaseTensor> &t1) {
+    bool hasInvalidValues(const shared_ptr <BaseTensor> &t1) {
         for (size_t channel = 0; channel < t1->channelCount(); channel++) {
             for (size_t row = 0; row < t1->rowCount(); row++) {
                 for (size_t col = 0; col < t1->columnCount(); col++) {
@@ -130,7 +134,7 @@ namespace happyml {
         return false;
     }
 
-    void assertEqual(const shared_ptr<BaseTensor> &t1, const shared_ptr<BaseTensor> &t2) {
+    void assertEqual(const shared_ptr <BaseTensor> &t1, const shared_ptr <BaseTensor> &t2) {
         if (t1->channelCount() != t2->channelCount()) {
             throw runtime_error("Tensors don't have the same number of channels.");
         }
@@ -172,7 +176,7 @@ namespace happyml {
         double max_value;
     };
 
-    void update_standardization_normalization_values_calculation(shared_ptr<StandardizationAndNormalizationValues> &values, shared_ptr<BaseTensor> &tensor) {
+    void update_standardization_normalization_values_calculation(shared_ptr < StandardizationAndNormalizationValues > &values, shared_ptr < BaseTensor > &tensor) {
         size_t rows = tensor->rowCount();
         size_t cols = tensor->columnCount();
         size_t channels = tensor->channelCount();
@@ -196,7 +200,9 @@ namespace happyml {
         values->standard_deviation = sqrt(variance);
     }
 
-    void calcStandardizationValuesForEntireSet(const vector<shared_ptr<BaseTensor>> &tensors, float &mean_result, float &standard_deviation) {
+    void calcStandardizationValuesForEntireSet(const std::vector<std::shared_ptr<BaseTensor>> &tensors,
+                                               float &mean_result,
+                                               float &standard_deviation) {
         double mean = 0.0;
         double M2 = 0.0;
         double total_elements = 0;
@@ -226,16 +232,42 @@ namespace happyml {
         standard_deviation = (float) sqrt(variance);
     }
 
-    void calcNormalizationValuesForEntireSet(const vector<shared_ptr<BaseTensor>> &tensors, float &min_value, float &max_value) {
+    void calcNormalizationValuesForEntireSet(const std::vector<std::shared_ptr<BaseTensor>> &tensors, float &min_value, float &max_value) {
         min_value = numeric_limits<float>::max();
         max_value = numeric_limits<float>::lowest();
 
         // Find the minimum and maximum values among all elements in the tensors
-        for (const auto &t: tensors) {
+        for (
+            const auto &t
+                : tensors) {
             min_value = min(min_value, t->min());
             max_value = max(max_value, t->max());
         }
     }
+
+    std::shared_ptr<BaseTensor> renormalizeAndStandardize(std::shared_ptr<BaseTensor> &original_tensor,
+                                                          bool is_normalized, bool is_standardized,
+                                                          float original_min_value, float original_max_value,
+                                                          float original_mean, float original_standard_deviation,
+                                                          bool is_renormalized, bool is_restandardized,
+                                                          float renormalize_min_value, float renormalize_max_value,
+                                                          float renormalize_mean, float renormalize_standard_deviation) {
+        std::shared_ptr<BaseTensor> result = original_tensor;
+        if (is_normalized) {
+            result = make_shared<DenormalizeTensorView>(result, original_min_value, original_max_value);
+        }
+        if (is_standardized) {
+            result = make_shared<UnstandardizeTensorView>(result, original_mean, original_standard_deviation);
+        }
+        if (is_restandardized) {
+            result = make_shared<StandardizeTensorView>(result, renormalize_mean, renormalize_standard_deviation);
+        }
+        if (is_renormalized) {
+            result = make_shared<NormalizeTensorView>(result, renormalize_min_value, renormalize_max_value);
+        }
+        return materializeTensor(result);
+    }
+
 }
 
 #endif //HAPPYML_TENSOR_UTILS_HPP

@@ -26,7 +26,7 @@ int main() {
                 ->addOutputLayer(xorDataSource->getExpectedShape(), ActivationType::tanhDefault)
                 ->build();
         neuralNetwork->useHighPrecisionExitStrategy();
-        float loss = neuralNetwork->train(xorDataSource);
+        float loss = neuralNetwork->train(xorDataSource)->final_loss;
 
         cout << fixed << setprecision(2);
         cout << "Result loss: " << loss << endl;

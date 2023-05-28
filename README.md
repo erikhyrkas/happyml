@@ -5,7 +5,8 @@
 happyml is a scripting language and framework to make machine learning tasks easier to create and usable by everybody. 
 
 ## Current State
-This project is pre-alpha.
+This project is in alpha. It is not ready for production use, but it is ready for experimentation. Many of the features 
+are incomplete, but the core functionality is there.
 
 [Recent Notable additions](docs/NOTABLE_CHANGES.md)
 
@@ -13,24 +14,22 @@ This project is pre-alpha.
 
 ## What can it do?
 
-**For the moment, you still need to use C++ instead of the scripting language**, and it does
-require a deeper understanding of how machine learning works, but happyml still tries to make
-it as simple as possible. It won't be long before this isn't necessary.
+You can define tasks backed by a machine learning model and train it to solve the task by giving
+it a set of example inputs and the corresponding outputs. 
+
+See the happyml scripting language example:
+* [Titanic Survivor example](docs/examples/TITANIC.md)
+* [MNIST example](docs/examples/MNIST.md)
+
+Or read the docs for more information: [Scripting Docs](docs/README.md).
+
+The C++ interface to happyml is more robust than the scripting language, but requires a deeper understanding 
+of how machine learning works. While happyml still tries to make it as simple as possible, it is not trivial.
 
 Here are two C++ examples:
 * [C++ MNIST example](src/example/example_mnist_model_convolution.cpp).
 * [C++ BPE example](src/test/test_byte_pair_encoding.cpp).
 
-The happyml scripting language is a work in progress, but parts of it are complete.
-
-You can define tasks backed by a machine learning model and train it to solve the task by giving 
-it a set of example inputs and the corresponding outputs. Task execution from the scripting language
-is a work in progress, but nearly done.
-
-See the happyml scripting language example: 
-*  [Titanic Survivor example](docs/examples/TITANIC.md)
-
-Or read the docs for more information: [Scripting Docs](docs/README.md).
 
 
 ## What makes happyml special?

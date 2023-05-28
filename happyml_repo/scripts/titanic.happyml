@@ -9,18 +9,18 @@
 # happyml
 #  - cmake-build-debug
 #    - happyml.exe        <- my working directory
-#  - data
-#    - titanic
-#      - train.csv        <- train.csv from kaggle
 #  - happyml_repo
 #    - datasets
 #      - titanic          <- the destination for the binary dataset we'll make
 #    - default_token_encoder
 #      - default.bpe      <- the default encoder
-#    - tasks
-#      - titanic          <- the destination for the task we'll make, which will include the model we train
+#    - raw
+#      - titanic
+#        - train.csv      <- train.csv from kaggle
 #    - scripts
 #      - titanic.happyml  <- this script
+#    - tasks
+#      - predict_survivor <- the destination for the task we'll make, which will include the model we train
 #
 # Here's the header of the train.csv file, along with the column offsets:
 # PassengerId,Survived,Pclass,Name,Sex,Age,SibSp,Parch,Ticket,Fare,Cabin,Embarked
@@ -46,7 +46,7 @@ create dataset titanic
        with given number   Parch    at 7
        with given number   Fare     at 9
        with given label    Embarked at 11
-       using file://../happyml_data/titanic/train.csv
+       using file://../happyml_repo/raw/titanic/train.csv
 
 
 print raw titanic limit 5
@@ -61,7 +61,7 @@ create task label predict_survivor using titanic
 execute task predict_survivor using input (Pclass: "2", Sex: female, Age: 55, SibSp: 0, Parch: 0, Fare: 16, Embarked: S)
 #execute task predict_survivor using dataset titanic
 
-# Case insensitive check:
+# Case insensitive check; should still survive (1):
 execute task predict_survivor using input (pclass: "2", sex: female, age: 55, sibsp: 0, parch: 0, fare: 16, embarked: S)
 
 # The passenger did not survive (0), let's see if we can predict that:

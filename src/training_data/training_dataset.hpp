@@ -70,10 +70,27 @@ namespace happyml {
 
     class BinaryDataSet : public TrainingDataSet {
     public:
+        explicit BinaryDataSet(const std::string &file_path,
+                               const std::vector<shared_ptr<BinaryColumnMetadata>> &renormalize_given_metadata,
+                               const std::vector<shared_ptr<BinaryColumnMetadata>> &renormalize_expected_metadata)
+                : reader_(file_path, renormalize_given_metadata, renormalize_expected_metadata) {
+            if (!reader_.is_open()) {
+                throw std::runtime_error("Could not open file: " + file_path);
+            }
+        }
+
         explicit BinaryDataSet(const std::string &file_path) : reader_(file_path) {
             if (!reader_.is_open()) {
                 throw std::runtime_error("Could not open file: " + file_path);
             }
+        }
+
+        std::vector<shared_ptr<BinaryColumnMetadata>> getGivenMetadata() {
+            return reader_.get_given_metadata();
+        }
+
+        std::vector<shared_ptr<BinaryColumnMetadata>> getExpectedMetadata() {
+            return reader_.get_expected_metadata();
         }
 
         size_t recordCount() override {
@@ -297,27 +314,11 @@ namespace happyml {
                 for (size_t i = 0; i < column->source_column_count_; i++) {
                     new_record.push_back(record[column->start_index_ + i]);
                 }
-//                for (size_t i = 0; i < column.rows; i++) {
-//                    for (size_t j = 0; j < column.columns; j++) {
-//                        for (size_t k = 0; k < column.channels; k++) {
-//                            size_t index = column.start_index + (i * column.columns * column.channels) + (j * column.channels) + k;
-//                            new_record.push_back(record[index]);
-//                        }
-//                    }
-//                }
             }
             for (const auto &column: expected_columns) {
                 for (size_t i = 0; i < column->source_column_count_; i++) {
                     new_record.push_back(record[column->start_index_ + i]);
                 }
-//                for (size_t i = 0; i < column.rows; i++) {
-//                    for (size_t j = 0; j < column.columns; j++) {
-//                        for (size_t k = 0; k < column.channels; k++) {
-//                            size_t index = column.start_index + (i * column.columns * column.channels) + (j * column.channels) + k;
-//                            new_record.push_back(record[index]);
-//                        }
-//                    }
-//                }
             }
             writer.writeRecord(new_record);
         }
