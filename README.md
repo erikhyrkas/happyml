@@ -5,8 +5,12 @@
 happyml is a scripting language and framework to make machine learning tasks easier to create and usable by everybody. 
 
 ## Current State
-This project is in alpha. It is not ready for production use, but it is ready for experimentation. Many of the features 
-are incomplete, but the core functionality is there.
+This project is in ALPHA. 
+
+In short: It does a minimal set of useful things, but not always well. Sometimes it will completely break or not work as expected.
+
+With future releases, you can expect it to do more useful things and to do them better. This may not be a smooth process,
+and you may need to update your scripts and rebuild your assets to work with new versions. The goal is keep moving toward a better tool, not to keep the status quo.
 
 [Recent Notable additions](docs/NOTABLE_CHANGES.md)
 
