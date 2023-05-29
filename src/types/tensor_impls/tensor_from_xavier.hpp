@@ -18,14 +18,15 @@ namespace happyml {
             this->seed = seed;
 
             // Xavier/Glorot initialization
-            float variance = sqrtf(2.0f / (float)(rows + cols))/2.0f;
+            float variance = sqrtf(2.0f / (float) (rows + cols)) / 2.0f;
             this->min_value = -variance;
             this->max_value = variance;
             this->range = fabs(max_value - min_value);
             this->range_const = range / 2.71828;
-            this->seed_const = (std::min(seed, (uint32_t) 1) * range_const) / 3.14159265358979323846;
+            this->seed_const = ((double)((seed%12345689)+1) * range_const) / 3.14159265358979323846;
         }
 
+        TensorFromXavier(std::vector<size_t> shape, uint32_t seed) : TensorFromXavier(shape[0], shape[1], shape[2], seed) {}
 
         void printMaterializationPlan() override {
             cout << "TensorFromXavier{" << rowCount() << "," << columnCount() << "," << channelCount() << "}";

@@ -38,7 +38,11 @@ namespace happyml {
             this->max_value = std::max(max_value, min_value);
             this->range = fabs(max_value - min_value);
             this->range_const = range / 2.71828;
-            this->seed_const = (std::min(seed, (uint32_t) 1) * range_const) / 3.14159265358979323846;
+            this->seed_const = ((double)((seed%12345689)+1) * range_const) / 3.14159265358979323846;
+        }
+
+        TensorFromRandom(std::vector<size_t> shape, float min_value, float max_value, uint32_t seed) :
+                TensorFromRandom(shape[0], shape[1], shape[2], min_value, max_value, seed) {
         }
 
         TensorFromRandom(size_t rows, size_t cols, size_t channels, int bias) :
