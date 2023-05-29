@@ -249,8 +249,8 @@ namespace happyml {
         cout << std::fixed << std::setprecision(6) << "Using learning rate " << learningRate << endl;
         cout << "Using bias learning rate " << biasLearningRate << endl;
 
-        auto nnbuilder = neuralNetworkBuilder(optimizerType);
-        auto initial_layers = nnbuilder
+        auto neural_network_builder = neuralNetworkBuilder(optimizerType);
+        auto initial_layers = neural_network_builder
                 ->setModelName(task_name)
                 ->setModelRepo(task_folder_path)
                 ->setLearningRate(learningRate)
@@ -280,7 +280,12 @@ namespace happyml {
                 cout << "Using full input layer: " << output_size_given_expected << endl;
             }
         }
-
+        layer1->setUseL2Regularization(true);
+        layer1->setUseNormClipping(true);
+        if (lossType == LossType::categoricalCrossEntropy) {
+            layer1->setUseNormalization(true);
+            cout << "Using normalization layer" << endl;
+        }
         if (goal == "memory") {
             layer1 = layer1->setBits(8)->setMaterialized(false);
         }
@@ -289,13 +294,21 @@ namespace happyml {
             layer2 = layer1
                     ->addLayer(output_size_given_expected,
                                LayerType::full, activationType);
+            layer2->setUseL2Regularization(true);
+            layer2->setUseNormClipping(true);
             cout << "Using full second layer: " << output_size_given_expected << endl;
         } else {
             size_t output_size_expected = estimate_layer_output_size(dataSource->getExpectedShapes(), goal);
             layer2 = layer1
                     ->addLayer(output_size_expected,
                                LayerType::full, activationType);
+            layer2->setUseL2Regularization(true);
+            layer2->setUseNormClipping(true);
             cout << "Using full second layer: " << output_size_expected << endl;
+        }
+        if (lossType == LossType::categoricalCrossEntropy) {
+            layer2->setUseNormalization(true);
+            cout << "Using normalization layer" << endl;
         }
 
         if (goal == "memory") {
@@ -316,7 +329,7 @@ namespace happyml {
                     ->setUseBias(true);
             cout << "Using output layer: " << dataSource->getExpectedShape()[0] << ", " << dataSource->getExpectedShape()[1] << ", " << dataSource->getExpectedShape()[2] << endl;
         }
-        auto neuralNetwork = nnbuilder->build();
+        auto neuralNetwork = neural_network_builder->build();
         return neuralNetwork;
     }
 
@@ -350,8 +363,13 @@ namespace happyml {
         try {
             string task_full_path = task_folder_path + task_name;
             if (filesystem::exists(task_full_path)) {
-                cout << "Task " << task_name << " already exists. Skipping." << endl;
-                return true;
+                string config = task_full_path + "/model.config";
+                if (filesystem::exists(config)) {
+                    cout << "Task " << task_name << " already exists. Skipping." << endl;
+                    return true;
+                }
+                cout << "Task " << task_name << " already exists, but is incomplete. Removing." << endl;
+                filesystem::remove_all(task_full_path);
             }
             cout << "Creating label task " << task_name << " with goal " << goal << " using dataset " << dataset_name << endl;
 
@@ -388,6 +406,7 @@ namespace happyml {
             bool multiple_outputs = dataSource->getExpectedShapes().size() > 1;
             bool found = false;
             int attempt;
+            float loss_epsilon = 0.01f;
             if (!multiple_outputs && goal != "speed") {
                 // categorical is so much slower than mse, so we'll skip categorical when training speed is needed.
                 // cross entropy with multiple outputs may not work, so we'll only try it with a single output
@@ -400,13 +419,13 @@ namespace happyml {
                 for (attempt = 0; attempt < 10; attempt++) {
                     activationType = ActivationType::leaky;
                     attempt_result = training_test(task_name, goal, task_folder_path, search_data_source, batch_size, attempt, optimizerType, lossType, dataSource, reader, activationType);
-                    if (attempt_result->final_loss < attempt_result->initial_loss) {
+                    if (attempt_result->final_loss + loss_epsilon < attempt_result->initial_loss) {
                         found = true;
                         break;
                     }
                     activationType = ActivationType::relu;
                     attempt_result = training_test(task_name, goal, task_folder_path, search_data_source, batch_size, attempt, optimizerType, lossType, dataSource, reader, activationType);
-                    if (attempt_result->final_loss < attempt_result->initial_loss) {
+                    if (attempt_result->final_loss + loss_epsilon < attempt_result->initial_loss) {
                         found = true;
                         break;
                     }
@@ -420,14 +439,14 @@ namespace happyml {
                         // if we need to find any configuration that works well enough, we'll skip leaky relu
                         activationType = ActivationType::leaky;
                         attempt_result = training_test(task_name, goal, task_folder_path, search_data_source, batch_size, attempt, optimizerType, lossType, dataSource, reader, activationType);
-                        if (attempt_result->final_loss < attempt_result->initial_loss) {
+                        if (attempt_result->final_loss + loss_epsilon < attempt_result->initial_loss) {
                             found = true;
                             break;
                         }
                     }
                     activationType = ActivationType::relu;
                     attempt_result = training_test(task_name, goal, task_folder_path, search_data_source, batch_size, attempt, optimizerType, lossType, dataSource, reader, activationType);
-                    if (attempt_result->final_loss < attempt_result->initial_loss) {
+                    if (attempt_result->final_loss + loss_epsilon < attempt_result->initial_loss) {
                         found = true;
                         break;
                     }

@@ -27,6 +27,7 @@
 #include "layers/convolution_2d_valid_layer.hpp"
 #include "layers/concatenate_wide_layer.hpp"
 #include "layers/fully_connected_layer.hpp"
+#include "layers/dropout_layer.hpp"
 #include "layers/bias_layer.hpp"
 
 using namespace happyml;
@@ -209,16 +210,16 @@ namespace happyml {
 
             shared_ptr<NNVertex> setUseL2Regularization(bool b) {
                 this->use_l2_regularization = b;
-                if (b && node_type != LayerType::full) {
-                    throw runtime_error("L2 regularization can only be used on full layers");
+                if (b && (node_type != LayerType::full && node_type != LayerType::convolution2dValid)) {
+                    throw runtime_error("L2 regularization can only be used on full layers or convolution2dValid layers");
                 }
                 return shared_from_this();
             }
 
             shared_ptr<NNVertex> setUseNormalization(bool b) {
                 this->use_normalization = b;
-                if (b && node_type != LayerType::full) {
-                    throw runtime_error("Layer Normalization can only be used on full layers");
+                if (b && (node_type != LayerType::full && node_type != LayerType::convolution2dValid)) {
+                    throw runtime_error("Layer Normalization can only be used on full layers or convolution2dValid layers");
                 }
                 return shared_from_this();
             }
@@ -432,7 +433,8 @@ namespace happyml {
                     string c2dvLabel = asString(vertexUniqueId) + "_c2dv";
                     auto c2d = make_shared<Convolution2dValidFunction>(c2dvLabel, inputShape, filters, kernel_size,
                                                                        bits,
-                                                                       optimizer->registerForWeightChanges());
+                                                                       optimizer->registerForWeightChanges(),
+                                                                       use_l2_regularization);
                     next_node = make_shared<NeuralNetworkNode>(c2d);
                 } else {
                     throw runtime_error("Unimplemented NodeType");
@@ -601,6 +603,7 @@ namespace happyml {
                 this->parent = new_parent;
                 return shared_from_this();
             }
+
         private:
             weak_ptr<HappymlDSL> parent;
             vector<shared_ptr<NNEdge>> edges;
@@ -887,6 +890,7 @@ namespace happyml {
                                                                       const string &repoRootPath = "repo") {
         string modelPath = repoRootPath + "/" + modelName;
         string configPath = modelPath + "/model.config";
+        // if model.config doesn't exist the model failed during training
         auto configReader = make_shared<DelimitedTextFileReader>(configPath, ':');
 
         auto optimizerRecord = configReader->nextRecord();

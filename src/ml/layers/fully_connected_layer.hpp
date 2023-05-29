@@ -21,7 +21,7 @@ namespace happyml {
             this->registration_id = optimizer_registration_id;
             this->inputShapes = vector<vector<size_t >>{{1, inputSize, 1}};
             this->outputShape = vector<size_t>{1, outputSize, 1};
-            this->weights = make_shared<TensorFromXavier>(inputSize, outputSize, 1, 42);
+            this->weights = make_shared<TensorFromXavier>(inputSize, outputSize, 1, optimizer_registration_id + 42);
             this->bits = bits;
             this->use_l2_regularization = use_l2_regularization;
         }
@@ -102,9 +102,9 @@ namespace happyml {
             if (use_l2_regularization) {
                 PROFILE_BLOCK(profileBlock2);
 
-                auto weights_squared = make_shared<PowerTensorView>(weights, 2.0f);
                 // Calculate L2 regularization term
-                auto l2_regularization = make_shared<ScalarMultiplyTensorView>(weights_squared, regularization_param);
+                auto l2_regularization = make_shared<ScalarMultiplyTensorView>(weights, regularization_param);
+
                 // Add L2 regularization term to weights error
                 weights_error = make_shared<AddTensorView>(weights_error, l2_regularization);
 #ifdef DEBUG_TRAIN_NAN
@@ -161,6 +161,7 @@ namespace happyml {
         size_t get_parameter_count() override {
             return weights->size();
         }
+
     private:
         shared_ptr<BaseTensor> weights;
         int registration_id;
@@ -170,7 +171,7 @@ namespace happyml {
         vector<size_t> outputShape;
         queue<shared_ptr<BaseTensor>> weights_errors;
         bool use_l2_regularization;
-        const float regularization_param = 0.0002f; // sane default of 2 * 0.01f
+        const float regularization_param = 0.02f; // sane default of 2 * 0.01f
         string label;
     };
 

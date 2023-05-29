@@ -62,6 +62,11 @@ void randomTest() {
         float mean = std::abs(matrix5->arithmeticMean());
         ASSERT_TRUE(mean < 1.0f);
     }
+    for (int i = 0; i < 200; i++) {
+        auto matrix6 = make_unique<TensorFromRandom>(10, 10, 1, 0.0f, 1.0f, i);
+        float mean = matrix6->arithmeticMean();
+        ASSERT_TRUE(mean > 0.48f && mean < 0.52f);
+    }
 }
 
 void sumTest() {

@@ -17,16 +17,18 @@ namespace happyml {
     public:
         Convolution2dValidFunction(const string &label,
                                    vector<size_t> inputShape, size_t filters, size_t kernelSize, uint8_t bits,
-                                   int optimizer_registration_id) {
+                                   int optimizer_registration_id,
+                                   bool use_l2_regularization = true) {
             this->label = label;
             this->registration_id = optimizer_registration_id;
             this->inputShape = inputShape;
             this->kernelSize = kernelSize;
             this->outputShape = {inputShape[0] - kernelSize + 1, inputShape[1] - kernelSize + 1, filters};
+            this->use_l2_regularization = use_l2_regularization;
             this->bits = bits;
             this->weights = {};
             for (size_t next_weight_layer = 0; next_weight_layer < filters; next_weight_layer++) {
-                this->weights.push_back(make_shared<TensorFromXavier>(kernelSize, kernelSize, inputShape[2], 42));
+                this->weights.push_back(make_shared<TensorFromXavier>(kernelSize, kernelSize, inputShape[2], optimizer_registration_id + next_weight_layer + 42));
             }
         }
 
@@ -135,14 +137,21 @@ namespace happyml {
                     inputError = make_shared<AddTensorView>(inputError, inputErrorToInputChannel);
                     const auto inputLayerChannel = make_shared<ChannelToTensorView>(averageLastInputs,
                                                                                     inputLayer);
-                    const auto nextWeightError = make_shared<Valid2DCrossCorrelationTensorView>(inputLayerChannel,
-                                                                                                outputErrorForLayer);
+                    shared_ptr<BaseTensor> nextWeightError = make_shared<Valid2DCrossCorrelationTensorView>(inputLayerChannel,
+                                                                                                            outputErrorForLayer);
+                    if (use_l2_regularization) {
+                        PROFILE_BLOCK(profileBlock2);
+                        auto l2_regularization = make_shared<ScalarMultiplyTensorView>(nextWeightError, regularization_param);
+                        nextWeightError = make_shared<AddTensorView>(nextWeightError, l2_regularization);
+                    }
                     const auto nextWeightToInputChannel = make_shared<SumToChannelTensorView>(nextWeightError,
                                                                                               inputLayer, inputDepth);
+
                     output_weight_changes = make_shared<AddTensorView>(output_weight_changes, nextWeightToInputChannel);
                 }
                 output_layers_weight_changes.push_back(output_weight_changes);
             }
+
             weight_changes.push(output_layers_weight_changes);
 
             const auto resultError = make_shared<SumChannelsTensorView>(inputError);
@@ -172,7 +181,7 @@ namespace happyml {
 
         size_t get_parameter_count() override {
             size_t total = 0;
-            for(const auto& weight : weights) {
+            for (const auto &weight: weights) {
                 total += weight->size();
             }
             return total;
@@ -181,6 +190,7 @@ namespace happyml {
         [[nodiscard]] size_t get_kernel_size() const {
             return kernelSize;
         }
+
     private:
         int registration_id;
         queue<shared_ptr<BaseTensor>> lastInputs; // each input in a batch will queue in order during forward, and deque properly when back-propagating
@@ -191,6 +201,8 @@ namespace happyml {
         vector<size_t> outputShape;
         size_t kernelSize;
         string label;
+        bool use_l2_regularization;
+        const float regularization_param = 0.02f; // sane default of 2 * 0.01f
     };
 }
 

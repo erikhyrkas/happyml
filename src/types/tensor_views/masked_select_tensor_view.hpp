@@ -10,13 +10,14 @@ namespace happyml {
     class MaskedSelectTensorView : public BaseTensorTrinaryOperatorView {
     public:
         explicit MaskedSelectTensorView(const std::shared_ptr<BaseTensor> &mask,
-                                        const std::shared_ptr<BaseTensor> &tensor1,
-                                        const std::shared_ptr<BaseTensor> &tensor2)
-                : BaseTensorTrinaryOperatorView(mask, tensor1, tensor2) {}
+                                        const std::shared_ptr<BaseTensor> &value_above_discriminator,
+                                        const std::shared_ptr<BaseTensor> &value_below_discriminator,
+                                        const float mask_discriminator = 0.0f)
+                : BaseTensorTrinaryOperatorView(mask, value_above_discriminator, value_below_discriminator), mask_discriminator_(mask_discriminator) {}
 
         float getValue(size_t row, size_t column, size_t channel) override {
             const float mask_val = left_child_->getValue(row, column, channel);
-            if (mask_val > 0.0f) {
+            if (mask_val > mask_discriminator_) {
                 return middle_child_->getValue(row, column, channel);
             } else {
                 return right_child_->getValue(row, column, channel);
@@ -42,6 +43,9 @@ namespace happyml {
             middle_child_->printMaterializationPlan();
             right_child_->printMaterializationPlan();
         }
+
+    private:
+        float mask_discriminator_;
     };
 }
 #endif //HAPPYML_MASKED_SELECT_TENSOR_VIEW_HPP
