@@ -18,7 +18,7 @@ namespace happyml {
             this->registration_id = optimizer_registration_id;
             this->inputShapes = vector<vector<size_t >>{inputShape};
             this->outputShape = outputShape;
-            this->bias = make_shared<TensorFromXavier>(outputShape[0], outputShape[1], outputShape[2], 42);
+            this->bias = make_shared<UniformTensor>(outputShape, 0.0001f);
             this->bits = bits;
         }
 
@@ -90,6 +90,7 @@ namespace happyml {
         size_t get_parameter_count() override {
             return bias->size();
         }
+
     private:
         int registration_id;
         shared_ptr<BaseTensor> bias;
