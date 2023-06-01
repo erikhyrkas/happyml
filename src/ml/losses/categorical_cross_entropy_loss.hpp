@@ -22,7 +22,7 @@ namespace happyml {
     // model's predictions.
     class CategoricalCrossEntropyLossFunction : public LossFunction {
     public:
-        // calculate_error_for_one_prediction computes the element-wise error for a single prediction
+        // compute_error computes the element-wise error for a single prediction
         // using the categorical cross-entropy formula: -truth_i * log(prediction_i)
         shared_ptr<BaseTensor> compute_error(shared_ptr<BaseTensor> &truth, shared_ptr<BaseTensor> &prediction) override {
             // Compute -truth
@@ -38,12 +38,11 @@ namespace happyml {
             return neg_truth_by_log_pred;
         }
 
-        // computeBatchLoss computes the average loss for a batch of predictions
-        float compute_loss(shared_ptr<BaseTensor> &total_error) override {
-            // The total_error tensor is precomputed as: -truth_i * log(prediction_i)
+        // compute_loss computes the loss for a single prediction
+        float compute_loss(shared_ptr<BaseTensor> &error) override {
+            // The error tensor is precomputed as: -truth_i * log(prediction_i)
             // For a single prediction: categorical cross-entropy = sum(total_error)
-            // For a batch, we take the average error: avg(sum(total_error))
-            return (float) total_error->sum();
+            return (float) error->sum();
         }
 
         // calculate_batch_loss_derivative computes the derivative of the categorical cross-entropy loss
@@ -51,8 +50,8 @@ namespace happyml {
         shared_ptr<BaseTensor> compute_loss_derivative(shared_ptr<BaseTensor> &total_batch_error,
                                                        shared_ptr<BaseTensor> &truth,
                                                        shared_ptr<BaseTensor> &prediction) override {
-            // we can take a shortcut here
-            auto error = make_shared<SubtractTensorView>(truth, prediction);
+            // The total_batch_error tensor is precomputed as: -truth_i * log(prediction_i)
+            auto error = make_shared<SubtractTensorView>(prediction, truth);
             return error;
         }
     };

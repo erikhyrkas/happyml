@@ -116,7 +116,7 @@ execute task predict_number using input (pixels: [
   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0])
 
 
-# Fine, we'll try it again, but this time we'll try to be as accurate as we can be.
+# We'll try it again, but this time we'll try to be as accurate as we can be.
 # Be prepare to wait for hours...
 #create task label predict_number_accurate
 #with test mnist_test

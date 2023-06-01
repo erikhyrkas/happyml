@@ -40,8 +40,6 @@ add_executable(example_bpe_model src/example/example_bpe_model.cpp)
 
 add_executable(example_binary_or_model src/example/example_binary_or_model.cpp)
 
-add_executable(example_categorical_xor_model src/example/example_categorical_xor_model.cpp)
-
 add_executable(example_titanic_model src/example/example_titanic_model.cpp)
 
 # TODO: Need to learn how to use CTest and convert the tests to use it.

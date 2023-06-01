@@ -47,17 +47,26 @@ int main() {
         cout << "Loading training data..." << endl;
         auto titanicDataSource = make_shared<BinaryDataSet>(result_path);
 
-        auto neuralNetwork = neuralNetworkBuilder()
+        auto neuralNetwork = neuralNetworkBuilder(OptimizerType::adam)
+                ->setLearningRate(0.001f)
+                ->setBiasLearningRate(0.001f)
                 ->setModelName("titanic_example")
                 ->setModelRepo("../happyml_repo/models/")
                 ->setLossFunction(LossType::categoricalCrossEntropy)
                 ->add_concatenated_input_layer(titanicDataSource->getGivenShapes())
-                ->addLayer(8, LayerType::full, ActivationType::leaky)
-                ->addLayer(4, LayerType::full, ActivationType::leaky)
+                ->addLayer(32, LayerType::full, ActivationType::relu)->setUseBias(true)->setUseL2Regularization(true)
+                ->addDropoutLayer(0.2f)
+                ->addLayer(4, LayerType::full, ActivationType::relu)->setUseBias(true)->setUseL2Regularization(true)
                 ->addOutputLayer(titanicDataSource->getExpectedShape(), ActivationType::softmax)->setUseBias(true)
                 ->build();
-        neuralNetwork->useHighPrecisionExitStrategy();
-        float loss = neuralNetwork->train(titanicDataSource, 32)->final_loss;
+        neuralNetwork->setExitStrategy(make_shared<DefaultExitStrategy>(50,
+                                                                        NINETY_DAYS_MS,
+                                                                        1000000,
+                                                                        0.00001f,
+                                                                        1e-8,
+                                                                        5,
+                                                                        0.05f));
+        float loss = neuralNetwork->train(titanicDataSource, 4)->final_test_loss;
 
         cout << fixed << setprecision(2);
         titanicDataSource->restart();

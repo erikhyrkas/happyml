@@ -42,7 +42,7 @@ int main() {
                 ->addOutputLayer(mnistDataSource->getExpectedShape(), ActivationType::sigmoidApprox)->setUseBias(true)
                 ->build();
         neuralNetwork->useHighPrecisionExitStrategy();
-        float loss = neuralNetwork->train(mnistDataSource, testMnistDataSource, 32)->final_loss;
+        float loss = neuralNetwork->train(mnistDataSource, testMnistDataSource, 32)->final_test_loss;
         cout << fixed << setprecision(2);
 
         testMnistDataSource->restart();

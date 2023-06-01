@@ -33,7 +33,8 @@ namespace happyml {
         convolution2dValid, // convolutional layer, good for image classification
         concatenate,        // concatenates two layers
         flatten,            // flattens a layer
-        normalize           // normalizes a layer
+        normalize,          // normalizes a layer
+        dropout             // randomly drops out a percentage of neurons
     };
 
     // Added the word "Default" after tanh because
@@ -118,6 +119,8 @@ namespace happyml {
                 return "flatten";
             case normalize:
                 return "normalize";
+            case dropout:
+                return "dropout";
         }
         throw runtime_error("Unknown Node Type");
     }
@@ -137,6 +140,9 @@ namespace happyml {
         }
         if (layerType == "normalize") {
             return normalize;
+        }
+        if (layerType == "dropout") {
+            return dropout;
         }
         string error = "Unknown Node Type: " + layerType;
         throw runtime_error(error);

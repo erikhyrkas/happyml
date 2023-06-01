@@ -7,6 +7,8 @@
 #define HAPPYML_SOFTMAX_ACTIVATION_FUNCTION_HPP
 
 #include "../types/tensor_views/value_transform_with_double_tensor_view.hpp"
+#include "../../types/tensor_views/exponential_tensor_view.hpp"
+#include "../../types/tensor_views/scalar_subtract_tensor_view.hpp"
 
 
 namespace happyml {
@@ -16,32 +18,16 @@ namespace happyml {
     public:
         std::shared_ptr<BaseTensor> activate(const std::shared_ptr<BaseTensor> &input) override {
             double max_input = input->max();
-            double normalization_constant = 0.0;
-            size_t records = input->size();
-            for (size_t next_record = 0; next_record < records; next_record++) {
-                double exp_val = std::exp(input->getValue(next_record) - max_input);
-#ifdef DEBUG_TRAIN_NAN
-                if (isnan(exp_val)) {
-                    input->print();
-                    throw std::runtime_error("SoftmaxActivationFunction::activate: exp_val is NaN");
-                }
-#endif
-                normalization_constant += exp_val;
-            }
-            if (normalization_constant == 0) {
-                normalization_constant = 1e-8;
-            } else if (std::isnan(normalization_constant)) {
-                normalization_constant = 1;
-            }
-            auto transformFunction = [max_input](float original, double constant) {
-                return (float) (std::exp(original - max_input) / constant);
-            };
-            auto result = std::make_shared<ValueTransformWithDoubleTensorView>(input, transformFunction, normalization_constant);
-            return result;
+            // (input-max(input)) / sum(input-max(input)
+            std::shared_ptr<BaseTensor> input_minus_max = make_shared<ScalarSubtractTensorView>(input, max_input);
+            shared_ptr<BaseTensor> numerator = make_shared<ExponentialTensorView>(input_minus_max);
+            double denominator = numerator->sum();
+            shared_ptr<BaseTensor> output = make_shared<ScalarDivideTensorView>(numerator, denominator);
+            return output;
         }
 
         std::shared_ptr<BaseTensor> derivative(const std::shared_ptr<BaseTensor> &input) override {
-            // shortcut
+            // shortcut. We don't explicitly compute the Jacobian matrix because this is always used before categorical cross-entropy loss
             return input;
         }
     };

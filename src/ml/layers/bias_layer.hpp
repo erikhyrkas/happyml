@@ -18,7 +18,7 @@ namespace happyml {
             this->registration_id = optimizer_registration_id;
             this->inputShapes = vector<vector<size_t >>{inputShape};
             this->outputShape = outputShape;
-            this->bias = make_shared<UniformTensor>(outputShape, 0.0001f);
+            this->bias = make_shared<UniformTensor>(outputShape, 0.1f);
             this->bits = bits;
         }
 

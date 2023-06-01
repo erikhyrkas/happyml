@@ -152,7 +152,7 @@ namespace happyml {
                 this->acceptsInput = givenInput;
                 this->use_norm_clipping = false;
                 this->norm_clipping_threshold = 5.0f;
-
+                this->dropout_rate = 0.0f;
                 if (for_output && node_type != LayerType::full) {
                     throw runtime_error("Only full or convolution2dValid layers can be used as output.");
                 }
@@ -180,6 +180,7 @@ namespace happyml {
                 this->acceptsInput = acceptsInput;
                 this->use_norm_clipping = false;
                 this->norm_clipping_threshold = 5.0f;
+                this->dropout_rate = 0.0f;
                 if (for_output && node_type != LayerType::convolution2dValid) {
                     throw runtime_error("Only full or convolution2dValid layers can be used as output.");
                 }
@@ -206,6 +207,7 @@ namespace happyml {
                 this->acceptsInput = false;
                 this->use_norm_clipping = false;
                 this->norm_clipping_threshold = 5.0f;
+                this->dropout_rate = 0.0f;
             }
 
             shared_ptr<NNVertex> setUseL2Regularization(bool b) {
@@ -322,6 +324,16 @@ namespace happyml {
                 return nnv;
             }
 
+            shared_ptr<NNVertex> addDropoutLayer(float dropout_rate=0.05f) {
+                auto parentObject = parent.lock();
+                auto nnv = make_shared<NNVertex>(parentObject, LayerType::dropout, this->outputShape,
+                                                 this->outputShape,
+                                                 false, false,
+                                                 ActivationType::linear, parentObject->nextVertexId());
+                addEdge(nnv);
+                return nnv;
+            }
+
             shared_ptr<NNVertex> addNormalizationLayer() {
                 auto parentObject = parent.lock();
                 auto nnv = make_shared<NNVertex>(parentObject, LayerType::normalize, this->outputShape,
@@ -389,6 +401,7 @@ namespace happyml {
                 metadata_row.push_back(asString(isUseNormalization()));
                 metadata_row.push_back(asString(isUseNormClipping()));
                 metadata_row.push_back(asString(getNormClippingThreshold()));
+                metadata_row.push_back(asString(getDropoutRate()));
                 networkMetadata.push_back(metadata_row);
                 shared_ptr<BaseOptimizer> optimizer = nn->getOptimizer();
                 shared_ptr<NeuralNetworkNode> next_node;
@@ -428,6 +441,14 @@ namespace happyml {
                     next_node = make_shared<NeuralNetworkNode>(make_shared<FlattenLayer>());
                 } else if (node_type == LayerType::normalize) {
                     next_node = make_shared<NeuralNetworkNode>(make_shared<NormalizationLayer>());
+                } else if (node_type == LayerType::dropout) {
+                    auto inputShape = inputShapes[0];
+                    if (inputShape[0] > 1) {
+                        auto flatten_node = make_shared<NeuralNetworkNode>(make_shared<FlattenLayer>());
+                        last_node = appendNode(last_node, flatten_node);
+                    }
+                    string dropoutNodeLabel = asString(vertexUniqueId) + "_dropout";
+                    next_node = make_shared<NeuralNetworkNode>(make_shared<DropoutLayer>(dropoutNodeLabel, inputShape, dropout_rate));
                 } else if (node_type == LayerType::convolution2dValid) {
                     auto inputShape = inputShapes[0];
                     string c2dvLabel = asString(vertexUniqueId) + "_c2dv";
@@ -604,6 +625,14 @@ namespace happyml {
                 return shared_from_this();
             }
 
+            float getDropoutRate() const {
+                return dropout_rate;
+            }
+
+            void setDropoutRate(float dropout_rate) {
+                this->dropout_rate = dropout_rate;
+            }
+
         private:
             weak_ptr<HappymlDSL> parent;
             vector<shared_ptr<NNEdge>> edges;
@@ -624,6 +653,7 @@ namespace happyml {
             bool producesOutput;
             bool acceptsInput;
             uint32_t vertexUniqueId;
+            float dropout_rate;
         };
 
         shared_ptr<NNVertex> addInputLayer(const size_t input_shape, const size_t output_shape, LayerType layerType,
@@ -792,6 +822,8 @@ namespace happyml {
         current_metadata_offset++;
         float clipping_threshold = stof(vertexMetadata[current_metadata_offset]);
         current_metadata_offset++;
+        float dropout_rate = stof(vertexMetadata[current_metadata_offset]);
+        current_metadata_offset++;
 
         if (acceptsInput) {
             if (inputShapes.size() > 1) {
@@ -868,6 +900,7 @@ namespace happyml {
         createdVertexes[vertexId]->setUseNormalization(use_normalization);
         createdVertexes[vertexId]->setNormClippingThreshold(clipping_threshold); // set this first because it would enable clipping
         createdVertexes[vertexId]->setUseNormClipping(use_clipping); // set this second because it could disable clipping if required
+        createdVertexes[vertexId]->setDropoutRate(dropout_rate);
 
         if (edgeFromTo.count(vertexId) > 0) {
             auto edges = edgeFromTo[vertexId];

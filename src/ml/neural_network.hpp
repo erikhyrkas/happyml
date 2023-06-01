@@ -19,16 +19,36 @@ namespace happyml {
     struct TrainingResult {
     public:
         TrainingResult() {
-            initial_loss = -INFINITY;
-            final_loss = INFINITY;
+            initial_test_loss = -INFINITY;
+            final_test_loss = INFINITY;
+            initial_train_loss = -INFINITY;
+            best_train_loss = INFINITY;
             training_time_ms = 0;
             epochs = 0;
+            trained = false;
+            generalized = false;
+            learning_rate = 0.0f;
+            batch_size = 0;
+            total_records = 0;
+            accuracy = 0.0f;
+            complexity_modifier = 0.0;
+            learningRateAdjustmentFactor = 0.0f;
         }
 
-        float initial_loss;
-        float final_loss;
+        float initial_test_loss;
+        float final_test_loss;
+        float initial_train_loss;
+        float best_train_loss;
         size_t training_time_ms;
         size_t epochs;
+        bool trained;
+        bool generalized;
+        float learning_rate;
+        int batch_size;
+        size_t total_records;
+        float accuracy;
+        double complexity_modifier;
+        float learningRateAdjustmentFactor;
     };
 
 // You don't need an optimizer for predictions if you already have weights, and you aren't going
@@ -150,12 +170,12 @@ namespace happyml {
         }
 
         void useHighPrecisionExitStrategy() {
-            setExitStrategy(make_shared<DefaultExitStrategy>(4,
+            setExitStrategy(make_shared<DefaultExitStrategy>(10,
                                                              NINETY_DAYS_MS,
                                                              1000000,
                                                              0.00001f,
                                                              1e-8,
-                                                             4,
+                                                             5,
                                                              0.05f));
         }
 
@@ -257,6 +277,7 @@ namespace happyml {
         }
 
         float compute_binary_accuracy(const shared_ptr<TrainingDataSet> &testDataset, int limit = -1) {
+            testDataset->restart();
             float accuracy = 0;
             float total = 0;
             auto nextRecord = testDataset->nextRecord();
@@ -287,6 +308,7 @@ namespace happyml {
         }
 
         float compute_categorical_accuracy(const shared_ptr<TrainingDataSet> &testDataset, vector<shared_ptr<RawDecoder >> expected_decoders, int limit = -1) {
+            testDataset->restart();
             float accuracy = 0;
             float total = 0;
             auto nextRecord = testDataset->nextRecord();
@@ -401,6 +423,10 @@ namespace happyml {
             size_t lowestLossEpoch = 0;
             float lowestLoss = INFINITY;
             cout << endl; // TODO: we really should have a silent mode.
+            result->learning_rate = optimizer->getLearningRate();
+            result->batch_size = batchSize;
+            result->total_records = total_records;
+
             logTraining(0, 0, 0, ceil(total_records / batchSize), batchSize, 0, 0, 0, overwriteOutputLines);
             size_t epoch = 0;
             ElapsedTimer epochTimer;
@@ -471,22 +497,33 @@ namespace happyml {
                 } else {
                     epochTestingLoss = epochTrainingLoss;
                 }
+                if (epoch > 0) {
+                    if (epochTrainingLoss < result->best_train_loss) {
+                        result->best_train_loss = epochTrainingLoss;
+                    }
+                    result->trained = result->best_train_loss < result->initial_train_loss;
+                } else {
+                    result->initial_train_loss = epochTrainingLoss;
+                    result->best_train_loss = epochTrainingLoss;
+                }
                 if (epochTestingLoss < lowestLoss) {
                     lowestLoss = epochTestingLoss;
                     lowestLossEpoch = epoch;
-                    if (result->initial_loss < 0.f) {
-                        result->initial_loss = lowestLoss;
+                    if (result->initial_test_loss < 0.f) {
+                        result->initial_test_loss = lowestLoss;
                     }
                     if (trainingRetentionPolicy == best) {
-                        if (lowestLoss < result->final_loss) {
-                            result->final_loss = lowestLoss;
+                        if (lowestLoss < result->final_test_loss) {
+                            result->generalized = result->trained;
+                            result->final_test_loss = lowestLoss;
                             result->epochs = lowestLossEpoch;
                             result->training_time_ms = totalTimer.peekMilliseconds();
                         }
                         saveKnowledge(knowledgeCheckpointLabel, true);
                     } else {
-                        if (lowestLoss < result->final_loss) {
-                            result->final_loss = epochTestingLoss;
+                        if (lowestLoss < result->final_test_loss) {
+                            result->generalized = result->trained;
+                            result->final_test_loss = epochTestingLoss;
                             result->epochs = epoch;
                             result->training_time_ms = totalTimer.peekMilliseconds();
                         }
@@ -509,6 +546,9 @@ namespace happyml {
                 cout << (elapsed / 1000) << " seconds." << endl;
             } else {
                 cout << (elapsed / 60000) << " minutes." << endl;
+            }
+            if(result->epochs == 0) {
+                result->epochs = epoch;
             }
             print_model_facts();
             cout << "Trained with " << trainingDataset->recordCount() << " records." << endl;
