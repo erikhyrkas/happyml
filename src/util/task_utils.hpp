@@ -41,17 +41,8 @@ namespace happyml {
                 throw runtime_error("Unsupported expected shape size");
             }
         }
-//        double multiplier; // complexity multiplier
-//        if (goal == "memory") {
-//            // memory still needs many values to be accurate, we'll just use 8 or 16-bit floats.
-//            // it likely needs more parameters than accuracy, but because it uses fewer bits, it's still less memory.
-//            multiplier = 3;
-//        } else if (goal == "accuracy") {
-//            multiplier = 2;
-//        } else { // speed
-//            multiplier = 1;
-//        }
-        auto max_val = (size_t) ((double) total_output_values * complexity_multiplier);
+
+        auto max_val = (size_t) ((double) total_output_values * (0.25 + complexity_multiplier));
         total_values = std::min(total_values, max_val);
         return total_values;
     }
@@ -69,9 +60,6 @@ namespace happyml {
                 throw runtime_error("Unsupported expected shape size");
             }
         }
-//        if (goal != "speed") {
-//            total_values = total_values * 2;
-//        }
         return (size_t) ((double) total_values * complexity_multiplier);
     }
 
@@ -116,7 +104,6 @@ namespace happyml {
         vector<string> expected_column_names = reader.get_expected_names();
         reader.close();
 
-        //vector<string> merged_headers = pretty_print_merge_headers(expected_column_names, given_column_names);
         vector<size_t> widths;
 
         cout << "Results: " << endl;
@@ -166,7 +153,7 @@ namespace happyml {
         auto predictions = loadedNeuralNetwork->predict(given_values);
 
         auto expected_values = record_group_to_strings(expected_decoders, predictions);
-        //auto merged_values = pretty_print_merge_records(expected_decoders, predictions, given_decoders, given_values);
+
         if (widths.empty()) {
             // using width of first result is suboptimal, but it's good enough for now.
             widths = calculate_pretty_print_column_widths(expected_column_names, expected_values);
@@ -246,16 +233,11 @@ namespace happyml {
                 learningRate = 0.001f;
                 biasLearningRate = 0.001f;
         }
-        if (lossType == LossType::categoricalCrossEntropy) {
-            // categorical cross entropy is very sensitive to learning rate
-            learningRate *= 0.1f;
-            biasLearningRate *= 0.1f;
-        }
+
         const float decay_rate = 0.95f;
         learningRate *= std::powf(decay_rate, learningRateAdjustmentFactor);
         biasLearningRate *= std::powf(decay_rate, learningRateAdjustmentFactor);
-        cout << std::fixed << std::setprecision(6) << "Using learning rate " << learningRate << endl;
-        cout << "Using bias learning rate " << biasLearningRate << endl;
+        cout << std::fixed << std::setprecision(6) << "Using learning rate " << learningRate << " (" << biasLearningRate << "); ";
 
         auto neural_network_builder = neuralNetworkBuilder(optimizerType);
         auto initial_layers = neural_network_builder
@@ -276,29 +258,30 @@ namespace happyml {
             layer1 = input_layer
                     ->addLayer(output_size_given_expected,
                                LayerType::full, activationType);
-            cout << "Using concatenated input layer (" << dataSource->getGivenShapes().size() << ")" << endl;
+            cout << "concatenated input layer (" << dataSource->getGivenShapes().size() << ") -> ";
         } else {
             is_convolutional = reader.get_given_metadata(0)->purpose == 'I';
             if (is_convolutional) {
                 layer1 = initial_layers->addInputLayer(dataSource->getGivenShape(), 1, 3, LayerType::convolution2dValid,
                                                        activationType)->setUseBias(true);
-                cout << "Using convolutional input layer (1 filter and kernel size 3)" << endl;
+                cout << "convolutional input layer (1 filter and kernel size 3) -> ";
             } else {
                 layer1 = initial_layers->addInputLayer(dataSource->getGivenShape(),
                                                        output_size_given_expected,
                                                        LayerType::full, activationType)->setUseBias(true);
-                cout << "Using full input layer: " << output_size_given_expected << endl;
+                cout << "full input layer: " << output_size_given_expected << " -> ";
             }
         }
         layer1->setUseL2Regularization(true);
         layer1->setUseNormClipping(true);
         if (lossType == LossType::categoricalCrossEntropy) {
             layer1->setUseNormalization(true);
-            cout << "Using normalization layer" << endl;
+            cout << "normalization layer -> ";
         }
         if (goal == "memory") {
             layer1 = layer1->setBits(8)->setMaterialized(false);
         }
+        layer1 = layer1->addDropoutLayer(0.8f);
 
         shared_ptr<HappymlDSL::NNVertex> layer2;
         if (is_convolutional) {
@@ -307,7 +290,7 @@ namespace happyml {
                                LayerType::full, activationType)->setUseBias(true);
             layer2->setUseL2Regularization(true);
             layer2->setUseNormClipping(true);
-            cout << "Using full second layer: " << output_size_given_expected << endl;
+            cout << "full layer: " << output_size_given_expected << " -> ";
         } else {
             size_t output_size_expected = estimate_layer_output_size(dataSource->getExpectedShapes(), goal, complexity_modifier);
             layer2 = layer1
@@ -315,23 +298,24 @@ namespace happyml {
                                LayerType::full, activationType)->setUseBias(true);
             layer2->setUseL2Regularization(true);
             layer2->setUseNormClipping(true);
-            cout << "Using full second layer: " << output_size_expected << endl;
+            cout << "full second layer: " << output_size_expected << " -> ";
         }
         if (lossType == LossType::categoricalCrossEntropy) {
             layer2->setUseNormalization(true);
-            cout << "Using normalization layer" << endl;
+            cout << "normalization layer" << " -> ";
         }
 
         if (goal == "memory") {
             layer2 = layer2->setBits(8)->setMaterialized(false);
         }
-        if (complexity_modifier > 1.0) {
-            layer2 = layer2->addDropoutLayer(0.2f);
-        }
+        layer2 = layer2->addDropoutLayer(0.5f);
 
         ActivationType last_activation;
         if (lossType == LossType::categoricalCrossEntropy) {
             last_activation = ActivationType::softmax;
+            // TODO: this is a hack to improve the accuracy of softmax. this really shouldn't need to be done.
+            size_t output_size_expected = estimate_layer_output_size(dataSource->getExpectedShapes(), "speed", 1.0f);
+            layer2 = layer2->addLayer(output_size_expected, LayerType::full, ActivationType::sigmoid);
         } else {
             last_activation = ActivationType::sigmoid;
         }
@@ -341,7 +325,11 @@ namespace happyml {
                     ->addOutputLayer(next_expected_shape,
                                      last_activation)
                     ->setUseBias(true);
-            cout << "Using output layer: " << dataSource->getExpectedShape()[0] << ", " << dataSource->getExpectedShape()[1] << ", " << dataSource->getExpectedShape()[2] << endl;
+            if (next_expected_shape[0] > 1 && next_expected_shape[2] > 1) {
+                cout << "output layer: " << next_expected_shape[0] << ", " << next_expected_shape[1] << ", " << next_expected_shape[2] << endl;
+            } else {
+                cout << "output layer: " << next_expected_shape[1] << endl;
+            }
         }
         auto neuralNetwork = neural_network_builder->build();
         return neuralNetwork;
@@ -369,7 +357,7 @@ namespace happyml {
             attempt_result->learningRateAdjustmentFactor = learningRateAdjustmentFactor;
             attempt_result->complexity_modifier = complexity_modifier;
 
-            cout << "Accuracy: " << fixed << setprecision(4) << attempt_result->accuracy << endl;
+            cout << "Accuracy: " << fixed << setprecision(2) << (attempt_result->accuracy * 100) << "%" << endl;
             log_file << "------------------" << attempt << "------------------" << endl;
             log_file << "\tTarget accuracy: " << target_accuracy << endl;
             log_file << "\tPatience: " << patience << endl;
@@ -392,7 +380,7 @@ namespace happyml {
             log_file << "Learning rate: " << attempt_result->learning_rate << endl;
             log_file << "Trained: " << (attempt_result->trained ? "true" : "false") << endl;
             log_file << "Generalized: " << (attempt_result->generalized ? "true" : "false") << endl;
-            log_file << "Accuracy: " << fixed << setprecision(4) << attempt_result->accuracy << endl;
+            log_file << "Accuracy: " << fixed << setprecision(2) << (attempt_result->accuracy * 100) << "%" << endl;
         } catch (const exception &e) {
             attempt_result = make_shared<TrainingResult>();
         }
@@ -428,34 +416,31 @@ namespace happyml {
             log_file << "Creating label task " << task_name << " with goal " << goal << " using dataset " << dataset_name << endl;
 
             string dataset_full_file_path = dataset_file_path + "/dataset.bin";
-            auto dataSource = make_shared<BinaryDataSet>(dataset_full_file_path);
-            shared_ptr<BinaryDataSet> testDataSource = nullptr;
+            shared_ptr<BinaryDataSet> dataSource;
+            shared_ptr<BinaryDataSet> testDataSource;
+
             if (!test_dataset_file_path.empty()) {
+                dataSource = make_shared<BinaryDataSet>(dataset_full_file_path);
                 string test_dataset_full_file_path = test_dataset_file_path + "/dataset.bin";
                 testDataSource = make_shared<BinaryDataSet>(test_dataset_full_file_path,
                                                             dataSource->getGivenMetadata(),
                                                             dataSource->getExpectedMetadata());
+            } else {
+                dataSource = make_shared<BinaryDataSet>(dataset_full_file_path, 0.9);
+                testDataSource = make_shared<BinaryDataSet>(dataset_full_file_path, -0.1);
             }
+
             BinaryDatasetReader reader(dataset_full_file_path);
 
             int max_batch_size = std::min(128, (int) dataSource->recordCount());
-//            int batch_size = max_batch_size;
 
-//            if (goal != "speed") {
-//                batch_size = 32;
-//            } else {
-//                batch_size = 64;
-//            }
-//            if (dataSource->recordCount() < batch_size) {
-//                batch_size = 1;
-//            }
             OptimizerType optimizerType;
             if (goal == "memory") {
                 optimizerType = OptimizerType::sgd;
             } else {
                 optimizerType = OptimizerType::adam;
             }
-            ActivationType activationType = ActivationType::relu; // ActivationType::leaky;
+            ActivationType activationType = ActivationType::leaky;
             bool multiple_outputs = dataSource->getExpectedShapes().size() > 1;
             LossType lossType;
             if (!multiple_outputs && goal != "speed") {
@@ -470,10 +455,7 @@ namespace happyml {
                 lossType = LossType::mse;
             }
 
-//            const float loss_epsilon = 0.01f;
             bool found = false;
-//            float learningRateAdjustmentFactor = 0.0f;
-//            double complexity_modifier = 1.0;
             float learningRateSearchRate = ("speed" == goal) ? 2.0f : 1.0f;
             size_t patience;
             size_t min_epochs;
@@ -496,29 +478,22 @@ namespace happyml {
             std::mt19937 gen(rd());
 //            std::uniform_int_distribution<> dis(1, 100);
 
-            auto exit_strategy = make_shared<DefaultExitStrategy>(patience,
-                                                                  NINETY_DAYS_MS,
-                                                                  1000000,
-                                                                  1e-3,
-                                                                  improvement_tolerance,
-                                                                  min_epochs,
-                                                                  0.05f);
             vector<shared_ptr<RawDecoder >> expected_decoders = build_expected_decoders(false, reader);
-            float target_accuracy = 0.90; //dataSource->recordCount() < 1000 ? 0.75 : 0.9;
-            unordered_map<string, shared_ptr<TrainingResult>> checked_results;
+            float target_accuracy = 0.90;
             shared_ptr<NeuralNetworkForTraining> neuralNetwork;
             ElapsedTimer timer;
-            int attempt = 0;
 
             // I suspect there are multiple viable combinations, but that they are likely grouped together near each other.
             // in order to make it more likely to find them sooner, I will shuffle the possibilities with the hope of making
             // one of those viable options closer to the beginning.
             vector<pair<double, float>> complexity_lr_pairs;
             {
+                float max_learning_rate_adjustment_factor = "speed" == goal ? 8 : 15.0;
+                float max_complexity_modifier = "speed" == goal ? 8.0 : 12.0;
                 double complexity_modifier = 1.0;
-                while (complexity_modifier < 21.0) {
-                    float learningRateAdjustmentFactor = 0.0f;
-                    while (learningRateAdjustmentFactor < 15.0) {
+                while (complexity_modifier <= max_complexity_modifier) {
+                    float learningRateAdjustmentFactor = "speed" == goal ? 4.0 : 0.0f;
+                    while (learningRateAdjustmentFactor <= max_learning_rate_adjustment_factor) {
                         complexity_lr_pairs.emplace_back(complexity_modifier, learningRateAdjustmentFactor);
                         learningRateAdjustmentFactor += learningRateSearchRate;
                     }
@@ -526,155 +501,143 @@ namespace happyml {
                 }
                 std::shuffle(complexity_lr_pairs.begin(), complexity_lr_pairs.end(), gen);
             }
-            double improbably_complexity_modifier = 100.0;
-            float improbably_learningRateAdjustmentFactor = 100.0f;
-            double too_simple = -1.0;
-            vector<pair<double, float>> improbable_complexity_lr_pairs;
+            cout << endl << "Searching for training parameters that work for " << task_name << "." << endl;
+            cout << "Using optimizer " << optimizerTypeToString(optimizerType) << endl;
+            cout << "Using loss function " << lossTypeToString(lossType) << endl;
+            cout << "Using activation function " << activationTypeToString(activationType) << endl;
+            cout << "Using batch size " << max_batch_size << endl;
+            int attempt = 0;
+            float next_search_size = 640.0f;
 
-            for (auto complexity_lr_pair: complexity_lr_pairs) {
-                double complexity_modifier = complexity_lr_pair.first;
-                float learningRateAdjustmentFactor = complexity_lr_pair.second;
-                // TODO: still figuring out a way to optimize this.
-                // maybe something around this: complexity_modifier <= too_simple ||
-                if ((complexity_modifier >= improbably_complexity_modifier && learningRateAdjustmentFactor >= improbably_learningRateAdjustmentFactor)) {
-                    improbable_complexity_lr_pairs.emplace_back(complexity_modifier, learningRateAdjustmentFactor);
-                    continue;
-                }
-                attempt++;
-                double hours_running = (double) timer.peekMilliseconds() / (double) HOUR_MS;
-                target_accuracy = (float) (0.90 - (hours_running * 0.02));
-                string attempt_key = getAttemptKey(max_batch_size, learningRateAdjustmentFactor, complexity_modifier);
-
-                cout << endl << "Searching for training parameters that work for " << task_name << "." << endl;
-                cout << "Using batch size " << max_batch_size << endl;
-                cout << "Using optimizer " << optimizerTypeToString(optimizerType) << endl;
-                cout << "Using loss function " << lossTypeToString(lossType) << endl;
-                cout << "Using activation function " << activationTypeToString(activationType) << endl;
-
-                shared_ptr<TrainingResult> attempt_result;
-                if (checked_results.find(attempt_key) != checked_results.end()) {
-                    attempt_result = checked_results[attempt_key];
-                } else {
-                    attempt_result = attempt_training_with_logging(task_name, goal, task_folder_path, testDataSource,
-                                                                   max_batch_size, optimizerType, activationType,
-                                                                   lossType, learningRateSearchRate, patience,
-                                                                   min_epochs, improvement_tolerance, exit_strategy,
-                                                                   expected_decoders, target_accuracy, attempt,
-                                                                   complexity_modifier, learningRateAdjustmentFactor, log_file,
-                                                                   dataSource, reader, neuralNetwork);
-                    checked_results[attempt_key] = attempt_result;
-                    if (!attempt_result->trained) {
-                        improbably_complexity_modifier = complexity_modifier;
-                        improbably_learningRateAdjustmentFactor = learningRateAdjustmentFactor;
-                    } else if (!attempt_result->generalized) {
-                        too_simple = complexity_modifier;
+            while (!found) {
+                int retries = 0;
+                float best_accuracy = 0.0f;
+                string best_attempt_key;
+                shared_ptr<BinaryDataSet> searchDataSource;
+                shared_ptr<BinaryDataSet> testSearchDataSource;
+                bool using_source = (next_search_size + 1.0f) >= (float) dataSource->recordCount();
+                if (!using_source) {
+                    float search_ratio = next_search_size / (float) dataSource->recordCount();
+                    searchDataSource = make_shared<BinaryDataSet>(dataset_full_file_path, search_ratio);
+                    if (!test_dataset_file_path.empty()) {
+                        string test_dataset_full_file_path = test_dataset_file_path + "/dataset.bin";
+                        testSearchDataSource = make_shared<BinaryDataSet>(test_dataset_full_file_path, dataSource->getGivenMetadata(),
+                                                                          dataSource->getExpectedMetadata(), search_ratio);
+                    } else {
+                        testSearchDataSource = make_shared<BinaryDataSet>(dataset_full_file_path, -search_ratio);
                     }
-                    if (attempt_result->accuracy >= target_accuracy) {
+                } else {
+                    searchDataSource = dataSource;
+                    testSearchDataSource = testDataSource;
+                }
+                vector<shared_ptr<TrainingResult>> next_results;
+                cout << "Checking " << complexity_lr_pairs.size() << " combinations." << endl;
+                log_file << "Checking " << complexity_lr_pairs.size() << " combinations." << endl;
+                int experiment_count = 0;
+                for (auto complexity_lr_pair: complexity_lr_pairs) {
+                    double complexity_modifier = complexity_lr_pair.first;
+                    float learningRateAdjustmentFactor = complexity_lr_pair.second;
+                    attempt++;
+                    experiment_count++;
+                    cout << "__________________Experiment: (" << attempt << ") " << experiment_count << " of " << complexity_lr_pairs.size() << "__________________" << endl;
+                    log_file << "__________________Experiment: (" << attempt << ") " << experiment_count << " of " << complexity_lr_pairs.size() << "__________________" << endl;
+                    string attempt_key = getAttemptKey(max_batch_size, learningRateAdjustmentFactor, complexity_modifier);
+                    auto exit_strategy = make_shared<DefaultExitStrategy>((using_source ? patience * 2 : patience),
+                                                                          NINETY_DAYS_MS,
+                                                                          1000000,
+                                                                          1e-3,
+                                                                          (using_source ? improvement_tolerance / 10.0f : improvement_tolerance),
+                                                                          (using_source ? min_epochs * 2 : min_epochs),
+                                                                          (using_source ? 0.25f : 0.05f));
+                    shared_ptr<TrainingResult> attempt_result = attempt_training_with_logging(task_name, goal, task_folder_path, testSearchDataSource,
+                                                                                              max_batch_size, optimizerType, activationType,
+                                                                                              lossType, learningRateSearchRate, patience,
+                                                                                              min_epochs, improvement_tolerance, exit_strategy,
+                                                                                              expected_decoders, target_accuracy, attempt,
+                                                                                              complexity_modifier, learningRateAdjustmentFactor, log_file,
+                                                                                              searchDataSource, reader, neuralNetwork);
+                    next_results.push_back(attempt_result);
+                    if (attempt_result->accuracy > best_accuracy) {
+                        best_accuracy = attempt_result->accuracy;
+                        best_attempt_key = attempt_key;
+                    }
+                    if (using_source && attempt_result->accuracy >= target_accuracy) {
                         found = true;
                         cout << "Model is accurate." << endl;
                         log_file << "Model is accurate." << endl;
                         break;
                     }
                 }
-            }
-            if (!found) {
-                float best_accuracy = 0.0f;
-                string best_attempt_key;
-                for (auto const &x: checked_results) {
-                    if (x.second->accuracy > best_accuracy) {
-                        best_accuracy = x.second->accuracy;
-                        best_attempt_key = x.first;
+                if (!found) {
+                    cout << "Best accuracy: " << (best_accuracy * 100) << "%" << endl;
+                    log_file << "Best accuracy: " << (best_accuracy * 100) << "%" << endl;
+                    // sort on accuracy with the lowest test loss tie-breaking
+                    std::sort(next_results.begin(), next_results.end(), [](shared_ptr<TrainingResult> a, shared_ptr<TrainingResult> b) {
+                        return a->accuracy > b->accuracy || (a->accuracy == b->accuracy && a->final_test_loss < b->final_test_loss);
+                    });
+                    cout << "______________________LEADER BOARD______________________" << endl;
+                    for (const auto &result: next_results) {
+                        cout << "accuracy: " << (result->accuracy * 100) << "%, complexity: " << result->complexity_modifier << ", learning rate: " << result->learningRateAdjustmentFactor << endl;
+                        log_file << "accuracy: " << (result->accuracy * 100) << "%, complexity: " << result->complexity_modifier << ", learning rate: " << result->learningRateAdjustmentFactor << endl;
                     }
-                }
-                if (best_accuracy < 0.50f) {
-                    target_accuracy = 0.5f;
-                    // TODO: Yes, there is a huge amount of code duplication here.  I'm still figuring out what is optimal
-                    //  and not ready to refactor yet.
-                    for (int batch_size = max_batch_size; !found && batch_size > 0; batch_size /= 2) {
-                        for (auto complexity_lr_pair: improbable_complexity_lr_pairs) {
+                    cout << endl;
+
+                    if (next_results.size() > 1) {
+                        int top_results;
+                        if (using_source) {
+                            top_results = 1;
+                        } else {
+                            top_results = std::max((int) next_results.size() / 3, 2);
+                        }
+                        cout << "Keeping: " << top_results << " of " << next_results.size() << " complexity/learning rate pairs." << endl;
+                        log_file << "Keeping: " << top_results << " of " << next_results.size() << " complexity/learning rate pairs." << endl;
+                        next_results.erase(next_results.begin() + top_results, next_results.end());
+                        cout << "Leader board kept: " << next_results.size() << endl;
+                        vector<pair<double, float>> next_complexity_lr_pairs;
+                        for (auto complexity_lr_pair: complexity_lr_pairs) {
                             double complexity_modifier = complexity_lr_pair.first;
                             float learningRateAdjustmentFactor = complexity_lr_pair.second;
-
-                            attempt++;
-                            double hours_running = (double) timer.peekMilliseconds() / (double) HOUR_MS;
-                            target_accuracy = (float) (0.90 - (hours_running * 0.02));
-                            string attempt_key = getAttemptKey(batch_size, learningRateAdjustmentFactor, complexity_modifier);
-
-                            cout << endl << "Searching for training parameters that work for " << task_name << "." << endl;
-                            cout << "Using batch size " << batch_size << endl;
-                            cout << "Using optimizer " << optimizerTypeToString(optimizerType) << endl;
-                            cout << "Using loss function " << lossTypeToString(lossType) << endl;
-                            cout << "Using activation function " << activationTypeToString(activationType) << endl;
-
-                            shared_ptr<TrainingResult> attempt_result;
-                            if (checked_results.find(attempt_key) != checked_results.end()) {
-                                attempt_result = checked_results[attempt_key];
-                            } else {
-                                attempt_result = attempt_training_with_logging(task_name, goal, task_folder_path, testDataSource,
-                                                                               max_batch_size, optimizerType, activationType,
-                                                                               lossType, learningRateSearchRate, patience,
-                                                                               min_epochs, improvement_tolerance, exit_strategy,
-                                                                               expected_decoders, target_accuracy, attempt,
-                                                                               complexity_modifier, learningRateAdjustmentFactor, log_file,
-                                                                               dataSource, reader, neuralNetwork);
-
-                                checked_results[attempt_key] = attempt_result;
+                            for (const auto &result: next_results) {
+                                if (result->complexity_modifier == complexity_modifier && result->learningRateAdjustmentFactor == learningRateAdjustmentFactor) {
+                                    next_complexity_lr_pairs.emplace_back(complexity_modifier, learningRateAdjustmentFactor);
+                                    break;
+                                }
                             }
-                            if (attempt_result->accuracy >= target_accuracy) {
-                                found = true;
-                                cout << "Model is accurate enough." << endl;
-                                log_file << "Model is accurate enough." << endl;
-                                break;
-                            }
+                        }
+                        complexity_lr_pairs = next_complexity_lr_pairs;
+                        cout << "Complexity/learning rate pairs left: " << complexity_lr_pairs.size() << endl;
+                        log_file << "Complexity/learning rate pairs left: " << complexity_lr_pairs.size() << endl;
+                        for (auto next_pair: complexity_lr_pairs) {
+                            cout << "Complexity: " << next_pair.first << ", learning rate: " << next_pair.second << endl;
+                            log_file << "Complexity: " << next_pair.first << ", learning rate: " << next_pair.second << endl;
+                        }
+                    } else if (using_source) {
+                        if (!next_results.front()->generalized && retries < 3) {
+                            retries++;
+                            vector<pair<double, float>> next_complexity_lr_pairs;
+                            double complexity_modifier = complexity_lr_pairs.front().first;
+                            float learningRateAdjustmentFactor = complexity_lr_pairs.front().second;
+                            next_complexity_lr_pairs.emplace_back(complexity_modifier, learningRateAdjustmentFactor - 1.0f);
+                            next_complexity_lr_pairs.emplace_back(complexity_modifier, learningRateAdjustmentFactor);
+                            next_complexity_lr_pairs.emplace_back(complexity_modifier / 1.25, learningRateAdjustmentFactor);
+                            complexity_lr_pairs = next_complexity_lr_pairs;
+                            cout << "Didn't generalize, trying with a lower learning rate and lower complexity." << endl;
+                        } else {
+                            cout << "Only one complexity/learning rate pair left.  Using it." << endl;
+                            log_file << "Only one complexity/learning rate pair left.  Using it." << endl;
+                            found = true;
                         }
                     }
                 }
-            }
-            if (!found) {
-                // find the best accuracy in checked_results and rebuild that model
-                float best_accuracy = 0.0f;
-                string best_attempt_key;
-                for (auto const &x: checked_results) {
-                    if (x.second->accuracy > best_accuracy) {
-                        best_accuracy = x.second->accuracy;
-                        best_attempt_key = x.first;
-                    }
-                }
-                cout << "Rebuilding model that gave the best accuracy: " << best_accuracy << endl;
-
-                try {
-                    neuralNetwork = build_neural_network_for_label(task_name, task_folder_path, goal, dataSource, reader, checked_results[best_attempt_key]->learningRateAdjustmentFactor, optimizerType, lossType, activationType,
-                                                                   checked_results[best_attempt_key]->complexity_modifier);
-                    neuralNetwork->setExitStrategy(exit_strategy);
-                    shared_ptr<TrainingResult> attempt_result;
-                    if (testDataSource == nullptr) {
-                        attempt_result = neuralNetwork->train(dataSource, checked_results[best_attempt_key]->batch_size);
-                        attempt_result->accuracy = neuralNetwork->compute_categorical_accuracy(dataSource, expected_decoders);
+                if (!found) {
+                    if (complexity_lr_pairs.size() > 2 && next_search_size < (float) dataSource->recordCount()) {
+                        next_search_size *= 2.0f;
                     } else {
-                        attempt_result = neuralNetwork->train(dataSource, testDataSource, checked_results[best_attempt_key]->batch_size);
-                        attempt_result->accuracy = neuralNetwork->compute_categorical_accuracy(testDataSource, expected_decoders);
+                        next_search_size = (float) dataSource->recordCount();
                     }
-                    log_file << "------------------ Restored result ------------------" << endl;
-                    log_file << "\tInitial test loss: " << fixed << setprecision(4) << attempt_result->initial_test_loss << endl;
-                    log_file << "\tFinal test loss: " << fixed << setprecision(4) << attempt_result->final_test_loss << endl;
-                    log_file << "\tInitial training loss: " << fixed << setprecision(4) << attempt_result->initial_train_loss << endl;
-                    log_file << "\tBest training loss: " << fixed << setprecision(4) << attempt_result->best_train_loss << endl;
-                    log_file << "\tEpochs: " << attempt_result->epochs << endl;
-                    log_file << "\tTime: " << attempt_result->training_time_ms << endl;
-                    log_file << "\tLearning rate adjustment factor: " << attempt_result->learningRateAdjustmentFactor << endl;
-                    log_file << "\tComplexity modifier: " << attempt_result->complexity_modifier << endl;
-                    log_file << "Parameters: " << neuralNetwork->get_total_parameters() << endl;
-                    log_file << "Batch size: " << attempt_result->batch_size << endl;
-                    log_file << "Learning rate: " << attempt_result->learning_rate << endl;
-                    log_file << "Trained: " << (attempt_result->trained ? "true" : "false") << endl;
-                    log_file << "Generalized: " << (attempt_result->generalized ? "true" : "false") << endl;
-                    log_file << "Accuracy: " << fixed << setprecision(4) << attempt_result->accuracy << endl;
-                    cout << "Restored model accuracy: " << attempt_result->accuracy << endl;
-                } catch (const std::exception &e) {
-                    cout << "Error: " << e.what() << endl;
-                    return false;
                 }
             }
+
             neuralNetwork->saveWithOverwrite();
 
             string task_dataset_metadata_path = task_full_path + "/dataset.bin";

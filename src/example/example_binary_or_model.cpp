@@ -47,7 +47,7 @@ int main() {
         cout << fixed << setprecision(2) << "Result testLoss: " << testLoss << endl;
         orDataSource->restart();
         float accuracy = loadedNeuralNetwork->compute_binary_accuracy(orDataSource);
-        cout << fixed << setprecision(2) << "Result accuracy: " << accuracy << endl;
+        cout << fixed << setprecision(2) << "Result accuracy: " << (accuracy * 100) << "%" << endl;
     } catch (const exception &e) {
         cout << e.what() << endl;
     }

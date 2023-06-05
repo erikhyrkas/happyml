@@ -35,6 +35,11 @@ namespace happyml {
             std::shuffle(shuffled_elements_.begin(), shuffled_elements_.end(), gen);
         }
 
+        void shuffle_predictably() {
+            std::mt19937 gen(42);
+            std::shuffle(shuffled_elements_.begin(), shuffled_elements_.end(), gen);
+        }
+
         size_t getSize() {
             return shuffled_elements_.size();
         }

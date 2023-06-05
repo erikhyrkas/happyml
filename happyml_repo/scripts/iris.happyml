@@ -1,0 +1,53 @@
+
+#
+# Setup Notes:
+#
+# I used the Iris.csv file from https://www.kaggle.com/datasets/uciml/iris
+#
+# I renamed the file to lower case "iris.csv" and placed it in happyml_repo/raw
+#
+# I stored the raw csv in the happyml_data/titanic directory. See below.
+#
+# My directory structure:
+# happyml
+#  - cmake-build-debug
+#    - happyml.exe        <- my working directory
+#  - happyml_repo
+#    - datasets
+#      - titanic          <- the destination for the binary dataset we'll make
+#    - default_token_encoder
+#      - default.bpe      <- the default encoder
+#    - raw
+#      - iris.csv         <- Iris.csv from kaggle renamed to lower case
+#    - scripts
+#      - iris.happyml     <- this script
+#    - tasks
+#      - predict_iris     <- the destination for the task we'll make, which will include the model we train
+#
+# Here's the header of the iris.csv file, along with the column offsets:
+# Id,SepalLengthCm,SepalWidthCm,PetalLengthCm,PetalWidthCm,Species
+#  0,            1,           2,            3,           4,      5
+#
+# Valid Date Types can be: image, label, number, text
+#
+# iris.happyml:
+
+create dataset iris
+       with header
+       with expected label Species       at 5
+       with given number   SepalLengthCm at 1
+       with given number   SepalWidthCm  at 2
+       with given number   PetalLengthCm at 3
+       with given number   PetalWidthCm  at 4
+       using file://../happyml_repo/raw/iris.csv
+
+print raw iris limit 5
+print pretty iris limit 5
+
+# example with test set:
+# create task label predict_survivor with goal accuracy with test titanic_test using titanic
+create task label predict_iris using iris
+
+# The passenger did survive (1), let's see if we can predict that:
+#execute task predict_survivor using dataset titanic
+execute task predict_iris using input (SepalLengthCm: 5.2, SepalWidthCm: 2.7, PetalLengthCm: 3.9, PetalWidthCm: 1.4)

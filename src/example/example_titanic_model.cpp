@@ -45,7 +45,8 @@ int main() {
         string base_path = DEFAULT_HAPPYML_DATASETS_PATH;
         string result_path = base_path + "titanic/dataset.bin";
         cout << "Loading training data..." << endl;
-        auto titanicDataSource = make_shared<BinaryDataSet>(result_path);
+        auto titanicDataSource = make_shared<BinaryDataSet>(result_path, 0.9);
+        auto titanicTestDatasource = make_shared<BinaryDataSet>(result_path, -0.1);
 
         auto neuralNetwork = neuralNetworkBuilder(OptimizerType::adam)
                 ->setLearningRate(0.001f)
@@ -66,7 +67,7 @@ int main() {
                                                                         1e-8,
                                                                         5,
                                                                         0.05f));
-        float loss = neuralNetwork->train(titanicDataSource, 4)->final_test_loss;
+        float loss = neuralNetwork->train(titanicDataSource, titanicTestDatasource, 4)->final_test_loss;
 
         cout << fixed << setprecision(2);
         titanicDataSource->restart();
@@ -96,8 +97,8 @@ int main() {
         cout << fixed << setprecision(2) << "Result testLoss: " << testLoss << endl;
 
         titanicDataSource->restart();
-        float accuracy = neuralNetwork->compute_categorical_accuracy(titanicDataSource, expected_decoders);
-        cout << "Accuracy: " << fixed << setprecision(4) << accuracy << endl;
+        float accuracy = neuralNetwork->compute_categorical_accuracy(titanicTestDatasource, expected_decoders);
+        cout << "Accuracy: " << fixed << setprecision(2) << (accuracy * 100) << "%" << endl;
     } catch (const exception &e) {
         cout << e.what() << endl;
     }

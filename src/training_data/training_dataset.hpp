@@ -72,17 +72,42 @@ namespace happyml {
     public:
         explicit BinaryDataSet(const std::string &file_path,
                                const std::vector<shared_ptr<BinaryColumnMetadata>> &renormalize_given_metadata,
-                               const std::vector<shared_ptr<BinaryColumnMetadata>> &renormalize_expected_metadata)
+                               const std::vector<shared_ptr<BinaryColumnMetadata>> &renormalize_expected_metadata,
+                               float split = 1.0f)
                 : reader_(file_path, renormalize_given_metadata, renormalize_expected_metadata) {
             if (!reader_.is_open()) {
                 throw std::runtime_error("Could not open file: " + file_path);
             }
+            split_shuffler_ = make_shared<Shuffler>(reader_.rowCount());
+            split_shuffler_->shuffle_predictably(); // shuffle once to make sure we have a fair distribution in case the original data was sorted.
+            if (split > 0) {
+                // left to right
+                first_record_offset_ = 0;
+                record_count_ = reader_.rowCount() * split;
+            } else {
+                // right to left
+                first_record_offset_ = reader_.rowCount() * (1.0f + split);
+                record_count_ = reader_.rowCount() - first_record_offset_;
+            }
+            current_offset_ = 0;
         }
 
-        explicit BinaryDataSet(const std::string &file_path) : reader_(file_path) {
+        explicit BinaryDataSet(const std::string &file_path, float split = 1.0f) : reader_(file_path) {
             if (!reader_.is_open()) {
                 throw std::runtime_error("Could not open file: " + file_path);
             }
+            split_shuffler_ = make_shared<Shuffler>(reader_.rowCount());
+            split_shuffler_->shuffle_predictably(); // shuffle once to make sure we have a fair distribution in case the original data was sorted.
+            if (split > 0) {
+                // left to right
+                first_record_offset_ = 0;
+                record_count_ = reader_.rowCount() * split;
+            } else {
+                // right to left
+                first_record_offset_ = reader_.rowCount() * (1.0f + split);
+                record_count_ = reader_.rowCount() - first_record_offset_;
+            }
+            current_offset_ = 0;
         }
 
         std::vector<shared_ptr<BinaryColumnMetadata>> getGivenMetadata() {
@@ -97,7 +122,7 @@ namespace happyml {
             if (!reader_.is_open()) {
                 return 0;
             }
-            return reader_.rowCount();
+            return record_count_;
         }
 
         void restart() override {
@@ -109,7 +134,10 @@ namespace happyml {
                 return nullptr;
             }
             auto shuffled_offset = shuffler_ != nullptr ? shuffler_->getShuffledIndex(current_offset_) : current_offset_;
-            auto pair = reader_.readRow(shuffled_offset);
+            // we have to shuffle an extra time because we are splitting the dataset and the original data may be ordered
+            // we want our split to have a fair distribution of data. The split shuffler is never reshuffled.
+            auto split_shuffled_offset = split_shuffler_->getShuffledIndex(shuffled_offset);
+            auto pair = reader_.readRow(shuffled_offset + first_record_offset_);
             current_offset_++;
             auto result = make_shared<TrainingPair>(pair.first, pair.second);
             return result;
@@ -142,6 +170,9 @@ namespace happyml {
     private:
         BinaryDatasetReader reader_;
         size_t current_offset_ = 0;
+        size_t first_record_offset_ = 0;
+        size_t record_count_ = 0;
+        shared_ptr<Shuffler> split_shuffler_;
     };
 
     class InMemoryTrainingDataSet : public TrainingDataSet {

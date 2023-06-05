@@ -63,6 +63,8 @@ namespace happyml {
             if (loss + improvementTolerance <= lowestLoss) {
                 lowestLoss = min(loss, lowestLoss);
                 lowestLossEpoch = currentEpoch;
+            } else if (lowestLossEpoch > currentEpoch) {
+                throw runtime_error("IMPOSSIBLE: lowestLossEpoch > currentEpoch. Did you reuse an exit strategy?");
             }
             // If we're not improving, we're degrading. If we're degrading too fast, we're done.
             const auto degradation = (loss - lowestLoss) / lowestLoss;
@@ -88,7 +90,7 @@ namespace happyml {
                 return ss.str();
             }
             const auto degradation = (loss - lowestLoss) / lowestLoss;
-            if(degradation >= maxDegradationTolerance) {
+            if (degradation >= maxDegradationTolerance) {
                 stringstream ss;
                 ss << std::fixed << std::setprecision(15);
                 ss << "Degradation (" << degradation << ") >= Maximum Degradation Tolerance (" << maxDegradationTolerance << ")";

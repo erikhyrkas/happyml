@@ -3,10 +3,12 @@
 # Notable Changes
 [Back to the table of contents](README.md)
 
+* Added [Iris example](../happyml_repo/scripts/iris.happyml) (9/2023)
+* Added ability to split binary data sets (6/2023)
 * Dropout layer (6/2023)
 * Alpha Release (5/2023)
 * Grid Search for the best hyperparameters (5/2023)
-* Added a new example for the happyml scripting language: [MNIST example](docs/examples/MNIST.md) (5/2023)
+* Added a new example for the happyml scripting language: [MNIST example](../docs/examples/MNIST.md) (5/2023)
 * Task execution from scripts can now handle inputs directly rather than from a file (5/2023)
 * Prettier pretty print (5/2023)
 * Ability to execute tasks against datasets from the scripting language with rather ugly output (5/2023)
