@@ -587,7 +587,7 @@ namespace happyml {
                         if (using_source) {
                             top_results = 1;
                         } else {
-                            top_results = std::max((int) next_results.size() / 3, 2);
+                            top_results = std::max((int) next_results.size() / 4, 2);
                         }
                         cout << "Keeping: " << top_results << " of " << next_results.size() << " complexity/learning rate pairs." << endl;
                         log_file << "Keeping: " << top_results << " of " << next_results.size() << " complexity/learning rate pairs." << endl;
@@ -617,9 +617,10 @@ namespace happyml {
                             vector<pair<double, float>> next_complexity_lr_pairs;
                             double complexity_modifier = complexity_lr_pairs.front().first;
                             float learningRateAdjustmentFactor = complexity_lr_pairs.front().second;
-                            next_complexity_lr_pairs.emplace_back(complexity_modifier, learningRateAdjustmentFactor - 1.0f);
+                            next_complexity_lr_pairs.emplace_back(complexity_modifier, learningRateAdjustmentFactor - 0.5f);
                             next_complexity_lr_pairs.emplace_back(complexity_modifier, learningRateAdjustmentFactor);
-                            next_complexity_lr_pairs.emplace_back(complexity_modifier / 1.25, learningRateAdjustmentFactor);
+                            next_complexity_lr_pairs.emplace_back(complexity_modifier / 1.1, learningRateAdjustmentFactor);
+                            next_complexity_lr_pairs.emplace_back(complexity_modifier * 2.0, learningRateAdjustmentFactor);
                             complexity_lr_pairs = next_complexity_lr_pairs;
                             cout << "Didn't generalize, trying with a lower learning rate and lower complexity." << endl;
                         } else {

@@ -3,7 +3,8 @@
 # Notable Changes
 [Back to the table of contents](README.md)
 
-* Added [Iris example](../happyml_repo/scripts/iris.happyml) (9/2023)
+* pretty print of images now uses ascii art (6/2023)
+* Added [Iris example](../happyml_repo/scripts/iris.happyml) (6/2023)
 * Added ability to split binary data sets (6/2023)
 * Dropout layer (6/2023)
 * Alpha Release (5/2023)

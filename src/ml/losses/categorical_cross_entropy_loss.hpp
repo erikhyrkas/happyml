@@ -12,6 +12,7 @@
 #include "../../types/tensor_views/exponential_tensor_view.hpp"
 #include "../../types/tensor_views/value_transform_tensor_view.hpp"
 #include "../../types/tensor_views/scalar_divide_tensor_view.hpp"
+#include "../../types/tensor_views/softmax_derivative_tensor_view.hpp"
 
 // TODO: this code currently assumes that the truth and predictions are both 1D tensors
 //  and that those tensors are 1 row and 1 channel.
@@ -50,7 +51,8 @@ namespace happyml {
         shared_ptr<BaseTensor> compute_loss_derivative(shared_ptr<BaseTensor> &total_batch_error,
                                                        shared_ptr<BaseTensor> &truth,
                                                        shared_ptr<BaseTensor> &prediction) override {
-            // The total_batch_error tensor is precomputed as: -truth_i * log(prediction_i)
+            // The derivative of the categorical cross-entropy loss with respect to the predictions is:
+            // prediction - truth
             auto error = make_shared<SubtractTensorView>(prediction, truth);
             return error;
         }

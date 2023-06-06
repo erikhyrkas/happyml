@@ -30,6 +30,8 @@ namespace happyml {
                                                   metadata->max_value,
                                                   metadata->mean,
                                                   metadata->standard_deviation);
+            } else if( 'I' == purpose) {
+                decoder = make_shared<ImageDecoder>();
             } else {
                 decoder = make_shared<RawDecoder>();
             }

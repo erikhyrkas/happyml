@@ -74,7 +74,12 @@ namespace happyml {
 
     std::vector<std::string> record_to_strings(shared_ptr<RawDecoder> &decoder, shared_ptr<BaseTensor> &record) {
         std::vector<std::string> result;
-        if (decoder->isText()) {
+        if( decoder->isImage()) {
+            vector<string> image_rows = decoder->decodeImage(record);
+            for (auto &image_row: image_rows) {
+                result.push_back(image_row);
+            }
+        } else if (decoder->isText()) {
             string best = decoder->decodeBest(record);
             result.push_back(best);
         } else {
