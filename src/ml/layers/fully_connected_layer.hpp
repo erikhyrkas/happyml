@@ -16,7 +16,8 @@ namespace happyml {
     public:
         FullyConnectedLayer(const string &label, size_t inputSize, size_t outputSize, uint8_t bits,
                             int optimizer_registration_id,
-                            bool use_l2_regularization = true) : weights_errors() {
+                            bool use_l2_regularization,
+                            float regularization_strength) : weights_errors() {
             this->label = label;
             this->registration_id = optimizer_registration_id;
             this->inputShapes = vector<vector<size_t >>{{1, inputSize, 1}};
@@ -24,6 +25,7 @@ namespace happyml {
             this->weights = make_shared<TensorFromXavier>(inputSize, outputSize, 1, optimizer_registration_id + 42);
             this->bits = bits;
             this->use_l2_regularization = use_l2_regularization;
+            this->regularization_strength = regularization_strength;
         }
 
         vector<vector<size_t>> getInputShapes() {
@@ -103,7 +105,7 @@ namespace happyml {
                 PROFILE_BLOCK(profileBlock2);
 
                 // Calculate L2 regularization term
-                auto l2_regularization = make_shared<ScalarMultiplyTensorView>(weights, regularization_param);
+                auto l2_regularization = make_shared<ScalarMultiplyTensorView>(weights, regularization_strength);
 
                 // Add L2 regularization term to weights error
                 weights_error = make_shared<AddTensorView>(weights_error, l2_regularization);
@@ -171,7 +173,7 @@ namespace happyml {
         vector<size_t> outputShape;
         queue<shared_ptr<BaseTensor>> weights_errors;
         bool use_l2_regularization;
-        const float regularization_param = 0.02f; // sane default of 2 * 0.01f
+        float regularization_strength;
         string label;
     };
 

@@ -612,15 +612,19 @@ namespace happyml {
                             log_file << "Complexity: " << next_pair.first << ", learning rate: " << next_pair.second << endl;
                         }
                     } else if (using_source) {
-                        if (!next_results.front()->generalized && retries < 3) {
+                        if (retries < 3) {
                             retries++;
                             vector<pair<double, float>> next_complexity_lr_pairs;
                             double complexity_modifier = complexity_lr_pairs.front().first;
                             float learningRateAdjustmentFactor = complexity_lr_pairs.front().second;
-                            next_complexity_lr_pairs.emplace_back(complexity_modifier, learningRateAdjustmentFactor - 0.5f);
                             next_complexity_lr_pairs.emplace_back(complexity_modifier, learningRateAdjustmentFactor);
                             next_complexity_lr_pairs.emplace_back(complexity_modifier / 1.1, learningRateAdjustmentFactor);
                             next_complexity_lr_pairs.emplace_back(complexity_modifier * 2.0, learningRateAdjustmentFactor);
+                            next_complexity_lr_pairs.emplace_back(complexity_modifier / 2.0, learningRateAdjustmentFactor);
+                            next_complexity_lr_pairs.emplace_back(complexity_modifier / 1.1, learningRateAdjustmentFactor - 0.5f);
+                            next_complexity_lr_pairs.emplace_back(complexity_modifier, learningRateAdjustmentFactor - 0.5f);
+                            next_complexity_lr_pairs.emplace_back(complexity_modifier, learningRateAdjustmentFactor - 2.5f);
+                            next_complexity_lr_pairs.emplace_back(complexity_modifier, learningRateAdjustmentFactor / 2.0f);
                             complexity_lr_pairs = next_complexity_lr_pairs;
                             cout << "Didn't generalize, trying with a lower learning rate and lower complexity." << endl;
                         } else {

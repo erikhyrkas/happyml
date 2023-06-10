@@ -18,7 +18,8 @@ namespace happyml {
         Convolution2dValidFunction(const string &label,
                                    vector<size_t> inputShape, size_t filters, size_t kernelSize, uint8_t bits,
                                    int optimizer_registration_id,
-                                   bool use_l2_regularization = true) {
+                                   bool use_l2_regularization,
+                                   float regularization_strength) {
             this->label = label;
             this->registration_id = optimizer_registration_id;
             this->inputShape = inputShape;
@@ -27,6 +28,7 @@ namespace happyml {
             this->use_l2_regularization = use_l2_regularization;
             this->bits = bits;
             this->weights = {};
+            this->regularization_strength = regularization_strength;
             for (size_t next_weight_layer = 0; next_weight_layer < filters; next_weight_layer++) {
                 this->weights.push_back(make_shared<TensorFromXavier>(kernelSize, kernelSize, inputShape[2], optimizer_registration_id + next_weight_layer + 42));
             }
@@ -141,7 +143,7 @@ namespace happyml {
                                                                                                             outputErrorForLayer);
                     if (use_l2_regularization) {
                         PROFILE_BLOCK(profileBlock2);
-                        auto l2_regularization = make_shared<ScalarMultiplyTensorView>(nextWeightError, regularization_param);
+                        auto l2_regularization = make_shared<ScalarMultiplyTensorView>(nextWeightError, regularization_strength);
                         nextWeightError = make_shared<AddTensorView>(nextWeightError, l2_regularization);
                     }
                     const auto nextWeightToInputChannel = make_shared<SumToChannelTensorView>(nextWeightError,
@@ -202,7 +204,7 @@ namespace happyml {
         size_t kernelSize;
         string label;
         bool use_l2_regularization;
-        const float regularization_param = 0.02f; // sane default of 2 * 0.01f
+        float regularization_strength;
     };
 }
 

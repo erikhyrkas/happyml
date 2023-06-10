@@ -108,6 +108,14 @@ namespace happyml {
             outputNodes.push_back(output);
         }
 
+        std::string get_name() {
+            return name;
+        }
+
+        std::string get_repoRootPath() {
+            return repoRootPath;
+        }
+
     protected:
         string name;
         string repoRootPath;
@@ -121,6 +129,7 @@ namespace happyml {
                                  const float learningRate, const float biasLearningRate,
                                  const LossType lossType)
                 : NeuralNetworkForPrediction(name, repoRootPath) {
+            silentMode = false;
             NeuralNetworkForTraining::optimizerType = optimizerType;
             NeuralNetworkForTraining::lossType = lossType;
             NeuralNetworkForTraining::learningRate = learningRate;
@@ -357,7 +366,6 @@ namespace happyml {
         void print_model_facts() {
             size_t total_parameters = get_total_parameters();
             size_t trainable_layers = get_total_trainable_layers();
-
             cout << "Model " << name << " has " << total_parameters << " parameters and " << trainable_layers << " trainable layers." << endl;
         }
 
@@ -382,8 +390,10 @@ namespace happyml {
                                          TrainingRetentionPolicy trainingRetentionPolicy = best,
                                          bool overwriteOutputLines = true) {
             shared_ptr<TrainingResult> result = make_shared<TrainingResult>();
-            print_model_facts();
-            cout << "Training " << name << " with " << trainingDataset->recordCount() << " records." << endl;
+            if (!silentMode) {
+                print_model_facts();
+                cout << "Training " << name << " with " << trainingDataset->recordCount() << " records." << endl;
+            }
             ElapsedTimer totalTimer;
             // TODO: we save the best checkpoint, but we don't save any other checkpoints
             //  we should save the last N checkpoints + best checkpoint and then delete the rest
@@ -422,12 +432,16 @@ namespace happyml {
             const size_t outputSize = outputNodes.size();
             size_t lowestLossEpoch = 0;
             float lowestLoss = INFINITY;
-            cout << endl; // TODO: we really should have a silent mode.
+            if (!silentMode) {
+                cout << endl;
+            }
             result->learning_rate = optimizer->getLearningRate();
             result->batch_size = batchSize;
             result->total_records = total_records;
 
-            logTraining(0, 0, 0, ceil(total_records / batchSize), batchSize, 0, 0, 0, overwriteOutputLines);
+            if (!silentMode) {
+                logTraining(0, 0, 0, ceil(total_records / batchSize), batchSize, 0, 0, 0, overwriteOutputLines);
+            }
             size_t epoch = 0;
             ElapsedTimer epochTimer;
             float epochTrainingLoss;
@@ -482,15 +496,19 @@ namespace happyml {
                         batchLoss = 0.f;
 
                         auto elapsedTime = batchTimer.peekMilliseconds();
-                        logTraining(elapsedTime, epoch, currentBatch,
-                                    ceil(total_records / batchSize), batchSize,
-                                    epochTrainingLoss, lowestLoss, lowestLossEpoch,
-                                    overwriteOutputLines);
+                        if (!silentMode) {
+                            logTraining(elapsedTime, epoch, currentBatch,
+                                        ceil(total_records / batchSize), batchSize,
+                                        epochTrainingLoss, lowestLoss, lowestLossEpoch,
+                                        overwriteOutputLines);
+                        }
                         batchOffset = 0;
                     }
                 }
-                if (overwriteOutputLines) {
-                    cout << endl;
+                if (!silentMode) {
+                    if (overwriteOutputLines) {
+                        cout << endl;
+                    }
                 }
                 if (useTestDataset) {
                     epochTestingLoss = test(testDataset);
@@ -528,30 +546,35 @@ namespace happyml {
                             result->training_time_ms = totalTimer.peekMilliseconds();
                         }
                     }
-                    logTraining(batchTimer.peekMilliseconds(), epoch, ceil(total_records / batchSize),
-                                ceil(total_records / batchSize), batchSize,
-                                epochTrainingLoss, lowestLoss, lowestLossEpoch,
-                                overwriteOutputLines);
+                    if (!silentMode) {
+                        logTraining(batchTimer.peekMilliseconds(), epoch, ceil(total_records / batchSize),
+                                    ceil(total_records / batchSize), batchSize,
+                                    epochTrainingLoss, lowestLoss, lowestLossEpoch,
+                                    overwriteOutputLines);
+                    }
                 }
                 trainingDataset->restart();
                 epoch++;
                 trainingElapsedTimeInMilliseconds = epochTimer.getMilliseconds();
             } while (!exitStrategy->isDone(epoch, epochTestingLoss, trainingElapsedTimeInMilliseconds));
-            cout << endl << "Exiting training because " << exitStrategy->whyDone(epoch, epochTestingLoss, trainingElapsedTimeInMilliseconds) << endl;
-            int64_t elapsed = totalTimer.getMilliseconds();
-            cout << endl << "Finished training in ";
-            if (elapsed < 2000) {
-                cout << elapsed << " milliseconds." << endl;
-            } else if (elapsed < 120000) {
-                cout << (elapsed / 1000) << " seconds." << endl;
-            } else {
-                cout << (elapsed / 60000) << " minutes." << endl;
+
+            if (!silentMode) {
+                cout << endl << "Exiting training because " << exitStrategy->whyDone(epoch, epochTestingLoss, trainingElapsedTimeInMilliseconds) << endl;
+                int64_t elapsed = totalTimer.getMilliseconds();
+                cout << endl << "Finished training in ";
+                if (elapsed < 2000) {
+                    cout << elapsed << " milliseconds." << endl;
+                } else if (elapsed < 120000) {
+                    cout << (elapsed / 1000) << " seconds." << endl;
+                } else {
+                    cout << (elapsed / 60000) << " minutes." << endl;
+                }
+                if (result->epochs == 0) {
+                    result->epochs = epoch;
+                }
+                print_model_facts();
+                cout << "Trained with " << trainingDataset->recordCount() << " records." << endl;
             }
-            if(result->epochs == 0) {
-                result->epochs = epoch;
-            }
-            print_model_facts();
-            cout << "Trained with " << trainingDataset->recordCount() << " records." << endl;
             // TODO: this is placeholder code until we actually save and formalize best loss,
             //  but it simulates the future results.
             if (trainingRetentionPolicy == best) {
@@ -585,13 +608,17 @@ namespace happyml {
                 }
                 currentRecord++;
                 averageLoss += (float) (((totalLoss / (double) outputSize) - averageLoss) / (double) currentRecord);
-                logTesting(trainingTimer.peekMilliseconds(),
-                           currentRecord, totalRecords,
-                           averageLoss, overwriteOutputLines);
+                if (!silentMode) {
+                    logTesting(trainingTimer.peekMilliseconds(),
+                               currentRecord, totalRecords,
+                               averageLoss, overwriteOutputLines);
+                }
                 nextRecord = testDataset->nextRecord();
             }
-            if (overwriteOutputLines) {
-                printf("\n");
+            if (!silentMode) {
+                if (overwriteOutputLines) {
+                    printf("\n");
+                }
             }
             return averageLoss;
         }
@@ -672,7 +699,12 @@ namespace happyml {
             networkMetadata = newNetworkMetadata;
         }
 
+        void setSilentMode(bool newSilentMode) {
+            silentMode = newSilentMode;
+        }
+
     private:
+        bool silentMode;
         float learningRate;
         float biasLearningRate;
         OptimizerType optimizerType;

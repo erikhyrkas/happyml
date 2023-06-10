@@ -71,6 +71,17 @@ namespace happyml {
         }
         return expected_decoders;
     }
+
+    vector<shared_ptr<RawDecoder>> build_expected_decoders(bool raw, shared_ptr<BinaryDataSet> &dataset) {
+        vector<shared_ptr<RawDecoder >> expected_decoders;
+        auto expected_metadata = dataset->getExpectedMetadata();
+        size_t expected_column_count = expected_metadata.size();
+        for (size_t i = 0; i < expected_column_count; i++) {
+            shared_ptr<RawDecoder> decoder = build_decoder(raw, expected_metadata[i]);
+            expected_decoders.push_back(decoder);
+        }
+        return expected_decoders;
+    }
 }
 
 #endif //HAPPYML_ENCODER_DECODER_BUILDER_HPP

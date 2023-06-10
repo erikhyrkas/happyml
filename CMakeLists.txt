@@ -42,6 +42,8 @@ add_executable(example_binary_or_model src/example/example_binary_or_model.cpp)
 
 add_executable(example_titanic_model src/example/example_titanic_model.cpp)
 
+add_executable(example_hyperband src/example/example_hyperband.cpp)
+
 # TODO: Need to learn how to use CTest and convert the tests to use it.
 #  https://cmake.org/cmake/help/book/mastering-cmake/chapter/Testing%20With%20CMake%20and%20CTest.html
 #  What you see below is me doing what I knew would work for local testing.

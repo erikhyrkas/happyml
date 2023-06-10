@@ -161,10 +161,10 @@ namespace happyml {
             vector<char> ascii_chars = {' ', (char) 176, (char) 177, (char) 178, (char) 219};
 
             size_t ascii_len = ascii_chars.size();
-
-            // we're making ascii art and the characters are twice as tall as they are wide
+            vector<vector<float>> not_normalized_gray_scale_values;
+            float largest_value = 0.0f;
             for (size_t row = 0; row < rows; row += 2) {
-                stringstream ss;
+                vector<float> row_gray_scale_values;
                 for (size_t col = 0; col < cols; col++) {
                     // build a gray-scale value for the combined channels
                     // we also have to combine the two rows, if there are two
@@ -192,6 +192,21 @@ namespace happyml {
                     grayScale /= (float) (channels * (row + 1 < rows ? 2 : 1));
                     // Normalize the grayscale value to range [0, 1]
                     grayScale = (grayScale < 0.0f) ? 0.0f : ((grayScale > 1.0f) ? 1.0f : grayScale);
+                    largest_value = max(largest_value, grayScale);
+                    row_gray_scale_values.push_back(grayScale);
+                }
+                not_normalized_gray_scale_values.push_back(row_gray_scale_values);
+            }
+
+            if( largest_value == 0.0f) {
+                largest_value = 1.0f;
+            }
+            // we're making ascii art and the characters are twice as tall as they are wide
+            for (vector<float> &row_gray_scale_values : not_normalized_gray_scale_values) {
+                stringstream ss;
+                for (float gray_scale_value : row_gray_scale_values) {
+                    // Normalize the grayscale value to range [0, 1]
+                    float grayScale = gray_scale_value / largest_value;
 
                     // Map the grayscale value to an ASCII character
                     auto ascii_index = (size_t) (grayScale * (float) (ascii_len - 1));

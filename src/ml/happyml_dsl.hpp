@@ -153,6 +153,8 @@ namespace happyml {
                 this->use_norm_clipping = false;
                 this->norm_clipping_threshold = 5.0f;
                 this->dropout_rate = 0.0f;
+                this->regularization_strength = 0.02f;
+
                 if (for_output && node_type != LayerType::full) {
                     throw runtime_error("Only full or convolution2dValid layers can be used as output.");
                 }
@@ -181,6 +183,7 @@ namespace happyml {
                 this->use_norm_clipping = false;
                 this->norm_clipping_threshold = 5.0f;
                 this->dropout_rate = 0.0f;
+                this->regularization_strength = 0.02f;
                 if (for_output && node_type != LayerType::convolution2dValid) {
                     throw runtime_error("Only full or convolution2dValid layers can be used as output.");
                 }
@@ -208,6 +211,7 @@ namespace happyml {
                 this->use_norm_clipping = false;
                 this->norm_clipping_threshold = 5.0f;
                 this->dropout_rate = 0.0f;
+                this->regularization_strength = 0.02f;
             }
 
             shared_ptr<NNVertex> setUseL2Regularization(bool b) {
@@ -215,6 +219,11 @@ namespace happyml {
                 if (b && (node_type != LayerType::full && node_type != LayerType::convolution2dValid)) {
                     throw runtime_error("L2 regularization can only be used on full layers or convolution2dValid layers");
                 }
+                return shared_from_this();
+            }
+
+            shared_ptr<NNVertex> setRegularizationStrength(float s) {
+                this->regularization_strength = s;
                 return shared_from_this();
             }
 
@@ -402,6 +411,7 @@ namespace happyml {
                 metadata_row.push_back(asString(isUseNormClipping()));
                 metadata_row.push_back(asString(getNormClippingThreshold()));
                 metadata_row.push_back(asString(getDropoutRate()));
+                metadata_row.push_back(asString(regularization_strength));
                 networkMetadata.push_back(metadata_row);
                 shared_ptr<BaseOptimizer> optimizer = nn->getOptimizer();
                 shared_ptr<NeuralNetworkNode> next_node;
@@ -422,7 +432,8 @@ namespace happyml {
                                                                                                   outputShape[2],
                                                                                                   bits,
                                                                                                   optimizer->registerForWeightChanges(),
-                                                                                                  use_l2_regularization);
+                                                                                                  use_l2_regularization,
+                                                                                                  regularization_strength);
                     next_node = make_shared<NeuralNetworkNode>(fcn);
                 } else if (node_type == LayerType::concatenate) {
                     // TODO: we could probably have a strategy for handling different input shapes.
@@ -455,7 +466,8 @@ namespace happyml {
                     auto c2d = make_shared<Convolution2dValidFunction>(c2dvLabel, inputShape, filters, kernel_size,
                                                                        bits,
                                                                        optimizer->registerForWeightChanges(),
-                                                                       use_l2_regularization);
+                                                                       use_l2_regularization,
+                                                                       regularization_strength);
                     next_node = make_shared<NeuralNetworkNode>(c2d);
                 } else {
                     throw runtime_error("Unimplemented NodeType");
@@ -654,6 +666,7 @@ namespace happyml {
             bool acceptsInput;
             uint32_t vertexUniqueId;
             float dropout_rate;
+            float regularization_strength;
         };
 
         shared_ptr<NNVertex> addInputLayer(const size_t input_shape, const size_t output_shape, LayerType layerType,
@@ -824,6 +837,8 @@ namespace happyml {
         current_metadata_offset++;
         float dropout_rate = stof(vertexMetadata[current_metadata_offset]);
         current_metadata_offset++;
+        float regularization_strength = stof(vertexMetadata[current_metadata_offset]);
+        current_metadata_offset++;
 
         if (acceptsInput) {
             if (inputShapes.size() > 1) {
@@ -897,6 +912,7 @@ namespace happyml {
         createdVertexes[vertexId]->setUseBias(useBias);
         createdVertexes[vertexId]->setBits(bits);
         createdVertexes[vertexId]->setUseL2Regularization(use_l2_regularization);
+        createdVertexes[vertexId]->setRegularizationStrength(regularization_strength);
         createdVertexes[vertexId]->setUseNormalization(use_normalization);
         createdVertexes[vertexId]->setNormClippingThreshold(clipping_threshold); // set this first because it would enable clipping
         createdVertexes[vertexId]->setUseNormClipping(use_clipping); // set this second because it could disable clipping if required
