@@ -18,17 +18,17 @@ namespace happyml {
                 : hyperparameter_space_(hyperparameter_space), configuration_evaluator_(configuration_evaluator), max_resources(max_resources), reduction_factor(reduction_factor) {
         }
 
-        shared_ptr<NeuralNetworkForTraining> run(int num_configurations = -1, float target_metric = 0.95f) {
+        shared_ptr<NeuralNetworkForTraining> run(size_t num_configurations = -1, float target_metric = 0.95f, int bits_per_hyperparameter = 32) {
             try {
                 if (num_configurations == -1 || num_configurations > hyperparameter_space_->getNumConfigurations()) {
-                    num_configurations = std::min(hyperparameter_space_->getNumConfigurations(), std::max(10, hyperparameter_space_->getNumConfigurations() / 10000));
+                    num_configurations = std::min(hyperparameter_space_->getNumConfigurations(), std::max((size_t) 10, hyperparameter_space_->getNumConfigurations() / 10000));
                 }
-                std::vector<shared_ptr<Hyperparameters>> configurations = generateInitialConfigurations(num_configurations);
-
+                std::vector<shared_ptr<Hyperparameters>> configurations = generateInitialConfigurations(num_configurations, bits_per_hyperparameter);
+                std::cout << "Searching for the best configuration among " << num_configurations << " likely options." << endl;
                 for (int round = 0; num_configurations > 1; round++) {
                     int allocated_resources = std::max(2, max_resources / static_cast<int>(pow(reduction_factor, round)));
 
-                    std::cout << "Starting round " << round << " with " << configurations.size() << " configurations." << endl;
+                    std::cout << "Round " << (round + 1) << ": ";
                     std::for_each(std::execution::par, configurations.begin(), configurations.end(), [&](shared_ptr<Hyperparameters> &configuration) {
                         cout << "{";
                         configuration_evaluator_->evaluateConfiguration(configuration, allocated_resources, target_metric);
@@ -36,23 +36,11 @@ namespace happyml {
                     });
                     cout << endl;
                     float best_evaluation_metric = configuration_evaluator_->getBestEvaluationMetric();
-                    cout << endl << "Best evaluation metric: " << best_evaluation_metric << endl;
+                    cout << "Best evaluation metric: " << best_evaluation_metric << endl;
                     if ((configuration_evaluator_->getMinimizeMetric() && best_evaluation_metric < target_metric) || (!configuration_evaluator_->getMinimizeMetric() && best_evaluation_metric > target_metric)) {
                         cout << "Stopping early, found a very good candidate." << endl;
                         break;
                     }
-
-//                    bool done = false;
-//                    for (shared_ptr<Hyperparameters> &configuration: configurations) {
-//                        if (configuration_evaluator_->evaluateConfiguration(configuration, allocated_resources, target_metric)) {
-//                            cout << "Stopping early, found a very good candidate." << endl;
-//                            done = true;
-//                            break;
-//                        }
-//                    }
-//                    if (done) {
-//                        break;
-//                    }
 
                     eliminateConfigurations(configurations, num_configurations);
 
@@ -70,27 +58,28 @@ namespace happyml {
         }
 
     private:
-        std::vector<shared_ptr<Hyperparameters>> generateInitialConfigurations(int num_configurations) {
+        std::vector<shared_ptr<Hyperparameters>> generateInitialConfigurations(size_t num_configurations, int bits_per_hyperparameter) {
             std::vector<shared_ptr<Hyperparameters>> configurations(num_configurations);
 
             HyperBandRandomSearch randomSearch(hyperparameter_space_);
 
             for (int i = 0; i < num_configurations; i++) {
-                configurations[i] = randomSearch.generateRandomConfiguration();
+                configurations[i] = randomSearch.generateRandomConfiguration(bits_per_hyperparameter);
             }
 
             return configurations;
         }
 
-        void eliminateConfigurations(std::vector<shared_ptr<Hyperparameters>> &configurations, int &num_configurations) const {
-            std::partial_sort(configurations.begin(), configurations.begin() + num_configurations / reduction_factor, configurations.end(),
+        void eliminateConfigurations(std::vector<shared_ptr<Hyperparameters>> &configurations, size_t &num_configurations) const {
+
+            std::partial_sort(configurations.begin(), configurations.begin() + static_cast<vector<shared_ptr<Hyperparameters>>::difference_type>(num_configurations) / reduction_factor, configurations.end(),
                               [](const shared_ptr<Hyperparameters> &config1, const shared_ptr<Hyperparameters> &config2) {
                                   // return true if config1 is worse than config2
                                   return (config1->minimize_metric && config1->evaluation_metric > config2->evaluation_metric) ||
                                          (!config1->minimize_metric && config1->evaluation_metric < config2->evaluation_metric);
                               });
 
-            configurations.erase(configurations.begin() + num_configurations / reduction_factor, configurations.end());
+            configurations.erase(configurations.begin() + static_cast<vector<shared_ptr<Hyperparameters>>::difference_type>(num_configurations) / reduction_factor, configurations.end());
         }
 
         shared_ptr<HyperparameterSpace> hyperparameter_space_;

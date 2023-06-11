@@ -12,21 +12,22 @@
 namespace happyml {
     class HyperBandRandomSearch {
     public:
-        HyperBandRandomSearch(const std::shared_ptr<HyperparameterSpace> &hyperparameterSpace)
+        explicit HyperBandRandomSearch(const std::shared_ptr<HyperparameterSpace> &hyperparameterSpace)
                 : hyperparameterSpace(hyperparameterSpace), randomEngine(std::random_device{}()) {
         }
 
-        std::shared_ptr<Hyperparameters> generateRandomConfiguration() {
-            auto configuration = internal_random_config();
+        std::shared_ptr<Hyperparameters> generateRandomConfiguration(int bits_per_hyperparameter) {
+            auto configuration = internal_random_config(bits_per_hyperparameter);
             std::string configurationString = configuration->as_string();
             // while improbable, let's just make sure we don't generate the same configuration twice
             int maxAttempts = 1000;
             while (usedConfigurations.find(configurationString) != usedConfigurations.end()) {
-                configuration = internal_random_config();
+                configuration = internal_random_config(bits_per_hyperparameter);
                 configurationString = configuration->as_string();
                 maxAttempts--;
                 if (maxAttempts == 0) {
-                    throw std::runtime_error("Unable to generate a new configuration, all configurations have been generated.");
+                    // against all odds, we'll return a duplicate configuration if we've tried too many times
+                    break;
                 }
             }
             usedConfigurations.insert(configuration->as_string());
@@ -72,7 +73,7 @@ namespace happyml {
             return weights;
         }
 
-        shared_ptr<Hyperparameters> internal_random_config() {
+        shared_ptr<Hyperparameters> internal_random_config(int bitsPerHyperparameter) {
             auto configuration = make_shared<Hyperparameters>();
             configuration->learning_rate = getWeightedRandomValue(hyperparameterSpace->learning_rate_space, 0.9);
             configuration->bias_learning_rate = getWeightedRandomValue(hyperparameterSpace->bias_learning_rate_space, 0.9);
@@ -85,6 +86,7 @@ namespace happyml {
             configuration->use_hidden_bias = getWeightedRandomValue(hyperparameterSpace->use_hidden_bias_space, 0.1);
             configuration->use_bias = getWeightedRandomValue(hyperparameterSpace->use_bias_space, 0.9);
             configuration->use_normal_clipping = getWeightedRandomValue(hyperparameterSpace->use_normal_clipping_space, 0.3);
+            configuration->bits = bitsPerHyperparameter;
             return configuration;
         }
 

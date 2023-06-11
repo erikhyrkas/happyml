@@ -16,11 +16,11 @@
 namespace happyml {
     class ConfigurationEvaluator {
     public:
-        ConfigurationEvaluator(string goal, LossType loss_type, OptimizerType optimizer_type,
+        ConfigurationEvaluator(LossType loss_type, OptimizerType optimizer_type,
                                string dataset_path, float dataset_split,
                                string test_dataset_path, float test_dataset_split,
                                string repo_base_path, int max_epochs, int64_t max_time) :
-                goal_(std::move(goal)), loss_type_(loss_type), optimizer_type_(optimizer_type),
+                loss_type_(loss_type), optimizer_type_(optimizer_type),
                 dataset_path_(std::move(dataset_path)), dataset_split_(dataset_split),
                 test_dataset_path_(std::move(test_dataset_path)), test_dataset_split_(test_dataset_split),
                 repo_base_path_(std::move(repo_base_path)), max_epochs_(max_epochs), max_time_(max_time) {
@@ -82,12 +82,13 @@ namespace happyml {
                                                                     best_model_repo_);
             return loadedNeuralNetwork;
         }
+
         std::vector<shared_ptr<RawDecoder>> getExpectedDecoders() {
             return expected_decoders_;
         }
+
     private:
         std::mutex mutex_;
-        string goal_;
         LossType loss_type_;
         OptimizerType optimizer_type_;
         string dataset_path_;
@@ -168,7 +169,7 @@ namespace happyml {
                 last_layer = last_layer->addLayer(desired_width, LayerType::full,
                                                   ActivationType::relu);
             }
-            apply_layer_settings(last_layer, configuration);
+            apply_layer_settings(last_layer, configuration, true);
             float diminishing_dropout_rate = configuration->dropout_rate;
             if (diminishing_dropout_rate > 1e-8) {
                 last_layer = last_layer->addDropoutLayer(configuration->dropout_rate);
@@ -183,7 +184,7 @@ namespace happyml {
                     last_layer = last_layer->addLayer(desired_width, LayerType::full,
                                                       ActivationType::relu);
                 }
-                apply_layer_settings(last_layer, configuration);
+                apply_layer_settings(last_layer, configuration, false);
                 if (diminishing_dropout_rate >= 0.2) {
                     last_layer = last_layer->addDropoutLayer(configuration->dropout_rate);
                     diminishing_dropout_rate *= 0.2f;
@@ -209,11 +210,15 @@ namespace happyml {
             return neuralNetwork;
         }
 
-        shared_ptr<TrainingResult> trainModel(shared_ptr<NeuralNetworkForTraining> &model, const shared_ptr<Hyperparameters> &configuration, int allocatedResources = -1, int max_epochs = 1000000, int64_t max_time = NINETY_DAYS_MS) {
+        shared_ptr<TrainingResult> trainModel(shared_ptr<NeuralNetworkForTraining> &model,
+                                              const shared_ptr<Hyperparameters> &configuration,
+                                              int allocatedResources = -1,
+                                              int max_epochs = 1000000,
+                                              int64_t max_time = NINETY_DAYS_MS) {
             int patience = allocatedResources < 1 ? 20 : allocatedResources;
             float improvement_tolerance = 1e-7;
             auto exit_strategy = make_shared<DefaultExitStrategy>(patience,
-                                                                  NINETY_DAYS_MS,
+                                                                  max_time,
                                                                   max_epochs,
                                                                   1e-3,
                                                                   improvement_tolerance,
@@ -256,12 +261,10 @@ namespace happyml {
             return false;
         }
 
-        static void apply_layer_settings(const shared_ptr<HappymlDSL::NNVertex> &last_layer, const shared_ptr<Hyperparameters> &configuration) {
-            // TODO: we should be able to use 8 or 16 bit as needed
-            //         if (goal == "memory") {
-            //            layer1 = layer1->setBits(8)->setMaterialized(false);
-            //        }
-
+        static void apply_layer_settings(const shared_ptr<HappymlDSL::NNVertex> &last_layer, const shared_ptr<Hyperparameters> &configuration, bool force_32_bits) {
+            if (!force_32_bits && configuration->bits != 32) {
+                last_layer->setBits(configuration->bits)->setMaterialized(false);
+            }
             last_layer->setUseBias(configuration->use_hidden_bias);
             if (configuration->l2_regularization_strength > 1e-7) {
                 last_layer->setUseL2Regularization(true);

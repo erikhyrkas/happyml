@@ -26,12 +26,14 @@ namespace happyml {
         bool use_hidden_bias;
         bool use_normal_clipping;
 
+        int bits; // how many bits are used to represent each parameter?
         float evaluation_metric; // how did these parameters perform?
         bool minimize_metric;   // do we want a small or big evaluationMetric?
 
-        std::string as_string() {
+        [[nodiscard]] std::string as_string() const {
             std::stringstream ss;
             ss << std::fixed << std::setprecision(8);
+            ss << "bits: " << bits << ", ";
             ss << "learning_rate: " << learning_rate << ", ";
             ss << "bias_learning_rate: " << bias_learning_rate << ", ";
             ss << "complexity_depth: " << complexity_depth << ", ";
@@ -46,7 +48,7 @@ namespace happyml {
             return ss.str();
         }
 
-        std::string temp_folder_name() {
+        [[nodiscard]] std::string temp_folder_name() const {
             std::hash<std::string> hasher;
             std::size_t hash_value = hasher(as_string());
 
@@ -61,7 +63,7 @@ namespace happyml {
 
     class HyperparameterSpace {
     public:
-        HyperparameterSpace(int max_batch_sizes) {
+        explicit HyperparameterSpace(int max_batch_sizes) {
             learning_rate_space = {0.001, 0.0007, 0.0005, 0.0003, 0.0001, 0.00007, 0.00005, 0.00003, 0.005, 0.01f, 0.003};
             bias_learning_rate_space = {0.0001, 0.00007, 0.00005, 0.00003, 0.001, 0.0007, 0.0005, 0.0003, 0.01f, 0.005, 0.003};
             complexity_depth_space = {3, 2, 1, 5, 7, 10, 20, 30};
@@ -95,7 +97,7 @@ namespace happyml {
         std::vector<bool> use_bias_space;
         std::vector<bool> use_normal_clipping_space;
 
-        int getNumConfigurations() {
+        [[nodiscard]] size_t getNumConfigurations() const {
             return learning_rate_space.size() * bias_learning_rate_space.size() * complexity_depth_space.size() *
                    complexity_width_space.size() * dropout_rate_space.size() * l2_regularization_strength_space.size() *
                    batch_size_space.size() * use_normalization_layers_space.size() * use_hidden_bias_space.size() *

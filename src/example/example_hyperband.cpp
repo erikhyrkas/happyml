@@ -21,8 +21,7 @@ int main() {
 
         std::shared_ptr<HyperparameterSpace> hyperparameterSpace = std::make_shared<HyperparameterSpace>(titanicDataSource->recordCount() / 10);
         std::shared_ptr<ConfigurationEvaluator> configurationEvaluator =
-                std::make_shared<ConfigurationEvaluator>("accuracy",
-                                                         LossType::categoricalCrossEntropy,
+                std::make_shared<ConfigurationEvaluator>(LossType::categoricalCrossEntropy,
                                                          OptimizerType::adam,
                                                          result_path, 0.9,
                                                          result_path, -0.1,
@@ -33,7 +32,7 @@ int main() {
         int reductionFactor = 3;
 
         Hyperband hyperband(hyperparameterSpace, configurationEvaluator, maxResources, reductionFactor);
-        auto best_model = hyperband.run(30, 0.95f);
+        auto best_model = hyperband.run(30, 0.95f, 16);
         std::shared_ptr<Hyperparameters> bestConfiguration = configurationEvaluator->getBestConfiguration();
         float bestEvaluationMetric = configurationEvaluator->getBestEvaluationMetric();
         std::cout << std::fixed << std::setprecision(3) << "Best Result: " << bestEvaluationMetric << " Best Configuration: " << bestConfiguration->as_string() << std::endl;
